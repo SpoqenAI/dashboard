@@ -45,7 +45,13 @@ if (!allFilesExist) {
 
 // Check auth.ts for required functions
 console.log('\n🔧 Checking auth functions:');
-const authContent = fs.readFileSync('lib/auth.ts', 'utf8');
+let authContent;
+try {
+  authContent = fs.readFileSync('lib/auth.ts', 'utf8');
+} catch (error) {
+  console.log('❌ Error reading lib/auth.ts:', error.message);
+  process.exit(1);
+}
 
 requiredFunctions.forEach(func => {
   const hasFunction = authContent.includes(`export async function ${func}`);

@@ -19,7 +19,7 @@ To enable social authentication, you need to configure each provider in your Sup
 #### Step 1: Create Google OAuth Credentials
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select an existing one
-3. Enable the Google+ API
+3. Enable the Google Identity API (or ensure Google Sign-In is configured)
 4. Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"
 5. Set application type to "Web application"
 6. Add authorized redirect URIs:
