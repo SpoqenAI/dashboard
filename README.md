@@ -1,14 +1,13 @@
-# Image Analysis
+# Spoqen Dashboard
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+*AI Receptionist for Real Estate Agents*
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/veskos-projects/v0-image-analysis)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/hWSJqK8jee3)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/veskos-projects/spoqen-dashboard)
+[![Built with Next.js](https://img.shields.io/badge/Built%20with-Next.js-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
 
 ## Overview
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+Spoqen Dashboard is an AI-powered receptionist system designed specifically for real estate agents. This Next.js application provides intelligent customer interaction capabilities with seamless integration to Supabase for data management.
 
 ## Deployment
 
@@ -16,15 +15,83 @@ Your project is live at:
 
 **[https://spoqen-dashboard.vercel.app](https://spoqen-dashboard.vercel.app)**
 
-## Build your app
+## Tech Stack
 
-Continue building your app on:
+- **Framework**: Next.js 15.2.4 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **UI Components**: Radix UI
+- **Database**: Supabase
+- **Deployment**: Vercel
+- **Package Manager**: pnpm
 
-**[https://v0.dev/chat/projects/hWSJqK8jee3](https://v0.dev/chat/projects/hWSJqK8jee3)**
+## Getting Started
 
-## How It Works
+### Prerequisites
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+- Node.js 18+ 
+- pnpm
+- Supabase account
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd spoqen-dashboard
+```
+
+2. Install dependencies:
+```bash
+pnpm install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.local.example .env.local
+```
+
+4. Configure your Supabase credentials in `.env.local`
+
+5. Run the development server:
+```bash
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+## Deployment
+
+This project uses Vercel for continuous deployment. See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed setup instructions.
+
+### Automatic Deployments
+
+- **Production**: Deploys automatically from `main` branch
+- **Preview**: Deploys automatically from feature branches
+- **Environment Variables**: Configured in Vercel dashboard
+
+## Project Structure
+
+```
+spoqen-dashboard/
+├── app/                 # Next.js App Router pages
+├── components/          # Reusable UI components
+├── lib/                 # Utility functions and configurations
+├── hooks/               # Custom React hooks
+├── styles/              # Global styles
+├── public/              # Static assets
+├── vercel.json          # Vercel deployment configuration
+└── DEPLOYMENT.md        # Deployment documentation
+```
+
+## Contributing
+
+1. Create a feature branch from `main`
+2. Make your changes
+3. Test locally
+4. Create a pull request
+5. Deploy automatically via Vercel
+
+## Support
+
+For deployment issues, see [DEPLOYMENT.md](./DEPLOYMENT.md) or contact the development team.
