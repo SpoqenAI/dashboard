@@ -30,13 +30,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Update dependencies
         run: |
-         pnpm update
-         pnpm audit fix
+          pnpm update
+          pnpm audit fix
 
-      -        run: |
+      - name: Run tests and build
+        run: |
           pnpm lint
-         pnpm test --passWithNoTests
+          pnpm test --passWithNoTests
           pnpm build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -89,12 +91,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-       run: pnpm audit --audit-level moderate || echo "Security vulnerabilities found"
+      - name: Run security audit
+        run: pnpm audit --audit-level moderate || echo "Security vulnerabilities found"
 
       - name: Generate security report
         run: |
           pnpm audit --json > security-audit.json || true
-         echo "Security audit report generated"
+          echo "Security audit report generated"
 
       - name: Upload security report
         uses: actions/upload-artifact@v4
