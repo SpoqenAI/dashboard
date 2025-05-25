@@ -1,7 +1,7 @@
 import type React from 'react';
 import type { Metadata } from 'next';
 import './globals.css';
-import { Toaster } from '@/components/ui/sonner';
+import { Toaster } from '@/components/toaster';
 
 export const metadata: Metadata = {
   title: 'Spoqen - AI Receptionist',
