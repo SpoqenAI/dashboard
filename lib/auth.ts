@@ -50,14 +50,6 @@ export async function signInWithGoogle() {
   return signInWithProvider('google');
 }
 
-export async function signInWithApple() {
-  return signInWithProvider('apple');
-}
-
-export async function signInWithFacebook() {
-  return signInWithProvider('facebook');
-}
-
 export async function resetPassword(email: string) {
   const supabase = getSupabaseClient();
   const siteUrl = getSiteUrl();

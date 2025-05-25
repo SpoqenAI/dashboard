@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * Social Authentication Implementation Validation
+ * Google Authentication Implementation Validation
  * 
  * This script validates that all required files and functions
- * for social authentication are properly implemented.
+ * for Google authentication are properly implemented.
  */
 
 const fs = require('fs');
@@ -20,12 +20,10 @@ const requiredFiles = [
 
 const requiredFunctions = [
   'signInWithProvider',
-  'signInWithGoogle',
-  'signInWithApple',
-  'signInWithFacebook'
+  'signInWithGoogle'
 ];
 
-console.log('🔍 Validating Social Authentication Implementation...\n');
+console.log('🔍 Validating Google Authentication Implementation...\n');
 
 // Check if all required files exist
 console.log('📁 Checking required files:');
@@ -58,6 +56,13 @@ requiredFunctions.forEach(func => {
   console.log(`  ${hasFunction ? '✅' : '❌'} ${func}`);
 });
 
+// Check that Apple and Facebook functions are removed
+const removedFunctions = ['signInWithApple', 'signInWithFacebook'];
+removedFunctions.forEach(func => {
+  const hasFunction = authContent.includes(`export async function ${func}`);
+  console.log(`  ${!hasFunction ? '✅' : '❌'} ${func} (should be removed)`);
+});
+
 // Check if SocialLogin component is properly imported in pages
 console.log('\n📄 Checking page integrations:');
 
@@ -77,11 +82,12 @@ const socialLoginContent = fs.readFileSync('components/auth/social-login.tsx', '
 
 const checks = [
   { name: 'Google icon', check: socialLoginContent.includes('GoogleIcon') },
-  { name: 'Apple icon', check: socialLoginContent.includes('AppleIcon') },
-  { name: 'Facebook icon', check: socialLoginContent.includes('FacebookIcon') },
-  { name: 'Loading states', check: socialLoginContent.includes('loadingProvider') },
+  { name: 'Apple icon removed', check: !socialLoginContent.includes('AppleIcon') },
+  { name: 'Facebook icon removed', check: !socialLoginContent.includes('FacebookIcon') },
+  { name: 'Loading states', check: socialLoginContent.includes('isLoading') },
   { name: 'Error handling', check: socialLoginContent.includes('toast') },
-  { name: 'Mode prop', check: socialLoginContent.includes('mode?:') }
+  { name: 'Mode prop', check: socialLoginContent.includes('mode?:') },
+  { name: 'Only Google import', check: socialLoginContent.includes('signInWithGoogle') && !socialLoginContent.includes('signInWithApple') && !socialLoginContent.includes('signInWithFacebook') }
 ];
 
 checks.forEach(({ name, check }) => {
@@ -92,10 +98,10 @@ console.log('\n📚 Documentation:');
 const hasSetupGuide = fs.existsSync('SOCIAL_AUTH_SETUP.md');
 console.log(`  ${hasSetupGuide ? '✅' : '❌'} Setup guide available`);
 
-console.log('\n🎉 Social Authentication implementation validation complete!');
+console.log('\n🎉 Google Authentication implementation validation complete!');
 console.log('\n📋 Next steps:');
-console.log('  1. Configure OAuth providers in Supabase dashboard');
-console.log('  2. Set up OAuth applications with Google, Apple, and Facebook');
+console.log('  1. Configure Google OAuth provider in Supabase dashboard');
+console.log('  2. Set up Google OAuth application in Google Cloud Console');
 console.log('  3. Update environment variables');
-console.log('  4. Test the authentication flow');
+console.log('  4. Test the Google authentication flow');
 console.log('\n📖 See SOCIAL_AUTH_SETUP.md for detailed instructions.'); 
