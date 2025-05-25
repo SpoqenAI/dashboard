@@ -1,0 +1,89 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  deployments: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test --passWithNoTests
+
+      - name: Build application
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25.2.0
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./
+
+      - name: Create deployment status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (context.payload.deployment?.id) {
+              github.rest.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: context.payload.deployment.id,
+                state: 'success',
+                environment_url: 'https://spoqen-dashboard.vercel.app',
+                description: 'Deployment completed successfully'
+              });
+            } else {
+              console.log('No deployment ID found, skipping status creation');
+            }
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always()
+
+    steps:
+      - name: Notify deployment status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ needs.deploy.result }}';
+            const message = status === 'success' 
+              ? '✅ Deployment successful!' 
+              : '❌ Deployment failed!';
+
+            console.log(`${message} - Status: ${status}`);

@@ -1,10 +1,24 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Bell, Calendar, Clock, Edit, MessageSquare, PhoneCall, Settings } from "lucide-react"
-import { DashboardHeader } from "@/components/dashboard-header"
-import { RecentCallsList } from "@/components/recent-calls-list"
-import { StatsCards } from "@/components/stats-cards"
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Bell,
+  Calendar,
+  Clock,
+  Edit,
+  MessageSquare,
+  PhoneCall,
+  Settings,
+} from 'lucide-react';
+import { DashboardHeader } from '@/components/dashboard-header';
+import { RecentCallsList } from '@/components/recent-calls-list';
+import { StatsCards } from '@/components/stats-cards';
 
 export default function DashboardPage() {
   return (
@@ -32,7 +46,9 @@ export default function DashboardPage() {
               <Card className="col-span-4">
                 <CardHeader>
                   <CardTitle>Recent Calls</CardTitle>
-                  <CardDescription>You've received 12 calls in the last 7 days.</CardDescription>
+                  <CardDescription>
+                    You've received 12 calls in the last 7 days.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <RecentCallsList />
@@ -41,7 +57,9 @@ export default function DashboardPage() {
               <Card className="col-span-3">
                 <CardHeader>
                   <CardTitle>Your AI Receptionist</CardTitle>
-                  <CardDescription>Customize how your AI assistant interacts with callers.</CardDescription>
+                  <CardDescription>
+                    Customize how your AI assistant interacts with callers.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -53,26 +71,30 @@ export default function DashboardPage() {
                         </Button>
                       </div>
                       <div className="rounded-md bg-muted p-3 text-sm">
-                        "Hi, thanks for calling James Carter's office! I'm Ava, his assistant. How can I help you
-                        today?"
+                        "Hi, thanks for calling James Carter's office! I'm Ava,
+                        his assistant. How can I help you today?"
                       </div>
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <div className="font-medium">Qualification Questions</div>
+                        <div className="font-medium">
+                          Qualification Questions
+                        </div>
                         <Button variant="ghost" size="sm">
                           <Edit className="h-4 w-4" />
                         </Button>
                       </div>
                       <div className="space-y-2">
                         <div className="rounded-md bg-muted p-2 text-sm">
-                          1. Are you looking to buy, sell, or ask about a property?
+                          1. Are you looking to buy, sell, or ask about a
+                          property?
                         </div>
                         <div className="rounded-md bg-muted p-2 text-sm">
                           2. What's your name and the best number to reach you?
                         </div>
                         <div className="rounded-md bg-muted p-2 text-sm">
-                          3. When would be the best time for James to call you back?
+                          3. When would be the best time for James to call you
+                          back?
                         </div>
                       </div>
                     </div>
@@ -86,7 +108,9 @@ export default function DashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Call History</CardTitle>
-                <CardDescription>View and manage all your recent calls.</CardDescription>
+                <CardDescription>
+                  View and manage all your recent calls.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -114,8 +138,10 @@ export default function DashboardPage() {
                       <div className="mt-2">
                         <div className="text-sm font-medium">Summary:</div>
                         <div className="text-sm text-muted-foreground">
-                          Sarah is interested in the 3-bedroom property on Oak Street. She's a first-time homebuyer and
-                          would like to schedule a viewing this weekend. Best time to call back is after 5 PM.
+                          Sarah is interested in the 3-bedroom property on Oak
+                          Street. She's a first-time homebuyer and would like to
+                          schedule a viewing this weekend. Best time to call
+                          back is after 5 PM.
                         </div>
                       </div>
                       <div className="mt-4 flex items-center gap-2">
@@ -154,9 +180,10 @@ export default function DashboardPage() {
                       <div className="mt-2">
                         <div className="text-sm font-medium">Summary:</div>
                         <div className="text-sm text-muted-foreground">
-                          Michael is looking to sell his condo in downtown. He's relocating for work and needs to sell
-                          within the next 2 months. He'd like to discuss valuation and listing strategy. Available
-                          anytime tomorrow.
+                          Michael is looking to sell his condo in downtown. He's
+                          relocating for work and needs to sell within the next
+                          2 months. He'd like to discuss valuation and listing
+                          strategy. Available anytime tomorrow.
                         </div>
                       </div>
                       <div className="mt-4 flex items-center gap-2">
@@ -179,16 +206,26 @@ export default function DashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle>AI Receptionist Settings</CardTitle>
-                <CardDescription>Customize how your AI assistant interacts with callers.</CardDescription>
+                <CardDescription>
+                  Customize how your AI assistant interacts with callers.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <label className="font-medium">AI Assistant Name</label>
-                  <input type="text" className="w-full rounded-md border p-2" defaultValue="Ava" />
+                  <input
+                    type="text"
+                    className="w-full rounded-md border p-2"
+                    defaultValue="Ava"
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="font-medium">Your Name</label>
-                  <input type="text" className="w-full rounded-md border p-2" defaultValue="James Carter" />
+                  <input
+                    type="text"
+                    className="w-full rounded-md border p-2"
+                    defaultValue="James Carter"
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="font-medium">Greeting Script</label>
@@ -238,7 +275,11 @@ export default function DashboardPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="font-medium">Email for Summaries</label>
-                  <input type="email" className="w-full rounded-md border p-2" defaultValue="james@realestate.com" />
+                  <input
+                    type="email"
+                    className="w-full rounded-md border p-2"
+                    defaultValue="james@realestate.com"
+                  />
                 </div>
                 <Button className="w-full">Save Settings</Button>
               </CardContent>
@@ -247,5 +288,5 @@ export default function DashboardPage() {
         </Tabs>
       </div>
     </div>
-  )
+  );
 }
