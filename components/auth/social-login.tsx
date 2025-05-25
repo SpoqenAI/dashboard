@@ -37,7 +37,7 @@ export function SocialLogin({ mode = 'login', className }: SocialLoginProps) {
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
-    
+
     try {
       const result = await signInWithGoogle();
 
@@ -53,7 +53,8 @@ export function SocialLogin({ mode = 'login', className }: SocialLoginProps) {
     } catch (error: any) {
       toast({
         title: 'Authentication failed',
-        description: error.message || `Failed to ${mode} with Google. Please try again.`,
+        description:
+          error.message || `Failed to ${mode} with Google. Please try again.`,
         variant: 'destructive',
       });
     } finally {
@@ -75,7 +76,7 @@ export function SocialLogin({ mode = 'login', className }: SocialLoginProps) {
           </span>
         </div>
       </div>
-      
+
       <Button
         variant="outline"
         onClick={handleGoogleLogin}
@@ -91,4 +92,4 @@ export function SocialLogin({ mode = 'login', className }: SocialLoginProps) {
       </Button>
     </div>
   );
-} 
+}
