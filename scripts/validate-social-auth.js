@@ -66,19 +66,33 @@ removedFunctions.forEach(func => {
 // Check if SocialLogin component is properly imported in pages
 console.log('\n📄 Checking page integrations:');
 
-const loginContent = fs.readFileSync('app/login/page.tsx', 'utf8');
-const hasLoginImport = loginContent.includes('import { SocialLogin }');
-const hasLoginUsage = loginContent.includes('<SocialLogin mode="login"');
-console.log(`  ${hasLoginImport && hasLoginUsage ? '✅' : '❌'} Login page integration`);
+try {
+  const loginContent = fs.readFileSync('app/login/page.tsx', 'utf8');
+  const hasLoginImport = loginContent.includes('import { SocialLogin }');
+  const hasLoginUsage = loginContent.includes('<SocialLogin mode="login"');
+  console.log(`  ${hasLoginImport && hasLoginUsage ? '✅' : '❌'} Login page integration`);
+} catch (error) {
+  console.log(`  ❌ Login page integration (Error: ${error.message})`);
+}
 
-const signupContent = fs.readFileSync('app/signup/page.tsx', 'utf8');
-const hasSignupImport = signupContent.includes('import { SocialLogin }');
-const hasSignupUsage = signupContent.includes('<SocialLogin mode="signup"');
-console.log(`  ${hasSignupImport && hasSignupUsage ? '✅' : '❌'} Signup page integration`);
+try {
+  const signupContent = fs.readFileSync('app/signup/page.tsx', 'utf8');
+  const hasSignupImport = signupContent.includes('import { SocialLogin }');
+  const hasSignupUsage = signupContent.includes('<SocialLogin mode="signup"');
+  console.log(`  ${hasSignupImport && hasSignupUsage ? '✅' : '❌'} Signup page integration`);
+} catch (error) {
+  console.log(`  ❌ Signup page integration (Error: ${error.message})`);
+}
 
 // Check SocialLogin component structure
-console.log('\n🎨 Checking SocialLogin component:');
-const socialLoginContent = fs.readFileSync('components/auth/social-login.tsx', 'utf8');
+ console.log('\n🎨 Checking SocialLogin component:');
+let socialLoginContent;
+try {
+  socialLoginContent = fs.readFileSync('components/auth/social-login.tsx', 'utf8');
+} catch (error) {
+  console.log('❌ Error reading components/auth/social-login.tsx:', error.message);
+  process.exit(1);
+}
 
 const checks = [
   { name: 'Google icon', check: socialLoginContent.includes('GoogleIcon') },
