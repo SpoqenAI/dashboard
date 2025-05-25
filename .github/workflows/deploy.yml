@@ -34,12 +34,13 @@ jobs:
 
       - name: Build application
         run: pnpm build
-env:
+        env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
 
-      uses: amondnet/vercel-action@v25.2.0
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25.2.0
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
@@ -52,31 +53,15 @@ env:
         with:
           script: |
             if (context.payload.deployment?.id) {
-script: |
-           if (context.payload.deployment?.id) {
-script: |
-           if (context.payload.deployment?.id) {
-script: |
-           if (context.payload.deployment?.id) {
-script: |
-           if (context.payload.deployment?.id) {
-             github.rest.repos.createDeploymentStatus({
-               owner: context.repo.owner,
-               repo: context.repo.repo,
-               deployment_id: context.payload.deployment.id,
-               state: 'success',
-               environment_url: 'https://spoqen-dashboard.vercel.app',
-               description: 'Deployment completed successfully'
-             });
-           } else {
-             console.log('No deployment ID found, skipping status creation');
-           }
-             console.log('No deployment ID found, skipping status creation');
-           }
-             console.log('No deployment ID found, skipping status creation');
-           }
-             console.log('No deployment ID found, skipping status creation');
-           }
+              github.rest.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: context.payload.deployment.id,
+                state: 'success',
+                environment_url: 'https://spoqen-dashboard.vercel.app',
+                description: 'Deployment completed successfully'
+              });
+            } else {
               console.log('No deployment ID found, skipping status creation');
             }
 
