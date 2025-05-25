@@ -45,6 +45,7 @@ Ensure you have the following installed on your system:
 git clone https://github.com/SpoqenAI/spoqen-dashboard
 cd YOUR_REPOSITORY
 ```
+
 <!-- TODO: Replace YOUR_USERNAME/YOUR_REPOSITORY with the actual repository URL -->
 
 ### Installation
@@ -91,6 +92,7 @@ To run the test suite:
 ```bash
 pnpm test
 ```
+
 The project is configured to pass even if no tests are found (`--passWithNoTests` flag is used in CI).
 
 ## Building for Production
@@ -100,6 +102,7 @@ To create a production-ready build of the application:
 ```bash
 pnpm build
 ```
+
 This command will use the environment variables defined (e.g., in `.env.local` or CI environment) to build the static assets.
 
 ## Deployment
@@ -110,6 +113,7 @@ This project is configured for continuous deployment using GitHub Actions.
 - Creating a new GitHub Release will also trigger a production deployment.
 
 The deployment workflow is defined in `.github/workflows/deploy.yml`. It handles:
+
 1. Checking out the code.
 2. Setting up Node.js and pnpm.
 3. Installing dependencies.
@@ -119,6 +123,7 @@ The deployment workflow is defined in `.github/workflows/deploy.yml`. It handles
 7. Notifying the deployment status.
 
 Ensure the following secrets are configured in your GitHub repository settings under "Secrets and variables" > "Actions" for deployments to work:
+
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_SITE_URL`
@@ -147,6 +152,7 @@ Contributions are welcome! Please follow these guidelines to contribute to the p
 ### Issue Tracking (Linear)
 
 This project uses [Linear](https://linear.app) for issue tracking and project management.
+
 - All new features, bug fixes, and tasks should have a corresponding Linear issue.
 - Before starting work, ensure an issue exists or create one.
 - Reference the Linear issue ID in your branch names and commit messages where appropriate.
@@ -168,6 +174,7 @@ This project uses [Linear](https://linear.app) for issue tracking and project ma
 While not strictly enforced, consider following a convention like [Conventional Commits](https://www.conventionalcommits.org/) for your commit messages. This helps in generating changelogs and makes the commit history more readable.
 
 Example:
+
 ```
 feat: add user profile page
 fix: resolve issue with form submission
@@ -193,4 +200,8 @@ chore: update dependencies
 - **Linting & Formatting**: This project uses ESLint for linting and Prettier (or ESLint-integrated Prettier) for code formatting.
   - Ensure your code adheres to the linting rules.
   - It's recommended to set up your editor to auto-format on save.
-  - You can typically run `pnpm lint` and `pnpm format` (if a format script is defined in `package.json`) to check and fix issues. <!-- TODO: Add lint/format scripts to package.json if not already present -->
+  - You can typically run `pnpm lint` and `pnpm format` (if a format script is defined in `package.json`) to check and fix issues.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
