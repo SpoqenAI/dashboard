@@ -172,9 +172,9 @@ export default function SignupPage() {
               <Button className="w-full" type="submit" disabled={isLoading}>
                 {isLoading ? 'Creating Account...' : 'Create Account'}
               </Button>
-              
+
               <SocialLogin mode="signup" />
-              
+
               <div className="text-center text-sm text-muted-foreground">
                 By creating an account, you agree to our{' '}
                 <Link href="/terms" className="underline underline-offset-4">

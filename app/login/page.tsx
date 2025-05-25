@@ -134,9 +134,9 @@ export default function LoginPage() {
               <Button className="w-full" type="submit" disabled={isLoading}>
                 {isLoading ? 'Logging in...' : 'Login'}
               </Button>
-              
+
               <SocialLogin mode="login" />
-              
+
               <div className="text-center text-sm">
                 Don't have an account?{' '}
                 <Link href="/signup" className="text-primary hover:underline">

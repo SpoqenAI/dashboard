@@ -5,6 +5,7 @@ This guide explains how to configure Google OAuth authentication in Supabase for
 ## Overview
 
 The Google authentication feature has been implemented with the following components:
+
 - Enhanced auth library with Google login function
 - Reusable `SocialLogin` component with Google OAuth
 - Updated login and signup pages
@@ -17,6 +18,7 @@ To enable Google authentication, you need to configure the Google provider in yo
 ### Google OAuth Setup
 
 #### Step 1: Create Google OAuth Credentials
+
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select an existing one
 3. Enable the Google Identity API (or ensure Google Sign-In is configured)
@@ -27,6 +29,7 @@ To enable Google authentication, you need to configure the Google provider in yo
    - For local development: `http://localhost:54321/auth/v1/callback`
 
 #### Step 2: Configure in Supabase
+
 1. Go to your Supabase dashboard
 2. Navigate to Authentication → Providers
 3. Enable Google provider
@@ -36,6 +39,7 @@ To enable Google authentication, you need to configure the Google provider in yo
 ## URL Configuration
 
 ### Site URL Configuration
+
 Make sure your Site URL is correctly configured in Supabase:
 
 1. Go to Authentication → URL Configuration
@@ -66,6 +70,7 @@ The following functions have been added to `lib/auth.ts`:
 ### SocialLogin Component
 
 The `SocialLogin` component (`components/auth/social-login.tsx`) provides:
+
 - Google OAuth integration
 - Loading states and error handling
 - Proper accessibility features
@@ -86,11 +91,13 @@ import { SocialLogin } from '@/components/auth/social-login';
 ## Testing
 
 ### Local Development
+
 1. Configure Google OAuth provider with localhost redirect URLs
 2. Use Supabase local development URLs for testing
 3. Test the Google authentication flow
 
 ### Production
+
 1. Update Google OAuth provider with production URLs
 2. Verify Site URL configuration in Supabase
 3. Test the complete authentication flow
@@ -107,14 +114,17 @@ import { SocialLogin } from '@/components/auth/social-login';
 ### Common Issues
 
 1. **Invalid Redirect URI**
+
    - Verify redirect URLs match exactly in both Google Console and Supabase configuration
    - Check for trailing slashes and protocol mismatches
 
 2. **Provider Not Enabled**
+
    - Ensure the Google provider is enabled in Supabase dashboard
    - Verify client credentials are correctly entered
 
 3. **CORS Issues**
+
    - Check Site URL configuration in Supabase
    - Verify domain is properly configured in Google OAuth
 
@@ -125,5 +135,6 @@ import { SocialLogin } from '@/components/auth/social-login';
 ## Support
 
 For additional help:
+
 - [Supabase Auth Documentation](https://supabase.com/docs/guides/auth)
-- [Google OAuth Documentation](https://developers.google.com/identity/protocols/oauth2) 
+- [Google OAuth Documentation](https://developers.google.com/identity/protocols/oauth2)
