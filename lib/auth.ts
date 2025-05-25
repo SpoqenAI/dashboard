@@ -3,12 +3,17 @@ import { getSiteUrl } from "./site-url"
 
 export async function signUp(email: string, password: string) {
   const supabase = getSupabaseClient()
+  const siteUrl = getSiteUrl()
 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${getSiteUrl()}/auth/callback`,
+      emailRedirectTo: `${siteUrl}/auth/callback`,
+      data: {
+        // Store the site URL in the user metadata for reference
+        site_url: siteUrl,
+      },
     },
   })
 
@@ -28,9 +33,10 @@ export async function signIn(email: string, password: string) {
 
 export async function resetPassword(email: string) {
   const supabase = getSupabaseClient()
+  const siteUrl = getSiteUrl()
 
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${getSiteUrl()}/reset-password`,
+    redirectTo: `${siteUrl}/reset-password`,
   })
 
   return { data, error }
