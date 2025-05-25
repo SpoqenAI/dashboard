@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,86 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { PhoneCall, ArrowRight, ArrowLeft, Check } from "lucide-react"
-import { updateProfile } from "@/actions/profile"
-import { updateAISettings } from "@/actions/ai-settings"
-import { getProfile } from "@/actions/profile"
-import { getAISettings } from "@/actions/ai-settings"
-import { getQuestions, updateQuestion, addQuestion } from "@/actions/questions"
-import { toast } from "@/components/ui/use-toast"
-import { useRouter } from "next/navigation"
-import { createClientSupabaseClient } from "@/lib/supabase/client"
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(1)
   const totalSteps = 4
-  const router = useRouter()
-
-  const [profile, setProfile] = useState<any>(null)
-  const [settings, setSettings] = useState<any>(null)
-  const [questions, setQuestions] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-
-  // Form state
-  const [formData, setFormData] = useState({
-    agentName: "",
-    businessName: "",
-    phoneNumber: "",
-    aiName: "Ava",
-    greeting: "",
-    questions: ["", "", ""],
-    summaryEmail: "",
-  })
-
-  useEffect(() => {
-    async function checkAuth() {
-      const supabase = createClientSupabaseClient()
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
-      if (!session) {
-        router.push("/login")
-        return
-      }
-
-      // Load user data
-      const profileResult = await getProfile()
-      if (profileResult.profile) {
-        setProfile(profileResult.profile)
-        setFormData((prev) => ({
-          ...prev,
-          agentName: profileResult.profile.full_name || "",
-          businessName: profileResult.profile.business_name || "",
-          phoneNumber: profileResult.profile.phone_number || "",
-        }))
-      }
-
-      const settingsResult = await getAISettings()
-      if (settingsResult.settings) {
-        setSettings(settingsResult.settings)
-        setFormData((prev) => ({
-          ...prev,
-          aiName: settingsResult.settings.ai_name || "Ava",
-          greeting: settingsResult.settings.greeting_script || "",
-          summaryEmail: settingsResult.settings.summary_email || "",
-        }))
-      }
-
-      const questionsResult = await getQuestions()
-      if (questionsResult.questions) {
-        setQuestions(questionsResult.questions)
-
-        // Update form data with questions
-        const questionTexts = questionsResult.questions.map((q) => q.question_text)
-        setFormData((prev) => ({
-          ...prev,
-          questions: [questionTexts[0] || "", questionTexts[1] || "", questionTexts[2] || ""],
-        }))
-      }
-    }
-
-    checkAuth()
-  }, [router])
 
   const nextStep = () => {
     if (step < totalSteps) {
@@ -100,198 +22,6 @@ export default function OnboardingPage() {
   const prevStep = () => {
     if (step > 1) {
       setStep(step - 1)
-    }
-  }
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const handleQuestionChange = (index: number, value: string) => {
-    const newQuestions = [...formData.questions]
-    newQuestions[index] = value
-    setFormData((prev) => ({
-      ...prev,
-      questions: newQuestions,
-    }))
-  }
-
-  const handleStep1Submit = async () => {
-    if (!formData.agentName || !formData.phoneNumber) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsLoading(true)
-
-    try {
-      // Create form data for profile update
-      const profileFormData = new FormData()
-      profileFormData.append("name", formData.agentName)
-      profileFormData.append("business-name", formData.businessName)
-      profileFormData.append("phone", formData.phoneNumber)
-      profileFormData.append("email", profile?.email || "")
-
-      const result = await updateProfile(profileFormData)
-
-      if (result.error) {
-        toast({
-          title: "Error",
-          description: result.error,
-          variant: "destructive",
-        })
-        return
-      }
-
-      // Update greeting with agent name
-      setFormData((prev) => ({
-        ...prev,
-        greeting: `Hi, thanks for calling ${formData.agentName}'s office! I'm ${formData.aiName}, the assistant. How can I help you today?`,
-      }))
-
-      nextStep()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleStep2Submit = async () => {
-    if (!formData.aiName || !formData.greeting) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsLoading(true)
-
-    try {
-      // Create form data for AI settings update
-      const settingsFormData = new FormData()
-      settingsFormData.append("ai-name", formData.aiName)
-      settingsFormData.append("greeting", formData.greeting)
-      settingsFormData.append("summary-email", formData.summaryEmail || profile?.email || "")
-
-      const result = await updateAISettings(settingsFormData)
-
-      if (result.error) {
-        toast({
-          title: "Error",
-          description: result.error,
-          variant: "destructive",
-        })
-        return
-      }
-
-      nextStep()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleStep3Submit = async () => {
-    if (!formData.questions[0] || !formData.questions[1] || !formData.questions[2]) {
-      toast({
-        title: "Error",
-        description: "Please fill in all three questions.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsLoading(true)
-
-    try {
-      // Update or add questions
-      for (let i = 0; i < 3; i++) {
-        if (questions[i]) {
-          // Update existing question
-          await updateQuestion(questions[i].id, formData.questions[i])
-        } else {
-          // Add new question
-          await addQuestion(formData.questions[i])
-        }
-      }
-
-      nextStep()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleCompleteSetup = async () => {
-    if (!formData.summaryEmail) {
-      toast({
-        title: "Error",
-        description: "Please enter an email for summaries.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsLoading(true)
-
-    try {
-      // Update summary email
-      const settingsFormData = new FormData()
-      settingsFormData.append("ai-name", formData.aiName)
-      settingsFormData.append("greeting", formData.greeting)
-      settingsFormData.append("summary-email", formData.summaryEmail)
-
-      const result = await updateAISettings(settingsFormData)
-
-      if (result.error) {
-        toast({
-          title: "Error",
-          description: result.error,
-          variant: "destructive",
-        })
-        return
-      }
-
-      toast({
-        title: "Success",
-        description: "Onboarding completed successfully!",
-      })
-
-      // Redirect to dashboard
-      router.push("/dashboard")
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -319,40 +49,21 @@ export default function OnboardingPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="agent-name">Your Name</Label>
-                  <Input
-                    id="agent-name"
-                    name="agentName"
-                    value={formData.agentName}
-                    onChange={handleInputChange}
-                    placeholder="Enter your full name"
-                  />
+                  <Input id="agent-name" placeholder="Enter your full name" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="business-name">Business Name (Optional)</Label>
-                  <Input
-                    id="business-name"
-                    name="businessName"
-                    value={formData.businessName}
-                    onChange={handleInputChange}
-                    placeholder="Enter your business name"
-                  />
+                  <Input id="business-name" placeholder="Enter your business name" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone-number">Business Phone Number</Label>
-                  <Input
-                    id="phone-number"
-                    name="phoneNumber"
-                    value={formData.phoneNumber}
-                    onChange={handleInputChange}
-                    type="tel"
-                    placeholder="Enter the phone number to forward"
-                  />
+                  <Input id="phone-number" type="tel" placeholder="Enter the phone number to forward" />
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between">
                 <div></div>
-                <Button onClick={handleStep1Submit} disabled={isLoading}>
-                  {isLoading ? "Saving..." : "Continue"} {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
+                <Button onClick={nextStep}>
+                  Continue <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </CardFooter>
             </>
@@ -367,22 +78,14 @@ export default function OnboardingPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="ai-name">AI Assistant Name</Label>
-                  <Input
-                    id="ai-name"
-                    name="aiName"
-                    value={formData.aiName}
-                    onChange={handleInputChange}
-                    placeholder="Enter a name for your AI assistant"
-                  />
+                  <Input id="ai-name" placeholder="Enter a name for your AI assistant" defaultValue="Ava" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="greeting">Greeting Script</Label>
                   <Textarea
                     id="greeting"
-                    name="greeting"
-                    value={formData.greeting}
-                    onChange={handleInputChange}
                     placeholder="Enter the greeting your AI will use"
+                    defaultValue={`Hi, thanks for calling [Your Name]'s office! I'm [AI Name], the assistant. How can I help you today?`}
                     rows={4}
                   />
                 </div>
@@ -391,11 +94,11 @@ export default function OnboardingPage() {
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={prevStep} disabled={isLoading}>
+                <Button variant="outline" onClick={prevStep}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
-                <Button onClick={handleStep2Submit} disabled={isLoading}>
-                  {isLoading ? "Saving..." : "Continue"} {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
+                <Button onClick={nextStep}>
+                  Continue <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </CardFooter>
             </>
@@ -410,35 +113,26 @@ export default function OnboardingPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="question-1">Question 1</Label>
-                  <Input
-                    id="question-1"
-                    value={formData.questions[0]}
-                    onChange={(e) => handleQuestionChange(0, e.target.value)}
-                  />
+                  <Input id="question-1" defaultValue="Are you looking to buy, sell, or ask about a property?" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="question-2">Question 2</Label>
-                  <Input
-                    id="question-2"
-                    value={formData.questions[1]}
-                    onChange={(e) => handleQuestionChange(1, e.target.value)}
-                  />
+                  <Input id="question-2" defaultValue="What's your name and the best number to reach you?" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="question-3">Question 3</Label>
-                  <Input
-                    id="question-3"
-                    value={formData.questions[2]}
-                    onChange={(e) => handleQuestionChange(2, e.target.value)}
-                  />
+                  <Input id="question-3" defaultValue="When would be the best time for me to call you back?" />
                 </div>
+                <Button variant="outline" size="sm" className="w-full">
+                  + Add Another Question
+                </Button>
               </CardContent>
               <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={prevStep} disabled={isLoading}>
+                <Button variant="outline" onClick={prevStep}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
-                <Button onClick={handleStep3Submit} disabled={isLoading}>
-                  {isLoading ? "Saving..." : "Continue"} {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
+                <Button onClick={nextStep}>
+                  Continue <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </CardFooter>
             </>
@@ -452,15 +146,8 @@ export default function OnboardingPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="summary-email">Email for Summaries</Label>
-                  <Input
-                    id="summary-email"
-                    name="summaryEmail"
-                    value={formData.summaryEmail}
-                    onChange={handleInputChange}
-                    type="email"
-                    placeholder="Enter your email"
-                  />
+                  <Label htmlFor="email">Email for Summaries</Label>
+                  <Input id="email" type="email" placeholder="Enter your email" />
                 </div>
                 <div className="rounded-md bg-muted p-4">
                   <h3 className="font-medium mb-2">Here's what happens next:</h3>
@@ -473,11 +160,11 @@ export default function OnboardingPage() {
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={prevStep} disabled={isLoading}>
+                <Button variant="outline" onClick={prevStep}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
-                <Button onClick={handleCompleteSetup} disabled={isLoading}>
-                  {isLoading ? "Completing..." : "Complete Setup"} {!isLoading && <Check className="ml-2 h-4 w-4" />}
+                <Button>
+                  Complete Setup <Check className="ml-2 h-4 w-4" />
                 </Button>
               </CardFooter>
             </>

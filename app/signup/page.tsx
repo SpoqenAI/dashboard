@@ -1,49 +1,11 @@
-"use client"
-
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { PhoneCall } from "lucide-react"
-import { signUp } from "@/actions/auth"
-import { useState } from "react"
-import { toast } from "@/components/ui/use-toast"
 
 export default function SignupPage() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
-
-  async function handleSubmit(formData: FormData) {
-    setIsLoading(true)
-
-    try {
-      const result = await signUp(formData)
-
-      if (result.error) {
-        toast({
-          title: "Error",
-          description: result.error,
-          variant: "destructive",
-        })
-      } else {
-        setIsSuccess(true)
-        toast({
-          title: "Success",
-          description: "Your account has been created. Please check your email to confirm your account.",
-        })
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -60,84 +22,48 @@ export default function SignupPage() {
         </div>
       </header>
       <main className="flex-1 flex items-center justify-center p-4">
-        {isSuccess ? (
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Check your email</CardTitle>
-              <CardDescription>
-                We've sent you a confirmation email. Please check your inbox and follow the instructions to complete
-                your registration.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-center text-muted-foreground">
-                Once you've confirmed your email, you can log in to your account.
-              </p>
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-4">
-              <Button className="w-full" asChild>
-                <Link href="/login">Go to Login</Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        ) : (
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Create an account</CardTitle>
-              <CardDescription>Start your 14-day free trial. No credit card required.</CardDescription>
-            </CardHeader>
-            <form action={handleSubmit}>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" name="name" placeholder="Enter your name" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" placeholder="Enter your email" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" name="phone" type="tel" placeholder="Enter your phone number" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="business-name">Business Name (Optional)</Label>
-                  <Input id="business-name" name="business-name" placeholder="Enter your business name" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input id="password" name="password" type="password" placeholder="Create a password" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm Password</Label>
-                  <Input
-                    id="confirm-password"
-                    name="confirm-password"
-                    type="password"
-                    placeholder="Confirm your password"
-                    required
-                  />
-                </div>
-              </CardContent>
-              <CardFooter className="flex flex-col space-y-4">
-                <Button className="w-full" type="submit" disabled={isLoading}>
-                  {isLoading ? "Creating Account..." : "Create Account"}
-                </Button>
-                <div className="text-center text-sm text-muted-foreground">
-                  By creating an account, you agree to our{" "}
-                  <Link href="/terms" className="underline underline-offset-4">
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="/privacy" className="underline underline-offset-4">
-                    Privacy Policy
-                  </Link>
-                  .
-                </div>
-              </CardFooter>
-            </form>
-          </Card>
-        )}
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Create an account</CardTitle>
+            <CardDescription>Start your 14-day free trial. No credit card required.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input id="name" placeholder="Enter your name" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" placeholder="Enter your email" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input id="phone" type="tel" placeholder="Enter your phone number" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" placeholder="Create a password" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <Input id="confirm-password" type="password" placeholder="Confirm your password" />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button className="w-full">Create Account</Button>
+            <div className="text-center text-sm text-muted-foreground">
+              By creating an account, you agree to our{" "}
+              <Link href="/terms" className="underline underline-offset-4">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" className="underline underline-offset-4">
+                Privacy Policy
+              </Link>
+              .
+            </div>
+          </CardFooter>
+        </Card>
       </main>
     </div>
   )
