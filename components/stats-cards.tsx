@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart3, PhoneCall, PhoneIncoming, PhoneOff } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BarChart3, PhoneCall, PhoneIncoming, PhoneOff } from 'lucide-react';
 
 export function StatsCards() {
   return (
@@ -45,5 +45,5 @@ export function StatsCards() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

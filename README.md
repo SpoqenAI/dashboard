@@ -1,6 +1,6 @@
 # Spoqen Dashboard
 
-*AI Receptionist for Real Estate Agents*
+_AI Receptionist for Real Estate Agents_
 
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/veskos-projects/spoqen-dashboard)
 [![Built with Next.js](https://img.shields.io/badge/Built%20with-Next.js-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
@@ -29,24 +29,27 @@ Your project is live at:
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - pnpm
 - Supabase account
 
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd spoqen-dashboard
 ```
 
 2. Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 3. Set up environment variables:
+
 ```bash
 cp .env.local.example .env.local
 ```
@@ -54,6 +57,7 @@ cp .env.local.example .env.local
 4. Configure your Supabase credentials in `.env.local`
 
 5. Run the development server:
+
 ```bash
 pnpm dev
 ```
