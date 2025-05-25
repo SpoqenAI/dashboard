@@ -12,8 +12,37 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { CreditCard, LogOut, Settings, User } from 'lucide-react';
+import { signOut } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 export function UserNav() {
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      const { error } = await signOut();
+      
+      if (error) {
+        toast.error('Failed to log out. Please try again.');
+        console.error('Logout error:', error);
+        return;
+      }
+
+      toast.success('Logged out successfully');
+      router.push('/login');
+      router.refresh();
+    } catch (error) {
+      toast.error('An unexpected error occurred');
+      console.error('Logout error:', error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -52,9 +81,9 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
+          <span>{isLoggingOut ? 'Logging out...' : 'Log out'}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
