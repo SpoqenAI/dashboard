@@ -5,8 +5,33 @@ import { Bell, Calendar, Clock, Edit, MessageSquare, PhoneCall, Settings } from 
 import { DashboardHeader } from "@/components/dashboard-header"
 import { RecentCallsList } from "@/components/recent-calls-list"
 import { StatsCards } from "@/components/stats-cards"
+import Link from "next/link"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { getAISettings } from "@/actions/ai-settings"
+import { getQuestions } from "@/actions/questions"
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const supabase = createServerSupabaseClient()
+
+  // Check if user is authenticated
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  if (!session) {
+    redirect("/login")
+  }
+
+  // Get user profile
+  const { data: profile } = await supabase.from("profiles").select("*").eq("id", session.user.id).single()
+
+  // Get AI settings
+  const { settings, error: settingsError } = await getAISettings()
+
+  // Get qualification questions
+  const { questions, error: questionsError } = await getQuestions()
+
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardHeader />
@@ -14,9 +39,11 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between space-y-2">
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <div className="flex items-center space-x-2">
-            <Button>
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
+            <Button asChild>
+              <Link href="/settings">
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </Link>
             </Button>
           </div>
         </div>
@@ -48,35 +75,40 @@ export default function DashboardPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="font-medium">Greeting</div>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href="/settings?tab=ai-settings">
+                            <Edit className="h-4 w-4" />
+                          </Link>
                         </Button>
                       </div>
                       <div className="rounded-md bg-muted p-3 text-sm">
-                        "Hi, thanks for calling James Carter's office! I'm Ava, his assistant. How can I help you
-                        today?"
+                        "{settings?.greeting_script || "Loading..."}"
                       </div>
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="font-medium">Qualification Questions</div>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href="/settings?tab=ai-settings">
+                            <Edit className="h-4 w-4" />
+                          </Link>
                         </Button>
                       </div>
                       <div className="space-y-2">
-                        <div className="rounded-md bg-muted p-2 text-sm">
-                          1. Are you looking to buy, sell, or ask about a property?
-                        </div>
-                        <div className="rounded-md bg-muted p-2 text-sm">
-                          2. What's your name and the best number to reach you?
-                        </div>
-                        <div className="rounded-md bg-muted p-2 text-sm">
-                          3. When would be the best time for James to call you back?
-                        </div>
+                        {questions && questions.length > 0 ? (
+                          questions.map((question, index) => (
+                            <div key={question.id} className="rounded-md bg-muted p-2 text-sm">
+                              {index + 1}. {question.question_text}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="rounded-md bg-muted p-2 text-sm">No questions configured yet.</div>
+                        )}
                       </div>
                     </div>
-                    <Button className="w-full">Update Settings</Button>
+                    <Button className="w-full" asChild>
+                      <Link href="/settings?tab=ai-settings">Update Settings</Link>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -184,63 +216,62 @@ export default function DashboardPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <label className="font-medium">AI Assistant Name</label>
-                  <input type="text" className="w-full rounded-md border p-2" defaultValue="Ava" />
+                  <input
+                    type="text"
+                    className="w-full rounded-md border p-2"
+                    defaultValue={settings?.ai_name || "Ava"}
+                    readOnly
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="font-medium">Your Name</label>
-                  <input type="text" className="w-full rounded-md border p-2" defaultValue="James Carter" />
+                  <input
+                    type="text"
+                    className="w-full rounded-md border p-2"
+                    defaultValue={profile?.full_name || ""}
+                    readOnly
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="font-medium">Greeting Script</label>
                   <textarea
                     className="w-full rounded-md border p-2"
                     rows={3}
-                    defaultValue="Hi, thanks for calling James Carter's office! I'm Ava, his assistant. How can I help you today?"
+                    defaultValue={settings?.greeting_script || ""}
+                    readOnly
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="font-medium">Qualification Questions</label>
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        className="w-full rounded-md border p-2"
-                        defaultValue="Are you looking to buy, sell, or ask about a property?"
-                      />
-                      <Button variant="ghost" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        className="w-full rounded-md border p-2"
-                        defaultValue="What's your name and the best number to reach you?"
-                      />
-                      <Button variant="ghost" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        className="w-full rounded-md border p-2"
-                        defaultValue="When would be the best time for James to call you back?"
-                      />
-                      <Button variant="ghost" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    {questions && questions.length > 0 ? (
+                      questions.map((question) => (
+                        <div key={question.id} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            className="w-full rounded-md border p-2"
+                            defaultValue={question.question_text}
+                            readOnly
+                          />
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-muted-foreground">No questions configured yet.</div>
+                    )}
                   </div>
-                  <Button variant="outline" size="sm" className="mt-2">
-                    + Add Question
-                  </Button>
                 </div>
                 <div className="space-y-2">
                   <label className="font-medium">Email for Summaries</label>
-                  <input type="email" className="w-full rounded-md border p-2" defaultValue="james@realestate.com" />
+                  <input
+                    type="email"
+                    className="w-full rounded-md border p-2"
+                    defaultValue={settings?.summary_email || session.user.email}
+                    readOnly
+                  />
                 </div>
-                <Button className="w-full">Save Settings</Button>
+                <Button className="w-full" asChild>
+                  <Link href="/settings">Go to Settings</Link>
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

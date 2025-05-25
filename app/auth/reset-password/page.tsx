@@ -6,19 +6,33 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { PhoneCall } from "lucide-react"
-import { signUp } from "@/actions/auth"
+import { updatePassword } from "@/actions/auth"
 import { useState } from "react"
 import { toast } from "@/components/ui/use-toast"
 
-export default function SignupPage() {
+export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
 
   async function handleSubmit(formData: FormData) {
     setIsLoading(true)
 
+    // Check if passwords match
+    const password = formData.get("password") as string
+    const confirmPassword = formData.get("confirm-password") as string
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match.",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
     try {
-      const result = await signUp(formData)
+      const result = await updatePassword(formData)
 
       if (result.error) {
         toast({
@@ -30,7 +44,7 @@ export default function SignupPage() {
         setIsSuccess(true)
         toast({
           title: "Success",
-          description: "Your account has been created. Please check your email to confirm your account.",
+          description: "Your password has been reset successfully.",
         })
       }
     } catch (error) {
@@ -63,17 +77,11 @@ export default function SignupPage() {
         {isSuccess ? (
           <Card className="w-full max-w-md">
             <CardHeader>
-              <CardTitle>Check your email</CardTitle>
+              <CardTitle>Password Reset Complete</CardTitle>
               <CardDescription>
-                We've sent you a confirmation email. Please check your inbox and follow the instructions to complete
-                your registration.
+                Your password has been reset successfully. You can now log in with your new password.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-center text-muted-foreground">
-                Once you've confirmed your email, you can log in to your account.
-              </p>
-            </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <Button className="w-full" asChild>
                 <Link href="/login">Go to Login</Link>
@@ -83,30 +91,14 @@ export default function SignupPage() {
         ) : (
           <Card className="w-full max-w-md">
             <CardHeader>
-              <CardTitle>Create an account</CardTitle>
-              <CardDescription>Start your 14-day free trial. No credit card required.</CardDescription>
+              <CardTitle>Reset Password</CardTitle>
+              <CardDescription>Enter your new password</CardDescription>
             </CardHeader>
             <form action={handleSubmit}>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" name="name" placeholder="Enter your name" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" placeholder="Enter your email" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" name="phone" type="tel" placeholder="Enter your phone number" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="business-name">Business Name (Optional)</Label>
-                  <Input id="business-name" name="business-name" placeholder="Enter your business name" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input id="password" name="password" type="password" placeholder="Create a password" required />
+                  <Label htmlFor="password">New Password</Label>
+                  <Input id="password" name="password" type="password" placeholder="Enter new password" required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password">Confirm Password</Label>
@@ -114,26 +106,15 @@ export default function SignupPage() {
                     id="confirm-password"
                     name="confirm-password"
                     type="password"
-                    placeholder="Confirm your password"
+                    placeholder="Confirm new password"
                     required
                   />
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col space-y-4">
                 <Button className="w-full" type="submit" disabled={isLoading}>
-                  {isLoading ? "Creating Account..." : "Create Account"}
+                  {isLoading ? "Resetting..." : "Reset Password"}
                 </Button>
-                <div className="text-center text-sm text-muted-foreground">
-                  By creating an account, you agree to our{" "}
-                  <Link href="/terms" className="underline underline-offset-4">
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="/privacy" className="underline underline-offset-4">
-                    Privacy Policy
-                  </Link>
-                  .
-                </div>
               </CardFooter>
             </form>
           </Card>
