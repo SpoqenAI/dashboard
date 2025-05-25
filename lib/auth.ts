@@ -1,5 +1,6 @@
 import { getSupabaseClient } from './supabase/client';
 import { getSiteUrl } from './site-url';
+import type { Provider } from '@supabase/supabase-js';
 
 export async function signUp(email: string, password: string) {
   const supabase = getSupabaseClient();
@@ -29,6 +30,32 @@ export async function signIn(email: string, password: string) {
   });
 
   return { data, error };
+}
+
+export async function signInWithProvider(provider: Provider) {
+  const supabase = getSupabaseClient();
+  const siteUrl = getSiteUrl();
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: `${siteUrl}/auth/callback`,
+    },
+  });
+
+  return { data, error };
+}
+
+export async function signInWithGoogle() {
+  return signInWithProvider('google');
+}
+
+export async function signInWithApple() {
+  return signInWithProvider('apple');
+}
+
+export async function signInWithFacebook() {
+  return signInWithProvider('facebook');
 }
 
 export async function resetPassword(email: string) {

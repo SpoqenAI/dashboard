@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { PhoneCall } from 'lucide-react';
 import { signIn } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
+import { SocialLogin } from '@/components/auth/social-login';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -133,6 +134,9 @@ export default function LoginPage() {
               <Button className="w-full" type="submit" disabled={isLoading}>
                 {isLoading ? 'Logging in...' : 'Login'}
               </Button>
+              
+              <SocialLogin mode="login" />
+              
               <div className="text-center text-sm">
                 Don't have an account?{' '}
                 <Link href="/signup" className="text-primary hover:underline">
