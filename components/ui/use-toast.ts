@@ -1,21 +1,17 @@
 "use client"
 
-// Inspired by react-hot-toast library
-import type * as React from "react"
-import { useState, useEffect, useCallback } from "react"
+import * as React from "react"
 
-import type { ToastActionElement } from "@/components/ui/toast"
+import type { ToastActionElement, ToastProps } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
 
-type ToasterToast = {
+type ToasterToast = ToastProps & {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
-  variant?: "default" | "destructive"
-  duration?: number
 }
 
 const actionTypes = {
@@ -91,8 +87,6 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
@@ -140,7 +134,7 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ title, description, variant = "default", duration = 5000 }: Toast) {
+function toast({ ...props }: Toast) {
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -153,11 +147,8 @@ function toast({ title, description, variant = "default", duration = 5000 }: Toa
   dispatch({
     type: "ADD_TOAST",
     toast: {
+      ...props,
       id,
-      title,
-      description,
-      variant,
-      duration,
       open: true,
       onOpenChange: (open) => {
         if (!open) dismiss()
@@ -172,35 +163,24 @@ function toast({ title, description, variant = "default", duration = 5000 }: Toa
   }
 }
 
-export function useToast() {
-  const [toasts, setToasts] = useState<ToasterToast[]>([])
+function useToast() {
+  const [state, setState] = React.useState<State>(memoryState)
 
-  const toast = useCallback(({ title, description, variant = "default", duration = 5000 }: Toast) => {
-    const id = genId()
-    setToasts((prev) => [...prev, { id, title, description, variant, duration }])
-
-    return id
-  }, [])
-
-  const dismiss = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id))
-  }, [])
-
-  useEffect(() => {
-    const timers: NodeJS.Timeout[] = []
-
-    toasts.forEach((toast) => {
-      const timer = setTimeout(() => {
-        dismiss(toast.id)
-      }, toast.duration)
-
-      timers.push(timer)
-    })
-
+  React.useEffect(() => {
+    listeners.push(setState)
     return () => {
-      timers.forEach((timer) => clearTimeout(timer))
+      const index = listeners.indexOf(setState)
+      if (index > -1) {
+        listeners.splice(index, 1)
+      }
     }
-  }, [toasts, dismiss])
+  }, [state])
 
-  return { toast, dismiss, toasts }
+  return {
+    ...state,
+    toast,
+    dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
+  }
 }
+
+export { useToast, toast }
