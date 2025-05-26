@@ -151,7 +151,7 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.com
 
 # Google OAuth Configuration
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
-NEXT_PUBLIC_GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```
 
 > **Note**: For detailed Google OAuth setup instructions, including how to obtain client ID and secret, see [SOCIAL_AUTH_SETUP.md](./SOCIAL_AUTH_SETUP.md).
@@ -214,7 +214,7 @@ NEXT_PUBLIC_GOOGLE_CLIENT_SECRET=your_google_client_secret
    - [ ] Network errors display user-friendly messages
 
 4. **OAuth Setup Validation**:
-   - [ ] Run validation script to verify all required files and functions
+   - [ ] Run `node scripts/validate-social-auth.js` to verify all required files and functions
 
 ### Development Testing
 
