@@ -35,10 +35,13 @@ function ResetPasswordForm() {
     const validateSession = async () => {
       try {
         const supabase = getSupabaseClient();
-        
+
         // Get the current session
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
         if (error) {
           console.error('Error getting session:', error.message);
           setIsValidSession(false);
@@ -53,9 +56,10 @@ function ResetPasswordForm() {
 
         // Additional check: verify the session is fresh (within last 5 minutes)
         // This ensures the user came from a valid password reset email
-        const sessionAge = Date.now() - new Date(session.user.last_sign_in_at || '').getTime();
+        const sessionAge =
+          Date.now() - new Date(session.user.last_sign_in_at || '').getTime();
         const fiveMinutes = 5 * 60 * 1000;
-        
+
         if (sessionAge > fiveMinutes) {
           setIsValidSession(false);
           return;
@@ -76,10 +80,11 @@ function ResetPasswordForm() {
     if (isValidSession === false) {
       toast({
         title: 'Invalid reset session',
-        description: 'Your password reset session has expired. Please request a new one.',
+        description:
+          'Your password reset session has expired. Please request a new one.',
         variant: 'destructive',
       });
-      
+
       // Redirect to forgot password page after a short delay
       setTimeout(() => {
         router.push('/forgot-password');
@@ -172,7 +177,9 @@ function ResetPasswordForm() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Validating session...</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Validating session...
+          </p>
         </div>
       </div>
     );
@@ -204,9 +211,10 @@ function ResetPasswordForm() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-center space-y-2">
+              <div className="space-y-2 text-center">
                 <p className="text-sm text-muted-foreground">
-                  For security reasons, password reset links expire after a short time.
+                  For security reasons, password reset links expire after a
+                  short time.
                 </p>
                 <p className="text-sm text-muted-foreground">
                   You'll be redirected to request a new reset link.
@@ -215,9 +223,7 @@ function ResetPasswordForm() {
             </CardContent>
             <CardFooter>
               <Button variant="outline" asChild className="w-full">
-                <Link href="/forgot-password">
-                  Request New Reset Link
-                </Link>
+                <Link href="/forgot-password">Request New Reset Link</Link>
               </Button>
             </CardFooter>
           </Card>
