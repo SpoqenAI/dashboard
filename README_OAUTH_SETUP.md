@@ -54,7 +54,69 @@ Complete password reset implementation:
 - ✅ **Session validation** for security
 - ✅ **Password validation** and confirmation
 
-### 4. Authentication Library (`lib/auth.ts`)
+### 4. SocialLogin Component (`components/auth/social-login.tsx`)
+
+Reusable component for OAuth authentication:
+
+- ✅ **Google OAuth integration** with proper error handling
+- ✅ **Loading states** and user feedback
+- ✅ **Flexible mode support** (login/signup)
+- ✅ **Callback handling** for success/error scenarios
+- ✅ **Accessible design** with proper ARIA labels
+
+#### Component Props
+
+```typescript
+interface SocialLoginProps {
+  mode?: 'login' | 'signup'; // Authentication mode
+  onSuccess?: (user: User) => void; // Success callback
+  onError?: (error: string) => void; // Error callback
+  disabled?: boolean; // Disable interactions
+  className?: string; // Custom styling
+}
+```
+
+#### Usage Examples
+
+**In Login Page (`app/login/page.tsx`)**:
+
+```typescript
+import { SocialLogin } from '@/components/auth/social-login';
+
+export default function LoginPage() {
+  return (
+    <div>
+      {/* Other login form elements */}
+      <SocialLogin
+        mode="login"
+        onSuccess={(user) => router.push('/dashboard')}
+        onError={(error) => toast({ title: 'Login failed', description: error })}
+      />
+    </div>
+  );
+}
+```
+
+**In Signup Page (`app/signup/page.tsx`)**:
+
+```typescript
+import { SocialLogin } from '@/components/auth/social-login';
+
+export default function SignupPage() {
+  return (
+    <div>
+      {/* Other signup form elements */}
+      <SocialLogin
+        mode="signup"
+        onSuccess={(user) => router.push('/onboarding')}
+        onError={(error) => toast({ title: 'Signup failed', description: error })}
+      />
+    </div>
+  );
+}
+```
+
+### 5. Authentication Library (`lib/auth.ts`)
 
 All functions properly configured with callback URLs:
 
@@ -86,7 +148,13 @@ Ensure these are set:
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 NEXT_PUBLIC_SITE_URL=https://your-domain.com
+
+# Google OAuth Configuration
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
+NEXT_PUBLIC_GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```
+
+> **Note**: For detailed Google OAuth setup instructions, including how to obtain client ID and secret, see [SOCIAL_AUTH_SETUP.md](./SOCIAL_AUTH_SETUP.md).
 
 ## 🔄 Authentication Flow Diagrams
 
@@ -140,13 +208,20 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.com
    - [ ] User redirected to dashboard after reset
 
 3. **Error Handling**:
+
    - [ ] Invalid OAuth callback shows error message
    - [ ] Missing code parameter handled gracefully
    - [ ] Network errors display user-friendly messages
 
+4. **OAuth Setup Validation**:
+   - [ ] Run validation script to verify all required files and functions
+
 ### Development Testing
 
 ```bash
+# Run OAuth setup validation script
+node scripts/validate-social-auth.js
+
 # Test the callback route directly
 curl -X GET "http://localhost:3000/auth/callback?error=access_denied"
 
