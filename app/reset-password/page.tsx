@@ -65,11 +65,13 @@ function ResetPasswordForm() {
     }
 
     // Add password strength validation
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
     if (!passwordRegex.test(formData.password)) {
       toast({
         title: 'Password too weak',
-        description: 'Password must include uppercase, lowercase, numbers, and special characters.',
+        description:
+          'Password must include uppercase, lowercase, numbers, and special characters.',
         variant: 'destructive',
       });
       return;
@@ -141,7 +143,8 @@ function ResetPasswordForm() {
                   minLength={12}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Password must be at least 12 characters long and include uppercase, lowercase, numbers, and special characters
+                  Password must be at least 12 characters long and include
+                  uppercase, lowercase, numbers, and special characters
                 </p>
               </div>
               <div className="space-y-2">

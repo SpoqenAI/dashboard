@@ -41,7 +41,10 @@ export async function GET(request: NextRequest) {
       await supabase.auth.exchangeCodeForSession(code);
 
     if (exchangeError) {
-      console.error('Error exchanging code for session:', exchangeError.message || 'Unknown error');
+      console.error(
+        'Error exchanging code for session:',
+        exchangeError.message || 'Unknown error'
+      );
       return NextResponse.redirect(
         new URL(
           `/login?error=exchange_failed&message=${encodeURIComponent('Authentication failed. Please try again.')}`,
@@ -62,7 +65,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Log successful authentication with masked user ID for security
-    const maskedUserId = data.user?.id ? `${data.user.id.substring(0, 6)}...` : 'unknown';
+    const maskedUserId = data.user?.id
+      ? `${data.user.id.substring(0, 6)}...`
+      : 'unknown';
     console.log(
       'Authentication successful for user:',
       maskedUserId,
@@ -108,7 +113,10 @@ export async function GET(request: NextRequest) {
       }
     }
   } catch (error) {
-    console.error('Unexpected error in OAuth callback:', error instanceof Error ? error.message : 'Unknown error');
+    console.error(
+      'Unexpected error in OAuth callback:',
+      error instanceof Error ? error.message : 'Unknown error'
+    );
     return NextResponse.redirect(
       new URL(
         '/login?error=unexpected&message=An unexpected error occurred. Please try again.',
