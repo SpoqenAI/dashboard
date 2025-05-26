@@ -54,15 +54,8 @@ export async function resetPassword(email: string) {
   const supabase = getSupabaseClient();
   const siteUrl = getSiteUrl();
 
-  // For development testing: force localhost redirect
-  // TODO: Remove this override after production deployment
-  const redirectUrl =
-    process.env.NODE_ENV === 'development'
-      ? 'http://localhost:3000/reset-password'
-      : `${siteUrl}/reset-password`;
-
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: redirectUrl,
+    redirectTo: `${siteUrl}/reset-password`,
   });
 
   return { data, error };
