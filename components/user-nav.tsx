@@ -17,7 +17,7 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+        <Button className="relative h-8 w-8 rounded-full bg-black text-white hover:bg-gray-800">
           <Avatar className="h-8 w-8">
             <AvatarImage
               src="/placeholder.svg?height=32&width=32&query=person"
