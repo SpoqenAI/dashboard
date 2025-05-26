@@ -2,9 +2,9 @@
 
 import type React from 'react';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -21,13 +21,56 @@ import { signIn } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
 import { SocialLogin } from '@/components/auth/social-login';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
+
+  // Handle OAuth error messages from URL parameters
+  useEffect(() => {
+    const error = searchParams.get('error');
+    const message = searchParams.get('message');
+    const errorDescription = searchParams.get('error_description');
+
+    if (error && message) {
+      toast({
+        title: 'Authentication failed',
+        description: decodeURIComponent(message),
+        variant: 'destructive',
+      });
+    } else if (error) {
+      let description = 'Authentication failed. Please try again.';
+      
+      switch (error) {
+        case 'missing_code':
+          description = 'Authentication code missing. Please try again.';
+          break;
+        case 'exchange_failed':
+          description = 'Failed to complete authentication. Please try again.';
+          break;
+        case 'no_session':
+          description = 'Unable to create session. Please try again.';
+          break;
+        case 'access_denied':
+          description = 'Access was denied. Please try again.';
+          break;
+        default:
+          if (errorDescription) {
+            description = decodeURIComponent(errorDescription);
+          }
+      }
+
+      toast({
+        title: 'Authentication failed',
+        description,
+        variant: 'destructive',
+      });
+    }
+  }, [searchParams]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -148,5 +191,20 @@ export default function LoginPage() {
         </Card>
       </main>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
