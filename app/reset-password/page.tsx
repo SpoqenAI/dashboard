@@ -24,10 +24,68 @@ function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
+  const [isValidSession, setIsValidSession] = useState<boolean | null>(null);
   const [formData, setFormData] = useState({
     password: '',
     confirmPassword: '',
   });
+
+  // Validate recovery session on component mount
+  useEffect(() => {
+    const validateSession = async () => {
+      try {
+        const supabase = getSupabaseClient();
+        
+        // Get the current session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error.message);
+          setIsValidSession(false);
+          return;
+        }
+
+        // Check if user has a valid session and it's a recovery session
+        if (!session || !session.user) {
+          setIsValidSession(false);
+          return;
+        }
+
+        // Additional check: verify the session is fresh (within last 5 minutes)
+        // This ensures the user came from a valid password reset email
+        const sessionAge = Date.now() - new Date(session.user.last_sign_in_at || '').getTime();
+        const fiveMinutes = 5 * 60 * 1000;
+        
+        if (sessionAge > fiveMinutes) {
+          setIsValidSession(false);
+          return;
+        }
+
+        setIsValidSession(true);
+      } catch (error) {
+        console.error('Error validating session:', error);
+        setIsValidSession(false);
+      }
+    };
+
+    validateSession();
+  }, []);
+
+  // Handle invalid session by redirecting
+  useEffect(() => {
+    if (isValidSession === false) {
+      toast({
+        title: 'Invalid reset session',
+        description: 'Your password reset session has expired. Please request a new one.',
+        variant: 'destructive',
+      });
+      
+      // Redirect to forgot password page after a short delay
+      setTimeout(() => {
+        router.push('/forgot-password');
+      }, 2000);
+    }
+  }, [isValidSession, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -107,6 +165,66 @@ function ResetPasswordForm() {
       setIsLoading(false);
     }
   };
+
+  // Show loading state while validating session
+  if (isValidSession === null) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+          <p className="mt-2 text-sm text-muted-foreground">Validating session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state for invalid session
+  if (isValidSession === false) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container flex h-16 items-center justify-between">
+            <div className="flex items-center gap-2 text-xl font-bold">
+              <PhoneCall className="h-5 w-5 text-primary" />
+              <Link href="/">Spoqen</Link>
+            </div>
+            <nav className="flex items-center gap-4">
+              <Link href="/login" className="text-sm font-medium">
+                Back to Login
+              </Link>
+            </nav>
+          </div>
+        </header>
+        <main className="flex flex-1 items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Session Expired</CardTitle>
+              <CardDescription>
+                Your password reset session has expired or is invalid.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-center space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  For security reasons, password reset links expire after a short time.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  You'll be redirected to request a new reset link.
+                </p>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button variant="outline" asChild className="w-full">
+                <Link href="/forgot-password">
+                  Request New Reset Link
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
