@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       await supabase.auth.exchangeCodeForSession(code);
 
     if (exchangeError) {
-      console.error('Error exchanging code for session:', exchangeError);
+      console.error('Error exchanging code for session:', exchangeError.message || 'Unknown error');
       return NextResponse.redirect(
         new URL(
           `/login?error=exchange_failed&message=${encodeURIComponent('Authentication failed. Please try again.')}`,
@@ -61,14 +61,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Log successful authentication with masked user ID for security
+    const maskedUserId = data.user?.id ? `${data.user.id.substring(0, 6)}...` : 'unknown';
     console.log(
       'Authentication successful for user:',
-      data.user?.id,
+      maskedUserId,
       'type:',
       type
     );
 
-        // Handle different types of authentication callbacks
+    // Handle different types of authentication callbacks
     if (type === 'recovery') {
       // Password reset flow - redirect to reset password page
       return NextResponse.redirect(new URL('/reset-password', request.url));
@@ -78,8 +80,13 @@ export async function GET(request: NextRequest) {
     } else {
       // OAuth or regular login flow
       // Check if this is a new user (first time signing in)
-      const isNewUser = data.user?.created_at && data.user?.last_sign_in_at &&
-   Math.abs(new Date(data.user.created_at).getTime() - new Date(data.user.last_sign_in_at).getTime()) < 5000; // 5 second threshold
+      const isNewUser =
+        data.user?.created_at &&
+        data.user?.last_sign_in_at &&
+        Math.abs(
+          new Date(data.user.created_at).getTime() -
+            new Date(data.user.last_sign_in_at).getTime()
+        ) < 5000; // 5 second threshold
 
       // Redirect based on user status
       if (isNewUser) {
@@ -87,16 +94,21 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL('/onboarding', request.url));
       } else {
         const isValidRedirectPath = (path: string) => {
-          return path.startsWith('/') && !path.startsWith('//') && !path.includes('..') && !path.includes('\\');
+          return (
+            path.startsWith('/') &&
+            !path.startsWith('//') &&
+            !path.includes('..') &&
+            !path.includes('\\')
+          );
         };
 
-  // Redirect existing users to dashboard or specified next URL
- const redirectUrl = isValidRedirectPath(next) ? next : '/dashboard';
-  return NextResponse.redirect(new URL(redirectUrl, request.url));
+        // Redirect existing users to dashboard or specified next URL
+        const redirectUrl = isValidRedirectPath(next) ? next : '/dashboard';
+        return NextResponse.redirect(new URL(redirectUrl, request.url));
       }
     }
   } catch (error) {
-    console.error('Unexpected error in OAuth callback:', error);
+    console.error('Unexpected error in OAuth callback:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.redirect(
       new URL(
         '/login?error=unexpected&message=An unexpected error occurred. Please try again.',

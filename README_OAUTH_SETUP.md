@@ -4,7 +4,7 @@
 
 The OAuth callback route has been **successfully implemented** and is located at:
 
-```
+```bash
 app/auth/callback/route.ts
 ```
 
@@ -33,7 +33,7 @@ Key features:
 - Handles `code`, `error`, `error_description` parameters
 - Supports `type` parameter for different auth flows
 - Supports `next` parameter for custom redirects
-- Redirects to appropriate pages based on authentication context
+- Redirects to proper pages according to authentication context
 
 ### 2. Enhanced Login Page (`app/login/page.tsx`)
 
@@ -70,7 +70,7 @@ In your Supabase dashboard (Authentication → URL Configuration):
 
 1. **Site URL**: `https://your-domain.com`
 2. **Redirect URLs**:
-   ```
+   ```bash
    https://your-domain.com/auth/callback
    https://your-domain.com/reset-password
    http://localhost:3000/auth/callback (for development)
@@ -91,7 +91,7 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.com
 
 ### OAuth Flow
 
-```
+```mermaid
 1. User clicks "Sign in with Google"
 2. Redirected to Google OAuth
 3. Google redirects back to `/auth/callback?code=xyz`
@@ -101,7 +101,7 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.com
 
 ### Password Reset Flow
 
-```
+```mermaid
 1. User submits forgot password form
 2. Email sent with reset link to `/auth/callback?type=recovery&code=xyz`
 3. Callback processes recovery type
@@ -112,7 +112,7 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.com
 
 ### Email Confirmation Flow
 
-```
+```mermaid
 1. User signs up
 2. Email sent with confirmation link to `/auth/callback?type=signup&code=xyz`
 3. Callback processes signup type
@@ -194,7 +194,7 @@ console.log('Callback params:', {
 
 ## 📁 File Structure
 
-```
+```bash
 app/
 ├── auth/
 │   └── callback/

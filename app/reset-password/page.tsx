@@ -55,10 +55,21 @@ function ResetPasswordForm() {
       return;
     }
 
-    if (formData.password.length < 8) {
+    if (formData.password.length < 12) {
       toast({
         title: 'Password too short',
-        description: 'Password must be at least 8 characters long.',
+        description: 'Password must be at least 12 characters long.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Add password strength validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
+    if (!passwordRegex.test(formData.password)) {
+      toast({
+        title: 'Password too weak',
+        description: 'Password must include uppercase, lowercase, numbers, and special characters.',
         variant: 'destructive',
       });
       return;
@@ -127,10 +138,10 @@ function ResetPasswordForm() {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  minLength={8}
+                  minLength={12}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Password must be at least 8 characters long
+                  Password must be at least 12 characters long and include uppercase, lowercase, numbers, and special characters
                 </p>
               </div>
               <div className="space-y-2">
@@ -142,7 +153,7 @@ function ResetPasswordForm() {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
-                  minLength={8}
+                  minLength={12}
                 />
               </div>
             </CardContent>
