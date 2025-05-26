@@ -89,12 +89,6 @@ export async function GET(request: NextRequest) {
         const isValidRedirectPath = (path: string) => {
           return path.startsWith('/') && !path.startsWith('//') && !path.includes('..') && !path.includes('\\');
         };
- const isValidRedirectPath = (path: string) => {
-   return path.startsWith('/') && !path.startsWith('//') && !path.includes('..') && !path.includes('\\');
- };
- const isValidRedirectPath = (path: string) => {
-   return path.startsWith('/') && !path.startsWith('//') && !path.includes('..') && !path.includes('\\');
- };
 
   // Redirect existing users to dashboard or specified next URL
  const redirectUrl = isValidRedirectPath(next) ? next : '/dashboard';
