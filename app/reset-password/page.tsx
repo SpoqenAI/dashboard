@@ -115,9 +115,7 @@ function ResetPasswordForm() {
           <form onSubmit={handleSubmit}>
             <CardHeader>
               <CardTitle>Reset your password</CardTitle>
-              <CardDescription>
-                Enter your new password below
-              </CardDescription>
+              <CardDescription>Enter your new password below</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -168,15 +166,17 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <ResetPasswordForm />
     </Suspense>
   );
-} 
+}

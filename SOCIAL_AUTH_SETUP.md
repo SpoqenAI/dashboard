@@ -24,7 +24,10 @@ To enable Google authentication, you need to configure the Google provider in yo
 3. Enable the Google Identity API (or ensure Google Sign-In is configured)
 4. Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"
 5. Set application type to "Web application"
-6. Add authorized redirect URIs:
+6. Add authorized JavaScript origins:
+   - `https://your-domain.com`
+   - For local development: `http://localhost:3000`
+7. Add authorized redirect URIs:
    - `https://your-project-ref.supabase.co/auth/v1/callback`
    - For local development: `http://localhost:54321/auth/v1/callback`
 
@@ -108,6 +111,9 @@ import { SocialLogin } from '@/components/auth/social-login';
 2. **HTTPS Only**: Use HTTPS in production for all OAuth flows
 3. **Client Secret Security**: Keep client secrets secure and never expose them in client-side code
 4. **Scope Limitations**: Request only necessary permissions from Google OAuth
+5. **Environment Separation**: Use different OAuth applications for development, staging, and production
+6. **Regular Rotation**: Periodically rotate client secrets and review authorized applications
+7. **Monitoring**: Monitor OAuth usage and failed authentication attempts
 
 ## Troubleshooting
 

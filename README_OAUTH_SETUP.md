@@ -9,6 +9,7 @@ app/auth/callback/route.ts
 ```
 
 This route handles all Supabase authentication callbacks including:
+
 - OAuth provider authentication (Google, etc.)
 - Email confirmation links
 - Password reset links
@@ -28,6 +29,7 @@ The callback route includes:
 - ✅ **URL parameter validation**
 
 Key features:
+
 - Handles `code`, `error`, `error_description` parameters
 - Supports `type` parameter for different auth flows
 - Supports `next` parameter for custom redirects
@@ -88,6 +90,7 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.com
 ## 🔄 Authentication Flow Diagrams
 
 ### OAuth Flow
+
 ```
 1. User clicks "Sign in with Google"
 2. Redirected to Google OAuth
@@ -97,6 +100,7 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.com
 ```
 
 ### Password Reset Flow
+
 ```
 1. User submits forgot password form
 2. Email sent with reset link to `/auth/callback?type=recovery&code=xyz`
@@ -107,6 +111,7 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.com
 ```
 
 ### Email Confirmation Flow
+
 ```
 1. User signs up
 2. Email sent with confirmation link to `/auth/callback?type=signup&code=xyz`
@@ -119,12 +124,14 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.com
 ### Manual Testing Checklist
 
 1. **OAuth Authentication**:
+
    - [ ] Google sign-in works
    - [ ] New users go to onboarding
    - [ ] Existing users go to dashboard
    - [ ] OAuth errors show appropriate messages
 
 2. **Password Reset**:
+
    - [ ] Forgot password form sends email
    - [ ] Email link redirects to reset password page
    - [ ] Password update works
@@ -149,16 +156,19 @@ curl -X GET "http://localhost:3000/auth/callback?error=access_denied"
 ### Common Issues
 
 1. **"Invalid redirect URL" error**
+
    - Verify redirect URLs in Supabase dashboard match exactly
    - Check for trailing slashes
    - Ensure protocol (http/https) matches
 
 2. **OAuth provider not working**
+
    - Verify provider is enabled in Supabase
    - Check client ID and secret configuration
    - Ensure provider redirect URLs include your callback
 
 3. **Password reset emails not working**
+
    - Check Supabase email templates
    - Verify Site URL configuration
    - Check spam folder
@@ -178,7 +188,7 @@ console.log('Callback params:', {
   error,
   errorDescription,
   type,
-  next
+  next,
 });
 ```
 
@@ -209,10 +219,11 @@ components/
 ## ✅ Verification
 
 The OAuth callback route implementation is **complete and production-ready**. All authentication flows are properly handled:
+
 - ✅ OAuth provider authentication
 - ✅ Email confirmations
 - ✅ Password resets
 - ✅ Error handling
 - ✅ User experience optimization
 
-The route follows Next.js App Router best practices and includes comprehensive error handling, logging, and user-friendly redirects. 
+The route follows Next.js App Router best practices and includes comprehensive error handling, logging, and user-friendly redirects.

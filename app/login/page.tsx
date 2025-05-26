@@ -44,7 +44,7 @@ function LoginForm() {
       });
     } else if (error) {
       let description = 'Authentication failed. Please try again.';
-      
+
       switch (error) {
         case 'missing_code':
           description = 'Authentication code missing. Please try again.';
@@ -196,14 +196,16 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <LoginForm />
     </Suspense>
   );
