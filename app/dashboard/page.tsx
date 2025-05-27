@@ -27,15 +27,15 @@ import { StatsCards } from '@/components/stats-cards';
 export default function DashboardPage() {
   const [isEditing, setIsEditing] = useState(false);
   
-  // Original data that gets saved/loaded from backend
-  const [originalData, setOriginalData] = useState({
+  // Original saved data
+  const [savedData, setSavedData] = useState({
     aiAssistantName: 'Ava',
     yourName: 'James Carter',
     greetingScript: "Hi, thanks for calling James Carter's office! I'm Ava, his assistant. How can I help you today?",
     email: 'james@realestate.com',
   });
   
-  // Current form data that can be edited
+  // Current form data (can be different from saved while editing)
   const [formData, setFormData] = useState({
     aiAssistantName: 'Ava',
     yourName: 'James Carter',
@@ -86,15 +86,7 @@ export default function DashboardPage() {
         break;
       
       case 'greetingScript':
-        // Greeting should be professional and complete
-        if (!value.includes('thank') && !value.includes('help')) {
-          return 'Professional greetings should include welcoming language';
-        }
-        // Check for business-inappropriate content
-        const unprofessionalWords = ['hey', 'whats up', 'yo', 'dude', 'bro'];
-        if (unprofessionalWords.some(word => value.toLowerCase().includes(word))) {
-          return 'Please use professional business language';
-        }
+        // No additional restrictions for greeting script - profanity filter handles inappropriate content
         break;
       
       case 'email':
@@ -130,17 +122,16 @@ export default function DashboardPage() {
       return;
     }
 
-    // Here you would typically save to backend/database with additional server-side validation
-    // Update the original data to match the saved form data
-    setOriginalData({ ...formData });
+    // Save the current form data as the new saved data
+    setSavedData({ ...formData });
     setIsEditing(false);
     setValidationErrors({});
     console.log('Settings saved:', formData);
   };
 
   const handleCancel = () => {
-    // Reset form data to original values
-    setFormData({ ...originalData });
+    // Revert form data back to saved data
+    setFormData({ ...savedData });
     setIsEditing(false);
     setValidationErrors({});
   };
