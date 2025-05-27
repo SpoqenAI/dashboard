@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardShell } from '@/components/dashboard-shell';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { Camera, Bell, Shield, User } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -41,8 +42,11 @@ function SettingsContent() {
     licenseNumber: 'RE123456789',
     brokerage: 'Premier Realty Group',
     website: 'https://jamescarter-realestate.com',
+    businessAddress: '123 Market Street, San Francisco, CA 94102',
     city: 'San Francisco',
     state: 'California',
+    zipcode: '94102',
+    country: 'United States',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -69,8 +73,11 @@ function SettingsContent() {
     licenseNumber: { maxLength: 50, minLength: 0 },
     brokerage: { maxLength: 100, minLength: 0 },
     website: { maxLength: 254, minLength: 0 },
+    businessAddress: { maxLength: 200, minLength: 0 },
     city: { maxLength: 50, minLength: 0 },
     state: { maxLength: 50, minLength: 0 },
+    zipcode: { maxLength: 10, minLength: 0 },
+    country: { maxLength: 50, minLength: 0 },
     currentPassword: { maxLength: 128, minLength: 0 },
     newPassword: { maxLength: 128, minLength: 0 },
     confirmPassword: { maxLength: 128, minLength: 0 },
@@ -94,7 +101,13 @@ function SettingsContent() {
     URL_PATTERN: /^https?:\/\/(?:[-\w.])+(?:\:[0-9]+)?(?:\/(?:[\w\/_.])*(?:\?(?:[\w&=%.])*)?(?:\#(?:[\w.])*)?)?$/,
     
     // License number pattern - alphanumeric with common prefixes
-    LICENSE_PATTERN: /^[A-Za-z]{0,4}[0-9A-Za-z]{3,}$/
+    LICENSE_PATTERN: /^[A-Za-z]{0,4}[0-9A-Za-z]{3,}$/,
+    
+    // Zipcode patterns for different countries
+    US_ZIPCODE_PATTERN: /^[0-9]{5}(-[0-9]{4})?$/,
+    CANADA_POSTAL_PATTERN: /^[A-Za-z][0-9][A-Za-z]\s?[0-9][A-Za-z][0-9]$/,
+    UK_POSTCODE_PATTERN: /^[A-Za-z]{1,2}[0-9Rr][0-9A-Za-z]?\s?[0-9][ABD-HJLNP-UW-Zabd-hjlnp-uw-z]{2}$/,
+    GENERIC_ZIPCODE_PATTERN: /^[A-Za-z0-9\s\-]{3,10}$/
   };
 
   const validateContent = (field: string, value: string): string | null => {
@@ -114,7 +127,7 @@ function SettingsContent() {
     }
 
     // Check for inappropriate content (only for text fields)
-    if (['firstName', 'lastName', 'businessName', 'bio', 'brokerage', 'city', 'state'].includes(field)) {
+    if (['firstName', 'lastName', 'businessName', 'bio', 'brokerage', 'city', 'state', 'country'].includes(field)) {
       if (filter.isProfane(value)) {
         return 'Please use professional, appropriate language';
       }
@@ -133,6 +146,14 @@ function SettingsContent() {
       case 'brokerage':
         if (value && !VALIDATION_PATTERNS.BUSINESS_NAME_PATTERN.test(value)) {
           return 'Should only contain letters, numbers, spaces, and basic punctuation';
+        }
+        break;
+      
+      case 'city':
+      case 'state':
+      case 'country':
+        if (value && !VALIDATION_PATTERNS.NAME_PATTERN.test(value)) {
+          return 'Should only contain letters, spaces, and basic punctuation';
         }
         break;
       
@@ -309,6 +330,47 @@ function SettingsContent() {
         }
         break;
         
+      case 'zipcode':
+        if (value) {
+          // Determine validation pattern based on country
+          const country = formData.country.toLowerCase();
+          let isValid = false;
+          
+          if (country.includes('united states') || country.includes('usa') || country === 'us') {
+            isValid = VALIDATION_PATTERNS.US_ZIPCODE_PATTERN.test(value);
+            if (!isValid) {
+              return 'US ZIP code should be 5 digits or 5+4 format (e.g., 12345 or 12345-6789)';
+            }
+          } else if (country.includes('canada') || country === 'ca') {
+            isValid = VALIDATION_PATTERNS.CANADA_POSTAL_PATTERN.test(value);
+            if (!isValid) {
+              return 'Canadian postal code should be in format A1A 1A1';
+            }
+          } else if (country.includes('united kingdom') || country.includes('uk') || country.includes('britain')) {
+            isValid = VALIDATION_PATTERNS.UK_POSTCODE_PATTERN.test(value);
+            if (!isValid) {
+              return 'UK postcode should be in valid format (e.g., SW1A 1AA)';
+            }
+          } else {
+            // Generic validation for other countries
+            isValid = VALIDATION_PATTERNS.GENERIC_ZIPCODE_PATTERN.test(value);
+            if (!isValid) {
+              return 'Postal code should contain only letters, numbers, spaces, and hyphens';
+            }
+          }
+          
+          // Additional checks for all postal codes
+          if (value.length < 3) {
+            return 'Postal code must be at least 3 characters';
+          }
+          
+          // Check for obviously invalid patterns
+          if (/^[0\s\-]+$/.test(value)) {
+            return 'Please enter a valid postal code';
+          }
+        }
+        break;
+        
       case 'newPassword':
         if (value && value.length < 8) {
           return 'Password must be at least 8 characters long';
@@ -323,6 +385,40 @@ function SettingsContent() {
     }
 
     return null;
+  };
+
+  // Zipcode formatting function based on country
+  const formatZipcode = (value: string, country: string): string => {
+    // Remove all non-alphanumeric characters except spaces and hyphens
+    const cleaned = value.replace(/[^A-Za-z0-9\s\-]/g, '').toUpperCase();
+    
+    const countryLower = country.toLowerCase();
+    
+    if (countryLower.includes('united states') || countryLower.includes('usa') || countryLower === 'us') {
+      // US ZIP code formatting
+      const digits = cleaned.replace(/\D/g, '');
+      if (digits.length <= 5) {
+        return digits;
+      } else if (digits.length <= 9) {
+        return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+      }
+      return `${digits.slice(0, 5)}-${digits.slice(5, 9)}`;
+    } else if (countryLower.includes('canada') || countryLower === 'ca') {
+      // Canadian postal code formatting (A1A 1A1)
+      const alphanumeric = cleaned.replace(/\s/g, '');
+      if (alphanumeric.length <= 3) {
+        return alphanumeric;
+      } else if (alphanumeric.length <= 6) {
+        return `${alphanumeric.slice(0, 3)} ${alphanumeric.slice(3)}`;
+      }
+      return `${alphanumeric.slice(0, 3)} ${alphanumeric.slice(3, 6)}`;
+    } else if (countryLower.includes('united kingdom') || countryLower.includes('uk') || countryLower.includes('britain')) {
+      // UK postcode formatting - more complex, keep as entered but clean
+      return cleaned.slice(0, 8);
+    }
+    
+    // Generic formatting for other countries
+    return cleaned.slice(0, 10);
   };
 
   // Phone formatting function for flexible US/International support
@@ -377,6 +473,11 @@ function SettingsContent() {
       processedValue = formatPhoneNumber(value);
     }
     
+    // Apply zipcode formatting
+    if (field === 'zipcode') {
+      processedValue = formatZipcode(value, formData.country);
+    }
+    
     // Remove spaces from email and website fields
     if (field === 'email' || field === 'website') {
       processedValue = removeSpaces(value);
@@ -393,6 +494,39 @@ function SettingsContent() {
     setValidationErrors(prev => ({
       ...prev,
       [field]: error || ''
+    }));
+  };
+
+  const handleAddressSelect = (addressData: {
+    city?: string;
+    state?: string;
+    postcode?: string;
+    country?: string;
+  }) => {
+    // Auto-fill the form fields when an address is selected
+    setFormData(prev => ({
+      ...prev,
+      city: addressData.city || prev.city,
+      state: addressData.state || prev.state,
+      zipcode: addressData.postcode || prev.zipcode,
+      country: addressData.country || prev.country,
+    }));
+
+    // Clear any existing validation errors for these fields
+    setValidationErrors(prev => ({
+      ...prev,
+      city: '',
+      state: '',
+      zipcode: '',
+      country: '',
+    }));
+  };
+
+  const handleAddressInputChange = (value: string) => {
+    // Update the business address field as user types
+    setFormData(prev => ({
+      ...prev,
+      businessAddress: value,
     }));
   };
 
@@ -811,37 +945,18 @@ function SettingsContent() {
                   </p>
                 </div>
                 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="font-medium">City</label>
-                    <input
-                      type="text"
-                      className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                        validationErrors.city ? 'bg-background border-red-500' : 'bg-background'
-                      }`}
-                      value={formData.city}
-                      onChange={(e) => handleInputChange('city', e.target.value)}
-                      maxLength={50}
-                    />
-                    {validationErrors.city && (
-                      <p className="text-red-500 text-sm">{validationErrors.city}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="font-medium">State</label>
-                    <input
-                      type="text"
-                      className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                        validationErrors.state ? 'bg-background border-red-500' : 'bg-background'
-                      }`}
-                      value={formData.state}
-                      onChange={(e) => handleInputChange('state', e.target.value)}
-                      maxLength={50}
-                    />
-                    {validationErrors.state && (
-                      <p className="text-red-500 text-sm">{validationErrors.state}</p>
-                    )}
-                  </div>
+                <div className="space-y-2">
+                  <label className="font-medium">Business Address</label>
+                  <AddressAutocomplete
+                    onPlaceSelect={handleAddressSelect}
+                    onInputChange={handleAddressInputChange}
+                    placeholder="Search for your business address..."
+                    value={formData.businessAddress}
+                    className="w-full"
+                  />
+                  <p className="text-gray-500 text-xs">
+                    Search and select your business address from the suggestions.
+                  </p>
                 </div>
               </CardContent>
             </Card>

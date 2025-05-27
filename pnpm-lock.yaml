@@ -8,6 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@geoapify/geocoder-autocomplete':
+        specifier: ^2.1.0
+        version: 2.1.0
+      '@geoapify/react-geocoder-autocomplete':
+        specifier: ^2.0.1
+        version: 2.0.1(@geoapify/geocoder-autocomplete@2.1.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.9.1(react-hook-form@7.54.1(react@19.0.0))
@@ -282,6 +288,17 @@ packages:
 
   '@floating-ui/utils@0.2.9':
     resolution: {integrity: sha512-MDWhGtE+eHw5JW7lq4qhc5yRLS11ERl1c7Z6Xd0a58DozHES6EnNNwUWbMiG4J9Cgj053Bhk8zvlhFYKVhULwg==}
+
+  '@geoapify/geocoder-autocomplete@2.1.0':
+    resolution: {integrity: sha512-E1uX3haIp9OD13sScEr+UqT5GRTv0K2ldZzsb44sHaXrk9B5C6GVxsuH0QYdt8hjNNXfUdAXUp3YJomS9O0RAQ==}
+
+  '@geoapify/react-geocoder-autocomplete@2.0.1':
+    resolution: {integrity: sha512-1kFDhKSugGjieG1FSVzQCNOwNMYMsRbwIeKBLVuP2YaKzbmAxwYuJa1QdMcuQXvM0kbSLntlQ2bZfZ2Wqqr8DQ==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      '@geoapify/geocoder-autocomplete': ^2.0.2
+      react: ^18.2.0
+      react-dom: ^18.2.0
 
   '@hookform/resolvers@3.9.1':
     resolution: {integrity: sha512-ud2HqmGBM0P0IABqoskKWI6PEf6ZDDBZkFqe2Vnl+mTHCEHzr3ISjjZyCwTjC/qpL25JC9aIDkloQejvMeq0ug==}
@@ -3328,6 +3345,14 @@ snapshots:
       react-dom: 19.0.0(react@19.0.0)
 
   '@floating-ui/utils@0.2.9': {}
+
+  '@geoapify/geocoder-autocomplete@2.1.0': {}
+
+  '@geoapify/react-geocoder-autocomplete@2.0.1(@geoapify/geocoder-autocomplete@2.1.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+    dependencies:
+      '@geoapify/geocoder-autocomplete': 2.1.0
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
 
   '@hookform/resolvers@3.9.1(react-hook-form@7.54.1(react@19.0.0))':
     dependencies:
