@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [savedData, setSavedData] = useState({
     aiAssistantName: 'Ava',
     yourName: 'James Carter',
+    businessName: 'James Carter Real Estate',
     greetingScript: "Hi, thanks for calling James Carter's office! I'm Ava, his assistant. How can I help you today?",
     email: 'james@realestate.com',
   });
@@ -39,6 +40,7 @@ export default function DashboardPage() {
   const [formData, setFormData] = useState({
     aiAssistantName: 'Ava',
     yourName: 'James Carter',
+    businessName: 'James Carter Real Estate',
     greetingScript: "Hi, thanks for calling James Carter's office! I'm Ava, his assistant. How can I help you today?",
     email: 'james@realestate.com',
   });
@@ -53,8 +55,9 @@ export default function DashboardPage() {
 
   // Validation rules for each field
   const fieldLimits = {
-    aiAssistantName: { maxLength: 50, minLength: 1 },
-    yourName: { maxLength: 100, minLength: 1 },
+    aiAssistantName: { maxLength: 25, minLength: 1 },
+    yourName: { maxLength: 50, minLength: 1 },
+    businessName: { maxLength: 100, minLength: 1 },
     greetingScript: { maxLength: 500, minLength: 10 },
     email: { maxLength: 254, minLength: 5 }
   };
@@ -82,6 +85,13 @@ export default function DashboardPage() {
         // Names should only contain letters, spaces, and basic punctuation
         if (!/^[a-zA-Z\s\-'.]+$/.test(value)) {
           return 'Names should only contain letters, spaces, and basic punctuation';
+        }
+        break;
+      
+      case 'businessName':
+        // Business names can contain letters, numbers, spaces, and common business punctuation
+        if (!/^[a-zA-Z0-9\s\-'.,&()]+$/.test(value)) {
+          return 'Business names should only contain letters, numbers, spaces, and basic punctuation';
         }
         break;
       
@@ -186,17 +196,6 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {isEditing && (
-                      <div className="bg-muted border rounded-md p-3 text-sm">
-                        <p className="font-medium mb-1">Professional Guidelines:</p>
-                        <ul className="text-muted-foreground space-y-1">
-                          <li>• Use professional, welcoming language</li>
-                          <li>• Include your business name and helpful messaging</li>
-                          <li>• Keep greetings concise but informative</li>
-                        </ul>
-                      </div>
-                    )}
-                    
                     <div className="space-y-2">
                       <label className="font-medium">AI Assistant Name</label>
                       <input
@@ -208,14 +207,14 @@ export default function DashboardPage() {
                         value={formData.aiAssistantName}
                         onChange={(e) => handleInputChange('aiAssistantName', e.target.value)}
                         readOnly={!isEditing}
-                        maxLength={50}
+                        maxLength={25}
                       />
                       {validationErrors.aiAssistantName && (
                         <p className="text-red-500 text-sm">{validationErrors.aiAssistantName}</p>
                       )}
                       {isEditing && (
                         <p className="text-gray-500 text-xs">
-                          {formData.aiAssistantName.length}/50 characters
+                          {formData.aiAssistantName.length}/25 characters
                         </p>
                       )}
                     </div>
@@ -231,14 +230,38 @@ export default function DashboardPage() {
                         value={formData.yourName}
                         onChange={(e) => handleInputChange('yourName', e.target.value)}
                         readOnly={!isEditing}
-                        maxLength={100}
+                        maxLength={50}
                       />
                       {validationErrors.yourName && (
                         <p className="text-red-500 text-sm">{validationErrors.yourName}</p>
                       )}
                       {isEditing && (
                         <p className="text-gray-500 text-xs">
-                          {formData.yourName.length}/100 characters
+                          {formData.yourName.length}/50 characters
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="font-medium">Business Name</label>
+                      <input
+                        type="text"
+                        className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
+                          !isEditing ? 'bg-muted' : 
+                          validationErrors.businessName ? 'bg-background border-red-500' : 'bg-background'
+                        }`}
+                        value={formData.businessName}
+                        onChange={(e) => handleInputChange('businessName', e.target.value)}
+                        readOnly={!isEditing}
+                        maxLength={100}
+                        placeholder={isEditing ? "e.g., ABC Real Estate, Smith & Associates, etc." : ""}
+                      />
+                      {validationErrors.businessName && (
+                        <p className="text-red-500 text-sm">{validationErrors.businessName}</p>
+                      )}
+                      {isEditing && (
+                        <p className="text-gray-500 text-xs">
+                          {formData.businessName.length}/100 characters
                         </p>
                       )}
                     </div>
