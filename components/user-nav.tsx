@@ -20,11 +20,11 @@ export function UserNav() {
   const router = useRouter();
 
   const handleProfileClick = () => {
-    router.push('/profile');
+    router.push('/settings?tab=profile');
   };
 
   const handleBillingClick = () => {
-    router.push('/billing');
+    router.push('/settings?tab=billing');
   };
 
   const handleSettingsClick = () => {
@@ -36,16 +36,16 @@ export function UserNav() {
       const { error } = await signOut();
       
       if (error) {
-        throw error;
+        toast({
+          title: 'Error signing out',
+          description: error.message || 'Something went wrong. Please try again.',
+          variant: 'destructive',
+        });
+        return;
       }
 
-      toast({
-        title: 'Logged out successfully',
-        description: 'You have been signed out of your account.',
-      });
-
-      // Redirect to home page
-      router.push('/');
+      // Redirect to login page after successful logout
+      router.push('/login');
     } catch (error: any) {
       toast({
         title: 'Error signing out',
@@ -79,21 +79,21 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer">
+          <DropdownMenuItem onClick={handleProfileClick}>
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleBillingClick} className="cursor-pointer">
+          <DropdownMenuItem onClick={handleBillingClick}>
             <CreditCard className="mr-2 h-4 w-4" />
             <span>Billing</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleSettingsClick} className="cursor-pointer">
+          <DropdownMenuItem onClick={handleSettingsClick}>
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogoutClick} className="cursor-pointer">
+        <DropdownMenuItem onClick={handleLogoutClick}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>

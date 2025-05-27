@@ -1,3 +1,7 @@
+'use client';
+
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -14,7 +18,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardShell } from '@/components/dashboard-shell';
 
-export default function SettingsPage() {
+function SettingsContent() {
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab') || 'profile';
+
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardHeader />
@@ -22,7 +29,7 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
         </div>
-        <Tabs defaultValue="profile" className="space-y-4">
+        <Tabs defaultValue={tab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="ai-settings">AI Settings</TabsTrigger>
@@ -249,5 +256,13 @@ export default function SettingsPage() {
         </Tabs>
       </DashboardShell>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SettingsContent />
+    </Suspense>
   );
 }
