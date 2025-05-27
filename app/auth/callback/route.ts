@@ -10,6 +10,17 @@ export async function GET(request: NextRequest) {
   const type = requestUrl.searchParams.get('type');
   const next = requestUrl.searchParams.get('next') ?? '/';
 
+  // Log the callback details for debugging
+  console.log('Auth callback received:', {
+    url: request.url,
+    code: code ? `${code.substring(0, 10)}...` : null,
+    error,
+    errorDescription,
+    type,
+    host: request.headers.get('host'),
+    origin: request.headers.get('origin'),
+  });
+
   // Handle OAuth error cases
   if (error) {
     console.error('OAuth error:', error, errorDescription);
@@ -43,11 +54,27 @@ export async function GET(request: NextRequest) {
     if (exchangeError) {
       console.error(
         'Error exchanging code for session:',
-        exchangeError.message || 'Unknown error'
+        exchangeError.message || 'Unknown error',
+        'Error details:',
+        exchangeError
       );
+      
+      // Add more specific error handling for common issues
+      let errorMessage = 'Authentication failed. Please try again.';
+      
+      if (exchangeError.message?.includes('expired')) {
+        errorMessage = 'The verification link has expired. Please request a new verification email.';
+      } else if (exchangeError.message?.includes('invalid')) {
+        errorMessage = 'The verification link is invalid. Please request a new verification email.';
+      } else if (exchangeError.message?.includes('already_used')) {
+        errorMessage = 'This verification link has already been used. Please try logging in directly.';
+      } else if (exchangeError.message?.includes('code challenge') || exchangeError.message?.includes('code verifier')) {
+        errorMessage = 'The verification link is not compatible with this browser session. Please try logging in directly or request a new verification email.';
+      }
+      
       return NextResponse.redirect(
         new URL(
-          `/login?error=exchange_failed&message=${encodeURIComponent('Authentication failed. Please try again.')}`,
+          `/login?error=exchange_failed&message=${encodeURIComponent(errorMessage)}&details=${encodeURIComponent(exchangeError.message || 'Unknown error')}`,
           request.url
         )
       );
