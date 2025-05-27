@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,11 +20,82 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardShell } from '@/components/dashboard-shell';
-import { Camera, Bell, Shield, User, Globe, Moon, Sun, Monitor } from 'lucide-react';
+import { Camera, Bell, Shield, User } from 'lucide-react';
 
 function SettingsContent() {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab') || 'profile';
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const formData = new FormData(e.currentTarget);
+      
+      // Extract form values
+      const firstName = formData.get('first-name') as string;
+      const lastName = formData.get('last-name') as string;
+      const email = formData.get('email') as string;
+      const phone = formData.get('phone') as string;
+      const website = formData.get('website') as string;
+      const newPassword = formData.get('new-password') as string;
+      const confirmPassword = formData.get('confirm-password') as string;
+
+      // Validation
+      const errors: string[] = [];
+
+      if (!firstName?.trim()) {
+        errors.push('First name is required');
+      }
+      if (!lastName?.trim()) {
+        errors.push('Last name is required');
+      }
+      if (!email?.trim()) {
+        errors.push('Email is required');
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.push('Please enter a valid email address');
+      }
+
+      // Website validation (if provided)
+      if (website && website.trim() && !/^https?:\/\/.+/.test(website)) {
+        errors.push('Website must be a valid URL starting with http:// or https://');
+      }
+
+      // Password validation (if changing password)
+      if (newPassword || confirmPassword) {
+        if (!newPassword) {
+          errors.push('New password is required when changing password');
+        } else if (newPassword.length < 8) {
+          errors.push('New password must be at least 8 characters long');
+        } else if (newPassword !== confirmPassword) {
+          errors.push('New password and confirmation do not match');
+        }
+      }
+
+      if (errors.length > 0) {
+        alert('Please fix the following errors:\n\n' + errors.join('\n'));
+        return;
+      }
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Here you would typically make an API call to save the data
+      const formDataObject = Object.fromEntries(formData);
+      console.log('Form data:', formDataObject);
+      
+      // Show success message
+      alert('Settings saved successfully!');
+      
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Failed to save settings. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -39,6 +110,7 @@ function SettingsContent() {
             <TabsTrigger value="billing">Billing</TabsTrigger>
           </TabsList>
           <TabsContent value="profile" className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
             {/* Profile Information */}
             <Card>
               <CardHeader>
@@ -86,11 +158,11 @@ function SettingsContent() {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="first-name">First Name</Label>
-                    <Input id="first-name" defaultValue="James" />
+                    <Input id="first-name" name="first-name" defaultValue="James" required />
                   </div>
                 <div className="space-y-2">
                     <Label htmlFor="last-name">Last Name</Label>
-                    <Input id="last-name" defaultValue="Carter" />
+                    <Input id="last-name" name="last-name" defaultValue="Carter" required />
                   </div>
                 </div>
                 
@@ -98,25 +170,28 @@ function SettingsContent() {
                   <Label htmlFor="email">Email Address</Label>
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     defaultValue="james@realestate.com"
+                    required
                   />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" type="tel" defaultValue="(555) 123-4567" />
+                  <Input id="phone" name="phone" type="tel" defaultValue="(555) 123-4567" />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="business-name">Business Name</Label>
-                  <Input id="business-name" defaultValue="Carter Real Estate" />
+                  <Input id="business-name" name="business-name" defaultValue="Carter Real Estate" />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="bio">Bio</Label>
                   <Textarea
                     id="bio"
+                    name="bio"
                     placeholder="Tell us about yourself and your real estate business..."
                     defaultValue="Experienced real estate agent specializing in residential properties."
                     rows={3}
@@ -144,28 +219,10 @@ function SettingsContent() {
                       Receive notifications about new calls and messages via email
                     </p>
                   </div>
-                  <Switch id="email-notifications" defaultChecked />
+                  <Switch id="email-notifications" name="email-notifications" defaultChecked />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="sms-notifications">SMS Notifications</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Get instant SMS alerts for urgent calls
-                    </p>
-                  </div>
-                  <Switch id="sms-notifications" />
-                </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="push-notifications">Push Notifications</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receive push notifications in your browser
-                    </p>
-                  </div>
-                  <Switch id="push-notifications" defaultChecked />
-                </div>
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
@@ -174,84 +231,11 @@ function SettingsContent() {
                       Receive updates about new features and tips
                     </p>
                   </div>
-                  <Switch id="marketing-emails" defaultChecked />
+                  <Switch id="marketing-emails" name="marketing-emails" defaultChecked />
                 </div>
               </CardContent>
             </Card>
 
-            {/* Appearance & Language */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5" />
-                  Appearance & Language
-                </CardTitle>
-                <CardDescription>
-                  Customize the appearance and language of your dashboard.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="theme">Theme</Label>
-                  <Select defaultValue="system">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select theme" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="light">
-                        <div className="flex items-center gap-2">
-                          <Sun className="h-4 w-4" />
-                          Light
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="dark">
-                        <div className="flex items-center gap-2">
-                          <Moon className="h-4 w-4" />
-                          Dark
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="system">
-                        <div className="flex items-center gap-2">
-                          <Monitor className="h-4 w-4" />
-                          System
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="language">Language</Label>
-                  <Select defaultValue="en">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="es">Español</SelectItem>
-                      <SelectItem value="fr">Français</SelectItem>
-                      <SelectItem value="de">Deutsch</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="timezone">Timezone</Label>
-                  <Select defaultValue="america/los_angeles">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select timezone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="america/los_angeles">Pacific Time (PT)</SelectItem>
-                      <SelectItem value="america/denver">Mountain Time (MT)</SelectItem>
-                      <SelectItem value="america/chicago">Central Time (CT)</SelectItem>
-                      <SelectItem value="america/new_york">Eastern Time (ET)</SelectItem>
-                      <SelectItem value="utc">UTC</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Security Settings */}
             <Card>
@@ -267,17 +251,17 @@ function SettingsContent() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="current-password">Current Password</Label>
-                  <Input id="current-password" type="password" />
+                  <Input id="current-password" name="current-password" type="password" />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="new-password">New Password</Label>
-                  <Input id="new-password" type="password" />
+                  <Input id="new-password" name="new-password" type="password" />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password">Confirm New Password</Label>
-                  <Input id="confirm-password" type="password" />
+                  <Input id="confirm-password" name="confirm-password" type="password" />
                 </div>
 
                 <Button variant="outline">Change Password</Button>
@@ -309,18 +293,19 @@ function SettingsContent() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="license-number">License Number</Label>
-                  <Input id="license-number" defaultValue="RE123456789" />
+                  <Input id="license-number" name="license-number" defaultValue="RE123456789" />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="brokerage">Brokerage</Label>
-                  <Input id="brokerage" defaultValue="Premier Realty Group" />
+                  <Input id="brokerage" name="brokerage" defaultValue="Premier Realty Group" />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="website">Website</Label>
                   <Input
                     id="website"
+                    name="website"
                     type="url"
                     placeholder="https://your-website.com"
                     defaultValue="https://jamescarter-realestate.com"
@@ -330,11 +315,11 @@ function SettingsContent() {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="city">City</Label>
-                    <Input id="city" defaultValue="San Francisco" />
+                    <Input id="city" name="city" defaultValue="San Francisco" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="state">State</Label>
-                    <Input id="state" defaultValue="California" />
+                    <Input id="state" name="state" defaultValue="California" />
                   </div>
                 </div>
               </CardContent>
@@ -342,8 +327,11 @@ function SettingsContent() {
 
             {/* Save Changes */}
             <div className="flex justify-end">
-              <Button>Save Changes</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
+              </Button>
             </div>
+            </form>
           </TabsContent>
 
           <TabsContent value="billing" className="space-y-4">
