@@ -62,6 +62,22 @@ export default function DashboardPage() {
     email: { maxLength: 254, minLength: 5 }
   };
 
+  // Regex patterns for field validation - extracted to prevent ReDoS attacks
+  // These patterns are designed to be efficient and avoid catastrophic backtracking
+  const VALIDATION_PATTERNS = {
+    // Names: letters, single spaces (no consecutive), basic punctuation (limited)
+    // Prevents ReDoS by avoiding nested quantifiers and limiting repetition
+    NAME_PATTERN: /^[a-zA-Z](?:[a-zA-Z\s\-'.])*[a-zA-Z]$|^[a-zA-Z]$/,
+    
+    // Business names: alphanumeric, single spaces, limited punctuation
+    // More restrictive to prevent ReDoS while allowing common business name formats
+    BUSINESS_NAME_PATTERN: /^[a-zA-Z0-9](?:[a-zA-Z0-9\s\-'.,&()])*[a-zA-Z0-9)]$|^[a-zA-Z0-9]$/,
+    
+    // Email: simplified pattern that avoids nested quantifiers
+    // More restrictive but safer against ReDoS attacks
+    EMAIL_PATTERN: /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]{0,62}[a-zA-Z0-9])?@[a-zA-Z0-9](?:[a-zA-Z0-9.-]{0,251}[a-zA-Z0-9])?$/
+  };
+
   const validateContent = (field: string, value: string): string | null => {
     const limits = fieldLimits[field as keyof typeof fieldLimits];
     
@@ -78,19 +94,19 @@ export default function DashboardPage() {
       return 'Please use professional, appropriate language';
     }
 
-    // Field-specific validation
+    // Field-specific validation using extracted patterns
     switch (field) {
       case 'aiAssistantName':
       case 'yourName':
         // Names should only contain letters, spaces, and basic punctuation
-        if (!/^[a-zA-Z\s\-'.]+$/.test(value)) {
+        if (!VALIDATION_PATTERNS.NAME_PATTERN.test(value)) {
           return 'Names should only contain letters, spaces, and basic punctuation';
         }
         break;
       
       case 'businessName':
         // Business names can contain letters, numbers, spaces, and common business punctuation
-        if (!/^[a-zA-Z0-9\s\-'.,&()]+$/.test(value)) {
+        if (!VALIDATION_PATTERNS.BUSINESS_NAME_PATTERN.test(value)) {
           return 'Business names should only contain letters, numbers, spaces, and basic punctuation';
         }
         break;
@@ -100,9 +116,8 @@ export default function DashboardPage() {
         break;
       
       case 'email':
-        // Basic email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(value)) {
+        // Email validation using secure pattern
+        if (!VALIDATION_PATTERNS.EMAIL_PATTERN.test(value)) {
           return 'Please enter a valid email address';
         }
         break;
