@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -21,6 +24,37 @@ import { RecentCallsList } from '@/components/recent-calls-list';
 import { StatsCards } from '@/components/stats-cards';
 
 export default function DashboardPage() {
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    aiAssistantName: 'Ava',
+    yourName: 'James Carter',
+    greetingScript: "Hi, thanks for calling James Carter's office! I'm Ava, his assistant. How can I help you today?",
+    email: 'james@realestate.com',
+  });
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleSave = () => {
+    // Here you would typically save to backend/database
+    setIsEditing(false);
+    // You could add a toast notification here
+    console.log('Settings saved:', formData);
+  };
+
+  const handleCancel = () => {
+    // Reset form data to original values if needed
+    setIsEditing(false);
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardHeader />
@@ -35,8 +69,8 @@ export default function DashboardPage() {
           </TabsList>
           <TabsContent value="overview" className="space-y-4">
             <StatsCards />
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-              <Card className="col-span-4">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
+              <Card className="md:col-span-1 lg:col-span-4">
                 <CardHeader>
                   <CardTitle>Recent Calls</CardTitle>
                   <CardDescription>
@@ -47,7 +81,7 @@ export default function DashboardPage() {
                   <RecentCallsList />
                 </CardContent>
               </Card>
-              <Card className="col-span-3">
+              <Card className="md:col-span-1 lg:col-span-3">
                 <CardHeader>
                   <CardTitle>Your AI Receptionist</CardTitle>
                   <CardDescription>
@@ -60,35 +94,57 @@ export default function DashboardPage() {
                       <label className="font-medium">AI Assistant Name</label>
                       <input
                         type="text"
-                        className="w-full rounded-md border p-2"
-                        defaultValue="Ava"
+                        className={`w-full rounded-md border p-2 ${!isEditing ? 'bg-muted' : 'bg-background'}`}
+                        value={formData.aiAssistantName}
+                        onChange={(e) => handleInputChange('aiAssistantName', e.target.value)}
+                        readOnly={!isEditing}
                       />
                     </div>
                     <div className="space-y-2">
                       <label className="font-medium">Your Name</label>
                       <input
                         type="text"
-                        className="w-full rounded-md border p-2"
-                        defaultValue="James Carter"
+                        className={`w-full rounded-md border p-2 ${!isEditing ? 'bg-muted' : 'bg-background'}`}
+                        value={formData.yourName}
+                        onChange={(e) => handleInputChange('yourName', e.target.value)}
+                        readOnly={!isEditing}
                       />
                     </div>
                     <div className="space-y-2">
                       <label className="font-medium">Greeting Script</label>
                       <textarea
-                        className="w-full rounded-md border p-2"
+                        className={`w-full rounded-md border p-2 resize-none ${!isEditing ? 'bg-muted' : 'bg-background'}`}
                         rows={3}
-                        defaultValue="Hi, thanks for calling James Carter's office! I'm Ava, his assistant. How can I help you today?"
+                        value={formData.greetingScript}
+                        onChange={(e) => handleInputChange('greetingScript', e.target.value)}
+                        readOnly={!isEditing}
                       />
                     </div>
                     <div className="space-y-2">
                       <label className="font-medium">Email for Summaries</label>
                       <input
                         type="email"
-                        className="w-full rounded-md border p-2"
-                        defaultValue="james@realestate.com"
+                        className={`w-full rounded-md border p-2 ${!isEditing ? 'bg-muted' : 'bg-background'}`}
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        readOnly={!isEditing}
                       />
                     </div>
-                    <Button className="w-full">Save Settings</Button>
+                    {!isEditing ? (
+                      <Button variant="outline" className="w-full" onClick={handleEdit}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit Settings
+                      </Button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button variant="outline" className="flex-1" onClick={handleCancel}>
+                          Cancel
+                        </Button>
+                        <Button className="flex-1" onClick={handleSave}>
+                          Save Settings
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
