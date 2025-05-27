@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Filter } from 'bad-words';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -25,33 +26,137 @@ import { StatsCards } from '@/components/stats-cards';
 
 export default function DashboardPage() {
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Original data that gets saved/loaded from backend
+  const [originalData, setOriginalData] = useState({
+    aiAssistantName: 'Ava',
+    yourName: 'James Carter',
+    greetingScript: "Hi, thanks for calling James Carter's office! I'm Ava, his assistant. How can I help you today?",
+    email: 'james@realestate.com',
+  });
+  
+  // Current form data that can be edited
   const [formData, setFormData] = useState({
     aiAssistantName: 'Ava',
     yourName: 'James Carter',
     greetingScript: "Hi, thanks for calling James Carter's office! I'm Ava, his assistant. How can I help you today?",
     email: 'james@realestate.com',
   });
+  
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Initialize content filter
+  const filter = new Filter();
+  
+  // Add custom inappropriate words for business context
+  filter.addWords('scam', 'fraud', 'fake', 'illegal', 'drugs');
+
+  // Validation rules for each field
+  const fieldLimits = {
+    aiAssistantName: { maxLength: 50, minLength: 1 },
+    yourName: { maxLength: 100, minLength: 1 },
+    greetingScript: { maxLength: 500, minLength: 10 },
+    email: { maxLength: 254, minLength: 5 }
+  };
+
+  const validateContent = (field: string, value: string): string | null => {
+    const limits = fieldLimits[field as keyof typeof fieldLimits];
+    
+    // Check length limits
+    if (value.length < limits.minLength) {
+      return `Minimum ${limits.minLength} characters required`;
+    }
+    if (value.length > limits.maxLength) {
+      return `Maximum ${limits.maxLength} characters allowed`;
+    }
+
+    // Check for inappropriate content
+    if (filter.isProfane(value)) {
+      return 'Please use professional, appropriate language';
+    }
+
+    // Field-specific validation
+    switch (field) {
+      case 'aiAssistantName':
+      case 'yourName':
+        // Names should only contain letters, spaces, and basic punctuation
+        if (!/^[a-zA-Z\s\-'.]+$/.test(value)) {
+          return 'Names should only contain letters, spaces, and basic punctuation';
+        }
+        break;
+      
+      case 'greetingScript':
+        // Greeting should be professional and complete
+        if (!value.includes('thank') && !value.includes('help')) {
+          return 'Professional greetings should include welcoming language';
+        }
+        // Check for business-inappropriate content
+        const unprofessionalWords = ['hey', 'whats up', 'yo', 'dude', 'bro'];
+        if (unprofessionalWords.some(word => value.toLowerCase().includes(word))) {
+          return 'Please use professional business language';
+        }
+        break;
+      
+      case 'email':
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          return 'Please enter a valid email address';
+        }
+        break;
+    }
+
+    return null;
+  };
 
   const handleEdit = () => {
     setIsEditing(true);
+    setValidationErrors({});
   };
 
   const handleSave = () => {
-    // Here you would typically save to backend/database
+    // Validate all fields before saving
+    const errors: Record<string, string> = {};
+    
+    Object.entries(formData).forEach(([field, value]) => {
+      const error = validateContent(field, value);
+      if (error) {
+        errors[field] = error;
+      }
+    });
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    // Here you would typically save to backend/database with additional server-side validation
+    // Update the original data to match the saved form data
+    setOriginalData({ ...formData });
     setIsEditing(false);
-    // You could add a toast notification here
+    setValidationErrors({});
     console.log('Settings saved:', formData);
   };
 
   const handleCancel = () => {
-    // Reset form data to original values if needed
+    // Reset form data to original values
+    setFormData({ ...originalData });
     setIsEditing(false);
+    setValidationErrors({});
   };
 
   const handleInputChange = (field: string, value: string) => {
+    // Real-time validation as user types
+    const error = validateContent(field, value);
+    
     setFormData(prev => ({
       ...prev,
       [field]: value
+    }));
+
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: error || ''
     }));
   };
 
@@ -90,46 +195,105 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
+                    {isEditing && (
+                      <div className="bg-muted border rounded-md p-3 text-sm">
+                        <p className="font-medium mb-1">Professional Guidelines:</p>
+                        <ul className="text-muted-foreground space-y-1">
+                          <li>• Use professional, welcoming language</li>
+                          <li>• Include your business name and helpful messaging</li>
+                          <li>• Keep greetings concise but informative</li>
+                        </ul>
+                      </div>
+                    )}
+                    
                     <div className="space-y-2">
                       <label className="font-medium">AI Assistant Name</label>
                       <input
                         type="text"
-                        className={`w-full rounded-md border p-2 ${!isEditing ? 'bg-muted' : 'bg-background'}`}
+                        className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
+                          !isEditing ? 'bg-muted' : 
+                          validationErrors.aiAssistantName ? 'bg-background border-red-500' : 'bg-background'
+                        }`}
                         value={formData.aiAssistantName}
                         onChange={(e) => handleInputChange('aiAssistantName', e.target.value)}
                         readOnly={!isEditing}
+                        maxLength={50}
                       />
+                      {validationErrors.aiAssistantName && (
+                        <p className="text-red-500 text-sm">{validationErrors.aiAssistantName}</p>
+                      )}
+                      {isEditing && (
+                        <p className="text-gray-500 text-xs">
+                          {formData.aiAssistantName.length}/50 characters
+                        </p>
+                      )}
                     </div>
+                    
                     <div className="space-y-2">
                       <label className="font-medium">Your Name</label>
                       <input
                         type="text"
-                        className={`w-full rounded-md border p-2 ${!isEditing ? 'bg-muted' : 'bg-background'}`}
+                        className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
+                          !isEditing ? 'bg-muted' : 
+                          validationErrors.yourName ? 'bg-background border-red-500' : 'bg-background'
+                        }`}
                         value={formData.yourName}
                         onChange={(e) => handleInputChange('yourName', e.target.value)}
                         readOnly={!isEditing}
+                        maxLength={100}
                       />
+                      {validationErrors.yourName && (
+                        <p className="text-red-500 text-sm">{validationErrors.yourName}</p>
+                      )}
+                      {isEditing && (
+                        <p className="text-gray-500 text-xs">
+                          {formData.yourName.length}/100 characters
+                        </p>
+                      )}
                     </div>
+                    
                     <div className="space-y-2">
                       <label className="font-medium">Greeting Script</label>
                       <textarea
-                        className={`w-full rounded-md border p-2 resize-none ${!isEditing ? 'bg-muted' : 'bg-background'}`}
+                        className={`w-full rounded-md border p-2 resize-none focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
+                          !isEditing ? 'bg-muted' : 
+                          validationErrors.greetingScript ? 'bg-background border-red-500' : 'bg-background'
+                        }`}
                         rows={3}
                         value={formData.greetingScript}
                         onChange={(e) => handleInputChange('greetingScript', e.target.value)}
                         readOnly={!isEditing}
+                        maxLength={500}
+                        placeholder={isEditing ? "e.g., Hi, thanks for calling [Business Name]! I'm [Assistant Name], how can I help you today?" : ""}
                       />
+                      {validationErrors.greetingScript && (
+                        <p className="text-red-500 text-sm">{validationErrors.greetingScript}</p>
+                      )}
+                      {isEditing && (
+                        <p className="text-gray-500 text-xs">
+                          {formData.greetingScript.length}/500 characters
+                        </p>
+                      )}
                     </div>
+                    
                     <div className="space-y-2">
                       <label className="font-medium">Email for Summaries</label>
                       <input
                         type="email"
-                        className={`w-full rounded-md border p-2 ${!isEditing ? 'bg-muted' : 'bg-background'}`}
+                        className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
+                          !isEditing ? 'bg-muted' : 
+                          validationErrors.email ? 'bg-background border-red-500' : 'bg-background'
+                        }`}
                         value={formData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
                         readOnly={!isEditing}
+                        maxLength={254}
                       />
+                      {validationErrors.email && (
+                        <p className="text-red-500 text-sm">{validationErrors.email}</p>
+                      )}
                     </div>
+                    
                     {!isEditing ? (
                       <Button variant="outline" className="w-full" onClick={handleEdit}>
                         <Edit className="mr-2 h-4 w-4" />
@@ -140,7 +304,11 @@ export default function DashboardPage() {
                         <Button variant="outline" className="flex-1" onClick={handleCancel}>
                           Cancel
                         </Button>
-                        <Button className="flex-1" onClick={handleSave}>
+                        <Button 
+                          className="flex-1" 
+                          onClick={handleSave}
+                          disabled={Object.values(validationErrors).some(error => error)}
+                        >
                           Save Settings
                         </Button>
                       </div>

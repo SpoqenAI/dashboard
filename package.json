@@ -48,6 +48,7 @@
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "latest",
     "autoprefixer": "^10.4.20",
+    "bad-words": "^4.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
