@@ -15,12 +15,12 @@ If you encounter errors like `code challenge does not match previously saved cod
 
 1. **Set a fixed development port** in your `.env.local`:
    ```bash
-   NEXT_PUBLIC_DEV_PORT=3001
+   NEXT_PUBLIC_DEV_PORT=3000
    ```
 
 2. **Always use the same port** for development:
    ```bash
-   npm run dev -- -p 3001
+   npm run dev -- -p 3000
    ```
 
 3. **Clear browser storage** if you've been switching ports:
@@ -44,9 +44,9 @@ Run the development setup script:
 
 ### Testing Email Verification
 
-1. **Signup** on `http://localhost:3001`
+1. **Signup** on `http://localhost:3000`
 2. **Check email** for verification link
-3. **Click link** - should redirect to `http://localhost:3001`
+3. **Click link** - should redirect to `http://localhost:3000`
 4. **Verify** successful login
 
 ### Environment Variables
@@ -55,7 +55,7 @@ Required in `.env.local`:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-NEXT_PUBLIC_DEV_PORT=3001
+NEXT_PUBLIC_DEV_PORT=3000
 ```
 
 ### Troubleshooting

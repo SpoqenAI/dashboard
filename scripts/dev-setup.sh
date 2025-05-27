@@ -14,7 +14,7 @@ fi
 # Check if NEXT_PUBLIC_DEV_PORT is set
 if ! grep -q "NEXT_PUBLIC_DEV_PORT" .env.local; then
     echo "📝 Adding NEXT_PUBLIC_DEV_PORT to .env.local..."
-    echo "NEXT_PUBLIC_DEV_PORT=3001" >> .env.local
+    echo "NEXT_PUBLIC_DEV_PORT=3000" >> .env.local
 else
     echo "✅ NEXT_PUBLIC_DEV_PORT already configured"
 fi
@@ -32,7 +32,7 @@ fi
 
 echo ""
 echo "🎯 Development Tips:"
-echo "   1. Always use the same port for development (3001)"
+echo "   1. Always use the same port for development (3000)"
 echo "   2. If you change ports, clear browser storage and restart"
 echo "   3. Email verification links are tied to the origin they were created from"
 echo ""
