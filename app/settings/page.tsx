@@ -36,7 +36,6 @@ function SettingsContent() {
         <Tabs defaultValue={tab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="profile">General</TabsTrigger>
-            <TabsTrigger value="ai-settings">AI Settings</TabsTrigger>
             <TabsTrigger value="billing">Billing</TabsTrigger>
           </TabsList>
           <TabsContent value="profile" className="space-y-4">
@@ -89,7 +88,7 @@ function SettingsContent() {
                     <Label htmlFor="first-name">First Name</Label>
                     <Input id="first-name" defaultValue="James" />
                   </div>
-                  <div className="space-y-2">
+                <div className="space-y-2">
                     <Label htmlFor="last-name">Last Name</Label>
                     <Input id="last-name" defaultValue="Carter" />
                   </div>
@@ -346,72 +345,7 @@ function SettingsContent() {
               <Button>Save Changes</Button>
             </div>
           </TabsContent>
-          <TabsContent value="ai-settings" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>AI Assistant Settings</CardTitle>
-                <CardDescription>
-                  Customize how your AI receptionist interacts with callers.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="ai-name">AI Assistant Name</Label>
-                  <Input id="ai-name" defaultValue="Ava" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="greeting">Greeting Script</Label>
-                  <Textarea
-                    id="greeting"
-                    defaultValue="Hi, thanks for calling James Carter's office! I'm Ava, his assistant. How can I help you today?"
-                    rows={4}
-                  />
-                </div>
-                <Separator className="my-4" />
-                <div>
-                  <h3 className="mb-2 text-lg font-medium">
-                    Qualification Questions
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="question-1">Question 1</Label>
-                      <Input
-                        id="question-1"
-                        defaultValue="Are you looking to buy, sell, or ask about a property?"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="question-2">Question 2</Label>
-                      <Input
-                        id="question-2"
-                        defaultValue="What's your name and the best number to reach you?"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="question-3">Question 3</Label>
-                      <Input
-                        id="question-3"
-                        defaultValue="When would be the best time for James to call you back?"
-                      />
-                    </div>
-                    <Button variant="outline" size="sm">
-                      + Add Question
-                    </Button>
-                  </div>
-                </div>
-                <Separator className="my-4" />
-                <div className="space-y-2">
-                  <Label htmlFor="summary-email">Email for Summaries</Label>
-                  <Input
-                    id="summary-email"
-                    type="email"
-                    defaultValue="james@realestate.com"
-                  />
-                </div>
-                <Button>Save AI Settings</Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
+
           <TabsContent value="billing" className="space-y-4">
             <Card>
               <CardHeader>
