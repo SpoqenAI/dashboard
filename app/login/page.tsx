@@ -20,11 +20,13 @@ import { PhoneCall } from 'lucide-react';
 import { signIn } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
 import { SocialLogin } from '@/components/auth/social-login';
+import { resendVerificationEmail } from '@/lib/auth';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
+  const [showResendVerification, setShowResendVerification] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -106,10 +108,69 @@ function LoginForm() {
       // Redirect to dashboard
       router.push('/dashboard');
     } catch (error: any) {
+      let title = 'Login failed';
+      let description = 'Invalid email or password. Please try again.';
+
+      // Handle specific error cases
+      if (error.message) {
+        if (error.message.includes('Email not confirmed') || 
+            error.message.includes('email_not_confirmed') ||
+            error.message.includes('signup_disabled')) {
+          title = 'Email not verified';
+          description = 'Please check your email and click the verification link before logging in. Check your spam folder if you don\'t see the email.';
+          setShowResendVerification(true);
+        } else if (error.message.includes('Invalid login credentials')) {
+          description = 'Invalid email or password. Please check your credentials and try again.';
+          setShowResendVerification(false);
+        } else if (error.message.includes('Too many requests')) {
+          title = 'Too many attempts';
+          description = 'Too many login attempts. Please wait a few minutes before trying again.';
+          setShowResendVerification(false);
+        } else {
+          description = error.message;
+          setShowResendVerification(false);
+        }
+      }
+
       toast({
-        title: 'Login failed',
-        description:
-          error.message || 'Invalid email or password. Please try again.',
+        title,
+        description,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!formData.email) {
+      toast({
+        title: 'Email required',
+        description: 'Please enter your email address first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await resendVerificationEmail(formData.email);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: 'Verification email sent',
+        description: 'Please check your email for the verification link.',
+      });
+
+      setShowResendVerification(false);
+    } catch (error: any) {
+      toast({
+        title: 'Failed to send verification email',
+        description: error.message || 'Something went wrong. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -177,6 +238,18 @@ function LoginForm() {
               <Button className="w-full" type="submit" disabled={isLoading}>
                 {isLoading ? 'Logging in...' : 'Login'}
               </Button>
+
+              {showResendVerification && (
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={handleResendVerification}
+                  disabled={isLoading}
+                  type="button"
+                >
+                  {isLoading ? 'Sending...' : 'Resend verification email'}
+                </Button>
+              )}
 
               <SocialLogin mode="login" />
 

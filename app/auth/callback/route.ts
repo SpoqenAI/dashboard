@@ -83,33 +83,67 @@ export async function GET(request: NextRequest) {
       // Email confirmation flow - redirect to onboarding for new users
       return NextResponse.redirect(new URL('/onboarding', request.url));
     } else {
-      // OAuth or regular login flow
-      // Check if this is a new user (first time signing in)
-      const isNewUser =
-        data.user?.created_at &&
-        data.user?.last_sign_in_at &&
-        Math.abs(
-          new Date(data.user.created_at).getTime() -
-            new Date(data.user.last_sign_in_at).getTime()
-        ) < 5000; // 5 second threshold
+      // OAuth or email verification flow
+      // Check if this is email verification (user exists but was just confirming email)
+      const user = data.user;
+      
+      if (user) {
+        // Check if user just confirmed their email (email_confirmed_at is recent)
+        const emailConfirmedAt = user.email_confirmed_at;
+        const createdAt = user.created_at;
+        
+        if (emailConfirmedAt && createdAt) {
+          const emailConfirmedTime = new Date(emailConfirmedAt).getTime();
+          const createdTime = new Date(createdAt).getTime();
+          const now = Date.now();
+          
+          // If email was confirmed recently (within 10 minutes) and user was created recently (within 1 hour)
+          // this is likely an email verification flow
+          const isRecentEmailConfirmation = (now - emailConfirmedTime) < 10 * 60 * 1000; // 10 minutes
+          const isRecentSignup = (now - createdTime) < 60 * 60 * 1000; // 1 hour
+          
+          if (isRecentEmailConfirmation && isRecentSignup) {
+            // This is email verification for a new user - redirect to onboarding
+            return NextResponse.redirect(new URL('/onboarding', request.url));
+          }
+        }
+        
+        // Check if this is a new user (first time signing in via OAuth)
+        const isNewUser =
+          user.created_at &&
+          user.last_sign_in_at &&
+          Math.abs(
+            new Date(user.created_at).getTime() -
+              new Date(user.last_sign_in_at).getTime()
+          ) < 5000; // 5 second threshold
 
-      // Redirect based on user status
-      if (isNewUser) {
-        // Redirect new users to onboarding
-        return NextResponse.redirect(new URL('/onboarding', request.url));
+        // Redirect based on user status
+        if (isNewUser) {
+          // Redirect new users to onboarding
+          return NextResponse.redirect(new URL('/onboarding', request.url));
+        } else {
+          const isValidRedirectPath = (path: string) => {
+            return (
+              path.startsWith('/') &&
+              !path.startsWith('//') &&
+              !path.includes('..') &&
+              !path.includes('\\')
+            );
+          };
+
+          // Redirect existing users to dashboard or specified next URL
+          const redirectUrl = isValidRedirectPath(next) ? next : '/dashboard';
+          return NextResponse.redirect(new URL(redirectUrl, request.url));
+        }
       } else {
-        const isValidRedirectPath = (path: string) => {
-          return (
-            path.startsWith('/') &&
-            !path.startsWith('//') &&
-            !path.includes('..') &&
-            !path.includes('\\')
-          );
-        };
-
-        // Redirect existing users to dashboard or specified next URL
-        const redirectUrl = isValidRedirectPath(next) ? next : '/dashboard';
-        return NextResponse.redirect(new URL(redirectUrl, request.url));
+        // No user data - something went wrong
+        console.error('No user data in successful auth callback');
+        return NextResponse.redirect(
+          new URL(
+            '/login?error=no_user&message=Authentication completed but no user data found. Please try logging in.',
+            request.url
+          )
+        );
       }
     }
   } catch (error) {
