@@ -12,20 +12,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CreditCard, LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import { signOut } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
 
 export function UserNav() {
   const router = useRouter();
-
-  const handleProfileClick = () => {
-    router.push('/settings?tab=profile');
-  };
-
-  const handleBillingClick = () => {
-    router.push('/settings?tab=billing');
-  };
 
   const handleSettingsClick = () => {
     router.push('/settings');
@@ -79,14 +71,6 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={handleProfileClick}>
-            <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleBillingClick}>
-            <CreditCard className="mr-2 h-4 w-4" />
-            <span>Billing</span>
-          </DropdownMenuItem>
           <DropdownMenuItem onClick={handleSettingsClick}>
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
