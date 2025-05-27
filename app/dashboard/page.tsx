@@ -23,6 +23,18 @@ import {
 import { DashboardHeader } from '@/components/dashboard-header';
 import { RecentCallsList } from '@/components/recent-calls-list';
 import { StatsCards } from '@/components/stats-cards';
+import { toast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 
 export default function DashboardPage() {
   const [isEditing, setIsEditing] = useState(false);
@@ -44,6 +56,7 @@ export default function DashboardPage() {
   });
   
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Initialize content filter
   const filter = new Filter();
@@ -117,27 +130,28 @@ export default function DashboardPage() {
     setValidationErrors({});
   };
 
-  const handleSave = () => {
+  const doSave = () => {
+    setConfirmOpen(false);
     // Validate all fields before saving
     const errors: Record<string, string> = {};
-    
     Object.entries(formData).forEach(([field, value]) => {
       const error = validateContent(field, value);
       if (error) {
         errors[field] = error;
       }
     });
-
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       return;
     }
-
-    // Save the current form data as the new saved data
     setSavedData({ ...formData });
     setIsEditing(false);
     setValidationErrors({});
     console.log('Settings saved:', formData);
+    toast({
+      title: 'Settings saved!',
+      description: 'Your AI Receptionist settings have been updated.',
+    });
   };
 
   const handleCancel = () => {
@@ -161,6 +175,9 @@ export default function DashboardPage() {
       [field]: error || ''
     }));
   };
+
+  // Add a helper to check if form data has changed
+  const isFormChanged = JSON.stringify(formData) !== JSON.stringify(savedData);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -196,7 +213,12 @@ export default function DashboardPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <form className="space-y-4" onSubmit={e => {
+                    e.preventDefault();
+                    if (!Object.values(validationErrors).some(error => error) && isFormChanged) {
+                      setConfirmOpen(true);
+                    }
+                  }}>
                     <div className="space-y-2">
                       <label className="font-medium">AI Assistant Name</label>
                       <input
@@ -291,28 +313,44 @@ export default function DashboardPage() {
                       )}
                     </div>
                     
-
-                    
                     {!isEditing ? (
-                      <Button variant="outline" className="w-full" onClick={handleEdit}>
+                      <Button variant="outline" className="w-full" onClick={handleEdit} type="button">
                         <Edit className="mr-2 h-4 w-4" />
                         Edit Settings
                       </Button>
                     ) : (
                       <div className="flex gap-2">
-                        <Button variant="outline" className="flex-1" onClick={handleCancel}>
+                        <Button variant="outline" className="flex-1" onClick={handleCancel} type="button">
                           Cancel
                         </Button>
                         <Button 
                           className="flex-1" 
-                          onClick={handleSave}
-                          disabled={Object.values(validationErrors).some(error => error)}
+                          type="submit"
+                          disabled={Object.values(validationErrors).some(error => error) || !isFormChanged}
                         >
                           Save Settings
                         </Button>
+                        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirm Save</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to save these changes to your AI Receptionist settings? This action will update your settings immediately.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel asChild>
+                                <Button variant="outline" onClick={() => { handleCancel(); setConfirmOpen(false); }}>Cancel</Button>
+                              </AlertDialogCancel>
+                              <AlertDialogAction asChild>
+                                <Button onClick={doSave}>Confirm</Button>
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     )}
-                  </div>
+                  </form>
                 </CardContent>
               </Card>
             </div>

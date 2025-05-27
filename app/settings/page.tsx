@@ -25,11 +25,22 @@ import { DashboardShell } from '@/components/dashboard-shell';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { Camera, Bell, Shield, User } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 
 function SettingsContent() {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab') || 'profile';
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   
   // Form data state
   const [formData, setFormData] = useState({
@@ -55,6 +66,27 @@ function SettingsContent() {
   });
   
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [savedData, setSavedData] = useState({
+    firstName: 'James',
+    lastName: 'Carter',
+    email: 'james@realestate.com',
+    phone: '(555) 123-4567',
+    businessName: 'Carter Real Estate',
+    bio: 'Experienced real estate agent specializing in residential properties.',
+    licenseNumber: 'RE123456789',
+    brokerage: 'Premier Realty Group',
+    website: 'https://jamescarter-realestate.com',
+    businessAddress: '123 Market Street, San Francisco, CA 94102',
+    city: 'San Francisco',
+    state: 'California',
+    zipcode: '94102',
+    country: 'United States',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+    emailNotifications: true,
+    marketingEmails: true,
+  });
 
   // Initialize content filter
   const filter = new Filter();
@@ -530,14 +562,16 @@ function SettingsContent() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  // Helper to check if form data has changed
+  const isFormChanged = JSON.stringify(formData) !== JSON.stringify(savedData);
 
+  // Refactored save logic
+  const doSave = async () => {
+    setConfirmOpen(false);
+    setIsSubmitting(true);
     try {
       // Validate all fields before saving
       const errors: Record<string, string> = {};
-      
       Object.entries(formData).forEach(([field, value]) => {
         if (typeof value === 'string') {
           const error = validateContent(field, value);
@@ -546,24 +580,19 @@ function SettingsContent() {
           }
         }
       });
-
       if (Object.keys(errors).length > 0) {
         setValidationErrors(errors);
         return;
       }
-
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
       // Here you would typically make an API call to save the data
+      setSavedData({ ...formData });
       console.log('Form data:', formData);
-      
-      // Show success message
       toast({
         title: 'Settings saved successfully!',
         description: 'Your changes have been saved.',
       });
-      
     } catch (error) {
       console.error('Error saving settings:', error);
       toast({
@@ -574,6 +603,12 @@ function SettingsContent() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Cancel logic for General tab
+  const handleCancel = () => {
+    setFormData({ ...savedData });
+    setValidationErrors({});
   };
 
   return (
@@ -589,7 +624,12 @@ function SettingsContent() {
             <TabsTrigger value="billing">Billing</TabsTrigger>
           </TabsList>
           <TabsContent value="profile" className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={e => {
+              e.preventDefault();
+              if (!Object.values(validationErrors).some(error => error) && isFormChanged) {
+                setConfirmOpen(true);
+              }
+            }} className="space-y-4">
             {/* Profile Information */}
             <Card>
               <CardHeader>
@@ -962,13 +1002,39 @@ function SettingsContent() {
             </Card>
 
             {/* Save Changes */}
-            <div className="flex justify-end">
-              <Button 
-                type="submit" 
-                disabled={isSubmitting || Object.values(validationErrors).some(error => error)}
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={!isFormChanged || isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || Object.values(validationErrors).some(error => error) || !isFormChanged}
               >
                 {isSubmitting ? 'Saving...' : 'Save Changes'}
               </Button>
+              <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm Save</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to save these changes to your settings? This action will update your settings immediately.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel asChild>
+                      <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+                    </AlertDialogCancel>
+                    <AlertDialogAction asChild>
+                      <Button onClick={doSave}>Confirm</Button>
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
             </form>
           </TabsContent>
