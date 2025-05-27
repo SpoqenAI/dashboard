@@ -33,7 +33,6 @@ export default function DashboardPage() {
     yourName: 'James Carter',
     businessName: 'James Carter Real Estate',
     greetingScript: "Hi, thanks for calling James Carter's office! I'm Ava, his assistant. How can I help you today?",
-    email: 'james@realestate.com',
   });
   
   // Current form data (can be different from saved while editing)
@@ -42,7 +41,6 @@ export default function DashboardPage() {
     yourName: 'James Carter',
     businessName: 'James Carter Real Estate',
     greetingScript: "Hi, thanks for calling James Carter's office! I'm Ava, his assistant. How can I help you today?",
-    email: 'james@realestate.com',
   });
   
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -58,8 +56,7 @@ export default function DashboardPage() {
     aiAssistantName: { maxLength: 25, minLength: 1 },
     yourName: { maxLength: 50, minLength: 1 },
     businessName: { maxLength: 100, minLength: 1 },
-    greetingScript: { maxLength: 500, minLength: 10 },
-    email: { maxLength: 254, minLength: 5 }
+    greetingScript: { maxLength: 500, minLength: 10 }
   };
 
   // Regex patterns for field validation - extracted to prevent ReDoS attacks
@@ -71,11 +68,7 @@ export default function DashboardPage() {
     
     // Business names: alphanumeric, single spaces, limited punctuation
     // More restrictive to prevent ReDoS while allowing common business name formats
-    BUSINESS_NAME_PATTERN: /^[a-zA-Z0-9](?:[a-zA-Z0-9\s\-'.,&()])*[a-zA-Z0-9)]$|^[a-zA-Z0-9]$/,
-    
-    // Email: simplified pattern that avoids nested quantifiers
-    // More restrictive but safer against ReDoS attacks
-    EMAIL_PATTERN: /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]{0,62}[a-zA-Z0-9])?@[a-zA-Z0-9](?:[a-zA-Z0-9.-]{0,251}[a-zA-Z0-9])?$/
+    BUSINESS_NAME_PATTERN: /^[a-zA-Z0-9](?:[a-zA-Z0-9\s\-'.,&()])*[a-zA-Z0-9)]$|^[a-zA-Z0-9]$/
   };
 
   const validateContent = (field: string, value: string): string | null => {
@@ -113,13 +106,6 @@ export default function DashboardPage() {
       
       case 'greetingScript':
         // No additional restrictions for greeting script - profanity filter handles inappropriate content
-        break;
-      
-      case 'email':
-        // Email validation using secure pattern
-        if (!VALIDATION_PATTERNS.EMAIL_PATTERN.test(value)) {
-          return 'Please enter a valid email address';
-        }
         break;
     }
 
@@ -215,9 +201,9 @@ export default function DashboardPage() {
                       <label className="font-medium">AI Assistant Name</label>
                       <input
                         type="text"
-                        className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                          !isEditing ? 'bg-muted' : 
-                          validationErrors.aiAssistantName ? 'bg-background border-red-500' : 'bg-background'
+                        className={`w-full rounded-md border p-2 focus:outline-none ${
+                          !isEditing ? 'bg-muted cursor-default' : 
+                          validationErrors.aiAssistantName ? 'bg-background border-red-500 focus:ring-1 focus:ring-black focus:border-black' : 'bg-background focus:ring-1 focus:ring-black focus:border-black'
                         }`}
                         value={formData.aiAssistantName}
                         onChange={(e) => handleInputChange('aiAssistantName', e.target.value)}
@@ -238,9 +224,9 @@ export default function DashboardPage() {
                       <label className="font-medium">Your Name</label>
                       <input
                         type="text"
-                        className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                          !isEditing ? 'bg-muted' : 
-                          validationErrors.yourName ? 'bg-background border-red-500' : 'bg-background'
+                        className={`w-full rounded-md border p-2 focus:outline-none ${
+                          !isEditing ? 'bg-muted cursor-default' : 
+                          validationErrors.yourName ? 'bg-background border-red-500 focus:ring-1 focus:ring-black focus:border-black' : 'bg-background focus:ring-1 focus:ring-black focus:border-black'
                         }`}
                         value={formData.yourName}
                         onChange={(e) => handleInputChange('yourName', e.target.value)}
@@ -261,9 +247,9 @@ export default function DashboardPage() {
                       <label className="font-medium">Business Name</label>
                       <input
                         type="text"
-                        className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                          !isEditing ? 'bg-muted' : 
-                          validationErrors.businessName ? 'bg-background border-red-500' : 'bg-background'
+                        className={`w-full rounded-md border p-2 focus:outline-none ${
+                          !isEditing ? 'bg-muted cursor-default' : 
+                          validationErrors.businessName ? 'bg-background border-red-500 focus:ring-1 focus:ring-black focus:border-black' : 'bg-background focus:ring-1 focus:ring-black focus:border-black'
                         }`}
                         value={formData.businessName}
                         onChange={(e) => handleInputChange('businessName', e.target.value)}
@@ -284,9 +270,9 @@ export default function DashboardPage() {
                     <div className="space-y-2">
                       <label className="font-medium">Greeting Script</label>
                       <textarea
-                        className={`w-full rounded-md border p-2 resize-none focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                          !isEditing ? 'bg-muted' : 
-                          validationErrors.greetingScript ? 'bg-background border-red-500' : 'bg-background'
+                        className={`w-full rounded-md border p-2 resize-none focus:outline-none ${
+                          !isEditing ? 'bg-muted cursor-default' : 
+                          validationErrors.greetingScript ? 'bg-background border-red-500 focus:ring-1 focus:ring-black focus:border-black' : 'bg-background focus:ring-1 focus:ring-black focus:border-black'
                         }`}
                         rows={3}
                         value={formData.greetingScript}
@@ -305,23 +291,7 @@ export default function DashboardPage() {
                       )}
                     </div>
                     
-                    <div className="space-y-2">
-                      <label className="font-medium">Email for Summaries</label>
-                      <input
-                        type="email"
-                        className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                          !isEditing ? 'bg-muted' : 
-                          validationErrors.email ? 'bg-background border-red-500' : 'bg-background'
-                        }`}
-                        value={formData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        readOnly={!isEditing}
-                        maxLength={254}
-                      />
-                      {validationErrors.email && (
-                        <p className="text-red-500 text-sm">{validationErrors.email}</p>
-                      )}
-                    </div>
+
                     
                     {!isEditing ? (
                       <Button variant="outline" className="w-full" onClick={handleEdit}>
