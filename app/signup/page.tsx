@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useMask } from '@react-input/mask';
 import { Filter } from 'bad-words';
+import PasswordStrengthBar from 'react-password-strength-bar';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -46,6 +47,7 @@ export default function SignupPage() {
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const initialFormData = { firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '' };
+  const [score, setScore] = useState(0);
 
   // Profanity/content filter
   const filter = new Filter();
@@ -335,6 +337,12 @@ export default function SignupPage() {
                   aria-invalid={!!validationErrors.password}
                   maxLength={128}
                 />
+                <PasswordStrengthBar
+                  password={formData.password}
+                  minLength={8}
+                  scoreWords={['Too weak', 'Weak', 'Okay', 'Strong', 'Very strong']}
+                  onChangeScore={setScore}
+                />
                 {validationErrors.password && (
                   <p className="text-red-500 text-sm">{validationErrors.password}</p>
                 )}
@@ -365,7 +373,9 @@ export default function SignupPage() {
                     isLoading ||
                     !areRequiredFieldsFilled ||
                     Object.values(validationErrors).some(error => error) ||
-                    JSON.stringify(formData) === JSON.stringify(initialFormData)
+                    JSON.stringify(formData) === JSON.stringify(initialFormData) ||
+                    formData.password.length < 8 ||
+                    score < 2
                   }
                 >
                   {isLoading ? 'Creating Account...' : 'Create Account'}
