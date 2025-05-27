@@ -15,8 +15,12 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardShell } from '@/components/dashboard-shell';
+import { Camera, Bell, Shield, User, Globe, Moon, Sun, Monitor } from 'lucide-react';
 
 function SettingsContent() {
   const searchParams = useSearchParams();
@@ -31,44 +35,316 @@ function SettingsContent() {
         </div>
         <Tabs defaultValue={tab} className="space-y-4">
           <TabsList>
-            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="profile">General</TabsTrigger>
             <TabsTrigger value="ai-settings">AI Settings</TabsTrigger>
             <TabsTrigger value="billing">Billing</TabsTrigger>
           </TabsList>
           <TabsContent value="profile" className="space-y-4">
+            {/* Profile Information */}
             <Card>
               <CardHeader>
-                <CardTitle>Profile</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Profile Information
+                </CardTitle>
                 <CardDescription>
-                  Manage your personal information and preferences.
+                  Manage your personal information and account details.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" defaultValue="James Carter" />
+              <CardContent className="space-y-6">
+                {/* Profile Picture */}
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
+                    <Avatar className="h-20 w-20">
+                      <AvatarImage
+                        src="/placeholder.svg?height=80&width=80&query=person"
+                        alt="Profile picture"
+                      />
+                      <AvatarFallback className="text-lg">JC</AvatarFallback>
+                    </Avatar>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
+                    >
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Profile Picture</p>
+                    <p className="text-sm text-muted-foreground">
+                      JPG, PNG or GIF. Max size 2MB.
+                    </p>
+                    <Button variant="outline" size="sm">
+                      Upload new picture
+                    </Button>
+                  </div>
                 </div>
+
+                <Separator />
+
+                {/* Basic Information */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="first-name">First Name</Label>
+                    <Input id="first-name" defaultValue="James" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="last-name">Last Name</Label>
+                    <Input id="last-name" defaultValue="Carter" />
+                  </div>
+                </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email Address</Label>
                   <Input
                     id="email"
                     type="email"
                     defaultValue="james@realestate.com"
                   />
                 </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
                   <Input id="phone" type="tel" defaultValue="(555) 123-4567" />
                 </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="business-name">
-                    Business Name (Optional)
-                  </Label>
+                  <Label htmlFor="business-name">Business Name</Label>
                   <Input id="business-name" defaultValue="Carter Real Estate" />
                 </div>
-                <Button>Save Changes</Button>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  <Textarea
+                    id="bio"
+                    placeholder="Tell us about yourself and your real estate business..."
+                    defaultValue="Experienced real estate agent specializing in residential properties."
+                    rows={3}
+                  />
+                </div>
               </CardContent>
             </Card>
+
+            {/* Notification Preferences */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Notification Preferences
+                </CardTitle>
+                <CardDescription>
+                  Configure how you want to receive notifications and updates.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="email-notifications">Email Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive notifications about new calls and messages via email
+                    </p>
+                  </div>
+                  <Switch id="email-notifications" defaultChecked />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="sms-notifications">SMS Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Get instant SMS alerts for urgent calls
+                    </p>
+                  </div>
+                  <Switch id="sms-notifications" />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="push-notifications">Push Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive push notifications in your browser
+                    </p>
+                  </div>
+                  <Switch id="push-notifications" defaultChecked />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="marketing-emails">Marketing Emails</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive updates about new features and tips
+                    </p>
+                  </div>
+                  <Switch id="marketing-emails" defaultChecked />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Appearance & Language */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5" />
+                  Appearance & Language
+                </CardTitle>
+                <CardDescription>
+                  Customize the appearance and language of your dashboard.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="theme">Theme</Label>
+                  <Select defaultValue="system">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select theme" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">
+                        <div className="flex items-center gap-2">
+                          <Sun className="h-4 w-4" />
+                          Light
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="dark">
+                        <div className="flex items-center gap-2">
+                          <Moon className="h-4 w-4" />
+                          Dark
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="system">
+                        <div className="flex items-center gap-2">
+                          <Monitor className="h-4 w-4" />
+                          System
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="language">Language</Label>
+                  <Select defaultValue="en">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Español</SelectItem>
+                      <SelectItem value="fr">Français</SelectItem>
+                      <SelectItem value="de">Deutsch</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="timezone">Timezone</Label>
+                  <Select defaultValue="america/los_angeles">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select timezone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="america/los_angeles">Pacific Time (PT)</SelectItem>
+                      <SelectItem value="america/denver">Mountain Time (MT)</SelectItem>
+                      <SelectItem value="america/chicago">Central Time (CT)</SelectItem>
+                      <SelectItem value="america/new_york">Eastern Time (ET)</SelectItem>
+                      <SelectItem value="utc">UTC</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Security Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Security Settings
+                </CardTitle>
+                <CardDescription>
+                  Manage your password and security preferences.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="current-password">Current Password</Label>
+                  <Input id="current-password" type="password" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <Input id="new-password" type="password" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm New Password</Label>
+                  <Input id="confirm-password" type="password" />
+                </div>
+
+                <Button variant="outline">Change Password</Button>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="two-factor">Two-Factor Authentication</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Add an extra layer of security to your account
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    Enable 2FA
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Business Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Business Information</CardTitle>
+                <CardDescription>
+                  Professional details for your real estate business.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="license-number">License Number</Label>
+                  <Input id="license-number" defaultValue="RE123456789" />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="brokerage">Brokerage</Label>
+                  <Input id="brokerage" defaultValue="Premier Realty Group" />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="website">Website</Label>
+                  <Input
+                    id="website"
+                    type="url"
+                    placeholder="https://your-website.com"
+                    defaultValue="https://jamescarter-realestate.com"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input id="city" defaultValue="San Francisco" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State</Label>
+                    <Input id="state" defaultValue="California" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Save Changes */}
+            <div className="flex justify-end">
+              <Button>Save Changes</Button>
+            </div>
           </TabsContent>
           <TabsContent value="ai-settings" className="space-y-4">
             <Card>
