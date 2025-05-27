@@ -46,6 +46,7 @@ export default function SignupPage() {
     confirmPassword: '',
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
   const initialFormData = { firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '' };
   const [score, setScore] = useState(0);
 
@@ -55,7 +56,7 @@ export default function SignupPage() {
 
   // Regex patterns for field validation
   const VALIDATION_PATTERNS = {
-    NAME_PATTERN: /^[a-zA-Z](?:[a-zA-Z\s\-'.])*[a-zA-Z]$|^[a-zA-Z]$/,
+    NAME_PATTERN: /^[a-zA-Z'](?:[a-zA-Z\s\-'.])*[a-zA-Z']$|^[a-zA-Z']$/,
     EMAIL_PATTERN: /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/,
   };
 
@@ -99,26 +100,26 @@ export default function SignupPage() {
     switch (field) {
       case 'firstName':
       case 'lastName': {
-        if (!value) return 'Required';
-        if (value.length > 50) return 'Maximum 50 characters allowed';
+        if (!value) return 'This field is required';
+        if (value.length > 50) return 'Please keep this under 50 characters';
         if (filter.isProfane(value)) return 'Please use professional, appropriate language';
         if (!VALIDATION_PATTERNS.NAME_PATTERN.test(value)) {
-          return 'Should only contain letters, spaces, and basic punctuation';
+          return 'Please use only letters, spaces, and common punctuation';
         }
         return null;
       }
       case 'email': {
-        if (!value) return 'Required';
-        if (value.length > 254) return 'Maximum 254 characters allowed';
-        if (!VALIDATION_PATTERNS.EMAIL_PATTERN.test(value)) return 'Please enter a valid email address';
-        if (value.includes('..')) return 'Email cannot contain consecutive dots';
-        if (value.startsWith('.') || value.endsWith('.')) return 'Email cannot start or end with a dot';
-        if (value.includes('@.') || value.includes('.@')) return 'Invalid email format around @ symbol';
+        if (!value) return 'This field is required';
+        if (value.length > 254) return 'Please use a shorter email address';
+        if (!VALIDATION_PATTERNS.EMAIL_PATTERN.test(value)) return 'Please check your email format (e.g., name@example.com)';
+        if (value.includes('..')) return 'Please remove consecutive dots from your email';
+        if (value.startsWith('.') || value.endsWith('.')) return 'Email addresses cannot start or end with a dot';
+        if (value.includes('@.') || value.includes('.@')) return 'Please check the format around the @ symbol';
         const parts = value.split('@');
         if (parts.length === 2) {
           const domain = parts[1];
           if (!domain.includes('.') || domain.split('.').pop()!.length < 2) {
-            return 'Email must have a valid domain extension';
+            return 'Please include a valid domain (e.g., gmail.com)';
           }
         }
         return null;
@@ -128,46 +129,63 @@ export default function SignupPage() {
         const isInternational = value.startsWith('+');
         const digitsOnly = value.replace(/\D/g, '');
         if (isInternational) {
-          if (digitsOnly.length < 7) return 'International number must have at least 7 digits';
-          if (digitsOnly.length > 15) return 'International number cannot exceed 15 digits';
+          if (digitsOnly.length < 7) return 'Please enter at least 7 digits for international numbers';
+          if (digitsOnly.length > 15) return 'International numbers cannot exceed 15 digits';
           if (digitsOnly.length >= 10) {
             const countryCodeLength = digitsOnly.length - 10;
-            if (countryCodeLength > 4) return 'Invalid country code - too long';
+            if (countryCodeLength > 4) return 'Please check your country code';
           }
           if (digitsOnly.length < 8) return 'Please enter a complete international number';
         } else {
           if (digitsOnly.length > 0 && digitsOnly.length < 3) return null;
-          if (digitsOnly.length > 0 && digitsOnly.length < 10) return 'US phone number must be 10 digits';
-          if (digitsOnly.length > 10) return 'US phone number cannot exceed 10 digits';
+          if (digitsOnly.length > 0 && digitsOnly.length < 10) return 'Please enter a complete 10-digit phone number';
+          if (digitsOnly.length > 10) return 'US phone numbers should be exactly 10 digits';
           if (digitsOnly.length === 10) {
             const areaCode = digitsOnly.substring(0, 3);
             const exchange = digitsOnly.substring(3, 6);
-            if (areaCode.startsWith('0') || areaCode.startsWith('1')) return 'Invalid area code';
-            if (exchange.startsWith('0') || exchange.startsWith('1')) return 'Invalid exchange code';
-            if (areaCode === '911' || exchange === '911') return 'Cannot use emergency service numbers';
+            if (areaCode.startsWith('0') || areaCode.startsWith('1')) return 'Please enter a valid area code';
+            if (exchange.startsWith('0') || exchange.startsWith('1')) return 'Please enter a valid exchange code';
+            if (areaCode === '911' || exchange === '911') return 'Please use a different phone number';
             if (areaCode === '000' || exchange === '000' || (areaCode === '555' && exchange === '555')) return 'Please enter a valid phone number';
           }
         }
         return null;
       }
       case 'password': {
-        if (!value) return 'Required';
-        if (value.length < 8) return 'Password must be at least 8 characters';
-        if (value.length > 128) return 'Maximum 128 characters allowed';
-        if (!/[A-Z]/.test(value)) return 'Password must contain at least one uppercase letter';
-        if (!/[a-z]/.test(value)) return 'Password must contain at least one lowercase letter';
-        if (!/[0-9]/.test(value)) return 'Password must contain at least one digit';
-        if (!/[!@#$%^&*(),.?":{}|<>\[\]\\/\-_+=~`';]/.test(value)) return 'Password must contain at least one special character';
+        if (!value) return 'This field is required';
+        if (value.length < 8) return 'Please use at least 8 characters';
+        if (value.length > 128) return 'Please keep password under 128 characters';
+        if (!/[A-Z]/.test(value)) return 'Please include at least one uppercase letter';
+        if (!/[a-z]/.test(value)) return 'Please include at least one lowercase letter';
+        if (!/[0-9]/.test(value)) return 'Please include at least one number';
+        if (!/[!@#$%^&*(),.?":{}|<>\[\]\\/\-_+=~`';]/.test(value)) return 'Please include at least one special character (!@#$%^&* etc.)';
         return null;
       }
       case 'confirmPassword': {
-        if (!value) return 'Required';
-        if (value !== formData.password) return 'Passwords do not match';
+        if (!value) return 'This field is required';
+        if (value !== formData.password) return 'Please make sure both passwords match';
         return null;
       }
       default:
         return null;
     }
+  };
+
+  // Handle field blur (when user leaves the field)
+  const handleFieldBlur = (field: string) => {
+    setTouchedFields(prev => ({ ...prev, [field]: true }));
+    
+    let valueToValidate = formData[field as keyof typeof formData];
+    
+    // Auto-trim name fields when user leaves the field
+    if (field === 'firstName' || field === 'lastName') {
+      const trimmedValue = valueToValidate.trim();
+      setFormData(prev => ({ ...prev, [field]: trimmedValue }));
+      valueToValidate = trimmedValue;
+    }
+    
+    const error = validateContent(field, valueToValidate);
+    setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
   };
 
   // Unified input handler
@@ -176,9 +194,16 @@ export default function SignupPage() {
     if (field === 'phone') {
       processedValue = formatPhoneNumber(value);
     }
-    const error = validateContent(field, processedValue);
     setFormData(prev => ({ ...prev, [field]: processedValue }));
-    setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
+    
+    // Only show validation errors for fields that have been touched (blurred)
+    // Exception: show validation for confirmPassword immediately if password field has been touched
+    if (touchedFields[field] || (field === 'confirmPassword' && touchedFields.password)) {
+      // For name fields, validate against the trimmed value but don't update the form data yet
+      const valueForValidation = (field === 'firstName' || field === 'lastName') ? processedValue.trim() : processedValue;
+      const error = validateContent(field, valueForValidation);
+      setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
+    }
   };
 
   const isFormChanged = JSON.stringify(formData) !== JSON.stringify(initialFormData);
@@ -188,6 +213,7 @@ export default function SignupPage() {
   const handleCancel = () => {
     setFormData({ ...initialFormData });
     setValidationErrors({});
+    setTouchedFields({});
   };
 
   // Actual signup logic (direct submit)
@@ -217,7 +243,32 @@ export default function SignupPage() {
   // Form submit handler
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!Object.values(validationErrors).some(error => error) && JSON.stringify(formData) !== JSON.stringify(initialFormData)) {
+    
+    // Mark all fields as touched and validate them
+    const allFields = ['firstName', 'lastName', 'email', 'phone', 'password', 'confirmPassword'];
+    const newTouchedFields: Record<string, boolean> = {};
+    const newValidationErrors: Record<string, string> = {};
+    
+    allFields.forEach(field => {
+      newTouchedFields[field] = true;
+      let valueToValidate = formData[field as keyof typeof formData];
+      
+      // Use trimmed values for name field validation
+      if (field === 'firstName' || field === 'lastName') {
+        valueToValidate = valueToValidate.trim();
+      }
+      
+      const error = validateContent(field, valueToValidate);
+      newValidationErrors[field] = error || '';
+    });
+    
+    setTouchedFields(newTouchedFields);
+    setValidationErrors(newValidationErrors);
+    
+    // Check if there are any validation errors
+    const hasErrors = Object.values(newValidationErrors).some(error => error);
+    
+    if (!hasErrors && JSON.stringify(formData) !== JSON.stringify(initialFormData)) {
       await doSignup();
     }
   };
@@ -263,13 +314,14 @@ export default function SignupPage() {
                     placeholder="Enter your first name"
                     value={formData.firstName}
                     onChange={e => handleInputChange('firstName', e.target.value)}
+                    onBlur={() => handleFieldBlur('firstName')}
                     required
                     aria-invalid={!!validationErrors.firstName}
                     maxLength={50}
                     inputMode="text"
                   />
                   {validationErrors.firstName && (
-                    <p className="text-red-500 text-sm">{validationErrors.firstName}</p>
+                    <p className="text-muted-foreground text-sm">{validationErrors.firstName}</p>
                   )}
                 </div>
                 <div className="flex-1 space-y-2">
@@ -279,13 +331,14 @@ export default function SignupPage() {
                     placeholder="Enter your last name"
                     value={formData.lastName}
                     onChange={e => handleInputChange('lastName', e.target.value)}
+                    onBlur={() => handleFieldBlur('lastName')}
                     required
                     aria-invalid={!!validationErrors.lastName}
                     maxLength={50}
                     inputMode="text"
                   />
                   {validationErrors.lastName && (
-                    <p className="text-red-500 text-sm">{validationErrors.lastName}</p>
+                    <p className="text-muted-foreground text-sm">{validationErrors.lastName}</p>
                   )}
                 </div>
               </div>
@@ -297,6 +350,7 @@ export default function SignupPage() {
                   placeholder="Enter your email"
                   value={formData.email}
                   onChange={e => handleInputChange('email', e.target.value)}
+                  onBlur={() => handleFieldBlur('email')}
                   required
                   aria-invalid={!!validationErrors.email}
                   maxLength={254}
@@ -305,7 +359,7 @@ export default function SignupPage() {
                   ref={emailMaskRef}
                 />
                 {validationErrors.email && (
-                  <p className="text-red-500 text-sm">{validationErrors.email}</p>
+                  <p className="text-muted-foreground text-sm">{validationErrors.email}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -316,13 +370,14 @@ export default function SignupPage() {
                   placeholder="(555) 123-4567 or +1 555 123 4567"
                   value={formData.phone}
                   onChange={e => handleInputChange('phone', e.target.value)}
+                  onBlur={() => handleFieldBlur('phone')}
                   aria-invalid={!!validationErrors.phone}
                   maxLength={20}
                   inputMode="tel"
                   autoComplete="tel"
                 />
                 {validationErrors.phone && (
-                  <p className="text-red-500 text-sm">{validationErrors.phone}</p>
+                  <p className="text-muted-foreground text-sm">{validationErrors.phone}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -333,6 +388,7 @@ export default function SignupPage() {
                   placeholder="Create a password"
                   value={formData.password}
                   onChange={e => handleInputChange('password', e.target.value)}
+                  onBlur={() => handleFieldBlur('password')}
                   required
                   aria-invalid={!!validationErrors.password}
                   maxLength={128}
@@ -344,7 +400,7 @@ export default function SignupPage() {
                   onChangeScore={setScore}
                 />
                 {validationErrors.password && (
-                  <p className="text-red-500 text-sm">{validationErrors.password}</p>
+                  <p className="text-muted-foreground text-sm">{validationErrors.password}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -355,12 +411,13 @@ export default function SignupPage() {
                   placeholder="Confirm your password"
                   value={formData.confirmPassword}
                   onChange={e => handleInputChange('confirmPassword', e.target.value)}
+                  onBlur={() => handleFieldBlur('confirmPassword')}
                   required
                   aria-invalid={!!validationErrors.confirmPassword}
                   maxLength={128}
                 />
                 {validationErrors.confirmPassword && (
-                  <p className="text-red-500 text-sm">{validationErrors.confirmPassword}</p>
+                  <p className="text-muted-foreground text-sm">{validationErrors.confirmPassword}</p>
                 )}
               </div>
             </CardContent>
