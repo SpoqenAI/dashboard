@@ -40,7 +40,7 @@ export function isDebugEnabled(): boolean {
   }
   
   // In production, check if debug mode is explicitly enabled
-  return process.env.NEXT_PUBLIC_ENABLE_DEBUG === 'true';
+  return process.env.ENABLE_DEBUG === 'true';
 }
 
 /**
