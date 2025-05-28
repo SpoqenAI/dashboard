@@ -1,6 +1,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
+import { ensureUserProfile } from '@/lib/profile';
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -101,6 +102,28 @@ export async function GET(request: NextRequest) {
       'type:',
       type
     );
+
+    // Ensure user profile exists (especially important for OAuth users)
+    if (data.user) {
+      try {
+        console.log('Auth callback: Ensuring user profile for user:', {
+          userId: data.user.id,
+          email: data.user.email,
+          hasSession: !!data.session,
+          userMetadata: data.user.user_metadata
+        });
+        
+        await ensureUserProfile(data.user);
+        console.log('Auth callback: Profile ensured successfully for user:', data.user.id);
+      } catch (profileError: any) {
+        console.error('Auth callback: Failed to ensure user profile:', {
+          userId: data.user.id,
+          error: profileError.message,
+          stack: profileError.stack
+        });
+        // Don't fail the auth flow, but log the error for monitoring
+      }
+    }
 
     // Handle different types of authentication callbacks
     if (type === 'recovery') {
