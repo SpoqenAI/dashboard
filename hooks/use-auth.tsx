@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface AuthContextType {
   user: User | null;
@@ -20,6 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
   
   // Create a stable Supabase client reference
   const supabase = useMemo(() => getSupabaseClient(), []);
@@ -61,8 +62,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             break;
           case 'SIGNED_OUT':
             console.log('User signed out');
-            // Redirect to login page when signed out
-            router.push('/login');
+            // Redirect to login page when signed out, but only if not already on login page
+            if (pathname !== '/login') {
+              router.replace('/login');
+            }
             break;
           case 'TOKEN_REFRESHED':
             console.log('Token refreshed for user:', session?.user?.email);
@@ -77,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription?.unsubscribe();
     };
-  }, [supabase, router]);
+  }, [supabase, router, pathname]);
 
   const signOut = async () => {
     try {
