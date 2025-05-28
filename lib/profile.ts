@@ -124,6 +124,11 @@ export async function createUserProfile(userData: CreateProfileData) {
  * Extracts data from user metadata and creates profile
  */
 export async function createProfileFromAuthUser(user: User) {
+  // Guard against null/undefined email (common with some OAuth providers like Apple)
+  if (!user.email) {
+    throw new Error(`Cannot create profile: User email is required but was not provided by the authentication provider. User ID: ${user.id}`);
+  }
+
   const metadata = user.user_metadata || {};
   
   // Extract names with fallbacks for different OAuth providers
@@ -134,7 +139,7 @@ export async function createProfileFromAuthUser(user: User) {
   
   const profileData: CreateProfileData = {
     id: user.id,
-    email: user.email!,
+    email: user.email,
     firstName: firstName || undefined,
     lastName: lastName || undefined,
     fullName: fullName || undefined,
