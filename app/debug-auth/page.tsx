@@ -8,33 +8,51 @@ import { getSiteUrl } from '@/lib/site-url';
 export default function DebugAuthPage() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
 
+  // Security check: Only allow this page in development
+  if (process.env.NODE_ENV === 'production') {
+    return (
+      <div className="container mx-auto py-8">
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="text-red-800 flex items-center gap-2">
+              🚫 Access Denied
+            </CardTitle>
+            <CardDescription className="text-red-700">
+              This debug page is only available in development environments for security reasons.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
   // Function to safely filter and mask environment variables
   const getSafeEnvironmentInfo = () => {
-    // Whitelist of safe environment variables that can be exposed
-    const safeEnvVars = [
-      'NEXT_PUBLIC_SITE_URL',
-      'NEXT_PUBLIC_DEV_PORT',
-      'NODE_ENV',
-      'NEXT_PUBLIC_SUPABASE_URL', // Only public Supabase URL is safe
-    ];
+    // Only access environment variables that are safe for client-side exposure
+    // In Next.js, only NEXT_PUBLIC_ prefixed variables are available on the client
+    const safeEnv: Record<string, string | undefined> = {
+      'NEXT_PUBLIC_SITE_URL': process.env.NEXT_PUBLIC_SITE_URL,
+      'NEXT_PUBLIC_DEV_PORT': process.env.NEXT_PUBLIC_DEV_PORT,
+      'NEXT_PUBLIC_SUPABASE_URL': process.env.NEXT_PUBLIC_SUPABASE_URL,
+      'NODE_ENV': process.env.NODE_ENV,
+    };
 
-    // Get all available environment variables
-    const allEnvVars = process.env;
-    const safeEnv: Record<string, string> = {};
-
-    // Only include whitelisted variables
-    safeEnvVars.forEach(key => {
-      if (allEnvVars[key] !== undefined) {
-        safeEnv[key] = allEnvVars[key] as string;
+    // Filter out undefined values and create the final safe environment object
+    const filteredSafeEnv: Record<string, string> = {};
+    let definedCount = 0;
+    
+    Object.entries(safeEnv).forEach(([key, value]) => {
+      if (value !== undefined) {
+        filteredSafeEnv[key] = value;
+        definedCount++;
       }
     });
 
-    // Add a note about filtered variables
-    const filteredCount = Object.keys(allEnvVars).length - Object.keys(safeEnv).length;
-    
+    // Add debug information about what's being shown
     return {
-      ...safeEnv,
-      _debug_info: `${Object.keys(safeEnv).length} safe variables shown, ${filteredCount} sensitive variables filtered`
+      ...filteredSafeEnv,
+      _debug_info: `${definedCount} safe client-accessible variables shown. Server-side and sensitive variables are not accessible from client components.`,
+      _security_note: 'Only NEXT_PUBLIC_ prefixed and NODE_ENV variables are safe for client-side access'
     };
   };
 
