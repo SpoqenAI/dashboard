@@ -11,11 +11,62 @@ export interface CreateProfileData {
   avatarUrl?: string;
 }
 
+export interface CreateProfileResponse {
+  success: boolean;
+  user_id: string;
+  profile: {
+    id: string;
+    email: string;
+    first_name: string | null;
+    last_name: string | null;
+    full_name: string | null;
+    phone: string | null;
+    avatar_url: string | null;
+    business_name: string | null;
+    bio: string | null;
+    website: string | null;
+    license_number: string | null;
+    brokerage: string | null;
+    city: string | null;
+    state: string | null;
+    created_at: string;
+    updated_at: string;
+    last_login: string;
+  };
+  settings: {
+    id: string;
+    ai_greeting: string;
+    assistant_name: string;
+    business_hours: string;
+    email_notifications: boolean;
+    sms_notifications: boolean;
+    billing_notifications: boolean;
+    marketing_emails: boolean;
+    theme: string;
+    timezone: string;
+    language: string;
+    created_at: string;
+    updated_at: string;
+  };
+  subscription: {
+    id: string;
+    plan_type: string;
+    status: string;
+    stripe_customer_id: string | null;
+    stripe_subscription_id: string | null;
+    current_period_start: string | null;
+    current_period_end: string | null;
+    cancel_at_period_end: boolean;
+    created_at: string;
+    updated_at: string;
+  };
+}
+
 /**
- * Creates a complete user profile with all related records
- * This function replicates the behavior of the handle_new_user() database function
+ * Creates a complete user profile with all related records atomically
+ * Uses the create_full_profile stored procedure for transaction safety
  */
-export async function createUserProfile(userData: CreateProfileData) {
+export async function createUserProfile(userData: CreateProfileData): Promise<{ success: true; data: CreateProfileResponse }> {
   const supabase = getSupabaseClient();
   
   try {
@@ -45,68 +96,39 @@ export async function createUserProfile(userData: CreateProfileData) {
       }
     }
 
-    // Start transaction-like operations
-    const operations = [];
+    // Call the stored procedure for atomic profile creation
+    const { data, error } = await supabase.rpc('create_full_profile', {
+      p_user_id: userData.id,
+      p_email: userData.email,
+      p_first_name: userData.firstName || null,
+      p_last_name: userData.lastName || null,
+      p_full_name: userData.fullName || null,
+      p_phone: userData.phone || null,
+      p_avatar_url: userData.avatarUrl || null
+    });
 
-    // 1. Create profile record
-    const profileData = {
-      id: userData.id,
-      email: userData.email,
-      first_name: userData.firstName?.trim() || null,
-      last_name: userData.lastName?.trim() || null,
-      full_name: userData.fullName?.trim() || null,
-      phone: userData.phone?.trim() || null,
-      avatar_url: userData.avatarUrl?.trim() || null,
-      last_login: new Date().toISOString(),
-    };
-
-    const { data: profileResult, error: profileError } = await supabase
-      .from('profiles')
-      .upsert(profileData, { onConflict: 'id' })
-      .select()
-      .single();
-
-    if (profileError) {
-      console.error('Profile upsert error details:', {
-        code: profileError.code,
-        message: profileError.message,
-        details: profileError.details,
-        hint: profileError.hint,
+    if (error) {
+      console.error('Profile creation error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
         userId: userData.id
       });
-      throw new Error(`Failed to upsert profile: ${profileError.message}`);
-    } else {
-      console.log('Profile upserted successfully:', profileResult?.id);
+      throw new Error(`Failed to create profile: ${error.message}`);
     }
 
-    // 2. Create user settings with defaults
-    const { error: settingsError } = await supabase
-      .from('user_settings')
-      .upsert({ id: userData.id }, { onConflict: 'id' })
-      .select()
-      .single();
-
-    if (settingsError) {
-      throw new Error(`Failed to upsert user settings: ${settingsError.message}`);
+    if (!data || !data.success) {
+      throw new Error('Profile creation failed: Invalid response from stored procedure');
     }
 
-    // 3. Create user subscription with free plan
-    const { error: subscriptionError } = await supabase
-      .from('user_subscriptions')
-      .upsert({ 
-        id: userData.id,
-        plan_type: 'free',
-        status: 'active'
-      }, { onConflict: 'id' })
-      .select()
-      .single();
+    console.log(`User profile creation completed for user ${userData.id}`, {
+      profileCreated: !!data.profile,
+      settingsCreated: !!data.settings,
+      subscriptionCreated: !!data.subscription
+    });
 
-    if (subscriptionError) {
-      throw new Error(`Failed to upsert user subscription: ${subscriptionError.message}`);
-    }
-
-    console.log(`User profile creation completed for user ${userData.id}`);
-    return { success: true };
+    return { success: true, data: data as CreateProfileResponse };
 
   } catch (error: any) {
     console.error('Error creating user profile:', error);

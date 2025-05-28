@@ -152,7 +152,10 @@ CREATE TRIGGER handle_user_subscriptions_updated_at
 -- You can enable this for additional safety
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
     full_name_value TEXT;
     first_name_value TEXT;
@@ -260,7 +263,7 @@ BEGIN
     
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql;
 
 -- Create the trigger (uncomment to enable automatic profile creation)
 -- CREATE TRIGGER on_auth_user_created
