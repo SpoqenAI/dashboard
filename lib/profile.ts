@@ -178,6 +178,7 @@ export async function createProfileFromAuthUser(user: User) {
 
 /**
  * Checks if a user profile exists
+ * Throws errors for non-"not found" cases to prevent masking real issues
  */
 export async function checkProfileExists(userId: string): Promise<boolean> {
   const supabase = getSupabaseClient();
@@ -188,7 +189,27 @@ export async function checkProfileExists(userId: string): Promise<boolean> {
     .eq('id', userId)
     .single();
 
-  return !error && !!data;
+  // If no error, profile exists
+  if (!error) {
+    return !!data;
+  }
+
+  // Check if this is a "row not found" error (PGRST116)
+  // This is the expected error when a profile doesn't exist
+  if (error.code === 'PGRST116') {
+    return false;
+  }
+
+  // For any other error (network, permission, etc.), throw it
+  // so calling functions can handle appropriately
+  console.error('Database error checking profile existence:', {
+    code: error.code,
+    message: error.message,
+    details: error.details,
+    userId
+  });
+  
+  throw new Error(`Failed to check profile existence: ${error.message}`);
 }
 
 /**
