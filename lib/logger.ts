@@ -8,6 +8,8 @@
  * - Structured logging with consistent formatting
  */
 
+import * as Sentry from '@sentry/nextjs';
+
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LogContext {
@@ -74,28 +76,32 @@ class Logger {
   private sendToExternalService(level: LogLevel, message: string, context?: LogContext, error?: Error) {
     if (!this.isProduction) return;
 
-    // TODO: Integrate with your preferred logging service
-    // Examples:
-    
-    // Sentry integration
-    // if (typeof window !== 'undefined' && window.Sentry) {
-    //   if (level === 'error' && error) {
-    //     window.Sentry.captureException(error, { extra: context });
-    //   } else {
-    //     window.Sentry.addBreadcrumb({
-    //       message,
-    //       level: level as any,
-    //       data: context,
-    //     });
-    //   }
-    // }
+    // Sentry integration - now active!
+    try {
+      if (level === 'error' && error) {
+        Sentry.captureException(error, { 
+          extra: context,
+          tags: { component: 'logger' }
+        });
+      } else {
+        Sentry.addBreadcrumb({
+          message,
+          level: level as any,
+          data: context,
+          category: 'logger',
+        });
+      }
+    } catch (sentryError) {
+      // Fail silently if Sentry has issues
+      console.warn('Failed to send to Sentry:', sentryError);
+    }
 
-    // LogRocket integration
+    // LogRocket integration (commented out - uncomment if you add LogRocket)
     // if (typeof window !== 'undefined' && window.LogRocket) {
     //   window.LogRocket.log(level, message, context);
     // }
 
-    // Custom API endpoint
+    // Custom API endpoint (commented out - uncomment if you want custom logging)
     // fetch('/api/logs', {
     //   method: 'POST',
     //   headers: { 'Content-Type': 'application/json' },
