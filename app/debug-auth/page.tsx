@@ -8,14 +8,40 @@ import { getSiteUrl } from '@/lib/site-url';
 export default function DebugAuthPage() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
 
+  // Function to safely filter and mask environment variables
+  const getSafeEnvironmentInfo = () => {
+    // Whitelist of safe environment variables that can be exposed
+    const safeEnvVars = [
+      'NEXT_PUBLIC_SITE_URL',
+      'NEXT_PUBLIC_DEV_PORT',
+      'NODE_ENV',
+      'NEXT_PUBLIC_SUPABASE_URL', // Only public Supabase URL is safe
+    ];
+
+    // Get all available environment variables
+    const allEnvVars = process.env;
+    const safeEnv: Record<string, string> = {};
+
+    // Only include whitelisted variables
+    safeEnvVars.forEach(key => {
+      if (allEnvVars[key] !== undefined) {
+        safeEnv[key] = allEnvVars[key] as string;
+      }
+    });
+
+    // Add a note about filtered variables
+    const filteredCount = Object.keys(allEnvVars).length - Object.keys(safeEnv).length;
+    
+    return {
+      ...safeEnv,
+      _debug_info: `${Object.keys(safeEnv).length} safe variables shown, ${filteredCount} sensitive variables filtered`
+    };
+  };
+
   const getDebugInfo = () => {
     const info = {
       siteUrl: getSiteUrl(),
-      environment: {
-        NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-        NEXT_PUBLIC_DEV_PORT: process.env.NEXT_PUBLIC_DEV_PORT,
-        NODE_ENV: process.env.NODE_ENV,
-      },
+      environment: getSafeEnvironmentInfo(),
       window: {
         location: window.location.href,
         origin: window.location.origin,
@@ -72,6 +98,19 @@ export default function DebugAuthPage() {
 
   return (
     <div className="container mx-auto py-8">
+      {/* Security Warning */}
+      <Card className="mb-6 border-red-200 bg-red-50">
+        <CardHeader>
+          <CardTitle className="text-red-800 flex items-center gap-2">
+            🔒 Security Notice
+          </CardTitle>
+          <CardDescription className="text-red-700">
+            This is a debug tool for development purposes only. Environment variables are filtered to prevent exposure of sensitive data.
+            Do not use this page in production environments.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Auth Debug Information</CardTitle>
