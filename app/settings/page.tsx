@@ -164,7 +164,8 @@ function SettingsContent() {
   // Regex patterns for field validation - extracted to prevent ReDoS attacks
   const VALIDATION_PATTERNS = {
     // Names: letters, single spaces (no consecutive), basic punctuation (limited)
-    NAME_PATTERN: /^[a-zA-Z](?:[a-zA-Z\s\-'.])*[a-zA-Z]$|^[a-zA-Z]$/,
+    // Updated to support Unicode letters including accented and international characters
+    NAME_PATTERN: /^[\p{L}](?:[\p{L}\s\-'.])*[\p{L}]$|^[\p{L}]$/u,
     
     // Business names: alphanumeric, single spaces, limited punctuation
     BUSINESS_NAME_PATTERN: /^(?:[A-Za-z0-9](?:[A-Za-z0-9\s\-'.&,()]*[A-Za-z0-9])?)$/,

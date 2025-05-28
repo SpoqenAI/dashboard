@@ -77,7 +77,8 @@ export default function SignupPage() {
 
   // Regex patterns for field validation
   const VALIDATION_PATTERNS = {
-    NAME_PATTERN: /^[a-zA-Z'](?:[a-zA-Z\s\-'.])*[a-zA-Z']$|^[a-zA-Z']$/,
+    // Updated to support Unicode letters including accented and international characters
+    NAME_PATTERN: /^[\p{L}'](?:[\p{L}\s\-'.])*[\p{L}']$|^[\p{L}']$/u,
     EMAIL_PATTERN: /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/,
   };
 
