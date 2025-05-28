@@ -39,23 +39,41 @@ class Logger {
   }
 
   /**
-   * Sanitize sensitive data from objects
+   * Sanitize sensitive data from objects recursively
    */
   sanitizeData(data: any): any {
-    if (!data || typeof data !== 'object') return data;
+    if (!data) return data;
 
-    const sanitized = { ...data };
+    // Handle primitive types
+    if (typeof data !== 'object') return data;
+
+    // Handle arrays
+    if (Array.isArray(data)) {
+      return data.map(item => this.sanitizeData(item));
+    }
+
+    // Handle objects
+    const sanitized: any = {};
     
     // Common sensitive fields to mask
     const sensitiveFields = ['email', 'password', 'token', 'secret', 'key'];
     
-    for (const field of sensitiveFields) {
-      if (sanitized[field]) {
-        if (field === 'email') {
-          sanitized[field] = this.maskEmail(sanitized[field]);
+    for (const [key, value] of Object.entries(data)) {
+      // Check if current key is sensitive
+      const isSensitiveField = sensitiveFields.some(field => 
+        key.toLowerCase().includes(field.toLowerCase())
+      );
+      
+      if (isSensitiveField) {
+        // Apply appropriate masking based on field type
+        if (key.toLowerCase().includes('email')) {
+          sanitized[key] = this.maskEmail(value as string);
         } else {
-          sanitized[field] = '***';
+          sanitized[key] = '***';
         }
+      } else {
+        // Recursively sanitize nested objects/arrays
+        sanitized[key] = this.sanitizeData(value);
       }
     }
 
