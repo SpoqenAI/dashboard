@@ -49,7 +49,7 @@ export default function Page() {
           Click the button below, and view the sample error on the Sentry{' '}
           <a
             target="_blank"
-            href="https://spoqen.sentry.io/issues/?project=4509398990848000"
+            href={process.env.NEXT_PUBLIC_SENTRY_ISSUES_URL}
           >
             Issues Page
           </a>
