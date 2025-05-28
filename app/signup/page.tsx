@@ -205,6 +205,12 @@ export default function SignupPage() {
       const error = validateContent(field, valueForValidation);
       setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
     }
+    
+    // Re-validate confirmPassword when password changes and confirmPassword has been touched
+    if (field === 'password' && touchedFields.confirmPassword) {
+      const confirmPasswordError = validateContent('confirmPassword', formData.confirmPassword);
+      setValidationErrors(prev => ({ ...prev, confirmPassword: confirmPasswordError || '' }));
+    }
   };
 
   const isFormChanged = JSON.stringify(formData) !== JSON.stringify(initialFormData);
