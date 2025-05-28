@@ -117,7 +117,7 @@ export default function SignupPage() {
   };
 
   // Validation logic
-  const validateContent = (field: FormFieldName, value: string): string | null => {
+  const validateContent = (field: FormFieldName, value: string, currentPassword?: string): string | null => {
     switch (field) {
       case 'firstName':
       case 'lastName': {
@@ -184,7 +184,8 @@ export default function SignupPage() {
       }
       case 'confirmPassword': {
         if (!value) return 'This field is required';
-        if (value !== formData.password) return 'Please make sure both passwords match';
+        const passwordToCompare = currentPassword !== undefined ? currentPassword : formData.password;
+        if (value !== passwordToCompare) return 'Please make sure both passwords match';
         return null;
       }
       default:
@@ -228,7 +229,7 @@ export default function SignupPage() {
     
     // Re-validate confirmPassword when password changes and confirmPassword has been touched
     if (field === 'password' && touchedFields.confirmPassword) {
-      const confirmPasswordError = validateContent('confirmPassword', formData.confirmPassword);
+      const confirmPasswordError = validateContent('confirmPassword', formData.confirmPassword, processedValue);
       setValidationErrors(prev => ({ ...prev, confirmPassword: confirmPasswordError || '' }));
     }
   };
