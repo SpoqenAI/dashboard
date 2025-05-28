@@ -113,15 +113,20 @@ export default function DebugProfilePage() {
       // Try to create profile if it doesn't exist
       if (!profileExists) {
         addResult('🔄 Attempting to create profile...');
-        await createUserProfile({
-          id: user.id,
-          email: user.email!,
-          firstName: user.user_metadata?.first_name,
-          lastName: user.user_metadata?.last_name,
-          fullName: user.user_metadata?.full_name,
-          phone: user.phone || user.user_metadata?.phone,
-        });
-        addResult('✅ Profile created successfully!');
+        try {
+          await createUserProfile({
+            id: user.id,
+            email: user.email!,
+            firstName: user.user_metadata?.first_name,
+            lastName: user.user_metadata?.last_name,
+            fullName: user.user_metadata?.full_name,
+            phone: user.phone || user.user_metadata?.phone,
+          });
+          addResult('✅ Profile created successfully!');
+        } catch (profileError: any) {
+          addResult(`❌ Profile creation failed: ${profileError.message}`);
+          console.error('Profile creation error:', profileError);
+        }
       }
 
     } catch (error: any) {
