@@ -167,7 +167,7 @@ function SettingsContent() {
     NAME_PATTERN: /^[a-zA-Z](?:[a-zA-Z\s\-'.])*[a-zA-Z]$|^[a-zA-Z]$/,
     
     // Business names: alphanumeric, single spaces, limited punctuation
-    BUSINESS_NAME_PATTERN: /^[a-zA-Z0-9](?:[a-zA-Z0-9\s\-'.,&()])*[a-zA-Z0-9)]$|^[a-zA-Z0-9]$/,
+    BUSINESS_NAME_PATTERN: /^(?:[A-Za-z0-9](?:[A-Za-z0-9\s\-'.&,()]*[A-Za-z0-9])?)$/,
     
     // Email: RFC 5322 compliant pattern with practical constraints
     EMAIL_PATTERN: /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/,
