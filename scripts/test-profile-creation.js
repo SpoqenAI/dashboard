@@ -41,7 +41,14 @@ if (missingFiles.length > 0) {
 
 // Check if profile.ts contains required functions
 console.log('\n🔍 Checking profile.ts functions...');
-const profileContent = fs.readFileSync(path.join(process.cwd(), 'lib/profile.ts'), 'utf8');
+let profileContent;
+try {
+  profileContent = fs.readFileSync(path.join(process.cwd(), 'lib/profile.ts'), 'utf8');
+} catch (error) {
+  console.log(`  ❌ Error reading lib/profile.ts: ${error.message}`);
+  console.log('\n❌ Cannot continue without profile.ts file. Please check the file exists and is readable.');
+  process.exit(1);
+}
 
 const requiredFunctions = [
   'createUserProfile',
@@ -63,7 +70,14 @@ requiredFunctions.forEach(func => {
 
 // Check if auth.ts has been updated
 console.log('\n🔍 Checking auth.ts integration...');
-const authContent = fs.readFileSync(path.join(process.cwd(), 'lib/auth.ts'), 'utf8');
+let authContent;
+try {
+  authContent = fs.readFileSync(path.join(process.cwd(), 'lib/auth.ts'), 'utf8');
+} catch (error) {
+  console.log(`  ❌ Error reading lib/auth.ts: ${error.message}`);
+  console.log('\n❌ Cannot continue without auth.ts file. Please check the file exists and is readable.');
+  process.exit(1);
+}
 
 let authIssues = [];
 
@@ -83,7 +97,14 @@ if (authContent.includes('await createUserProfile(')) {
 
 // Check if callback route has been updated
 console.log('\n🔍 Checking auth callback integration...');
-const callbackContent = fs.readFileSync(path.join(process.cwd(), 'app/auth/callback/route.ts'), 'utf8');
+let callbackContent;
+try {
+  callbackContent = fs.readFileSync(path.join(process.cwd(), 'app/auth/callback/route.ts'), 'utf8');
+} catch (error) {
+  console.log(`  ❌ Error reading app/auth/callback/route.ts: ${error.message}`);
+  console.log('\n❌ Cannot continue without callback route file. Please check the file exists and is readable.');
+  process.exit(1);
+}
 
 let callbackIssues = [];
 
