@@ -228,12 +228,39 @@ export default function DebugAuthPage() {
       }
     });
 
-    // Clear all cookies
-    document.cookie.split(";").forEach(function(c) { 
-      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+    // Clear only auth-related cookies
+    const authCookiePatterns = [
+      'supabase',
+      'auth',
+      'pkce',
+      'session',
+      'token',
+      'refresh',
+      'access_token',
+      'sb-',  // Supabase cookie prefix
+      'oauth',
+      'csrf'
+    ];
+
+    document.cookie.split(";").forEach(function(cookie) {
+      const cookieName = cookie.split("=")[0].trim().toLowerCase();
+      
+      // Check if cookie name matches any auth-related pattern
+      const isAuthCookie = authCookiePatterns.some(pattern => 
+        cookieName.includes(pattern.toLowerCase())
+      );
+      
+      if (isAuthCookie) {
+        // Clear the cookie by setting it to expire in the past
+        const cookieNameOriginal = cookie.split("=")[0].trim();
+        document.cookie = `${cookieNameOriginal}=;expires=${new Date().toUTCString()};path=/`;
+        // Also try clearing with domain variants
+        document.cookie = `${cookieNameOriginal}=;expires=${new Date().toUTCString()};path=/;domain=${window.location.hostname}`;
+        document.cookie = `${cookieNameOriginal}=;expires=${new Date().toUTCString()};path=/;domain=.${window.location.hostname}`;
+      }
     });
 
-    alert('Browser storage cleared! Please refresh the page and try again.');
+    alert('Auth-related browser storage cleared! Please refresh the page and try again.');
   };
 
   const clearAllStorage = () => {
