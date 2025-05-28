@@ -5,6 +5,7 @@
 /**
  * Get admin emails from environment variable or fallback to default list
  * In production, set ADMIN_EMAILS as a comma-separated list
+ * For development fallbacks, set FALLBACK_ADMIN_EMAILS as a comma-separated list
  */
 export function getAdminEmails(): string[] {
   const envAdminEmails = process.env.ADMIN_EMAILS;
@@ -13,11 +14,19 @@ export function getAdminEmails(): string[] {
     return envAdminEmails.split(',').map(email => email.trim()).filter(Boolean);
   }
   
-  // Fallback admin emails for development
-  // In production, these should be set via environment variables
+  // Fallback admin emails from environment variables
+  // Set FALLBACK_ADMIN_EMAILS in your .env.local file for development
+  const fallbackAdminEmails = process.env.FALLBACK_ADMIN_EMAILS;
+  
+  if (fallbackAdminEmails) {
+    return fallbackAdminEmails.split(',').map(email => email.trim()).filter(Boolean);
+  }
+  
+  // Final fallback - empty array or placeholder emails
+  // This ensures no real emails are hardcoded in the source
   return [
-    'admin@spoqen.com',
-    'developer@spoqen.com',
+    'admin@example.com',
+    'developer@example.com',
   ];
 }
 
