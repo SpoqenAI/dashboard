@@ -90,7 +90,7 @@ export default function DashboardPage() {
     
     // Business names: alphanumeric, single spaces, limited punctuation
     // More restrictive to prevent ReDoS while allowing common business name formats
-    BUSINESS_NAME_PATTERN: /^[a-zA-Z0-9](?:[a-zA-Z0-9\s\-'.,&()])*[a-zA-Z0-9)]$|^[a-zA-Z0-9]$/
+    BUSINESS_NAME_PATTERN: /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\s\-'.,&()]*[a-zA-Z0-9)])?|[a-zA-Z0-9])$/
   };
 
   const validateContent = (field: string, value: string): string | null => {
