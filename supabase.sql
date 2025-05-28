@@ -118,7 +118,10 @@ CREATE INDEX IF NOT EXISTS user_subscriptions_status_idx ON public.user_subscrip
 
 -- Function to update the updated_at timestamp
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
