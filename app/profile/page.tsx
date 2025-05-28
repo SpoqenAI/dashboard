@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -12,9 +15,109 @@ import { Textarea } from '@/components/ui/textarea';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardShell } from '@/components/dashboard-shell';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Camera, Save } from 'lucide-react';
+import { Camera, Save, Loader2 } from 'lucide-react';
+import { useUserSettings } from '@/hooks/use-user-settings';
+import { useAuth } from '@/hooks/use-auth';
+import { toast } from '@/components/ui/use-toast';
 
 export default function ProfilePage() {
+  const { user } = useAuth();
+  const { 
+    profile, 
+    loading, 
+    saving, 
+    error, 
+    dataLoaded, 
+    updateProfile, 
+    getProfileFormData 
+  } = useUserSettings();
+
+  // Form state
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    businessName: '',
+    bio: '',
+    licenseNumber: '',
+    brokerage: '',
+    website: '',
+    city: '',
+    state: '',
+  });
+
+  // Update form data when profile data is loaded
+  useEffect(() => {
+    if (dataLoaded) {
+      const profileData = getProfileFormData();
+      setFormData(profileData);
+    }
+  }, [dataLoaded, getProfileFormData]);
+
+  // Handle form field changes
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Handle form submission
+  const handleSaveChanges = async () => {
+    try {
+      await updateProfile(formData);
+    } catch (error) {
+      // Error handling is done in the updateProfile function
+      console.error('Failed to save profile:', error);
+    }
+  };
+
+  // Generate user initials for avatar fallback
+  const getUserInitials = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
+    }
+    if (profile?.first_name) {
+      return profile.first_name[0].toUpperCase();
+    }
+    if (user?.email) {
+      return user.email[0].toUpperCase();
+    }
+    return 'U';
+  };
+
+  // Get display name for profile section
+  const getDisplayName = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name} ${profile.last_name}`;
+    }
+    if (profile?.full_name) {
+      return profile.full_name;
+    }
+    if (profile?.first_name) {
+      return profile.first_name;
+    }
+    return user?.email || 'User';
+  };
+
+  // Show loading state
+  if (loading && !dataLoaded) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <DashboardHeader />
+        <DashboardShell>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="flex flex-col items-center space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Loading profile...</p>
+            </div>
+          </div>
+        </DashboardShell>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardHeader />
@@ -36,10 +139,10 @@ export default function ProfilePage() {
               <div className="relative">
                 <Avatar className="h-20 w-20">
                   <AvatarImage
-                    src="/placeholder.svg?height=80&width=80&query=person"
+                    src={profile?.avatar_url || user?.user_metadata?.avatar_url || "/placeholder.svg?height=80&width=80&query=person"}
                     alt="Profile picture"
                   />
-                  <AvatarFallback className="text-lg">JC</AvatarFallback>
+                  <AvatarFallback className="text-lg">{getUserInitials()}</AvatarFallback>
                 </Avatar>
                 <Button
                   size="sm"
@@ -50,7 +153,7 @@ export default function ProfilePage() {
                 </Button>
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-medium">James Carter</p>
+                <p className="text-sm font-medium">{getDisplayName()}</p>
                 <p className="text-sm text-muted-foreground">
                   JPG, PNG or GIF. Max size 2MB.
                 </p>
@@ -73,11 +176,21 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" defaultValue="James" />
+                  <Input 
+                    id="firstName" 
+                    value={formData.firstName}
+                    onChange={(e) => handleInputChange('firstName', e.target.value)}
+                    placeholder="Enter your first name"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" defaultValue="Carter" />
+                  <Input 
+                    id="lastName" 
+                    value={formData.lastName}
+                    onChange={(e) => handleInputChange('lastName', e.target.value)}
+                    placeholder="Enter your last name"
+                  />
                 </div>
               </div>
               
@@ -86,18 +199,31 @@ export default function ProfilePage() {
                 <Input
                   id="email"
                   type="email"
-                  defaultValue="james@realestate.com"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  placeholder="Enter your email address"
                 />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" type="tel" defaultValue="(555) 123-4567" />
+                <Input 
+                  id="phone" 
+                  type="tel" 
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  placeholder="Enter your phone number"
+                />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="businessName">Business Name</Label>
-                <Input id="businessName" defaultValue="Carter Real Estate" />
+                <Input 
+                  id="businessName" 
+                  value={formData.businessName}
+                  onChange={(e) => handleInputChange('businessName', e.target.value)}
+                  placeholder="Enter your business name"
+                />
               </div>
               
               <div className="space-y-2">
@@ -105,7 +231,8 @@ export default function ProfilePage() {
                 <Textarea
                   id="bio"
                   placeholder="Tell us about yourself and your real estate business..."
-                  defaultValue="Experienced real estate agent specializing in residential properties in the greater metropolitan area. Committed to providing exceptional service to buyers and sellers."
+                  value={formData.bio}
+                  onChange={(e) => handleInputChange('bio', e.target.value)}
                   rows={4}
                 />
               </div>
@@ -123,12 +250,22 @@ export default function ProfilePage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="licenseNumber">Real Estate License Number</Label>
-                <Input id="licenseNumber" defaultValue="RE123456789" />
+                <Input 
+                  id="licenseNumber" 
+                  value={formData.licenseNumber}
+                  onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
+                  placeholder="Enter your license number"
+                />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="brokerage">Brokerage</Label>
-                <Input id="brokerage" defaultValue="Premier Realty Group" />
+                <Input 
+                  id="brokerage" 
+                  value={formData.brokerage}
+                  onChange={(e) => handleInputChange('brokerage', e.target.value)}
+                  placeholder="Enter your brokerage name"
+                />
               </div>
               
               <div className="space-y-2">
@@ -137,18 +274,29 @@ export default function ProfilePage() {
                   id="website"
                   type="url"
                   placeholder="https://your-website.com"
-                  defaultValue="https://jamescarter-realestate.com"
+                  value={formData.website}
+                  onChange={(e) => handleInputChange('website', e.target.value)}
                 />
               </div>
               
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="city">City</Label>
-                  <Input id="city" defaultValue="San Francisco" />
+                  <Input 
+                    id="city" 
+                    value={formData.city}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    placeholder="Enter your city"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="state">State</Label>
-                  <Input id="state" defaultValue="California" />
+                  <Input 
+                    id="state" 
+                    value={formData.state}
+                    onChange={(e) => handleInputChange('state', e.target.value)}
+                    placeholder="Enter your state"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -156,9 +304,22 @@ export default function ProfilePage() {
 
           {/* Save Changes */}
           <div className="flex justify-end">
-            <Button className="w-full sm:w-auto">
-              <Save className="mr-2 h-4 w-4" />
-              Save Changes
+            <Button 
+              className="w-full sm:w-auto" 
+              onClick={handleSaveChanges}
+              disabled={saving}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Changes
+                </>
+              )}
             </Button>
           </div>
         </div>
