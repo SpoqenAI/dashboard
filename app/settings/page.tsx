@@ -473,10 +473,13 @@ function SettingsContent() {
       const digits = cleaned.replace(/\D/g, '');
       if (digits.length <= 5) {
         return digits;
-      } else if (digits.length <= 9) {
-        return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+      } else if (digits.length >= 9) {
+        // Only add hyphen if we have at least 9 digits (5 + 4 suffix)
+        return `${digits.slice(0, 5)}-${digits.slice(5, 9)}`;
+      } else {
+        // For 6-8 digits, return without hyphen to avoid premature formatting
+        return digits;
       }
-      return `${digits.slice(0, 5)}-${digits.slice(5, 9)}`;
     } else if (countryLower.includes('canada') || countryLower === 'ca') {
       // Canadian postal code formatting (A1A 1A1)
       const alphanumeric = cleaned.replace(/\s/g, '');
