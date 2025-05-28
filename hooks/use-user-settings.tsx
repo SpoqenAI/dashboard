@@ -56,6 +56,21 @@ export interface ProfileFormData {
   website: string;
   city: string;
   state: string;
+  assistantName: string;
+}
+
+export interface ProfileUpdateData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  businessName: string;
+  bio: string;
+  licenseNumber: string;
+  brokerage: string;
+  website: string;
+  city: string;
+  state: string;
 }
 
 export function useUserSettings() {
@@ -232,7 +247,7 @@ export function useUserSettings() {
   };
 
   // Update profile data
-  const updateProfile = async (profileData: ProfileFormData) => {
+  const updateProfile = async (profileData: ProfileUpdateData) => {
     if (!user) {
       throw new Error('User not authenticated');
     }
@@ -319,6 +334,7 @@ export function useUserSettings() {
         website: '',
         city: '',
         state: '',
+        assistantName: '',
       };
     }
 
@@ -334,8 +350,9 @@ export function useUserSettings() {
       website: profile?.website || '',
       city: profile?.city || '',
       state: profile?.state || '',
+      assistantName: settings?.assistant_name || 'Ava',
     };
-  }, [dataLoaded, profile]);
+  }, [dataLoaded, profile, settings]);
 
   // Get current AI Receptionist settings
   const getAIReceptionistSettings = useCallback((): AIReceptionistSettings => {

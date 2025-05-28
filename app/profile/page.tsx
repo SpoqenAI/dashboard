@@ -29,7 +29,9 @@ export default function ProfilePage() {
     error, 
     dataLoaded, 
     updateProfile, 
-    getProfileFormData 
+    getProfileFormData,
+    getAIReceptionistSettings,
+    updateAIReceptionistSettings,
   } = useUserSettings();
 
   // Form state
@@ -45,7 +47,11 @@ export default function ProfilePage() {
     website: '',
     city: '',
     state: '',
+    assistantName: '',
   });
+
+  // Form validation errors
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Update form data when profile data is loaded
   useEffect(() => {
@@ -61,16 +67,93 @@ export default function ProfilePage() {
       ...prev,
       [field]: value
     }));
+    
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[field]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
+  };
+
+  // Form validation function
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    // Required field validations
+    if (!formData.firstName.trim()) {
+      errors.firstName = 'First name is required';
+    }
+
+    if (!formData.lastName.trim()) {
+      errors.lastName = 'Last name is required';
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = 'Email address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    if (!formData.assistantName.trim()) {
+      errors.assistantName = 'Assistant name is required';
+    }
+
+    // Optional field validations
+    if (formData.website && !/^https?:\/\/.+/.test(formData.website)) {
+      errors.website = 'Website must start with http:// or https://';
+    }
+
+    if (formData.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/[\s\-\(\)]/g, ''))) {
+      errors.phone = 'Please enter a valid phone number';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   // Handle form submission
-  const handleSaveChanges = async () => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate form before submission
+    if (!validateForm()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fix the errors in the form before submitting.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
-      await updateProfile(formData);
+      // Update profile data (excluding assistantName)
+      const { assistantName, ...profileData } = formData;
+      await updateProfile(profileData);
+
+      // Update AI assistant settings if assistant name changed
+      const currentAISettings = getAIReceptionistSettings();
+      if (formData.assistantName !== currentAISettings.aiAssistantName) {
+        await updateAIReceptionistSettings({
+          ...currentAISettings,
+          aiAssistantName: formData.assistantName,
+        });
+      }
     } catch (error) {
       // Error handling is done in the updateProfile function
       console.error('Failed to save profile:', error);
     }
+  };
+
+  // Handle save changes button click (for backward compatibility)
+  const handleSaveChanges = async () => {
+    // Create a synthetic form event
+    const syntheticEvent = {
+      preventDefault: () => {},
+    } as React.FormEvent;
+    
+    await handleFormSubmit(syntheticEvent);
   };
 
   // Generate user initials for avatar fallback
@@ -164,164 +247,211 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Personal Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>
-                Update your personal details and contact information.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <form onSubmit={handleFormSubmit} className="contents">
+            {/* Personal Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Personal Information</CardTitle>
+                <CardDescription>
+                  Update your personal details and contact information.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name *</Label>
+                    <Input 
+                      id="firstName" 
+                      value={formData.firstName}
+                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      placeholder="Enter your first name"
+                      className={validationErrors.firstName ? 'border-red-500' : ''}
+                    />
+                    {validationErrors.firstName && (
+                      <p className="text-sm text-red-500">{validationErrors.firstName}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name *</Label>
+                    <Input 
+                      id="lastName" 
+                      value={formData.lastName}
+                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      placeholder="Enter your last name"
+                      className={validationErrors.lastName ? 'border-red-500' : ''}
+                    />
+                    {validationErrors.lastName && (
+                      <p className="text-sm text-red-500">{validationErrors.lastName}</p>
+                    )}
+                  </div>
+                </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="email">Email Address *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="Enter your email address"
+                    className={validationErrors.email ? 'border-red-500' : ''}
+                  />
+                  {validationErrors.email && (
+                    <p className="text-sm text-red-500">{validationErrors.email}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
                   <Input 
-                    id="firstName" 
-                    value={formData.firstName}
-                    onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    placeholder="Enter your first name"
+                    id="phone" 
+                    type="tel" 
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    placeholder="Enter your phone number"
+                    className={validationErrors.phone ? 'border-red-500' : ''}
+                  />
+                  {validationErrors.phone && (
+                    <p className="text-sm text-red-500">{validationErrors.phone}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="businessName">Business Name</Label>
+                  <Input 
+                    id="businessName" 
+                    value={formData.businessName}
+                    onChange={(e) => handleInputChange('businessName', e.target.value)}
+                    placeholder="Enter your business name"
                   />
                 </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input 
-                    id="lastName" 
-                    value={formData.lastName}
-                    onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    placeholder="Enter your last name"
+                  <Label htmlFor="bio">Bio</Label>
+                  <Textarea
+                    id="bio"
+                    placeholder="Tell us about yourself and your real estate business..."
+                    value={formData.bio}
+                    onChange={(e) => handleInputChange('bio', e.target.value)}
+                    rows={4}
                   />
                 </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="Enter your email address"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input 
-                  id="phone" 
-                  type="tel" 
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  placeholder="Enter your phone number"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="businessName">Business Name</Label>
-                <Input 
-                  id="businessName" 
-                  value={formData.businessName}
-                  onChange={(e) => handleInputChange('businessName', e.target.value)}
-                  placeholder="Enter your business name"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  placeholder="Tell us about yourself and your real estate business..."
-                  value={formData.bio}
-                  onChange={(e) => handleInputChange('bio', e.target.value)}
-                  rows={4}
-                />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Business Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Business Information</CardTitle>
-              <CardDescription>
-                Manage your business details and professional information.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="licenseNumber">Real Estate License Number</Label>
-                <Input 
-                  id="licenseNumber" 
-                  value={formData.licenseNumber}
-                  onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
-                  placeholder="Enter your license number"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="brokerage">Brokerage</Label>
-                <Input 
-                  id="brokerage" 
-                  value={formData.brokerage}
-                  onChange={(e) => handleInputChange('brokerage', e.target.value)}
-                  placeholder="Enter your brokerage name"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="website">Website</Label>
-                <Input
-                  id="website"
-                  type="url"
-                  placeholder="https://your-website.com"
-                  value={formData.website}
-                  onChange={(e) => handleInputChange('website', e.target.value)}
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Business Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Business Information</CardTitle>
+                <CardDescription>
+                  Manage your business details and professional information.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
+                  <Label htmlFor="licenseNumber">Real Estate License Number</Label>
                   <Input 
-                    id="city" 
-                    value={formData.city}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
-                    placeholder="Enter your city"
+                    id="licenseNumber" 
+                    value={formData.licenseNumber}
+                    onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
+                    placeholder="Enter your license number"
                   />
                 </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="state">State</Label>
+                  <Label htmlFor="brokerage">Brokerage</Label>
                   <Input 
-                    id="state" 
-                    value={formData.state}
-                    onChange={(e) => handleInputChange('state', e.target.value)}
-                    placeholder="Enter your state"
+                    id="brokerage" 
+                    value={formData.brokerage}
+                    onChange={(e) => handleInputChange('brokerage', e.target.value)}
+                    placeholder="Enter your brokerage name"
                   />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="website">Website</Label>
+                  <Input
+                    id="website"
+                    type="url"
+                    placeholder="https://your-website.com"
+                    value={formData.website}
+                    onChange={(e) => handleInputChange('website', e.target.value)}
+                    className={validationErrors.website ? 'border-red-500' : ''}
+                  />
+                  {validationErrors.website && (
+                    <p className="text-sm text-red-500">{validationErrors.website}</p>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input 
+                      id="city" 
+                      value={formData.city}
+                      onChange={(e) => handleInputChange('city', e.target.value)}
+                      placeholder="Enter your city"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State</Label>
+                    <Input 
+                      id="state" 
+                      value={formData.state}
+                      onChange={(e) => handleInputChange('state', e.target.value)}
+                      placeholder="Enter your state"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Save Changes */}
-          <div className="flex justify-end">
-            <Button 
-              className="w-full sm:w-auto" 
-              onClick={handleSaveChanges}
-              disabled={saving}
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-          </div>
+            {/* Assistant Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Assistant Information</CardTitle>
+                <CardDescription>
+                  Configure your AI assistant's details.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="assistantName">Assistant Name *</Label>
+                  <Input 
+                    id="assistantName" 
+                    value={formData.assistantName}
+                    onChange={(e) => handleInputChange('assistantName', e.target.value)}
+                    placeholder="Enter your assistant's name"
+                    className={validationErrors.assistantName ? 'border-red-500' : ''}
+                  />
+                  {validationErrors.assistantName && (
+                    <p className="text-sm text-red-500">{validationErrors.assistantName}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Save Changes */}
+            <div className="flex justify-end">
+              <Button 
+                type="submit"
+                className="w-full sm:w-auto" 
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
         </div>
       </DashboardShell>
     </div>
