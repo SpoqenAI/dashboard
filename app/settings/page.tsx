@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/components/protected-route';
 import { useSearchParams } from 'next/navigation';
 import { Filter } from 'bad-words';
 import { useMask } from '@react-input/mask';
+import { isEqual } from 'lodash-es';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -627,7 +628,7 @@ function SettingsContent() {
   };
 
   // Helper to check if form data has changed
-  const isFormChanged = JSON.stringify(formData) !== JSON.stringify(savedData);
+  const isFormChanged = !isEqual(formData, savedData);
 
   // Refactored save logic
   const doSave = async () => {
