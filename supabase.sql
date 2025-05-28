@@ -52,6 +52,7 @@ CREATE INDEX IF NOT EXISTS profiles_updated_at_idx ON public.profiles(updated_at
 CREATE TABLE IF NOT EXISTS public.user_settings (
     id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
     ai_greeting TEXT DEFAULT 'Hello! Thank you for calling. How can I assist you today?',
+    assistant_name TEXT DEFAULT 'Ava',
     business_hours TEXT DEFAULT 'Monday-Friday 9AM-6PM',
     email_notifications BOOLEAN DEFAULT TRUE,
     sms_notifications BOOLEAN DEFAULT FALSE,

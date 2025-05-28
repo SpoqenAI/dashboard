@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/protected-route';
 import { useSearchParams } from 'next/navigation';
 import { Filter } from 'bad-words';
@@ -36,28 +36,39 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
+import { useUserSettings } from '@/hooks/use-user-settings';
 
 function SettingsContent() {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab') || 'profile';
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [confirmOpen, setConfirmOpen] = useState(false);
   
-  // Form data state
+  // Get user settings and profile data
+  const { 
+    loading, 
+    saving, 
+    error, 
+    dataLoaded, 
+    updateProfile, 
+    getProfileFormData 
+  } = useUserSettings();
+  
+  // Form data state - initialized from Supabase data
   const [formData, setFormData] = useState({
-    firstName: 'James',
-    lastName: 'Carter',
-    email: 'james@realestate.com',
-    phone: '(555) 123-4567',
-    businessName: 'Carter Real Estate',
-    bio: 'Experienced real estate agent specializing in residential properties.',
-    licenseNumber: 'RE123456789',
-    brokerage: 'Premier Realty Group',
-    website: 'https://jamescarter-realestate.com',
-    businessAddress: '123 Market Street, San Francisco, CA 94102',
-    city: 'San Francisco',
-    state: 'California',
-    zipcode: '94102',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    businessName: '',
+    bio: '',
+    licenseNumber: '',
+    brokerage: '',
+    website: '',
+    businessAddress: '',
+    city: '',
+    state: '',
+    zipcode: '',
     country: 'United States',
     currentPassword: '',
     newPassword: '',
@@ -68,19 +79,19 @@ function SettingsContent() {
   
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [savedData, setSavedData] = useState({
-    firstName: 'James',
-    lastName: 'Carter',
-    email: 'james@realestate.com',
-    phone: '(555) 123-4567',
-    businessName: 'Carter Real Estate',
-    bio: 'Experienced real estate agent specializing in residential properties.',
-    licenseNumber: 'RE123456789',
-    brokerage: 'Premier Realty Group',
-    website: 'https://jamescarter-realestate.com',
-    businessAddress: '123 Market Street, San Francisco, CA 94102',
-    city: 'San Francisco',
-    state: 'California',
-    zipcode: '94102',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    businessName: '',
+    bio: '',
+    licenseNumber: '',
+    brokerage: '',
+    website: '',
+    businessAddress: '',
+    city: '',
+    state: '',
+    zipcode: '',
     country: 'United States',
     currentPassword: '',
     newPassword: '',
@@ -88,6 +99,36 @@ function SettingsContent() {
     emailNotifications: true,
     marketingEmails: true,
   });
+
+  // Load profile data when available
+  useEffect(() => {
+    if (dataLoaded) {
+      const profileData = getProfileFormData();
+      const newFormData = {
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        email: profileData.email,
+        phone: profileData.phone,
+        businessName: profileData.businessName,
+        bio: profileData.bio,
+        licenseNumber: profileData.licenseNumber,
+        brokerage: profileData.brokerage,
+        website: profileData.website,
+        businessAddress: '', // Not stored in profile table
+        city: profileData.city,
+        state: profileData.state,
+        zipcode: '', // Not stored in profile table
+        country: 'United States',
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+        emailNotifications: true,
+        marketingEmails: true,
+      };
+      setFormData(newFormData);
+      setSavedData(newFormData);
+    }
+  }, [dataLoaded, getProfileFormData]);
 
   // Initialize content filter
   const filter = new Filter();
@@ -569,7 +610,6 @@ function SettingsContent() {
   // Refactored save logic
   const doSave = async () => {
     setConfirmOpen(false);
-    setIsSubmitting(true);
     try {
       // Validate all fields before saving
       const errors: Record<string, string> = {};
@@ -585,24 +625,26 @@ function SettingsContent() {
         setValidationErrors(errors);
         return;
       }
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Here you would typically make an API call to save the data
-      setSavedData({ ...formData });
-      console.log('Form data:', formData);
-      toast({
-        title: 'Settings saved successfully!',
-        description: 'Your changes have been saved.',
+
+      // Save profile data to Supabase
+      await updateProfile({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        businessName: formData.businessName,
+        bio: formData.bio,
+        licenseNumber: formData.licenseNumber,
+        brokerage: formData.brokerage,
+        website: formData.website,
+        city: formData.city,
+        state: formData.state,
       });
+
+      setSavedData({ ...formData });
     } catch (error) {
       console.error('Error saving settings:', error);
-      toast({
-        title: 'Failed to save settings',
-        description: 'Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
+      // Error toast is handled by the updateProfile function
     }
   };
 
@@ -625,6 +667,14 @@ function SettingsContent() {
             <TabsTrigger value="billing">Billing</TabsTrigger>
           </TabsList>
           <TabsContent value="profile" className="space-y-4">
+            {loading || !dataLoaded ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading your profile...</p>
+                </div>
+              </div>
+            ) : (
             <form onSubmit={e => {
               e.preventDefault();
               if (!Object.values(validationErrors).some(error => error) && isFormChanged) {
@@ -651,7 +701,9 @@ function SettingsContent() {
                         src="/placeholder.svg?height=80&width=80&query=person"
                         alt="Profile picture"
                       />
-                      <AvatarFallback className="text-lg">JC</AvatarFallback>
+                      <AvatarFallback className="text-lg">
+                        {formData.firstName.charAt(0)}{formData.lastName.charAt(0)}
+                      </AvatarFallback>
                     </Avatar>
                     <Button
                       size="sm"
@@ -1008,15 +1060,15 @@ function SettingsContent() {
                 type="button"
                 variant="outline"
                 onClick={handleCancel}
-                disabled={!isFormChanged || isSubmitting}
+                disabled={!isFormChanged || saving}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting || Object.values(validationErrors).some(error => error) || !isFormChanged}
+                disabled={saving || Object.values(validationErrors).some(error => error) || !isFormChanged}
               >
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
+                {saving ? 'Saving...' : 'Save Changes'}
               </Button>
               <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
                 <AlertDialogContent>
@@ -1038,6 +1090,7 @@ function SettingsContent() {
               </AlertDialog>
             </div>
             </form>
+            )}
           </TabsContent>
 
           <TabsContent value="billing" className="space-y-4">

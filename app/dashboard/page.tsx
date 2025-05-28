@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/protected-route';
 import { Filter } from 'bad-words';
 import { Button } from '@/components/ui/button';
+import { useUserSettings, type AIReceptionistSettings } from '@/hooks/use-user-settings';
 import {
   Card,
   CardContent,
@@ -39,25 +40,32 @@ import {
 
 export default function DashboardPage() {
   const [isEditing, setIsEditing] = useState(false);
-  
-  // Original saved data
-  const [savedData, setSavedData] = useState({
-    aiAssistantName: 'Ava',
-    yourName: 'James Carter',
-    businessName: 'James Carter Real Estate',
-    greetingScript: "Hi, thanks for calling James Carter's office! I'm Ava, his assistant. How can I help you today?",
-  });
-  
-  // Current form data (can be different from saved while editing)
-  const [formData, setFormData] = useState({
-    aiAssistantName: 'Ava',
-    yourName: 'James Carter',
-    businessName: 'James Carter Real Estate',
-    greetingScript: "Hi, thanks for calling James Carter's office! I'm Ava, his assistant. How can I help you today?",
-  });
-  
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
+  
+  // Use the user settings hook
+  const { 
+    loading: settingsLoading, 
+    saving: settingsSaving, 
+    error: settingsError,
+    dataLoaded,
+    updateAIReceptionistSettings,
+    getAIReceptionistSettings 
+  } = useUserSettings();
+  
+  // Get current settings from the hook
+  const savedData = getAIReceptionistSettings();
+  
+  // Current form data (can be different from saved while editing)
+  const [formData, setFormData] = useState<AIReceptionistSettings>(savedData);
+
+  // Update form data when settings are loaded
+  useEffect(() => {
+    if (dataLoaded) {
+      const currentSettings = getAIReceptionistSettings();
+      setFormData(currentSettings);
+    }
+  }, [dataLoaded, getAIReceptionistSettings]);
 
   // Initialize content filter
   const filter = new Filter();
@@ -131,7 +139,7 @@ export default function DashboardPage() {
     setValidationErrors({});
   };
 
-  const doSave = () => {
+  const doSave = async () => {
     setConfirmOpen(false);
     // Validate all fields before saving
     const errors: Record<string, string> = {};
@@ -145,19 +153,21 @@ export default function DashboardPage() {
       setValidationErrors(errors);
       return;
     }
-    setSavedData({ ...formData });
-    setIsEditing(false);
-    setValidationErrors({});
-    console.log('Settings saved:', formData);
-    toast({
-      title: 'Settings saved!',
-      description: 'Your AI Receptionist settings have been updated.',
-    });
+    
+    try {
+      await updateAIReceptionistSettings(formData);
+      setIsEditing(false);
+      setValidationErrors({});
+    } catch (error) {
+      // Error handling is done in the hook
+      console.error('Failed to save settings:', error);
+    }
   };
 
   const handleCancel = () => {
     // Revert form data back to saved data
-    setFormData({ ...savedData });
+    const currentSavedData = getAIReceptionistSettings();
+    setFormData({ ...currentSavedData });
     setIsEditing(false);
     setValidationErrors({});
   };
@@ -178,7 +188,8 @@ export default function DashboardPage() {
   };
 
   // Add a helper to check if form data has changed
-  const isFormChanged = JSON.stringify(formData) !== JSON.stringify(savedData);
+  const currentSavedData = getAIReceptionistSettings();
+  const isFormChanged = JSON.stringify(formData) !== JSON.stringify(currentSavedData);
 
   return (
     <ProtectedRoute>
@@ -215,6 +226,23 @@ export default function DashboardPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  {settingsLoading || !dataLoaded ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2"></div>
+                        <p className="text-sm text-muted-foreground">Loading settings...</p>
+                      </div>
+                    </div>
+                  ) : settingsError ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-center">
+                        <p className="text-sm text-red-600 mb-2">Failed to load settings</p>
+                        <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                          Retry
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
                   <form className="space-y-4" onSubmit={e => {
                     e.preventDefault();
                     if (!Object.values(validationErrors).some(error => error) && isFormChanged) {
@@ -328,9 +356,9 @@ export default function DashboardPage() {
                         <Button 
                           className="flex-1" 
                           type="submit"
-                          disabled={Object.values(validationErrors).some(error => error) || !isFormChanged}
+                          disabled={Object.values(validationErrors).some(error => error) || !isFormChanged || settingsSaving}
                         >
-                          Save Settings
+                          {settingsSaving ? 'Saving...' : 'Save Settings'}
                         </Button>
                         <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
                           <AlertDialogContent>
@@ -353,6 +381,7 @@ export default function DashboardPage() {
                       </div>
                     )}
                   </form>
+                  )}
                 </CardContent>
               </Card>
             </div>
