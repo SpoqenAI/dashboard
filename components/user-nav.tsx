@@ -33,8 +33,7 @@ export function UserNav() {
         description: 'You have been logged out.',
       });
 
-      // Redirect to login page after successful logout
-      router.push('/login');
+      // Redirect is handled by the auth provider
     } catch (error: any) {
       toast({
         title: 'Error signing out',
