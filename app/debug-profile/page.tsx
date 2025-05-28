@@ -135,29 +135,29 @@ export default function DebugProfilePage() {
       // Test direct insert to profiles table
       addResult('🔍 Testing direct insert to profiles table...');
       
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.data.user) {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (!user) {
         addResult('❌ No authenticated user for RLS test');
         return;
       }
 
       const testProfile = {
-        id: user.data.user.id,
-        email: user.data.user.email!,
+        id: user.id,
+        email: user.email!,
         first_name: 'Test',
         last_name: 'User',
         full_name: 'Test User',
       };
 
-      const { data, error } = await supabase
+      const { data, error: insertError } = await supabase
         .from('profiles')
         .insert(testProfile)
         .select()
         .single();
 
-      if (error) {
-        addResult(`❌ RLS Policy Error: ${error.message}`);
-        addResult(`📊 Error details: ${JSON.stringify(error, null, 2)}`);
+      if (insertError) {
+        addResult(`❌ RLS Policy Error: ${insertError.message}`);
+        addResult(`📊 Error details: ${JSON.stringify(insertError, null, 2)}`);
       } else {
         addResult('✅ Direct insert successful!');
         addResult(`📊 Created profile: ${JSON.stringify(data, null, 2)}`);
