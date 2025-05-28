@@ -13,7 +13,7 @@ if [ ! -f .env.local ]; then
 fi
 
 # Check if NEXT_PUBLIC_DEV_PORT is set
-if ! grep -q "NEXT_PUBLIC_DEV_PORT" .env.local; then
+if ! grep -q "^NEXT_PUBLIC_DEV_PORT=" .env.local; then
     echo "📝 Adding NEXT_PUBLIC_DEV_PORT to .env.local..."
     echo "NEXT_PUBLIC_DEV_PORT=3000" >> .env.local
 else
@@ -21,12 +21,12 @@ else
 fi
 
 # Check if Supabase environment variables are set
-if ! grep -q "NEXT_PUBLIC_SUPABASE_URL" .env.local; then
+if ! grep -q "^NEXT_PUBLIC_SUPABASE_URL=" .env.local; then
     echo "⚠️  Warning: NEXT_PUBLIC_SUPABASE_URL not found in .env.local"
     echo "   Please add your Supabase project URL"
 fi
 
-if ! grep -q "NEXT_PUBLIC_SUPABASE_ANON_KEY" .env.local; then
+if ! grep -q "^NEXT_PUBLIC_SUPABASE_ANON_KEY=" .env.local; then
     echo "⚠️  Warning: NEXT_PUBLIC_SUPABASE_ANON_KEY not found in .env.local"
     echo "   Please add your Supabase anonymous key"
 fi
