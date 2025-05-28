@@ -85,10 +85,15 @@ export function useUserSettings() {
   const supabase = getSupabaseClient();
 
   // Fetch user settings and profile
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async (signal?: AbortSignal) => {
     if (!user) {
       setLoading(false);
       setDataLoaded(false);
+      return;
+    }
+
+    // Check if already aborted before starting
+    if (signal?.aborted) {
       return;
     }
 
@@ -96,6 +101,11 @@ export function useUserSettings() {
       setError(null);
       setLoading(true);
       setDataLoaded(false);
+      
+      // Check abort signal before making requests
+      if (signal?.aborted) {
+        return;
+      }
       
       // Fetch both settings and profile data in parallel
       const [settingsResponse, profileResponse] = await Promise.all([
@@ -110,6 +120,11 @@ export function useUserSettings() {
           .eq('id', user.id)
           .single()
       ]);
+
+      // Check abort signal after requests complete
+      if (signal?.aborted) {
+        return;
+      }
 
       const { data: settingsData, error: settingsError } = settingsResponse;
       const { data: profileData, error: profileError } = profileResponse;
@@ -126,6 +141,11 @@ export function useUserSettings() {
 
       // If no settings exist, create default settings
       if (!settingsData) {
+        // Check abort signal before creating new settings
+        if (signal?.aborted) {
+          return;
+        }
+
         const { data: newSettings, error: createError } = await supabase
           .from('user_settings')
           .insert({
@@ -140,14 +160,34 @@ export function useUserSettings() {
           throw createError;
         }
 
+        // Final abort check before updating state
+        if (signal?.aborted) {
+          return;
+        }
+
         setSettings(newSettings);
       } else {
+        // Final abort check before updating state
+        if (signal?.aborted) {
+          return;
+        }
+
         setSettings(settingsData);
+      }
+
+      // Final abort check before updating profile state
+      if (signal?.aborted) {
+        return;
       }
 
       setProfile(profileData);
       setDataLoaded(true);
     } catch (err: any) {
+      // Don't update error state if request was aborted
+      if (signal?.aborted) {
+        return;
+      }
+
       console.error('Error fetching user data:', err);
       setError(err.message);
       setDataLoaded(false);
@@ -157,9 +197,12 @@ export function useUserSettings() {
         variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      // Only update loading state if not aborted
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
-  };
+  }, [user, supabase]);
 
   // Update AI Receptionist settings
   const updateAIReceptionistSettings = async (newSettings: AIReceptionistSettings) => {
@@ -387,9 +430,20 @@ export function useUserSettings() {
     };
   }, [dataLoaded, settings, profile]);
 
+  // Wrapper for manual refetch that doesn't use abort signal
+  const refetch = useCallback(() => {
+    return fetchUserData();
+  }, [fetchUserData]);
+
   useEffect(() => {
     if (user) {
-      fetchUserData();
+      const abortController = new AbortController();
+      fetchUserData(abortController.signal);
+      
+      // Return cleanup function to abort ongoing requests
+      return () => {
+        abortController.abort();
+      };
     } else {
       // Reset state when user logs out
       setSettings(null);
@@ -398,7 +452,7 @@ export function useUserSettings() {
       setLoading(false);
       setError(null);
     }
-  }, [user]);
+  }, [user, fetchUserData]);
 
   return {
     settings,
@@ -411,6 +465,6 @@ export function useUserSettings() {
     getAIReceptionistSettings,
     updateProfile,
     getProfileFormData,
-    refetch: fetchUserData,
+    refetch,
   };
 } 
