@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 
@@ -18,20 +18,25 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading) {
       if (requireAuth && !user) {
         // User is not authenticated, redirect to login
-        console.log('User not authenticated, redirecting to:', redirectTo);
-        router.push(redirectTo);
+        if (pathname !== redirectTo) {
+          console.log('User not authenticated, redirecting to:', redirectTo);
+          router.replace(redirectTo);
+        }
       } else if (!requireAuth && user) {
         // User is authenticated but shouldn't be (e.g., on login page)
-        console.log('User already authenticated, redirecting to dashboard');
-        router.push('/dashboard');
+        if (pathname !== '/dashboard') {
+          console.log('User already authenticated, redirecting to dashboard');
+          router.replace('/dashboard');
+        }
       }
     }
-  }, [user, loading, requireAuth, redirectTo, router]);
+  }, [user, loading, requireAuth, redirectTo, pathname]);
 
   // Show loading spinner while checking authentication
   if (loading) {
