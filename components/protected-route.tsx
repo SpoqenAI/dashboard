@@ -36,7 +36,7 @@ export function ProtectedRoute({
         }
       }
     }
-  }, [user, loading, requireAuth, redirectTo, pathname]);
+  }, [user, loading, requireAuth, redirectTo, pathname, router]);
 
   // Show loading spinner while checking authentication
   if (loading) {
