@@ -132,6 +132,39 @@ export async function GET(request: NextRequest) {
     } else if (type === 'signup') {
       // Email confirmation flow - redirect to onboarding for new users
       return NextResponse.redirect(new URL('/onboarding', request.url));
+    } else if (type === 'email_change') {
+      // Email change verification flow
+      const user = data.user;
+      
+      if (user && user.email) {
+        try {
+          // Update the profile table with the new verified email
+          const { error: profileUpdateError } = await supabase
+            .from('profiles')
+            .update({ email: user.email })
+            .eq('id', user.id);
+
+          if (profileUpdateError) {
+            logger.error('AUTH', 'Failed to update profile email after verification', profileUpdateError, {
+              userId: logger.maskUserId(user.id),
+              newEmail: logger.maskEmail(user.email)
+            });
+          } else {
+            logger.info('AUTH', 'Profile email updated successfully after verification', {
+              userId: logger.maskUserId(user.id),
+              newEmail: logger.maskEmail(user.email)
+            });
+          }
+        } catch (error: any) {
+          logger.error('AUTH', 'Error updating profile email after verification', error, {
+            userId: logger.maskUserId(user.id),
+            errorMessage: error.message
+          });
+        }
+      }
+      
+      // Redirect to profile page with success message
+      return NextResponse.redirect(new URL('/profile?email_updated=true', request.url));
     } else {
       // OAuth or email verification flow
       // Check if this is email verification (user exists but was just confirming email)

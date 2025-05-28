@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useAuth } from './use-auth';
+import { updateUserEmail } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
 
 export interface UserSettings {
@@ -361,60 +362,124 @@ export function useUserSettings() {
     setError(null);
 
     try {
-      // Prepare profile updates
-      const profileUpdates: Partial<UserProfile> = {
-        first_name: profileData.firstName.trim() || null,
-        last_name: profileData.lastName.trim() || null,
-        full_name: `${profileData.firstName.trim()} ${profileData.lastName.trim()}`.trim() || null,
-        email: profileData.email.trim(),
-        phone: profileData.phone.trim() || null,
-        business_name: profileData.businessName.trim() || null,
-        bio: profileData.bio.trim() || null,
-        website: profileData.website.trim() || null,
-        license_number: profileData.licenseNumber.trim() || null,
-        brokerage: profileData.brokerage.trim() || null,
-        city: profileData.city.trim() || null,
-        state: profileData.state.trim() || null,
-      };
+      // Check if email is being changed
+      const currentEmail = profile?.email || user.email;
+      const newEmail = profileData.email.trim();
+      const isEmailChanging = currentEmail !== newEmail;
 
-      // Update or insert profile
-      const { data: updatedProfile, error: profileError } = await supabase
-        .from('profiles')
-        .upsert(
-          {
-            id: user.id,
-            ...profileUpdates,
-          },
-          {
-            onConflict: 'id',
+      // If email is changing, we need to handle Supabase Auth email verification
+      if (isEmailChanging) {
+        // First, trigger Supabase Auth email update (this will send verification emails)
+        const { data: authData, error: authError } = await updateUserEmail(newEmail);
+
+        if (authError) {
+          // Handle specific auth errors
+          if (authError.message?.includes('email_address_not_authorized')) {
+            throw new Error('This email address is not authorized. Please use a different email.');
+          } else if (authError.message?.includes('email_change_token_already_sent')) {
+            throw new Error('Email verification already sent. Please check your email and try again later.');
+          } else if (authError.message?.includes('same_email')) {
+            throw new Error('The new email address is the same as your current email.');
+          } else {
+            throw new Error(`Email update failed: ${authError.message}`);
           }
-        )
-        .select()
-        .single();
+        }
 
-      if (profileError) {
-        throw profileError;
+        // Show success message for email verification
+        toast({
+          title: 'Email Verification Required',
+          description: 'Please check both your current and new email addresses for verification links. Your email will be updated after verification.',
+        });
+
+        // Update profile data excluding email (email will be updated after verification)
+        const { email: _, ...profileDataWithoutEmail } = profileData;
+        const profileUpdates: Partial<UserProfile> = {
+          first_name: profileDataWithoutEmail.firstName.trim() || null,
+          last_name: profileDataWithoutEmail.lastName.trim() || null,
+          full_name: `${profileDataWithoutEmail.firstName.trim()} ${profileDataWithoutEmail.lastName.trim()}`.trim() || null,
+          phone: profileDataWithoutEmail.phone.trim() || null,
+          business_name: profileDataWithoutEmail.businessName.trim() || null,
+          bio: profileDataWithoutEmail.bio.trim() || null,
+          website: profileDataWithoutEmail.website.trim() || null,
+          license_number: profileDataWithoutEmail.licenseNumber.trim() || null,
+          brokerage: profileDataWithoutEmail.brokerage.trim() || null,
+          city: profileDataWithoutEmail.city.trim() || null,
+          state: profileDataWithoutEmail.state.trim() || null,
+        };
+
+        // Update profile without email
+        const { data: updatedProfile, error: profileError } = await supabase
+          .from('profiles')
+          .update(profileUpdates)
+          .eq('id', user.id)
+          .select()
+          .single();
+
+        if (profileError) {
+          throw profileError;
+        }
+
+        // Update local state with the returned data (keeping current email)
+        if (updatedProfile) {
+          setProfile(updatedProfile as UserProfile);
+        }
+
+      } else {
+        // Email is not changing, proceed with normal profile update
+        const profileUpdates: Partial<UserProfile> = {
+          first_name: profileData.firstName.trim() || null,
+          last_name: profileData.lastName.trim() || null,
+          full_name: `${profileData.firstName.trim()} ${profileData.lastName.trim()}`.trim() || null,
+          email: profileData.email.trim(),
+          phone: profileData.phone.trim() || null,
+          business_name: profileData.businessName.trim() || null,
+          bio: profileData.bio.trim() || null,
+          website: profileData.website.trim() || null,
+          license_number: profileData.licenseNumber.trim() || null,
+          brokerage: profileData.brokerage.trim() || null,
+          city: profileData.city.trim() || null,
+          state: profileData.state.trim() || null,
+        };
+
+        // Update or insert profile
+        const { data: updatedProfile, error: profileError } = await supabase
+          .from('profiles')
+          .upsert(
+            {
+              id: user.id,
+              ...profileUpdates,
+            },
+            {
+              onConflict: 'id',
+            }
+          )
+          .select()
+          .single();
+
+        if (profileError) {
+          throw profileError;
+        }
+
+        // Verify that the upsert operation returned data
+        if (!updatedProfile) {
+          throw new Error('Profile update failed: No data returned from database');
+        }
+
+        // Update local state with the actual returned data from the database
+        setProfile(updatedProfile as UserProfile);
+
+        toast({
+          title: 'Profile updated!',
+          description: 'Your profile information has been saved.',
+        });
       }
-
-      // Verify that the upsert operation returned data
-      if (!updatedProfile) {
-        throw new Error('Profile update failed: No data returned from database');
-      }
-
-      // Update local state with the actual returned data from the database
-      setProfile(updatedProfile as UserProfile);
-
-      toast({
-        title: 'Profile updated!',
-        description: 'Your profile information has been saved.',
-      });
 
     } catch (err: any) {
       console.error('Error updating profile:', err);
       setError(err.message);
       toast({
         title: 'Error saving profile',
-        description: 'Failed to save your profile. Please try again.',
+        description: err.message || 'Failed to save your profile. Please try again.',
         variant: 'destructive',
       });
       throw err;

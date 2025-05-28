@@ -65,6 +65,52 @@ NEXT_PUBLIC_DEV_PORT=3000
 3. **Test with incognito mode** to avoid cached issues
 4. **Check email redirect URLs** in Supabase Auth settings
 
+## Email Update and Verification Flow
+
+### How Email Updates Work
+
+When a user updates their email address in the profile page, the following process occurs:
+
+1. **Email Change Detection**: The system detects when the email field has changed
+2. **Supabase Auth Update**: Calls `supabase.auth.updateUser({ email: newEmail })`
+3. **Verification Emails Sent**: Supabase sends verification emails to both:
+   - Current email address (to confirm the change)
+   - New email address (to verify ownership)
+4. **Profile Update**: Other profile fields are updated immediately, but email remains unchanged
+5. **User Notification**: User sees a message to check both email addresses
+6. **Email Verification**: User clicks verification links in both emails
+7. **Auth Callback**: Supabase redirects to `/auth/callback?type=email_change`
+8. **Profile Sync**: The auth callback updates the profile table with the new verified email
+9. **Success Message**: User is redirected to profile page with success message
+
+### Configuration
+
+The email verification behavior is controlled by the Supabase configuration:
+
+```toml
+[auth.email]
+# If enabled, a user will be required to confirm any email change on both the old, and new email
+# addresses. If disabled, only the new email is required to confirm.
+double_confirm_changes = true
+```
+
+### Error Handling
+
+The system handles various email update errors:
+
+- **Email already in use**: Supabase prevents duplicate emails
+- **Invalid email format**: Client-side validation catches format issues
+- **Rate limiting**: Supabase limits how often verification emails can be sent
+- **Verification timeout**: Email verification links expire after 1 hour
+
+### Testing Email Updates
+
+1. **Update email** in profile page
+2. **Check both email inboxes** for verification emails
+3. **Click verification links** in both emails (order doesn't matter)
+4. **Verify redirect** to profile page with success message
+5. **Confirm email updated** in profile data
+
 ## User Dropdown Menu (SPO-128)
 
 ### Fixed Issues

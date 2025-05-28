@@ -122,3 +122,13 @@ export async function resendVerificationEmail(email: string) {
 
   return { data, error };
 }
+
+export async function updateUserEmail(newEmail: string) {
+  const supabase = getSupabaseClient();
+
+  const { data, error } = await supabase.auth.updateUser({
+    email: newEmail,
+  });
+
+  return { data, error };
+}

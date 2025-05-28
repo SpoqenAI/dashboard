@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -18,10 +19,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera, Save, Loader2 } from 'lucide-react';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { useAuth } from '@/hooks/use-auth';
+import { updateUserEmail } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
 
-export default function ProfilePage() {
+function ProfilePageContent() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const { 
     profile, 
     loading, 
@@ -32,6 +35,7 @@ export default function ProfilePage() {
     getProfileFormData,
     getAIReceptionistSettings,
     updateAIReceptionistSettings,
+    refetch,
   } = useUserSettings();
 
   // Define the form data type
@@ -68,6 +72,25 @@ export default function ProfilePage() {
 
   // Form validation errors
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Handle email verification success
+  useEffect(() => {
+    const emailUpdated = searchParams.get('email_updated');
+    if (emailUpdated === 'true') {
+      toast({
+        title: 'Email Updated Successfully',
+        description: 'Your email address has been verified and updated.',
+      });
+      
+      // Refresh profile data to get the updated email
+      refetch();
+      
+      // Clean up the URL parameter
+      const url = new URL(window.location.href);
+      url.searchParams.delete('email_updated');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams, refetch]);
 
   // Update form data when profile data is loaded
   useEffect(() => {
@@ -121,6 +144,29 @@ export default function ProfilePage() {
     return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3, 6)}-${limitedDigits.slice(6)}`;
   };
 
+  // Email validation patterns
+  const EMAIL_PATTERN = /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/;
+
+  // Email validation function
+  const validateEmail = (value: string): string | null => {
+    if (!value) return 'Email address is required';
+    if (value.length > 254) return 'Please use a shorter email address';
+    if (!EMAIL_PATTERN.test(value)) return 'Please check your email format (e.g., name@example.com)';
+    if (value.includes('..')) return 'Please remove consecutive dots from your email';
+    if (value.startsWith('.') || value.endsWith('.')) return 'Email addresses cannot start or end with a dot';
+    if (value.includes('@.') || value.includes('.@')) return 'Please check the format around the @ symbol';
+    
+    const parts = value.split('@');
+    if (parts.length === 2) {
+      const domain = parts[1];
+      if (!domain.includes('.') || domain.split('.').pop()!.length < 2) {
+        return 'Please include a valid domain (e.g., gmail.com)';
+      }
+    }
+    
+    return null;
+  };
+
   // Phone number validation function
   const validatePhoneNumber = (value: string): string | null => {
     if (!value) return null; // Optional field
@@ -166,10 +212,10 @@ export default function ProfilePage() {
       errors.lastName = 'Last name is required';
     }
 
-    if (!formData.email.trim()) {
-      errors.email = 'Email address is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Please enter a valid email address';
+    // Use the new email validation function
+    const emailError = validateEmail(formData.email.trim());
+    if (emailError) {
+      errors.email = emailError;
     }
 
     if (!formData.assistantName.trim()) {
@@ -224,13 +270,22 @@ export default function ProfilePage() {
       }
 
       // Execute all updates concurrently
+      // Note: If email is being changed, updateProfile will:
+      // 1. Trigger Supabase Auth email verification (sends emails to old & new addresses)
+      // 2. Update profile data excluding email (email updated after verification)
+      // 3. Show verification message to user
+      // 4. Email will be updated in profile table via auth callback when verified
       await Promise.all(updatePromises);
 
       // Show success toast after all updates complete
-      toast({
-        title: 'Profile Updated',
-        description: 'Your profile has been successfully updated.',
-      });
+      // (unless email verification is pending, in which case updateProfile shows its own message)
+      const isEmailChanging = (profile?.email || user?.email) !== formData.email.trim();
+      if (!isEmailChanging) {
+        toast({
+          title: 'Profile Updated',
+          description: 'Your profile has been successfully updated.',
+        });
+      }
     } catch (error) {
       // Show error toast to inform users of failures
       toast({
@@ -386,11 +441,14 @@ export default function ProfilePage() {
                   <Label htmlFor="email">Email Address *</Label>
                   <Input
                     id="email"
-                    type="email"
+                    type="text"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    placeholder="Enter your email address"
+                    placeholder="name@example.com"
                     className={validationErrors.email ? 'border-red-500' : ''}
+                    maxLength={254}
+                    inputMode="email"
+                    autoComplete="email"
                   />
                   {validationErrors.email && (
                     <p className="text-sm text-red-500">{validationErrors.email}</p>
@@ -551,5 +609,13 @@ export default function ProfilePage() {
         </div>
       </DashboardShell>
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ProfilePageContent />
+    </Suspense>
   );
 } 
