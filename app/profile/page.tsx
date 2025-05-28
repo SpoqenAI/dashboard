@@ -34,8 +34,24 @@ export default function ProfilePage() {
     updateAIReceptionistSettings,
   } = useUserSettings();
 
+  // Define the form data type
+  type FormData = {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    businessName: string;
+    bio: string;
+    licenseNumber: string;
+    brokerage: string;
+    website: string;
+    city: string;
+    state: string;
+    assistantName: string;
+  };
+
   // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
     email: '',
@@ -62,7 +78,7 @@ export default function ProfilePage() {
   }, [dataLoaded, getProfileFormData]);
 
   // Handle form field changes
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
