@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useState } from 'react';
+import { ProtectedRoute } from '@/components/protected-route';
 import { useSearchParams } from 'next/navigation';
 import { Filter } from 'bad-words';
 import { useMask } from '@react-input/mask';
@@ -1164,8 +1165,10 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <SettingsContent />
-    </Suspense>
+    <ProtectedRoute>
+      <Suspense fallback={<div>Loading...</div>}>
+        <SettingsContent />
+      </Suspense>
+    </ProtectedRoute>
   );
 }

@@ -3,6 +3,7 @@
 import type React from 'react';
 
 import { useState } from 'react';
+import { ProtectedRoute } from '@/components/protected-route';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -288,8 +289,9 @@ export default function SignupPage() {
     formData.confirmPassword.trim() !== '';
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <ProtectedRoute requireAuth={false}>
+      <div className="flex min-h-screen flex-col">
+        <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2 text-xl font-bold">
             <PhoneCall className="h-5 w-5 text-primary" />
@@ -461,5 +463,6 @@ export default function SignupPage() {
         </Card>
       </main>
     </div>
+    </ProtectedRoute>
   );
 }

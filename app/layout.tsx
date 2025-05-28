@@ -2,6 +2,7 @@ import type React from 'react';
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/toaster';
+import { AuthProvider } from '@/hooks/use-auth';
 
 export const metadata: Metadata = {
   title: 'Spoqen - AI Receptionist',
@@ -17,8 +18,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {children}
-        <Toaster />
+        <AuthProvider>
+          {children}
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );

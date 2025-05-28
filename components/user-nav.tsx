@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,11 +14,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { LogOut, Settings } from 'lucide-react';
-import { signOut } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
 
 export function UserNav() {
   const router = useRouter();
+  const { user, signOut } = useAuth();
 
   const handleSettingsClick = () => {
     router.push('/settings');
@@ -25,16 +26,12 @@ export function UserNav() {
 
   const handleLogoutClick = async () => {
     try {
-      const { error } = await signOut();
+      await signOut();
       
-      if (error) {
-        toast({
-          title: 'Error signing out',
-          description: error.message || 'Something went wrong. Please try again.',
-          variant: 'destructive',
-        });
-        return;
-      }
+      toast({
+        title: 'Signed out successfully',
+        description: 'You have been logged out.',
+      });
 
       // Redirect to login page after successful logout
       router.push('/login');
@@ -53,19 +50,24 @@ export function UserNav() {
         <Button className="relative h-8 w-8 rounded-full bg-black text-white hover:bg-gray-800">
           <Avatar className="h-8 w-8">
             <AvatarImage
-              src="/placeholder.svg?height=32&width=32&query=person"
+              src={user?.user_metadata?.avatar_url || "/placeholder.svg?height=32&width=32&query=person"}
               alt="User"
             />
-            <AvatarFallback>JC</AvatarFallback>
+            <AvatarFallback>
+              {user?.user_metadata?.first_name?.[0]?.toUpperCase() || ''}
+              {user?.user_metadata?.last_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
+            </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">James Carter</p>
+            <p className="text-sm font-medium leading-none">
+              {user?.user_metadata?.display_name || user?.user_metadata?.full_name || 'User'}
+            </p>
             <p className="text-xs leading-none text-muted-foreground">
-              james@realestate.com
+              {user?.email || 'No email'}
             </p>
           </div>
         </DropdownMenuLabel>

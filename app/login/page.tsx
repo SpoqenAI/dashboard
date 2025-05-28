@@ -3,6 +3,7 @@
 import type React from 'react';
 
 import { useState, useEffect, Suspense } from 'react';
+import { ProtectedRoute } from '@/components/protected-route';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -269,17 +270,19 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="text-center">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
-            <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+    <ProtectedRoute requireAuth={false}>
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center">
+            <div className="text-center">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+              <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+            </div>
           </div>
-        </div>
-      }
-    >
-      <LoginForm />
-    </Suspense>
+        }
+      >
+        <LoginForm />
+      </Suspense>
+    </ProtectedRoute>
   );
 }
