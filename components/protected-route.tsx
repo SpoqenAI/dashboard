@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
@@ -19,32 +19,48 @@ export function ProtectedRoute({
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    if (!loading) {
-      if (requireAuth && !user) {
-        // User is not authenticated, redirect to login
-        if (pathname !== redirectTo) {
-          console.log('User not authenticated, redirecting to:', redirectTo);
-          router.replace(redirectTo);
-        }
-      } else if (!requireAuth && user) {
-        // User is authenticated but shouldn't be (e.g., on login page)
-        if (pathname !== '/dashboard') {
-          console.log('User already authenticated, redirecting to dashboard');
-          router.replace('/dashboard');
-        }
+    // Don't redirect if already redirecting or still loading
+    if (loading || isRedirecting) {
+      return;
+    }
+
+    if (requireAuth && !user) {
+      // User is not authenticated, redirect to login only if not already there
+      if (pathname !== redirectTo) {
+        console.log('User not authenticated, redirecting to:', redirectTo);
+        setIsRedirecting(true);
+        router.replace(redirectTo);
+      }
+    } else if (!requireAuth && user) {
+      // User is authenticated but shouldn't be (e.g., on login page)
+      // Only redirect if not already on dashboard
+      if (pathname !== '/dashboard') {
+        console.log('User already authenticated, redirecting to dashboard');
+        setIsRedirecting(true);
+        router.replace('/dashboard');
       }
     }
-  }, [user, loading, requireAuth, redirectTo, pathname, router]);
+  }, [user, loading, requireAuth, redirectTo, pathname, isRedirecting]);
 
-  // Show loading spinner while checking authentication
-  if (loading) {
+  // Reset redirecting state when pathname changes (redirect completed)
+  useEffect(() => {
+    if (isRedirecting) {
+      setIsRedirecting(false);
+    }
+  }, [pathname]);
+
+  // Show loading spinner while checking authentication or redirecting
+  if (loading || isRedirecting) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <p className="text-sm text-muted-foreground">
+            {isRedirecting ? 'Redirecting...' : 'Loading...'}
+          </p>
         </div>
       </div>
     );
