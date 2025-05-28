@@ -1,26 +1,149 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getSiteUrl } from '@/lib/site-url';
+import { useAuth } from '@/hooks/use-auth';
+import { Loader2, Shield, AlertTriangle } from 'lucide-react';
+import { getAdminEmails, isDebugEnabled, isProduction } from '@/lib/config';
+import { getSupabaseClient } from '@/lib/supabase/client';
 
 export default function DebugAuthPage() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const [authCheckLoading, setAuthCheckLoading] = useState(true);
+  const { user, loading: authLoading } = useAuth();
 
-  // Security check: Only allow this page in development
-  if (process.env.NODE_ENV === 'production') {
+  // Check authorization on component mount
+  useEffect(() => {
+    checkAuthorization();
+  }, [user, authLoading]);
+
+  const checkAuthorization = async () => {
+    try {
+      setAuthCheckLoading(true);
+
+      // Check if debug tools are enabled
+      if (!isDebugEnabled()) {
+        setIsAuthorized(false);
+        return;
+      }
+
+      // Require authentication in all cases
+      if (authLoading || !user) {
+        setIsAuthorized(false);
+        return;
+      }
+
+      // In production, require admin privileges
+      if (isProduction()) {
+        const isAdmin = await checkAdminStatus(user.id);
+        setIsAuthorized(isAdmin);
+      } else {
+        // In development, allow any authenticated user
+        setIsAuthorized(true);
+      }
+    } catch (error) {
+      console.error('Error checking authorization:', error);
+      setIsAuthorized(false);
+    } finally {
+      setAuthCheckLoading(false);
+    }
+  };
+
+  const checkAdminStatus = async (userId: string): Promise<boolean> => {
+    try {
+      const supabase = getSupabaseClient();
+      
+      // Get user profile to check email
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error checking admin status:', error);
+        return false;
+      }
+
+      // Check if user email is in admin list
+      const adminEmails = getAdminEmails();
+      return adminEmails.includes(profile?.email || '');
+    } catch (error) {
+      console.error('Error in admin check:', error);
+      return false;
+    }
+  };
+
+  // Show loading while checking authorization
+  if (authLoading || authCheckLoading) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardContent className="flex items-center justify-center py-8">
+            <div className="flex flex-col items-center space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Checking access permissions...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show access denied if not authorized
+  if (!isAuthorized) {
+    const debugEnabled = isDebugEnabled();
+    const productionEnv = isProduction();
+    
     return (
       <div className="container mx-auto py-8">
         <Card className="border-red-200 bg-red-50">
           <CardHeader>
             <CardTitle className="text-red-800 flex items-center gap-2">
-              🚫 Access Denied
+              <Shield className="h-5 w-5" />
+              Access Denied
             </CardTitle>
             <CardDescription className="text-red-700">
-              This debug page is only available in development environments for security reasons.
+              {!debugEnabled ? (
+                <>
+                  Debug tools are disabled in this environment. 
+                  Contact your system administrator if you need access.
+                </>
+              ) : productionEnv ? (
+                <>
+                  This debug page is restricted to authorized administrators only. 
+                  If you believe you should have access, please contact your system administrator.
+                </>
+              ) : (
+                <>
+                  This debug page requires authentication. Please log in to continue.
+                </>
+              )}
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <div className="flex items-start gap-3 p-4 bg-red-100 rounded-lg">
+              <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-red-800">
+                <p className="font-medium mb-1">Security Notice:</p>
+                <p>
+                  This page contains sensitive debugging tools that can expose authentication data and 
+                  browser storage information. Access is restricted for security reasons.
+                </p>
+                <div className="mt-2 space-y-1">
+                  <p><strong>Environment:</strong> {productionEnv ? 'Production' : 'Development'}</p>
+                  <p><strong>Debug Enabled:</strong> {debugEnabled ? 'Yes' : 'No'}</p>
+                  <p><strong>Authentication:</strong> {user ? 'Authenticated' : 'Required'}</p>
+                  {productionEnv && (
+                    <p><strong>Admin Access:</strong> Required</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
         </Card>
       </div>
     );
@@ -117,14 +240,22 @@ export default function DebugAuthPage() {
   return (
     <div className="container mx-auto py-8">
       {/* Security Warning */}
-      <Card className="mb-6 border-red-200 bg-red-50">
+      <Card className="mb-6 border-amber-200 bg-amber-50">
         <CardHeader>
-          <CardTitle className="text-red-800 flex items-center gap-2">
-            🔒 Security Notice
+          <CardTitle className="text-amber-800 flex items-center gap-2">
+            <Shield className="h-5 w-5 text-green-600" />
+            Auth Debug Tool
           </CardTitle>
-          <CardDescription className="text-red-700">
-            This is a debug tool for development purposes only. Environment variables are filtered to prevent exposure of sensitive data.
-            Do not use this page in production environments.
+          <CardDescription className="text-amber-700">
+            {isProduction() ? (
+              <span className="text-amber-600 font-medium">
+                ⚠️ Production Environment - Admin Access Granted
+              </span>
+            ) : (
+              <span className="text-blue-600 font-medium">
+                🔧 Development Environment - Debug Mode Active
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -133,7 +264,7 @@ export default function DebugAuthPage() {
         <CardHeader>
           <CardTitle>Auth Debug Information</CardTitle>
           <CardDescription>
-            Use this page to debug PKCE verification issues
+            Use this page to debug PKCE verification issues and authentication problems
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -166,6 +297,22 @@ export default function DebugAuthPage() {
               <li>Check console logs for getSiteUrl() debug output</li>
             </ol>
           </div>
+
+          {isProduction() && (
+            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-medium mb-1">Production Warning:</p>
+                  <p>
+                    You are using debug tools in a production environment. Please use caution 
+                    and avoid exposing sensitive information. Consider using these tools in a 
+                    development environment when possible.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
