@@ -160,7 +160,7 @@ export async function createProfileFromAuthUser(user: User) {
     firstName: firstName || undefined,
     lastName: lastName || undefined,
     fullName: fullName || undefined,
-    phone: user.phone || metadata.phone || undefined,
+    phone: metadata.phone || undefined,
     avatarUrl: metadata.avatar_url || metadata.picture || undefined,
   };
 
