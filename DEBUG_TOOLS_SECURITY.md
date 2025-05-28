@@ -38,7 +38,7 @@ Add these environment variables to control debug tool access:
 NEXT_PUBLIC_ENABLE_DEBUG=true
 
 # Comma-separated list of admin emails (required for production debug access)
-NEXT_PUBLIC_ADMIN_EMAILS=admin@spoqen.com,developer@spoqen.com,your-email@company.com
+NEXT_PUBLIC_ADMIN_EMAILS=***
 ```
 
 ### Development Setup

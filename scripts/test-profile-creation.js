@@ -9,8 +9,152 @@
 
 const fs = require('fs');
 const path = require('path');
+const acorn = require('acorn');
 
 console.log('🧪 Profile Creation Implementation Test\n');
+
+/**
+ * Parse TypeScript/JavaScript code and extract exported async function names
+ * @param {string} code - The source code to parse
+ * @returns {string[]} - Array of exported async function names
+ */
+function extractExportedAsyncFunctions(code) {
+  try {
+    // Enhanced TypeScript preprocessing for better compatibility with Acorn
+    const cleanedCode = code
+      // Remove TypeScript interfaces (including nested ones)
+      .replace(/export\s+interface\s+\w+\s*{[^{}]*(?:{[^{}]*}[^{}]*)*}/g, '')
+      .replace(/interface\s+\w+\s*{[^{}]*(?:{[^{}]*}[^{}]*)*}/g, '')
+      
+      // Remove type aliases and type declarations
+      .replace(/export\s+type\s+\w+\s*=[^;]+;/g, '')
+      .replace(/type\s+\w+\s*=[^;]+;/g, '')
+      
+      // Remove import type statements
+      .replace(/import\s+type\s+[^;]+;/g, '')
+      
+      // Remove generic type parameters from function declarations
+      .replace(/(<[^>]*>)(?=\s*\()/g, '')
+      
+      // Remove return type annotations from functions
+      .replace(/(\)\s*):\s*[^{=;]+(?=\s*[{=;])/g, '$1')
+      
+      // Remove parameter type annotations (more comprehensive)
+      .replace(/(\w+)\s*:\s*[^,)=]+(?=[,)=])/g, '$1')
+      
+      // Remove variable type annotations
+      .replace(/(\w+)\s*:\s*[^=,;{}()]+(?=\s*[=,;{}()])/g, '$1')
+      
+      // Remove as type assertions
+      .replace(/\s+as\s+[^,;{}()]+/g, '')
+      
+      // Remove optional property markers
+      .replace(/\?\s*:/g, ':')
+      
+      // Remove readonly modifiers
+      .replace(/readonly\s+/g, '')
+      
+      // Clean up any remaining type annotations in destructuring
+      .replace(/{([^}]*)}:\s*[^=,;{}()]+/g, '{$1}')
+      
+      // Remove any remaining angle brackets (generics)
+      .replace(/<[^>]*>/g, '')
+      
+      // Clean up multiple spaces and newlines
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const ast = acorn.parse(cleanedCode, {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      allowImportExportEverywhere: true,
+      allowReturnOutsideFunction: true
+    });
+
+    const exportedAsyncFunctions = [];
+
+    function walk(node) {
+      if (!node || typeof node !== 'object') return;
+
+      // Handle export declarations
+      if (node.type === 'ExportNamedDeclaration') {
+        if (node.declaration) {
+          // export async function name() {}
+          if (node.declaration.type === 'FunctionDeclaration' && 
+              node.declaration.async && 
+              node.declaration.id) {
+            exportedAsyncFunctions.push(node.declaration.id.name);
+          }
+          // export const name = async function() {}
+          else if (node.declaration.type === 'VariableDeclaration') {
+            for (const declarator of node.declaration.declarations) {
+              if (declarator.id && declarator.id.name && 
+                  declarator.init && 
+                  ((declarator.init.type === 'FunctionExpression' && declarator.init.async) ||
+                   (declarator.init.type === 'ArrowFunctionExpression' && declarator.init.async))) {
+                exportedAsyncFunctions.push(declarator.id.name);
+              }
+            }
+          }
+        }
+        // export { name } where name is an async function
+        else if (node.specifiers) {
+          // This would require more complex analysis to determine if the exported
+          // identifier refers to an async function defined elsewhere
+        }
+      }
+
+      // Recursively walk all properties
+      for (const key in node) {
+        if (key === 'parent') continue; // Avoid circular references
+        const child = node[key];
+        if (Array.isArray(child)) {
+          child.forEach(walk);
+        } else if (child && typeof child === 'object') {
+          walk(child);
+        }
+      }
+    }
+
+    walk(ast);
+    return exportedAsyncFunctions;
+  } catch (error) {
+    console.log(`  ⚠️  AST parsing failed, falling back to regex: ${error.message}`);
+    
+    // Enhanced fallback regex patterns for better TypeScript support
+    const patterns = [
+      // Standard export async function
+      /export\s+async\s+function\s+(\w+)/g,
+      
+      // export const name = async function
+      /export\s+const\s+(\w+)\s*=\s*async\s+function/g,
+      
+      // export const name = async () =>
+      /export\s+const\s+(\w+)\s*=\s*async\s*\(/g,
+      
+      // export const name: Type = async function
+      /export\s+const\s+(\w+)\s*:\s*[^=]*=\s*async\s+function/g,
+      
+      // export const name: Type = async () =>
+      /export\s+const\s+(\w+)\s*:\s*[^=]*=\s*async\s*\(/g,
+      
+      // Handle multiline declarations
+      /export\s+async\s+function\s+(\w+)\s*[<(]/gm
+    ];
+    
+    const functions = [];
+    patterns.forEach(pattern => {
+      let match;
+      while ((match = pattern.exec(code)) !== null) {
+        if (!functions.includes(match[1])) {
+          functions.push(match[1]);
+        }
+      }
+    });
+    
+    return functions;
+  }
+}
 
 // Check if all required files exist
 const requiredFiles = [
@@ -59,8 +203,11 @@ const requiredFunctions = [
 
 let missingFunctions = [];
 
+// Use AST-based function detection
+const exportedAsyncFunctions = extractExportedAsyncFunctions(profileContent);
+
 requiredFunctions.forEach(func => {
-  if (profileContent.includes(`export async function ${func}`)) {
+  if (exportedAsyncFunctions.includes(func)) {
     console.log(`  ✅ ${func}`);
   } else {
     console.log(`  ❌ ${func} - MISSING`);

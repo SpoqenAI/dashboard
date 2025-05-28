@@ -192,6 +192,9 @@ importers:
         specifier: ^4.4.2
         version: 4.4.2
     devDependencies:
+      '@types/acorn':
+        specifier: ^4.0.6
+        version: 4.0.6
       '@types/lodash-es':
         specifier: ^4.17.12
         version: 4.17.12
@@ -210,6 +213,9 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^8.32.1
         version: 8.32.1(eslint@9.27.0(jiti@1.21.7))(typescript@5.0.2)
+      acorn:
+        specifier: ^8.14.0
+        version: 8.14.1
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -1887,6 +1893,9 @@ packages:
 
   '@tybys/wasm-util@0.9.0':
     resolution: {integrity: sha512-6+7nlbMVX/PVDCwaIQ8nTOPveOcFLSt8GcXdx8hD0bt39uWxYT88uXzqTd4fTvqta7oeUJqudepapKNt2DYJFw==}
+
+  '@types/acorn@4.0.6':
+    resolution: {integrity: sha512-veQTnWP+1D/xbxVrPC3zHnCZRjSrKfhbMUlEA43iMZLu7EsnTtkJklIuwrCPbOi8YkvDQAiW05VQQFvvz9oieQ==}
 
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
@@ -6037,6 +6046,10 @@ snapshots:
     dependencies:
       tslib: 2.8.1
     optional: true
+
+  '@types/acorn@4.0.6':
+    dependencies:
+      '@types/estree': 1.0.7
 
   '@types/connect@3.4.38':
     dependencies:
