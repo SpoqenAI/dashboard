@@ -139,6 +139,8 @@ export default function DebugProfilePage() {
 
   const testRLSPolicies = async () => {
     setIsLoading(true);
+    let testProfileId: string | null = null;
+    
     try {
       const supabase = getSupabaseClient();
       
@@ -151,13 +153,18 @@ export default function DebugProfilePage() {
         return;
       }
 
+      // Generate a temporary UUID for testing to avoid conflicts
+      testProfileId = crypto.randomUUID();
+      
       const testProfile = {
-        id: user.id,
-        email: user.email!,
+        id: testProfileId,
+        email: `test-${testProfileId.slice(0, 8)}@example.com`,
         first_name: 'Test',
         last_name: 'User',
         full_name: 'Test User',
       };
+
+      addResult(`🔧 Using temporary test ID: ${testProfileId.slice(0, 8)}...`);
 
       const { data, error: insertError } = await supabase
         .from('profiles')
@@ -176,6 +183,26 @@ export default function DebugProfilePage() {
     } catch (error: any) {
       addResult(`❌ RLS Test Error: ${error.message}`);
     } finally {
+      // Cleanup: Remove the test profile if it was created
+      if (testProfileId) {
+        try {
+          addResult('🧹 Cleaning up test profile...');
+          const supabase = getSupabaseClient();
+          const { error: deleteError } = await supabase
+            .from('profiles')
+            .delete()
+            .eq('id', testProfileId);
+
+          if (deleteError) {
+            addResult(`⚠️ Cleanup warning: ${deleteError.message}`);
+          } else {
+            addResult('✅ Test profile cleaned up successfully');
+          }
+        } catch (cleanupError: any) {
+          addResult(`⚠️ Cleanup error: ${cleanupError.message}`);
+        }
+      }
+      
       setIsLoading(false);
     }
   };
