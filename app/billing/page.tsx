@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -52,13 +52,70 @@ export default function BillingPage() {
   // State for modal visibility
   const [showPlanChangeModal, setShowPlanChangeModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [downloadingInvoices, setDownloadingInvoices] = useState<Set<string>>(new Set());
+
+  // Load notification preferences from local storage on component mount
+  useEffect(() => {
+    const loadNotificationPreferences = () => {
+      try {
+        const savedPreferences = localStorage.getItem('billingNotificationPreferences');
+        if (savedPreferences) {
+          const parsedPreferences = JSON.parse(savedPreferences);
+          setNotifications(parsedPreferences);
+        }
+      } catch (error) {
+        console.error('Failed to load notification preferences:', error);
+      }
+    };
+
+    loadNotificationPreferences();
+  }, []);
+
+  // Function to save preferences to local storage and API
+  const saveNotificationPreferences = async (newPreferences: typeof notifications) => {
+    try {
+      // Save to local storage
+      localStorage.setItem('billingNotificationPreferences', JSON.stringify(newPreferences));
+      
+      // TODO: Replace with actual API endpoint
+      // Example API call to save preferences to backend
+      /*
+      const response = await fetch('/api/user/notification-preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          // Add authentication headers as needed
+          // 'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          billingNotifications: newPreferences
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save notification preferences to server');
+      }
+      */
+      
+      console.log('Notification preferences saved:', newPreferences);
+    } catch (error) {
+      console.error('Failed to save notification preferences:', error);
+      // You might want to show a toast notification or error message to the user
+    }
+  };
 
   // Handler for toggling notification settings
-  const handleNotificationToggle = (setting: keyof typeof notifications) => {
-    setNotifications(prev => ({
-      ...prev,
-      [setting]: !prev[setting]
-    }));
+  const handleNotificationToggle = async (setting: keyof typeof notifications) => {
+    const updatedNotifications = {
+      ...notifications,
+      [setting]: !notifications[setting]
+    };
+    
+    // Update local state
+    setNotifications(updatedNotifications);
+    
+    // Persist the updated preferences
+    await saveNotificationPreferences(updatedNotifications);
   };
 
   // Handler for opening plan change modal
@@ -85,6 +142,130 @@ export default function BillingPage() {
     console.log('Cancelling subscription...');
     setShowCancelModal(false);
     // You would typically make an API call here
+  };
+
+  // Function to securely download invoice
+  const handleInvoiceDownload = async (invoiceId: string, invoiceDate: string) => {
+    // Prevent multiple downloads of the same invoice
+    if (downloadingInvoices.has(invoiceId)) {
+      return;
+    }
+
+    try {
+      // Add invoice to downloading set
+      setDownloadingInvoices(prev => new Set(prev).add(invoiceId));
+
+      // TODO: Replace with actual API endpoint
+      // Example secure API call to fetch invoice
+      /*
+      const response = await fetch(`/api/invoices/${invoiceId}/download`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // Add authentication headers
+          'Authorization': `Bearer ${token}`,
+          // Add CSRF token if needed
+          'X-CSRF-Token': csrfToken,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Authentication required. Please log in again.');
+        } else if (response.status === 403) {
+          throw new Error('You do not have permission to download this invoice.');
+        } else if (response.status === 404) {
+          throw new Error('Invoice not found.');
+        } else {
+          throw new Error(`Failed to download invoice: ${response.statusText}`);
+        }
+      }
+
+      // Get the blob data
+      const blob = await response.blob();
+      
+      // Verify content type
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/pdf')) {
+        throw new Error('Invalid file type received from server.');
+      }
+      */
+
+      // For demo purposes, create a mock PDF blob
+      const mockPdfContent = `%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+>>
+endobj
+xref
+0 4
+0000000000 65535 f 
+0000000010 00000 n 
+0000000053 00000 n 
+0000000125 00000 n 
+trailer
+<<
+/Size 4
+/Root 1 0 R
+>>
+startxref
+203
+%%EOF`;
+      
+      const blob = new Blob([mockPdfContent], { type: 'application/pdf' });
+
+      // Create temporary anchor element for download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${invoiceId}-${invoiceDate.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
+      
+      // Ensure the link is accessible but hidden
+      link.style.display = 'none';
+      link.setAttribute('aria-hidden', 'true');
+      
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the blob URL
+      window.URL.revokeObjectURL(url);
+      
+      console.log(`Invoice ${invoiceId} downloaded successfully`);
+      
+    } catch (error) {
+      console.error('Failed to download invoice:', error);
+      
+      // You might want to show a toast notification or error message to the user
+      // For now, we'll just alert the user
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred while downloading the invoice.';
+      alert(`Download failed: ${errorMessage}`);
+      
+    } finally {
+      // Remove invoice from downloading set
+      setDownloadingInvoices(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(invoiceId);
+        return newSet;
+      });
+    }
   };
 
   return (
@@ -250,10 +431,20 @@ export default function BillingPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <p className="font-semibold">{invoice.amount}</p>
-                      <Button variant="outline" size="sm">
-                        <Download className="mr-2 h-4 w-4" />
-                        Download
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleInvoiceDownload(invoice.invoice, invoice.date)}
+                        disabled={downloadingInvoices.has(invoice.invoice)}
+                        aria-label={`Download invoice ${invoice.invoice} for ${invoice.date}`}
+                        aria-describedby={`invoice-${index}-description`}
+                      >
+                        <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+                        {downloadingInvoices.has(invoice.invoice) ? 'Downloading...' : 'Download'}
                       </Button>
+                    </div>
+                    <div id={`invoice-${index}-description`} className="sr-only">
+                      Invoice {invoice.invoice} for Professional Plan dated {invoice.date}, amount {invoice.amount}
                     </div>
                   </div>
                 ))}
