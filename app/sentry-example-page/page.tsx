@@ -73,21 +73,35 @@ export default function Page() {
         <button
           type="button"
           onClick={async () => {
-            await Sentry.startSpan(
-              {
-                name: 'Example Frontend Span',
-                op: 'test',
-              },
-              async () => {
-                const res = await fetch('/api/sentry-example-api');
-                if (!res.ok) {
-                  setHasSentError(true);
-                  throw new SentryExampleFrontendError(
-                    'This error is raised on the frontend of the example page.'
-                  );
+            try {
+              await Sentry.startSpan(
+                {
+                  name: 'Example Frontend Span',
+                  op: 'test',
+                },
+                async () => {
+                  const res = await fetch('/api/sentry-example-api');
+                  if (!res.ok) {
+                    setHasSentError(true);
+                    throw new SentryExampleFrontendError(
+                      'This error is raised on the frontend of the example page.'
+                    );
+                  }
                 }
+              );
+            } catch (error) {
+              // Handle errors from Sentry span creation or fetch operation
+              // This prevents unhandled promise rejections and ensures the component remains stable
+              console.error('Error in Sentry example:', error);
+              
+              // If the error is our intentional SentryExampleFrontendError, still mark as sent
+              if (error instanceof SentryExampleFrontendError) {
+                setHasSentError(true);
               }
-            );
+              
+              // For other errors, we could optionally show an error state or just log
+              // The error will still be captured by Sentry if it's properly configured
+            }
           }}
         >
           <span>Throw Sample Error</span>

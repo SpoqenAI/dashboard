@@ -112,11 +112,10 @@ function LoginForm() {
       let title = 'Login failed';
       let description = 'Invalid email or password. Please try again.';
 
-      // Handle specific error cases
+      // Handle specific error cases - only expose essential information
       if (error.message) {
         if (error.message.includes('Email not confirmed') || 
-            error.message.includes('email_not_confirmed') ||
-            error.message.includes('signup_disabled')) {
+            error.message.includes('email_not_confirmed')) {
           title = 'Email not verified';
           description = 'Please check your email and click the verification link before logging in. Check your spam folder if you don\'t see the email.';
           setShowResendVerification(true);
@@ -128,7 +127,8 @@ function LoginForm() {
           description = 'Too many login attempts. Please wait a few minutes before trying again.';
           setShowResendVerification(false);
         } else {
-          description = error.message;
+          // For all other errors, use generic message to avoid exposing sensitive information
+          description = 'Unable to sign in at this time. Please try again later.';
           setShowResendVerification(false);
         }
       }
@@ -143,11 +143,25 @@ function LoginForm() {
     }
   };
 
+  const [lastResendTime, setLastResendTime] = useState<number>(0);
+  const RESEND_COOLDOWN = 60000; // 1 minute
+
   const handleResendVerification = async () => {
     if (!formData.email) {
       toast({
         title: 'Email required',
         description: 'Please enter your email address first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastResendTime < RESEND_COOLDOWN) {
+      const remainingTime = Math.ceil((RESEND_COOLDOWN - (now - lastResendTime)) / 1000);
+      toast({
+        title: 'Please wait',
+        description: `You can resend the verification email in ${remainingTime} seconds.`,
         variant: 'destructive',
       });
       return;
@@ -162,6 +176,7 @@ function LoginForm() {
         throw error;
       }
 
+      setLastResendTime(now);
       toast({
         title: 'Verification email sent',
         description: 'Please check your email for the verification link.',
