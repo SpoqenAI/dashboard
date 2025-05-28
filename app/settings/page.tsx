@@ -37,6 +37,7 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { useUserSettings } from '@/hooks/use-user-settings';
+import { parsePhoneNumber, isValidPhoneNumber, formatIncompletePhoneNumber, AsYouType } from 'libphonenumber-js';
 
 function SettingsContent() {
   const searchParams = useSearchParams();
@@ -168,8 +169,8 @@ function SettingsContent() {
     // Email: RFC 5322 compliant pattern with practical constraints
     EMAIL_PATTERN: /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/,
     
-    // Phone: pattern optimized for auto-formatted input
-    PHONE_PATTERN: /^(\+?1\s)?\([0-9]{3}\)\s[0-9]{3}-[0-9]{4}$|^[0-9]{1,3}$|^\([0-9]{1,3}\)\s[0-9]{0,3}$|^\([0-9]{3}\)\s[0-9]{1,3}-?[0-9]{0,4}$|^\+[0-9]{1,4}\s\([0-9]{3}\)\s[0-9]{3}-[0-9]{4}$/,
+    // Phone: simple pattern for input - only digits and plus signs allowed
+    PHONE_INPUT_PATTERN: /^[\d+\s\-\(\)]*$/,
     
     // Website URL pattern - comprehensive validation
     URL_PATTERN: /^https?:\/\/(?:[-\w.])+(?:\:[0-9]+)?(?:\/(?:[\w\/_.])*(?:\?(?:[\w&=%.])*)?(?:\#(?:[\w.])*)?)?$/,
@@ -262,70 +263,77 @@ function SettingsContent() {
         
       case 'phone':
         if (value) {
-          // Check if it's international (starts with +)
-          const isInternational = value.startsWith('+');
-          const digitsOnly = value.replace(/\D/g, '');
+          // Basic input pattern check - allow only valid characters during typing
+          if (!VALIDATION_PATTERNS.PHONE_INPUT_PATTERN.test(value)) {
+            return 'Phone number can only contain digits, spaces, hyphens, parentheses, and plus signs';
+          }
           
-          if (isInternational) {
-            // International number validation
-            if (digitsOnly.length < 7) {
-              return 'International number must have at least 7 digits';
-            }
-            if (digitsOnly.length > 15) {
-              return 'International number cannot exceed 15 digits';
-            }
-            // Check for reasonable country code (1-4 digits)
-            if (digitsOnly.length >= 10) {
-              const countryCodeLength = digitsOnly.length - 10;
-              if (countryCodeLength > 4) {
-                return 'Invalid country code - too long';
+          // Skip validation for very short inputs (user is still typing)
+          const digitsOnly = value.replace(/\D/g, '');
+          if (digitsOnly.length < 3) {
+            return null; // Allow partial input
+          }
+          
+          // For very short inputs during backspacing, be more lenient
+          if (digitsOnly.length <= 3 && !value.includes('(')) {
+            return null; // Allow partial input without formatting
+          }
+          
+          // Use libphonenumber-js for validation
+          try {
+            // Try to parse the number
+            const phoneNumber = parsePhoneNumber(value, 'US'); // Default to US, but will detect international
+            
+            // Check if it's a valid number
+            if (!phoneNumber.isValid()) {
+              // For incomplete numbers, provide helpful feedback
+              if (digitsOnly.length < 7) {
+                return 'Phone number appears incomplete';
               }
-            }
-            // Basic format check - should have reasonable length
-            if (digitsOnly.length < 8) {
-              return 'Please enter a complete international number';
-            }
-          } else {
-            // US number validation
-            // Skip validation if less than 3 digits (user is still typing)
-            if (digitsOnly.length > 0 && digitsOnly.length < 3) {
-              return null; // Allow partial input
+              return 'Please enter a valid phone number';
             }
             
-            // Check minimum digit requirements for complete numbers
-            if (digitsOnly.length > 0 && digitsOnly.length < 10) {
-              return 'US phone number must be 10 digits';
+            // Additional checks for business context
+            const nationalNumber = phoneNumber.nationalNumber;
+            
+            // Check for emergency numbers
+            if (nationalNumber === '911' || nationalNumber.includes('911')) {
+              return 'Cannot use emergency service numbers';
             }
             
-            // Check maximum digit requirements
-            if (digitsOnly.length > 10) {
-              return 'US phone number cannot exceed 10 digits';
+            // Check for obviously fake numbers (all same digits, etc.)
+            if (/^(\d)\1+$/.test(nationalNumber)) {
+              return 'Please enter a valid phone number';
             }
             
-            // For complete 10-digit US numbers, validate area code and exchange
-            if (digitsOnly.length === 10) {
-              const areaCode = digitsOnly.substring(0, 3);
-              const exchange = digitsOnly.substring(3, 6);
-              
-              // Check for invalid area codes (can't start with 0 or 1)
-              if (areaCode.startsWith('0') || areaCode.startsWith('1')) {
-                return 'Invalid area code';
+          } catch (error) {
+            // If parsing fails, try to validate as international number
+            if (value.startsWith('+')) {
+              try {
+                const intlNumber = parsePhoneNumber(value);
+                if (!intlNumber.isValid()) {
+                  return 'Please enter a valid international phone number';
+                }
+              } catch {
+                return 'Please enter a valid international phone number';
               }
-              
-              // Check for invalid exchange codes (can't start with 0 or 1)
-              if (exchange.startsWith('0') || exchange.startsWith('1')) {
-                return 'Invalid exchange code';
-              }
-              
-              // Check for special service numbers
-              if (areaCode === '911' || exchange === '911') {
-                return 'Cannot use emergency service numbers';
-              }
-              
-              // Check for obviously fake numbers
-              if (areaCode === '000' || exchange === '000' || 
-                  areaCode === '555' && exchange === '555') {
-                return 'Please enter a valid phone number';
+            } else {
+              // For US numbers without country code
+              if (digitsOnly.length === 10) {
+                const areaCode = digitsOnly.substring(0, 3);
+                const exchange = digitsOnly.substring(3, 6);
+                
+                // Basic US number validation
+                if (areaCode.startsWith('0') || areaCode.startsWith('1')) {
+                  return 'Invalid area code';
+                }
+                if (exchange.startsWith('0') || exchange.startsWith('1')) {
+                  return 'Invalid exchange code';
+                }
+              } else if (digitsOnly.length > 3 && digitsOnly.length < 10) {
+                return 'US phone number must be 10 digits';
+              } else if (digitsOnly.length > 10) {
+                return 'US phone number cannot exceed 10 digits';
               }
             }
           }
@@ -498,36 +506,47 @@ function SettingsContent() {
     return cleaned.slice(0, 10);
   };
 
-  // Phone formatting function for flexible US/International support
-  const formatPhoneNumber = (value: string): string => {
-    // Remove all non-digit and non-plus characters
-    const cleaned = value.replace(/[^\d+]/g, '');
+  // Phone formatting function using libphonenumber-js for better international support
+  const formatPhoneNumber = (value: string, previousValue: string = ''): string => {
+    // Remove any characters that aren't allowed
+    const cleaned = value.replace(/[^\d+\s\-\(\)]/g, '');
     
-    // If starts with +, treat as international
+    // If empty, return empty
+    if (!cleaned) return '';
+    
+    // Get just the digits for comparison
+    const currentDigits = cleaned.replace(/\D/g, '');
+    const previousDigits = previousValue.replace(/\D/g, '');
+    
+    // Check if user is backspacing
+    const isBackspacing = currentDigits.length < previousDigits.length;
+    
+    // For international numbers (starting with +), use AsYouType
     if (cleaned.startsWith('+')) {
-      const digits = cleaned.slice(1); // Remove the +
-      
-      // Limit international numbers to 15 digits max (ITU-T E.164 standard)
-      const limitedDigits = digits.slice(0, 15);
-      
-      if (limitedDigits.length === 0) return '+';
-      if (limitedDigits.length <= 4) return `+${limitedDigits}`;
-      if (limitedDigits.length <= 7) return `+${limitedDigits.slice(0, limitedDigits.length - 3)} ${limitedDigits.slice(-3)}`;
-      if (limitedDigits.length <= 10) return `+${limitedDigits.slice(0, limitedDigits.length - 7)} ${limitedDigits.slice(-7, -4)} ${limitedDigits.slice(-4)}`;
-      // For longer numbers, group as country code + area + number
-      return `+${limitedDigits.slice(0, limitedDigits.length - 10)} ${limitedDigits.slice(-10, -7)} ${limitedDigits.slice(-7, -4)} ${limitedDigits.slice(-4)}`;
+      try {
+        const formatter = new AsYouType();
+        return formatter.input(cleaned);
+      } catch (error) {
+        return cleaned;
+      }
     }
     
-    // US format for numbers without +
-    const digits = cleaned;
+    // For US numbers, use custom formatting that's more backspace-friendly
+    if (currentDigits.length === 0) return '';
     
-    // Limit US numbers to 10 digits
-    const limitedDigits = digits.slice(0, 10);
+    // If backspacing and we have 3 or fewer digits, don't format
+    if (isBackspacing && currentDigits.length <= 3) {
+      return currentDigits;
+    }
     
-    if (limitedDigits.length === 0) return '';
-    if (limitedDigits.length <= 3) return `(${limitedDigits}`;
-    if (limitedDigits.length <= 6) return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3)}`;
-    return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3, 6)}-${limitedDigits.slice(6)}`;
+    // Apply US formatting based on digit count
+    if (currentDigits.length <= 3) {
+      return currentDigits;
+    } else if (currentDigits.length <= 6) {
+      return `(${currentDigits.slice(0, 3)}) ${currentDigits.slice(3)}`;
+    } else {
+      return `(${currentDigits.slice(0, 3)}) ${currentDigits.slice(3, 6)}-${currentDigits.slice(6, 10)}`;
+    }
   };
 
   // License number mask configuration - flexible alphanumeric
@@ -547,7 +566,7 @@ function SettingsContent() {
     
     // Apply phone formatting
     if (field === 'phone') {
-      processedValue = formatPhoneNumber(value);
+      processedValue = formatPhoneNumber(value, formData.phone);
     }
     
     // Apply zipcode formatting
@@ -629,12 +648,27 @@ function SettingsContent() {
         return;
       }
 
+      // Format phone number for storage using libphonenumber-js
+      let formattedPhone = formData.phone;
+      if (formData.phone) {
+        try {
+          const phoneNumber = parsePhoneNumber(formData.phone, 'US');
+          if (phoneNumber.isValid()) {
+            // Store in E.164 format for consistency
+            formattedPhone = phoneNumber.format('E.164');
+          }
+        } catch (error) {
+          // If parsing fails, keep the original value
+          console.warn('Phone number formatting failed:', error);
+        }
+      }
+
       // Save profile data to Supabase
       await updateProfile({
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        phone: formData.phone,
+        phone: formattedPhone,
         businessName: formData.businessName,
         bio: formData.bio,
         licenseNumber: formData.licenseNumber,
@@ -799,11 +833,14 @@ function SettingsContent() {
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     placeholder="(555) 123-4567 or +1 555 123 4567"
                     autoComplete="tel"
-                    maxLength={20}
+                    maxLength={25}
                   />
                   {validationErrors.phone && (
                     <p className="text-red-500 text-sm">{validationErrors.phone}</p>
                   )}
+                  <p className="text-gray-500 text-xs">
+                    Enter your phone number. International numbers should start with +
+                  </p>
                 </div>
                 
                 <div className="space-y-2">
