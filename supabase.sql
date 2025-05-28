@@ -277,7 +277,10 @@ $$ LANGUAGE plpgsql;
 
 -- Function to get complete user data
 CREATE OR REPLACE FUNCTION public.get_user_data(user_id UUID)
-RETURNS JSON AS $$
+RETURNS JSON
+SECURITY DEFINER
+SET search_path = public, pg_catalog
+AS $$
 DECLARE
     result JSON;
 BEGIN
@@ -294,11 +297,14 @@ BEGIN
     
     RETURN result;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql;
 
 -- Function to check if user profile exists
 CREATE OR REPLACE FUNCTION public.user_profile_exists(user_id UUID)
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN
+SECURITY DEFINER
+SET search_path = public, pg_catalog
+AS $$
 BEGIN
     -- Security check: users can only check their own profile existence
     IF auth.uid() != user_id THEN
@@ -307,7 +313,7 @@ BEGIN
     
     RETURN EXISTS (SELECT 1 FROM public.profiles WHERE id = user_id);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql;
 
 -- =====================================================
 -- 7. SAMPLE DATA (OPTIONAL)
