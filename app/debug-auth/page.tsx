@@ -31,7 +31,12 @@ export default function DebugAuthPage() {
       }
 
       // Require authentication in all cases
-      if (authLoading || !user) {
+      if (authLoading) {
+        // Still loading, don't make authorization decision yet
+        return;
+      }
+      
+      if (!user) {
         setIsAuthorized(false);
         return;
       }
