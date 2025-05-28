@@ -2,6 +2,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 import { ensureUserProfile } from '@/lib/profile';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   const next = requestUrl.searchParams.get('next') ?? '/';
 
   // Log the callback details for debugging
-  console.log('Auth callback received:', {
+  logger.info('AUTH', 'Auth callback received', {
     url: request.url,
     code: code ? `${code.substring(0, 10)}...` : null,
     error,
@@ -24,7 +25,10 @@ export async function GET(request: NextRequest) {
 
   // Handle OAuth error cases
   if (error) {
-    console.error('OAuth error:', error, errorDescription);
+    logger.error('AUTH', 'OAuth error', undefined, {
+      error,
+      errorDescription,
+    });
     return NextResponse.redirect(
       new URL(
         `/login?error=${encodeURIComponent(error)}&error_description=${encodeURIComponent(errorDescription || '')}&message=${encodeURIComponent('Authentication failed. Please try again.')}`,
@@ -35,7 +39,7 @@ export async function GET(request: NextRequest) {
 
   // Handle missing code parameter
   if (!code) {
-    console.error('No code parameter in OAuth callback');
+    logger.error('AUTH', 'No code parameter in OAuth callback');
     return NextResponse.redirect(
       new URL(
         '/login?error=missing_code&message=Authentication failed. Please try again.',
@@ -53,12 +57,9 @@ export async function GET(request: NextRequest) {
       await supabase.auth.exchangeCodeForSession(code);
 
     if (exchangeError) {
-      console.error(
-        'Error exchanging code for session:',
-        exchangeError.message || 'Unknown error',
-        'Error details:',
-        exchangeError
-      );
+      logger.error('AUTH', 'Error exchanging code for session', exchangeError, {
+        errorMessage: exchangeError.message || 'Unknown error'
+      });
       
       // Add more specific error handling for common issues
       let errorMessage = 'Authentication failed. Please try again.';
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
 
     // Check if we have a valid session
     if (!data.session) {
-      console.error('No session created after code exchange');
+      logger.error('AUTH', 'No session created after code exchange');
       return NextResponse.redirect(
         new URL(
           '/login?error=no_session&message=Authentication failed. Please try again.',
@@ -96,30 +97,29 @@ export async function GET(request: NextRequest) {
     const maskedUserId = data.user?.id
       ? `${data.user.id.substring(0, 6)}...`
       : 'unknown';
-    console.log(
-      'Authentication successful for user:',
-      maskedUserId,
-      'type:',
+    logger.info('AUTH', 'Authentication successful', {
+      userId: maskedUserId,
       type
-    );
+    });
 
     // Ensure user profile exists (especially important for OAuth users)
     if (data.user) {
       try {
-        console.log('Auth callback: Ensuring user profile for user:', {
-          userId: data.user.id,
-          email: data.user.email,
+        logger.info('AUTH', 'Auth callback: Ensuring user profile for user', {
+          userId: logger.maskUserId(data.user.id),
+          email: logger.maskEmail(data.user.email),
           hasSession: !!data.session,
-          userMetadata: data.user.user_metadata
+          hasUserMetadata: !!data.user.user_metadata
         });
         
         await ensureUserProfile(data.user);
-        console.log('Auth callback: Profile ensured successfully for user:', data.user.id);
+        logger.info('AUTH', 'Auth callback: Profile ensured successfully for user', {
+          userId: logger.maskUserId(data.user.id)
+        });
       } catch (profileError: any) {
-        console.error('Auth callback: Failed to ensure user profile:', {
-          userId: data.user.id,
-          error: profileError.message,
-          stack: profileError.stack
+        logger.error('AUTH', 'Auth callback: Failed to ensure user profile', profileError, {
+          userId: logger.maskUserId(data.user.id),
+          errorMessage: profileError.message
         });
         // Don't fail the auth flow, but log the error for monitoring
       }
@@ -187,7 +187,7 @@ export async function GET(request: NextRequest) {
         }
       } else {
         // No user data - something went wrong
-        console.error('No user data in successful auth callback');
+        logger.error('AUTH', 'No user data in successful auth callback');
         return NextResponse.redirect(
           new URL(
             '/login?error=no_user&message=Authentication completed but no user data found. Please try logging in.',
@@ -197,10 +197,8 @@ export async function GET(request: NextRequest) {
       }
     }
   } catch (error) {
-    console.error(
-      'Unexpected error in OAuth callback:',
-      error instanceof Error ? error.message : 'Unknown error'
-    );
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    logger.error('AUTH', 'Unexpected error in OAuth callback', errorObj);
     return NextResponse.redirect(
       new URL(
         '/login?error=unexpected&message=An unexpected error occurred. Please try again.',
