@@ -4,10 +4,10 @@
 
 /**
  * Get admin emails from environment variable or fallback to default list
- * In production, set NEXT_PUBLIC_ADMIN_EMAILS as a comma-separated list
+ * In production, set ADMIN_EMAILS as a comma-separated list
  */
 export function getAdminEmails(): string[] {
-  const envAdminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS;
+  const envAdminEmails = process.env.ADMIN_EMAILS;
   
   if (envAdminEmails) {
     return envAdminEmails.split(',').map(email => email.trim()).filter(Boolean);

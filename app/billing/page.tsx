@@ -1,3 +1,6 @@
+'use client';
+
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -8,6 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardShell } from '@/components/dashboard-shell';
 import { 
@@ -20,6 +24,21 @@ import {
 } from 'lucide-react';
 
 export default function BillingPage() {
+  // State for notification settings
+  const [notifications, setNotifications] = useState({
+    paymentConfirmations: true,
+    billingReminders: true,
+    failedPaymentAlerts: true,
+  });
+
+  // Handler for toggling notification settings
+  const handleNotificationToggle = (setting: keyof typeof notifications) => {
+    setNotifications(prev => ({
+      ...prev,
+      [setting]: !prev[setting]
+    }));
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardHeader />
@@ -214,9 +233,10 @@ export default function BillingPage() {
                       Get notified when payments are processed
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
-                    Enabled
-                  </Button>
+                  <Switch
+                    checked={notifications.paymentConfirmations}
+                    onCheckedChange={() => handleNotificationToggle('paymentConfirmations')}
+                  />
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
@@ -226,9 +246,10 @@ export default function BillingPage() {
                       Receive reminders before your next billing date
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
-                    Enabled
-                  </Button>
+                  <Switch
+                    checked={notifications.billingReminders}
+                    onCheckedChange={() => handleNotificationToggle('billingReminders')}
+                  />
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
@@ -238,9 +259,10 @@ export default function BillingPage() {
                       Get notified immediately if a payment fails
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
-                    Enabled
-                  </Button>
+                  <Switch
+                    checked={notifications.failedPaymentAlerts}
+                    onCheckedChange={() => handleNotificationToggle('failedPaymentAlerts')}
+                  />
                 </div>
               </div>
             </CardContent>
