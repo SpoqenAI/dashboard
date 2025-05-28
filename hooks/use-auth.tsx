@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 interface AuthContextType {
   user: User | null;
@@ -32,13 +33,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Error getting session:', error);
+          logger.auth.error('Error getting session', error);
         } else {
           setSession(session);
           setUser(session?.user ?? null);
+          logger.auth.debug('Initial session retrieved', { hasSession: !!session });
         }
       } catch (error) {
-        console.error('Error in getInitialSession:', error);
+        logger.auth.error('Error in getInitialSession', error as Error);
       } finally {
         setLoading(false);
       }
@@ -49,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: string, session: Session | null) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        logger.auth.event(event, session);
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -58,20 +60,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Handle different auth events
         switch (event) {
           case 'SIGNED_IN':
-            console.log('User signed in:', session?.user?.email);
+            logger.auth.event('User signed in', session);
             break;
           case 'SIGNED_OUT':
-            console.log('User signed out');
+            logger.auth.info('User signed out');
             // Redirect to login page when signed out, but only if not already on login page
             if (pathname !== '/login') {
               router.replace('/login');
             }
             break;
           case 'TOKEN_REFRESHED':
-            console.log('Token refreshed for user:', session?.user?.email);
+            logger.auth.event('Token refreshed', session);
             break;
           case 'USER_UPDATED':
-            console.log('User updated:', session?.user?.email);
+            logger.auth.event('User updated', session);
             break;
         }
       }
@@ -87,11 +89,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Error signing out:', error);
+        logger.auth.error('Error signing out', error);
         throw error;
       }
     } catch (error) {
-      console.error('Sign out error:', error);
+      logger.auth.error('Sign out error', error as Error);
       throw error;
     } finally {
       setLoading(false);
@@ -102,13 +104,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data: { session }, error } = await supabase.auth.refreshSession();
       if (error) {
-        console.error('Error refreshing session:', error);
+        logger.auth.error('Error refreshing session', error);
         throw error;
       }
       setSession(session);
       setUser(session?.user ?? null);
+      logger.auth.debug('Session refreshed successfully');
     } catch (error) {
-      console.error('Refresh session error:', error);
+      logger.auth.error('Refresh session error', error as Error);
       throw error;
     }
   };
