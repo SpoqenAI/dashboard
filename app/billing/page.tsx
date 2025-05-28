@@ -12,6 +12,24 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardShell } from '@/components/dashboard-shell';
 import { 
@@ -31,12 +49,42 @@ export default function BillingPage() {
     failedPaymentAlerts: true,
   });
 
+  // State for modal visibility
+  const [showPlanChangeModal, setShowPlanChangeModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+
   // Handler for toggling notification settings
   const handleNotificationToggle = (setting: keyof typeof notifications) => {
     setNotifications(prev => ({
       ...prev,
       [setting]: !prev[setting]
     }));
+  };
+
+  // Handler for opening plan change modal
+  const handleChangePlan = () => {
+    setShowPlanChangeModal(true);
+  };
+
+  // Handler for initiating subscription cancellation
+  const handleCancelSubscription = () => {
+    setShowCancelModal(true);
+  };
+
+  // Handler for confirming plan change
+  const handleConfirmPlanChange = (planType: string) => {
+    // TODO: Implement actual plan change logic
+    console.log(`Changing to ${planType} plan...`);
+    setShowPlanChangeModal(false);
+    // You would typically make an API call here
+  };
+
+  // Handler for confirming subscription cancellation
+  const handleConfirmCancellation = () => {
+    // TODO: Implement actual cancellation logic
+    console.log('Cancelling subscription...');
+    setShowCancelModal(false);
+    // You would typically make an API call here
   };
 
   return (
@@ -75,10 +123,10 @@ export default function BillingPage() {
                   </p>
                 </div>
                 <div className="text-right space-y-2">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={handleChangePlan}>
                     Change Plan
                   </Button>
-                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={handleCancelSubscription}>
                     Cancel Subscription
                   </Button>
                 </div>
@@ -269,6 +317,95 @@ export default function BillingPage() {
           </Card>
         </div>
       </DashboardShell>
+
+      {/* Plan Change Modal */}
+      <Dialog open={showPlanChangeModal} onOpenChange={setShowPlanChangeModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Change Plan</DialogTitle>
+            <DialogDescription>
+              Choose a new plan for your subscription. You are currently on the Professional Plan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-4">
+              <div className="rounded-lg border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold">Basic Plan</h4>
+                    <p className="text-sm text-muted-foreground">$29/month</p>
+                    <p className="text-xs text-muted-foreground">Limited features</p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleConfirmPlanChange('basic')}
+                  >
+                    Select
+                  </Button>
+                </div>
+              </div>
+              <div className="rounded-lg border p-4 bg-muted">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold flex items-center gap-2">
+                    Professional Plan
+                    <Badge variant="secondary">Current</Badge>
+                  </h4>
+                    <p className="text-sm text-muted-foreground">$49/month</p>
+                    <p className="text-xs text-muted-foreground">Full features</p>
+                  </div>
+                  <Button variant="outline" size="sm" disabled>
+                    Current
+                  </Button>
+                </div>
+              </div>
+              <div className="rounded-lg border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold">Enterprise Plan</h4>
+                    <p className="text-sm text-muted-foreground">$99/month</p>
+                    <p className="text-xs text-muted-foreground">Advanced features</p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleConfirmPlanChange('enterprise')}
+                  >
+                    Select
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPlanChangeModal(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Subscription Modal */}
+      <AlertDialog open={showCancelModal} onOpenChange={setShowCancelModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel your subscription? This action cannot be undone and you will lose access to all premium features at the end of your current billing period.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmCancellation}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Cancel Subscription
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 } 
