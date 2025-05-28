@@ -74,6 +74,9 @@ export async function signUp(email: string, password: string, firstName?: string
         sessionExpiry: data.session.expires_at
       });
 
+      // Create display name from firstName and lastName, handling undefined/empty values
+      const displayName = [firstName, lastName].filter(Boolean).join(' ') || undefined;
+
       await createUserProfile({
         id: data.user.id,
         email: data.user.email!,
