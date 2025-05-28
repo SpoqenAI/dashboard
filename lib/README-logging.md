@@ -39,11 +39,13 @@ The logger automatically masks sensitive information:
 ## Environment Behavior
 
 ### Development (`NODE_ENV !== 'production'`)
+
 - All log levels are output to console
 - Full context and debugging information available
 - PII is masked but more verbose logging
 
 ### Production (`NODE_ENV === 'production'`)
+
 - Only warnings and errors are output to console
 - Debug and info logs are suppressed from console
 - Logs can be sent to external services
@@ -54,11 +56,13 @@ The logger automatically masks sensitive information:
 ### Sentry Integration
 
 1. Install Sentry:
+
 ```bash
 npm install @sentry/nextjs
 ```
 
 2. Uncomment and configure Sentry integration in `lib/logger.ts`:
+
 ```typescript
 // Sentry integration
 if (typeof window !== 'undefined' && window.Sentry) {
@@ -75,6 +79,7 @@ if (typeof window !== 'undefined' && window.Sentry) {
 ```
 
 3. Initialize Sentry in your app:
+
 ```typescript
 // sentry.client.config.ts
 import * as Sentry from '@sentry/nextjs';
@@ -88,11 +93,13 @@ Sentry.init({
 ### LogRocket Integration
 
 1. Install LogRocket:
+
 ```bash
 npm install logrocket
 ```
 
 2. Uncomment and configure LogRocket integration in `lib/logger.ts`:
+
 ```typescript
 // LogRocket integration
 if (typeof window !== 'undefined' && window.LogRocket) {
@@ -101,6 +108,7 @@ if (typeof window !== 'undefined' && window.LogRocket) {
 ```
 
 3. Initialize LogRocket:
+
 ```typescript
 // app/layout.tsx
 import LogRocket from 'logrocket';
@@ -119,12 +127,12 @@ Uncomment the custom API endpoint integration in `lib/logger.ts`:
 fetch('/api/logs', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ 
-    level, 
-    message, 
-    context, 
-    timestamp: new Date().toISOString() 
-  })
+  body: JSON.stringify({
+    level,
+    message,
+    context,
+    timestamp: new Date().toISOString(),
+  }),
 }).catch(() => {}); // Fail silently
 ```
 
@@ -137,10 +145,10 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const logData = await request.json();
-    
+
     // Send to your logging service
     // await sendToLoggingService(logData);
-    
+
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to log' }, { status: 500 });
@@ -166,6 +174,7 @@ NEXT_PUBLIC_LOGGING_ENDPOINT=https://your-logging-service.com/api/logs
 ## Best Practices
 
 1. **Use appropriate log levels**:
+
    - `debug`: Detailed debugging information
    - `info`: General information about application flow
    - `warn`: Warning conditions that should be addressed
@@ -214,4 +223,4 @@ jest.mock('@/lib/logger', () => ({
     error: jest.fn(),
   },
 }));
-``` 
+```

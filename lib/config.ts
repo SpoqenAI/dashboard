@@ -9,25 +9,28 @@
  */
 export function getAdminEmails(): string[] {
   const envAdminEmails = process.env.ADMIN_EMAILS;
-  
+
   if (envAdminEmails) {
-    return envAdminEmails.split(',').map(email => email.trim()).filter(Boolean);
+    return envAdminEmails
+      .split(',')
+      .map(email => email.trim())
+      .filter(Boolean);
   }
-  
+
   // Fallback admin emails from environment variables
   // Set FALLBACK_ADMIN_EMAILS in your .env.local file for development
   const fallbackAdminEmails = process.env.FALLBACK_ADMIN_EMAILS;
-  
+
   if (fallbackAdminEmails) {
-    return fallbackAdminEmails.split(',').map(email => email.trim()).filter(Boolean);
+    return fallbackAdminEmails
+      .split(',')
+      .map(email => email.trim())
+      .filter(Boolean);
   }
-  
+
   // Final fallback - empty array or placeholder emails
   // This ensures no real emails are hardcoded in the source
-  return [
-    'admin@example.com',
-    'developer@example.com',
-  ];
+  return ['admin@example.com', 'developer@example.com'];
 }
 
 /**
@@ -38,7 +41,7 @@ export function isDebugEnabled(): boolean {
   if (process.env.NODE_ENV === 'development') {
     return true;
   }
-  
+
   // In production, check if debug mode is explicitly enabled
   return process.env.ENABLE_DEBUG === 'true';
 }
@@ -48,4 +51,4 @@ export function isDebugEnabled(): boolean {
  */
 export function isProduction(): boolean {
   return process.env.NODE_ENV === 'production';
-} 
+}

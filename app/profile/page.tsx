@@ -25,13 +25,13 @@ import { toast } from '@/components/ui/use-toast';
 function ProfilePageContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
-  const { 
-    profile, 
-    loading, 
-    saving, 
-    error, 
-    dataLoaded, 
-    updateProfile, 
+  const {
+    profile,
+    loading,
+    saving,
+    error,
+    dataLoaded,
+    updateProfile,
     getProfileFormData,
     getAIReceptionistSettings,
     updateAIReceptionistSettings,
@@ -71,7 +71,9 @@ function ProfilePageContent() {
   });
 
   // Form validation errors
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
 
   // Handle email verification success
   useEffect(() => {
@@ -81,10 +83,10 @@ function ProfilePageContent() {
         title: 'Email Updated Successfully',
         description: 'Your email address has been verified and updated.',
       });
-      
+
       // Refresh profile data to get the updated email
       refetch();
-      
+
       // Clean up the URL parameter
       const url = new URL(window.location.href);
       url.searchParams.delete('email_updated');
@@ -103,22 +105,22 @@ function ProfilePageContent() {
   // Handle form field changes
   const handleInputChange = (field: keyof FormData, value: string) => {
     let processedValue = value;
-    
+
     // Format phone number as user types
     if (field === 'phone') {
       processedValue = formatPhoneNumber(value);
     }
-    
+
     setFormData(prev => ({
       ...prev,
-      [field]: processedValue
+      [field]: processedValue,
     }));
-    
+
     // Clear validation error for this field when user starts typing
     if (validationErrors[field]) {
       setValidationErrors(prev => ({
         ...prev,
-        [field]: ''
+        [field]: '',
       }));
     }
   };
@@ -132,30 +134,38 @@ function ProfilePageContent() {
       const limitedDigits = digits.slice(0, 15);
       if (limitedDigits.length === 0) return '+';
       if (limitedDigits.length <= 4) return `+${limitedDigits}`;
-      if (limitedDigits.length <= 7) return `+${limitedDigits.slice(0, limitedDigits.length - 3)} ${limitedDigits.slice(-3)}`;
-      if (limitedDigits.length <= 10) return `+${limitedDigits.slice(0, limitedDigits.length - 7)} ${limitedDigits.slice(-7, -4)} ${limitedDigits.slice(-4)}`;
+      if (limitedDigits.length <= 7)
+        return `+${limitedDigits.slice(0, limitedDigits.length - 3)} ${limitedDigits.slice(-3)}`;
+      if (limitedDigits.length <= 10)
+        return `+${limitedDigits.slice(0, limitedDigits.length - 7)} ${limitedDigits.slice(-7, -4)} ${limitedDigits.slice(-4)}`;
       return `+${limitedDigits.slice(0, limitedDigits.length - 10)} ${limitedDigits.slice(-10, -7)} ${limitedDigits.slice(-7, -4)} ${limitedDigits.slice(-4)}`;
     }
     const digits = cleaned;
     const limitedDigits = digits.slice(0, 10);
     if (limitedDigits.length === 0) return '';
     if (limitedDigits.length <= 3) return `(${limitedDigits}`;
-    if (limitedDigits.length <= 6) return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3)}`;
+    if (limitedDigits.length <= 6)
+      return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3)}`;
     return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3, 6)}-${limitedDigits.slice(6)}`;
   };
 
   // Email validation patterns
-  const EMAIL_PATTERN = /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/;
+  const EMAIL_PATTERN =
+    /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/;
 
   // Email validation function
   const validateEmail = (value: string): string | null => {
     if (!value) return 'Email address is required';
     if (value.length > 254) return 'Please use a shorter email address';
-    if (!EMAIL_PATTERN.test(value)) return 'Please check your email format (e.g., name@example.com)';
-    if (value.includes('..')) return 'Please remove consecutive dots from your email';
-    if (value.startsWith('.') || value.endsWith('.')) return 'Email addresses cannot start or end with a dot';
-    if (value.includes('@.') || value.includes('.@')) return 'Please check the format around the @ symbol';
-    
+    if (!EMAIL_PATTERN.test(value))
+      return 'Please check your email format (e.g., name@example.com)';
+    if (value.includes('..'))
+      return 'Please remove consecutive dots from your email';
+    if (value.startsWith('.') || value.endsWith('.'))
+      return 'Email addresses cannot start or end with a dot';
+    if (value.includes('@.') || value.includes('.@'))
+      return 'Please check the format around the @ symbol';
+
     const parts = value.split('@');
     if (parts.length === 2) {
       const domain = parts[1];
@@ -163,39 +173,52 @@ function ProfilePageContent() {
         return 'Please include a valid domain (e.g., gmail.com)';
       }
     }
-    
+
     return null;
   };
 
   // Phone number validation function
   const validatePhoneNumber = (value: string): string | null => {
     if (!value) return null; // Optional field
-    
+
     const isInternational = value.startsWith('+');
     const digitsOnly = value.replace(/\D/g, '');
-    
+
     if (isInternational) {
-      if (digitsOnly.length < 7) return 'Please enter at least 7 digits for international numbers';
-      if (digitsOnly.length > 15) return 'International numbers cannot exceed 15 digits';
+      if (digitsOnly.length < 7)
+        return 'Please enter at least 7 digits for international numbers';
+      if (digitsOnly.length > 15)
+        return 'International numbers cannot exceed 15 digits';
       if (digitsOnly.length >= 10) {
         const countryCodeLength = digitsOnly.length - 10;
         if (countryCodeLength > 4) return 'Please check your country code';
       }
-      if (digitsOnly.length < 8) return 'Please enter a complete international number';
+      if (digitsOnly.length < 8)
+        return 'Please enter a complete international number';
     } else {
       if (digitsOnly.length > 0 && digitsOnly.length < 3) return null; // Allow partial input
-      if (digitsOnly.length > 0 && digitsOnly.length < 10) return 'Please enter a complete 10-digit phone number';
-      if (digitsOnly.length > 10) return 'US phone numbers should be exactly 10 digits';
+      if (digitsOnly.length > 0 && digitsOnly.length < 10)
+        return 'Please enter a complete 10-digit phone number';
+      if (digitsOnly.length > 10)
+        return 'US phone numbers should be exactly 10 digits';
       if (digitsOnly.length === 10) {
         const areaCode = digitsOnly.substring(0, 3);
         const exchange = digitsOnly.substring(3, 6);
-        if (areaCode.startsWith('0') || areaCode.startsWith('1')) return 'Please enter a valid area code';
-        if (exchange.startsWith('0') || exchange.startsWith('1')) return 'Please enter a valid exchange code';
-        if (areaCode === '911' || exchange === '911') return 'Please use a different phone number';
-        if (areaCode === '000' || exchange === '000' || (areaCode === '555' && exchange === '555')) return 'Please enter a valid phone number';
+        if (areaCode.startsWith('0') || areaCode.startsWith('1'))
+          return 'Please enter a valid area code';
+        if (exchange.startsWith('0') || exchange.startsWith('1'))
+          return 'Please enter a valid exchange code';
+        if (areaCode === '911' || exchange === '911')
+          return 'Please use a different phone number';
+        if (
+          areaCode === '000' ||
+          exchange === '000' ||
+          (areaCode === '555' && exchange === '555')
+        )
+          return 'Please enter a valid phone number';
       }
     }
-    
+
     return null;
   };
 
@@ -240,7 +263,7 @@ function ProfilePageContent() {
   // Handle form submission
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate form before submission
     if (!validateForm()) {
       toast({
@@ -255,10 +278,10 @@ function ProfilePageContent() {
       // Prepare update operations
       const { assistantName, ...profileData } = formData;
       const currentAISettings = getAIReceptionistSettings();
-      
+
       // Create array of promises for concurrent execution
       const updatePromises = [updateProfile(profileData)];
-      
+
       // Only update AI assistant settings if the name has changed
       if (formData.assistantName !== currentAISettings.aiAssistantName) {
         updatePromises.push(
@@ -279,7 +302,8 @@ function ProfilePageContent() {
 
       // Show success toast after all updates complete
       // (unless email verification is pending, in which case updateProfile shows its own message)
-      const isEmailChanging = (profile?.email || user?.email) !== formData.email.trim();
+      const isEmailChanging =
+        (profile?.email || user?.email) !== formData.email.trim();
       if (!isEmailChanging) {
         toast({
           title: 'Profile Updated',
@@ -303,7 +327,7 @@ function ProfilePageContent() {
     const syntheticEvent = {
       preventDefault: () => {},
     } as React.FormEvent;
-    
+
     await handleFormSubmit(syntheticEvent);
   };
 
@@ -341,10 +365,12 @@ function ProfilePageContent() {
       <div className="flex min-h-screen flex-col">
         <DashboardHeader />
         <DashboardShell>
-          <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex min-h-[400px] items-center justify-center">
             <div className="flex flex-col items-center space-y-4">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Loading profile...</p>
+              <p className="text-sm text-muted-foreground">
+                Loading profile...
+              </p>
             </div>
           </div>
         </DashboardShell>
@@ -359,7 +385,7 @@ function ProfilePageContent() {
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">Profile</h2>
         </div>
-        
+
         <div className="grid gap-6">
           {/* Profile Picture Section */}
           <Card>
@@ -373,10 +399,16 @@ function ProfilePageContent() {
               <div className="relative">
                 <Avatar className="h-20 w-20">
                   <AvatarImage
-                    src={profile?.avatar_url || user?.user_metadata?.avatar_url || "/placeholder.svg?height=80&width=80&query=person"}
+                    src={
+                      profile?.avatar_url ||
+                      user?.user_metadata?.avatar_url ||
+                      '/placeholder.svg?height=80&width=80&query=person'
+                    }
                     alt="Profile picture"
                   />
-                  <AvatarFallback className="text-lg">{getUserInitials()}</AvatarFallback>
+                  <AvatarFallback className="text-lg">
+                    {getUserInitials()}
+                  </AvatarFallback>
                 </Avatar>
                 <Button
                   size="sm"
@@ -411,39 +443,51 @@ function ProfilePageContent() {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name *</Label>
-                    <Input 
-                      id="firstName" 
+                    <Input
+                      id="firstName"
                       value={formData.firstName}
-                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      onChange={e =>
+                        handleInputChange('firstName', e.target.value)
+                      }
                       placeholder="Enter your first name"
-                      className={validationErrors.firstName ? 'border-red-500' : ''}
+                      className={
+                        validationErrors.firstName ? 'border-red-500' : ''
+                      }
                     />
                     {validationErrors.firstName && (
-                      <p className="text-sm text-red-500">{validationErrors.firstName}</p>
+                      <p className="text-sm text-red-500">
+                        {validationErrors.firstName}
+                      </p>
                     )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Last Name *</Label>
-                    <Input 
-                      id="lastName" 
+                    <Input
+                      id="lastName"
                       value={formData.lastName}
-                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      onChange={e =>
+                        handleInputChange('lastName', e.target.value)
+                      }
                       placeholder="Enter your last name"
-                      className={validationErrors.lastName ? 'border-red-500' : ''}
+                      className={
+                        validationErrors.lastName ? 'border-red-500' : ''
+                      }
                     />
                     {validationErrors.lastName && (
-                      <p className="text-sm text-red-500">{validationErrors.lastName}</p>
+                      <p className="text-sm text-red-500">
+                        {validationErrors.lastName}
+                      </p>
                     )}
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address *</Label>
                   <Input
                     id="email"
                     type="text"
                     value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    onChange={e => handleInputChange('email', e.target.value)}
                     placeholder="name@example.com"
                     className={validationErrors.email ? 'border-red-500' : ''}
                     maxLength={254}
@@ -451,42 +495,48 @@ function ProfilePageContent() {
                     autoComplete="email"
                   />
                   {validationErrors.email && (
-                    <p className="text-sm text-red-500">{validationErrors.email}</p>
+                    <p className="text-sm text-red-500">
+                      {validationErrors.email}
+                    </p>
                   )}
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input 
-                    id="phone" 
-                    type="tel" 
+                  <Input
+                    id="phone"
+                    type="tel"
                     value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    onChange={e => handleInputChange('phone', e.target.value)}
                     placeholder="(555) 123-4567 or +1 555 123 4567"
                     className={validationErrors.phone ? 'border-red-500' : ''}
                   />
                   {validationErrors.phone && (
-                    <p className="text-sm text-red-500">{validationErrors.phone}</p>
+                    <p className="text-sm text-red-500">
+                      {validationErrors.phone}
+                    </p>
                   )}
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="businessName">Business Name</Label>
-                  <Input 
-                    id="businessName" 
+                  <Input
+                    id="businessName"
                     value={formData.businessName}
-                    onChange={(e) => handleInputChange('businessName', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('businessName', e.target.value)
+                    }
                     placeholder="Enter your business name"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="bio">Bio</Label>
                   <Textarea
                     id="bio"
                     placeholder="Tell us about yourself and your real estate business..."
                     value={formData.bio}
-                    onChange={(e) => handleInputChange('bio', e.target.value)}
+                    onChange={e => handleInputChange('bio', e.target.value)}
                     rows={4}
                   />
                 </div>
@@ -503,25 +553,31 @@ function ProfilePageContent() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="licenseNumber">Real Estate License Number</Label>
-                  <Input 
-                    id="licenseNumber" 
+                  <Label htmlFor="licenseNumber">
+                    Real Estate License Number
+                  </Label>
+                  <Input
+                    id="licenseNumber"
                     value={formData.licenseNumber}
-                    onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('licenseNumber', e.target.value)
+                    }
                     placeholder="Enter your license number"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="brokerage">Brokerage</Label>
-                  <Input 
-                    id="brokerage" 
+                  <Input
+                    id="brokerage"
                     value={formData.brokerage}
-                    onChange={(e) => handleInputChange('brokerage', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('brokerage', e.target.value)
+                    }
                     placeholder="Enter your brokerage name"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="website">Website</Label>
                   <Input
@@ -529,30 +585,32 @@ function ProfilePageContent() {
                     type="url"
                     placeholder="https://your-website.com"
                     value={formData.website}
-                    onChange={(e) => handleInputChange('website', e.target.value)}
+                    onChange={e => handleInputChange('website', e.target.value)}
                     className={validationErrors.website ? 'border-red-500' : ''}
                   />
                   {validationErrors.website && (
-                    <p className="text-sm text-red-500">{validationErrors.website}</p>
+                    <p className="text-sm text-red-500">
+                      {validationErrors.website}
+                    </p>
                   )}
                 </div>
-                
+
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="city">City</Label>
-                    <Input 
-                      id="city" 
+                    <Input
+                      id="city"
                       value={formData.city}
-                      onChange={(e) => handleInputChange('city', e.target.value)}
+                      onChange={e => handleInputChange('city', e.target.value)}
                       placeholder="Enter your city"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="state">State</Label>
-                    <Input 
-                      id="state" 
+                    <Input
+                      id="state"
                       value={formData.state}
-                      onChange={(e) => handleInputChange('state', e.target.value)}
+                      onChange={e => handleInputChange('state', e.target.value)}
                       placeholder="Enter your state"
                     />
                   </div>
@@ -571,15 +629,21 @@ function ProfilePageContent() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="assistantName">Assistant Name *</Label>
-                  <Input 
-                    id="assistantName" 
+                  <Input
+                    id="assistantName"
                     value={formData.assistantName}
-                    onChange={(e) => handleInputChange('assistantName', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('assistantName', e.target.value)
+                    }
                     placeholder="Enter your assistant's name"
-                    className={validationErrors.assistantName ? 'border-red-500' : ''}
+                    className={
+                      validationErrors.assistantName ? 'border-red-500' : ''
+                    }
                   />
                   {validationErrors.assistantName && (
-                    <p className="text-sm text-red-500">{validationErrors.assistantName}</p>
+                    <p className="text-sm text-red-500">
+                      {validationErrors.assistantName}
+                    </p>
                   )}
                 </div>
               </CardContent>
@@ -587,9 +651,9 @@ function ProfilePageContent() {
 
             {/* Save Changes */}
             <div className="flex justify-end">
-              <Button 
+              <Button
                 type="submit"
-                className="w-full sm:w-auto" 
+                className="w-full sm:w-auto"
                 disabled={saving}
               >
                 {saving ? (
@@ -618,4 +682,4 @@ export default function ProfilePage() {
       <ProfilePageContent />
     </Suspense>
   );
-} 
+}

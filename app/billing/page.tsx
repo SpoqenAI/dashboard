@@ -32,13 +32,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardShell } from '@/components/dashboard-shell';
-import { 
-  CreditCard, 
-  Download, 
-  Calendar, 
+import {
+  CreditCard,
+  Download,
+  Calendar,
   DollarSign,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react';
 
 export default function BillingPage() {
@@ -52,13 +52,17 @@ export default function BillingPage() {
   // State for modal visibility
   const [showPlanChangeModal, setShowPlanChangeModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [downloadingInvoices, setDownloadingInvoices] = useState<Set<string>>(new Set());
+  const [downloadingInvoices, setDownloadingInvoices] = useState<Set<string>>(
+    new Set()
+  );
 
   // Load notification preferences from local storage on component mount
   useEffect(() => {
     const loadNotificationPreferences = () => {
       try {
-        const savedPreferences = localStorage.getItem('billingNotificationPreferences');
+        const savedPreferences = localStorage.getItem(
+          'billingNotificationPreferences'
+        );
         if (savedPreferences) {
           const parsedPreferences = JSON.parse(savedPreferences);
           setNotifications(parsedPreferences);
@@ -72,11 +76,16 @@ export default function BillingPage() {
   }, []);
 
   // Function to save preferences to local storage and API
-  const saveNotificationPreferences = async (newPreferences: typeof notifications) => {
+  const saveNotificationPreferences = async (
+    newPreferences: typeof notifications
+  ) => {
     try {
       // Save to local storage
-      localStorage.setItem('billingNotificationPreferences', JSON.stringify(newPreferences));
-      
+      localStorage.setItem(
+        'billingNotificationPreferences',
+        JSON.stringify(newPreferences)
+      );
+
       // TODO: Replace with actual API endpoint
       // Example API call to save preferences to backend
       /*
@@ -96,7 +105,7 @@ export default function BillingPage() {
         throw new Error('Failed to save notification preferences to server');
       }
       */
-      
+
       console.log('Notification preferences saved:', newPreferences);
     } catch (error) {
       console.error('Failed to save notification preferences:', error);
@@ -105,15 +114,17 @@ export default function BillingPage() {
   };
 
   // Handler for toggling notification settings
-  const handleNotificationToggle = async (setting: keyof typeof notifications) => {
+  const handleNotificationToggle = async (
+    setting: keyof typeof notifications
+  ) => {
     const updatedNotifications = {
       ...notifications,
-      [setting]: !notifications[setting]
+      [setting]: !notifications[setting],
     };
-    
+
     // Update local state
     setNotifications(updatedNotifications);
-    
+
     // Persist the updated preferences
     await saveNotificationPreferences(updatedNotifications);
   };
@@ -145,7 +156,10 @@ export default function BillingPage() {
   };
 
   // Function to securely download invoice
-  const handleInvoiceDownload = async (invoiceId: string, invoiceDate: string) => {
+  const handleInvoiceDownload = async (
+    invoiceId: string,
+    invoiceDate: string
+  ) => {
     // Prevent multiple downloads of the same invoice
     if (downloadingInvoices.has(invoiceId)) {
       return;
@@ -227,7 +241,7 @@ trailer
 startxref
 203
 %%EOF`;
-      
+
       const blob = new Blob([mockPdfContent], { type: 'application/pdf' });
 
       // Create temporary anchor element for download
@@ -235,29 +249,30 @@ startxref
       const link = document.createElement('a');
       link.href = url;
       link.download = `invoice-${invoiceId}-${invoiceDate.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
-      
+
       // Ensure the link is accessible but hidden
       link.style.display = 'none';
       link.setAttribute('aria-hidden', 'true');
-      
+
       // Append to body, click, and remove
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Clean up the blob URL
       window.URL.revokeObjectURL(url);
-      
+
       console.log(`Invoice ${invoiceId} downloaded successfully`);
-      
     } catch (error) {
       console.error('Failed to download invoice:', error);
-      
+
       // You might want to show a toast notification or error message to the user
       // For now, we'll just alert the user
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred while downloading the invoice.';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'An unexpected error occurred while downloading the invoice.';
       alert(`Download failed: ${errorMessage}`);
-      
     } finally {
       // Remove invoice from downloading set
       setDownloadingInvoices(prev => {
@@ -273,9 +288,11 @@ startxref
       <DashboardHeader />
       <DashboardShell>
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">Billing & Subscription</h2>
+          <h2 className="text-3xl font-bold tracking-tight">
+            Billing & Subscription
+          </h2>
         </div>
-        
+
         <div className="grid gap-6">
           {/* Current Plan */}
           <Card>
@@ -293,27 +310,44 @@ startxref
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <h3 className="text-lg font-semibold">Professional Plan</h3>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    <Badge
+                      variant="secondary"
+                      className="bg-green-100 text-green-800"
+                    >
                       <CheckCircle className="mr-1 h-3 w-3" />
                       Active
                     </Badge>
                   </div>
-                  <p className="text-2xl font-bold">$49<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                  <p className="text-2xl font-bold">
+                    $49
+                    <span className="text-sm font-normal text-muted-foreground">
+                      /month
+                    </span>
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     Next billing date: June 1, 2025
                   </p>
                 </div>
-                <div className="text-right space-y-2">
-                  <Button variant="outline" size="sm" onClick={handleChangePlan}>
+                <div className="space-y-2 text-right">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleChangePlan}
+                  >
                     Change Plan
                   </Button>
-                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={handleCancelSubscription}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={handleCancelSubscription}
+                  >
                     Cancel Subscription
                   </Button>
                 </div>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <h4 className="font-medium">Plan Features</h4>
                   <ul className="space-y-1 text-sm text-muted-foreground">
@@ -339,15 +373,21 @@ startxref
                   <h4 className="font-medium">Usage This Month</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Calls handled:</span>
+                      <span className="text-muted-foreground">
+                        Calls handled:
+                      </span>
                       <span className="font-medium">247</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Minutes used:</span>
+                      <span className="text-muted-foreground">
+                        Minutes used:
+                      </span>
                       <span className="font-medium">1,234</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Emails sent:</span>
+                      <span className="text-muted-foreground">
+                        Emails sent:
+                      </span>
                       <span className="font-medium">247</span>
                     </div>
                   </div>
@@ -375,14 +415,16 @@ startxref
                   </div>
                   <div>
                     <p className="font-medium">•••• •••• •••• 4242</p>
-                    <p className="text-sm text-muted-foreground">Expires 12/2025</p>
+                    <p className="text-sm text-muted-foreground">
+                      Expires 12/2025
+                    </p>
                   </div>
                 </div>
                 <Button variant="outline" size="sm">
                   Update
                 </Button>
               </div>
-              
+
               <div className="space-y-2">
                 <h4 className="font-medium">Billing Address</h4>
                 <div className="text-sm text-muted-foreground">
@@ -412,16 +454,42 @@ startxref
             <CardContent>
               <div className="space-y-4">
                 {[
-                  { date: 'May 01, 2025', amount: '$49.00', status: 'Paid', invoice: 'INV-2025-05-001' },
-                  { date: 'Apr 01, 2025', amount: '$49.00', status: 'Paid', invoice: 'INV-2025-04-001' },
-                  { date: 'Mar 01, 2025', amount: '$49.00', status: 'Paid', invoice: 'INV-2025-03-001' },
-                  { date: 'Feb 01, 2025', amount: '$49.00', status: 'Paid', invoice: 'INV-2025-02-001' },
+                  {
+                    date: 'May 01, 2025',
+                    amount: '$49.00',
+                    status: 'Paid',
+                    invoice: 'INV-2025-05-001',
+                  },
+                  {
+                    date: 'Apr 01, 2025',
+                    amount: '$49.00',
+                    status: 'Paid',
+                    invoice: 'INV-2025-04-001',
+                  },
+                  {
+                    date: 'Mar 01, 2025',
+                    amount: '$49.00',
+                    status: 'Paid',
+                    invoice: 'INV-2025-03-001',
+                  },
+                  {
+                    date: 'Feb 01, 2025',
+                    amount: '$49.00',
+                    status: 'Paid',
+                    invoice: 'INV-2025-02-001',
+                  },
                 ].map((invoice, index) => (
-                  <div key={index} className="flex items-center justify-between rounded-lg border p-4">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between rounded-lg border p-4"
+                  >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium">{invoice.date}</p>
-                        <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        <Badge
+                          variant="secondary"
+                          className="bg-green-100 text-green-800"
+                        >
                           {invoice.status}
                         </Badge>
                       </div>
@@ -431,20 +499,28 @@ startxref
                     </div>
                     <div className="flex items-center gap-3">
                       <p className="font-semibold">{invoice.amount}</p>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleInvoiceDownload(invoice.invoice, invoice.date)}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleInvoiceDownload(invoice.invoice, invoice.date)
+                        }
                         disabled={downloadingInvoices.has(invoice.invoice)}
                         aria-label={`Download invoice ${invoice.invoice} for ${invoice.date}`}
                         aria-describedby={`invoice-${index}-description`}
                       >
                         <Download className="mr-2 h-4 w-4" aria-hidden="true" />
-                        {downloadingInvoices.has(invoice.invoice) ? 'Downloading...' : 'Download'}
+                        {downloadingInvoices.has(invoice.invoice)
+                          ? 'Downloading...'
+                          : 'Download'}
                       </Button>
                     </div>
-                    <div id={`invoice-${index}-description`} className="sr-only">
-                      Invoice {invoice.invoice} for Professional Plan dated {invoice.date}, amount {invoice.amount}
+                    <div
+                      id={`invoice-${index}-description`}
+                      className="sr-only"
+                    >
+                      Invoice {invoice.invoice} for Professional Plan dated{' '}
+                      {invoice.date}, amount {invoice.amount}
                     </div>
                   </div>
                 ))}
@@ -474,7 +550,9 @@ startxref
                   </div>
                   <Switch
                     checked={notifications.paymentConfirmations}
-                    onCheckedChange={() => handleNotificationToggle('paymentConfirmations')}
+                    onCheckedChange={() =>
+                      handleNotificationToggle('paymentConfirmations')
+                    }
                   />
                 </div>
                 <Separator />
@@ -487,7 +565,9 @@ startxref
                   </div>
                   <Switch
                     checked={notifications.billingReminders}
-                    onCheckedChange={() => handleNotificationToggle('billingReminders')}
+                    onCheckedChange={() =>
+                      handleNotificationToggle('billingReminders')
+                    }
                   />
                 </div>
                 <Separator />
@@ -500,7 +580,9 @@ startxref
                   </div>
                   <Switch
                     checked={notifications.failedPaymentAlerts}
-                    onCheckedChange={() => handleNotificationToggle('failedPaymentAlerts')}
+                    onCheckedChange={() =>
+                      handleNotificationToggle('failedPaymentAlerts')
+                    }
                   />
                 </div>
               </div>
@@ -515,7 +597,8 @@ startxref
           <DialogHeader>
             <DialogTitle>Change Plan</DialogTitle>
             <DialogDescription>
-              Choose a new plan for your subscription. You are currently on the Professional Plan.
+              Choose a new plan for your subscription. You are currently on the
+              Professional Plan.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -525,10 +608,12 @@ startxref
                   <div>
                     <h4 className="font-semibold">Basic Plan</h4>
                     <p className="text-sm text-muted-foreground">$29/month</p>
-                    <p className="text-xs text-muted-foreground">Limited features</p>
+                    <p className="text-xs text-muted-foreground">
+                      Limited features
+                    </p>
                   </div>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => handleConfirmPlanChange('basic')}
                   >
@@ -536,15 +621,17 @@ startxref
                   </Button>
                 </div>
               </div>
-              <div className="rounded-lg border p-4 bg-muted">
+              <div className="rounded-lg border bg-muted p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-semibold flex items-center gap-2">
-                    Professional Plan
-                    <Badge variant="secondary">Current</Badge>
-                  </h4>
+                    <h4 className="flex items-center gap-2 font-semibold">
+                      Professional Plan
+                      <Badge variant="secondary">Current</Badge>
+                    </h4>
                     <p className="text-sm text-muted-foreground">$49/month</p>
-                    <p className="text-xs text-muted-foreground">Full features</p>
+                    <p className="text-xs text-muted-foreground">
+                      Full features
+                    </p>
                   </div>
                   <Button variant="outline" size="sm" disabled>
                     Current
@@ -556,10 +643,12 @@ startxref
                   <div>
                     <h4 className="font-semibold">Enterprise Plan</h4>
                     <p className="text-sm text-muted-foreground">$99/month</p>
-                    <p className="text-xs text-muted-foreground">Advanced features</p>
+                    <p className="text-xs text-muted-foreground">
+                      Advanced features
+                    </p>
                   </div>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => handleConfirmPlanChange('enterprise')}
                   >
@@ -570,7 +659,10 @@ startxref
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPlanChangeModal(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowPlanChangeModal(false)}
+            >
               Cancel
             </Button>
           </DialogFooter>
@@ -583,12 +675,14 @@ startxref
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to cancel your subscription? This action cannot be undone and you will lose access to all premium features at the end of your current billing period.
+              Are you sure you want to cancel your subscription? This action
+              cannot be undone and you will lose access to all premium features
+              at the end of your current billing period.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleConfirmCancellation}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
@@ -599,4 +693,4 @@ startxref
       </AlertDialog>
     </div>
   );
-} 
+}

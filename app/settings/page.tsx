@@ -20,7 +20,13 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardShell } from '@/components/dashboard-shell';
@@ -38,26 +44,31 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { useUserSettings } from '@/hooks/use-user-settings';
-import { parsePhoneNumber, isValidPhoneNumber, formatIncompletePhoneNumber, AsYouType } from 'libphonenumber-js';
+import {
+  parsePhoneNumber,
+  isValidPhoneNumber,
+  formatIncompletePhoneNumber,
+  AsYouType,
+} from 'libphonenumber-js';
 
 function SettingsContent() {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab') || 'profile';
 
   const [confirmOpen, setConfirmOpen] = useState(false);
-  
+
   // Get user settings and profile data
-  const { 
-    loading, 
-    saving, 
-    error, 
-    dataLoaded, 
+  const {
+    loading,
+    saving,
+    error,
+    dataLoaded,
     settings,
-    updateProfile, 
+    updateProfile,
     updateUserSettings,
-    getProfileFormData 
+    getProfileFormData,
   } = useUserSettings();
-  
+
   // Form data state - initialized from Supabase data
   const [formData, setFormData] = useState({
     firstName: '',
@@ -80,8 +91,10 @@ function SettingsContent() {
     emailNotifications: true,
     marketingEmails: true,
   });
-  
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
   const [savedData, setSavedData] = useState({
     firstName: '',
     lastName: '',
@@ -136,7 +149,7 @@ function SettingsContent() {
 
   // Initialize content filter
   const filter = new Filter();
-  
+
   // Add custom inappropriate words for business context
   filter.addWords('scam', 'fraud', 'fake', 'illegal', 'drugs');
 
@@ -166,37 +179,41 @@ function SettingsContent() {
     // Names: letters, single spaces (no consecutive), basic punctuation (limited)
     // Updated to support Unicode letters including accented and international characters
     NAME_PATTERN: /^[\p{L}](?:[\p{L}\s\-'.])*[\p{L}]$|^[\p{L}]$/u,
-    
+
     // Business names: alphanumeric, single spaces, limited punctuation
-    BUSINESS_NAME_PATTERN: /^(?:[A-Za-z0-9](?:[A-Za-z0-9\s\-'.&,()]*[A-Za-z0-9])?)$/,
-    
+    BUSINESS_NAME_PATTERN:
+      /^(?:[A-Za-z0-9](?:[A-Za-z0-9\s\-'.&,()]*[A-Za-z0-9])?)$/,
+
     // Email: RFC 5322 compliant pattern with practical constraints
-    EMAIL_PATTERN: /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/,
-    
+    EMAIL_PATTERN:
+      /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/,
+
     // Phone: simple pattern for input - only digits and plus signs allowed
     PHONE_INPUT_PATTERN: /^[\d+\s\-\(\)]*$/,
-    
+
     // Website URL pattern - comprehensive validation
-    URL_PATTERN: /^https?:\/\/(?:[-\w.])+(?:\:[0-9]+)?(?:\/(?:[\w\/_.])*(?:\?(?:[\w&=%.])*)?(?:\#(?:[\w.])*)?)?$/,
-    
+    URL_PATTERN:
+      /^https?:\/\/(?:[-\w.])+(?:\:[0-9]+)?(?:\/(?:[\w\/_.])*(?:\?(?:[\w&=%.])*)?(?:\#(?:[\w.])*)?)?$/,
+
     // License number pattern - alphanumeric with common prefixes
     LICENSE_PATTERN: /^[A-Za-z]{0,4}[0-9A-Za-z]{3,}$/,
-    
+
     // Zipcode patterns for different countries
     US_ZIPCODE_PATTERN: /^[0-9]{5}(-[0-9]{4})?$/,
     CANADA_POSTAL_PATTERN: /^[A-Za-z][0-9][A-Za-z]\s?[0-9][A-Za-z][0-9]$/,
-    UK_POSTCODE_PATTERN: /^[A-Za-z]{1,2}[0-9Rr][0-9A-Za-z]?\s?[0-9][ABD-HJLNP-UW-Zabd-hjlnp-uw-z]{2}$/,
-    GENERIC_ZIPCODE_PATTERN: /^[A-Za-z0-9\s\-]{3,10}$/
+    UK_POSTCODE_PATTERN:
+      /^[A-Za-z]{1,2}[0-9Rr][0-9A-Za-z]?\s?[0-9][ABD-HJLNP-UW-Zabd-hjlnp-uw-z]{2}$/,
+    GENERIC_ZIPCODE_PATTERN: /^[A-Za-z0-9\s\-]{3,10}$/,
   };
 
   const validateContent = (field: string, value: string): string | null => {
     const limits = fieldLimits[field as keyof typeof fieldLimits];
-    
+
     // Skip validation for empty optional fields
     if (!limits || (value.length === 0 && limits.minLength === 0)) {
       return null;
     }
-    
+
     // Check length limits
     if (value.length < limits.minLength) {
       return `Minimum ${limits.minLength} characters required`;
@@ -206,7 +223,18 @@ function SettingsContent() {
     }
 
     // Check for inappropriate content (only for text fields)
-    if (['firstName', 'lastName', 'businessName', 'bio', 'brokerage', 'city', 'state', 'country'].includes(field)) {
+    if (
+      [
+        'firstName',
+        'lastName',
+        'businessName',
+        'bio',
+        'brokerage',
+        'city',
+        'state',
+        'country',
+      ].includes(field)
+    ) {
       if (filter.isProfane(value)) {
         return 'Please use professional, appropriate language';
       }
@@ -220,14 +248,14 @@ function SettingsContent() {
           return 'Names should only contain letters, spaces, and basic punctuation';
         }
         break;
-      
+
       case 'businessName':
       case 'brokerage':
         if (value && !VALIDATION_PATTERNS.BUSINESS_NAME_PATTERN.test(value)) {
           return 'Should only contain letters, numbers, spaces, and basic punctuation';
         }
         break;
-      
+
       case 'city':
       case 'state':
       case 'country':
@@ -235,26 +263,26 @@ function SettingsContent() {
           return 'Should only contain letters, spaces, and basic punctuation';
         }
         break;
-      
+
       case 'email':
         // Check basic format first
         if (!VALIDATION_PATTERNS.EMAIL_PATTERN.test(value)) {
           return 'Please enter a valid email address';
         }
-        
+
         // Additional email validation checks
         if (value.includes('..')) {
           return 'Email cannot contain consecutive dots';
         }
-        
+
         if (value.startsWith('.') || value.endsWith('.')) {
           return 'Email cannot start or end with a dot';
         }
-        
+
         if (value.includes('@.') || value.includes('.@')) {
           return 'Invalid email format around @ symbol';
         }
-        
+
         // Check for valid TLD (at least 2 characters)
         const parts = value.split('@');
         if (parts.length === 2) {
@@ -264,30 +292,30 @@ function SettingsContent() {
           }
         }
         break;
-        
+
       case 'phone':
         if (value) {
           // Basic input pattern check - allow only valid characters during typing
           if (!VALIDATION_PATTERNS.PHONE_INPUT_PATTERN.test(value)) {
             return 'Phone number can only contain digits, spaces, hyphens, parentheses, and plus signs';
           }
-          
+
           // Skip validation for very short inputs (user is still typing)
           const digitsOnly = value.replace(/\D/g, '');
           if (digitsOnly.length < 3) {
             return null; // Allow partial input
           }
-          
+
           // For very short inputs during backspacing, be more lenient
           if (digitsOnly.length <= 3 && !value.includes('(')) {
             return null; // Allow partial input without formatting
           }
-          
+
           // Use libphonenumber-js for validation
           try {
             // Try to parse the number
             const phoneNumber = parsePhoneNumber(value, 'US'); // Default to US, but will detect international
-            
+
             // Check if it's a valid number
             if (!phoneNumber.isValid()) {
               // For incomplete numbers, provide helpful feedback
@@ -296,20 +324,19 @@ function SettingsContent() {
               }
               return 'Please enter a valid phone number';
             }
-            
+
             // Additional checks for business context
             const nationalNumber = phoneNumber.nationalNumber;
-            
+
             // Check for emergency numbers
             if (nationalNumber === '911' || nationalNumber.includes('911')) {
               return 'Cannot use emergency service numbers';
             }
-            
+
             // Check for obviously fake numbers (all same digits, etc.)
             if (/^(\d)\1+$/.test(nationalNumber)) {
               return 'Please enter a valid phone number';
             }
-            
           } catch (error) {
             // If parsing fails, try to validate as international number
             if (value.startsWith('+')) {
@@ -326,7 +353,7 @@ function SettingsContent() {
               if (digitsOnly.length === 10) {
                 const areaCode = digitsOnly.substring(0, 3);
                 const exchange = digitsOnly.substring(3, 6);
-                
+
                 // Basic US number validation
                 if (areaCode.startsWith('0') || areaCode.startsWith('1')) {
                   return 'Invalid area code';
@@ -343,86 +370,101 @@ function SettingsContent() {
           }
         }
         break;
-        
+
       case 'website':
         if (value) {
           // Check basic URL format
           if (!VALIDATION_PATTERNS.URL_PATTERN.test(value)) {
             return 'Website must be a valid URL starting with http:// or https://';
           }
-          
+
           // Additional URL validation checks
           try {
             const url = new URL(value);
-            
+
             // Check for valid protocol
             if (!['http:', 'https:'].includes(url.protocol)) {
               return 'Website must use http:// or https://';
             }
-            
+
             // Check for valid hostname
             if (!url.hostname || url.hostname.length < 3) {
               return 'Website must have a valid domain name';
             }
-            
+
             // Check for valid TLD (at least 2 characters)
             const hostParts = url.hostname.split('.');
-            if (hostParts.length < 2 || hostParts[hostParts.length - 1].length < 2) {
+            if (
+              hostParts.length < 2 ||
+              hostParts[hostParts.length - 1].length < 2
+            ) {
               return 'Website must have a valid domain extension';
             }
-            
+
             // Check for localhost or IP addresses (not allowed for business websites)
-            if (url.hostname === 'localhost' || 
-                url.hostname.startsWith('127.') || 
-                url.hostname.startsWith('192.168.') ||
-                url.hostname.startsWith('10.') ||
-                /^\d+\.\d+\.\d+\.\d+$/.test(url.hostname)) {
+            if (
+              url.hostname === 'localhost' ||
+              url.hostname.startsWith('127.') ||
+              url.hostname.startsWith('192.168.') ||
+              url.hostname.startsWith('10.') ||
+              /^\d+\.\d+\.\d+\.\d+$/.test(url.hostname)
+            ) {
               return 'Please enter a public website URL';
             }
-            
+
             // Check for suspicious or inappropriate domains
-            const suspiciousDomains = ['bit.ly', 'tinyurl.com', 'goo.gl', 't.co'];
-            if (suspiciousDomains.some(domain => url.hostname.includes(domain))) {
+            const suspiciousDomains = [
+              'bit.ly',
+              'tinyurl.com',
+              'goo.gl',
+              't.co',
+            ];
+            if (
+              suspiciousDomains.some(domain => url.hostname.includes(domain))
+            ) {
               return 'Please enter your direct business website URL';
             }
-            
           } catch (error) {
             return 'Please enter a valid website URL';
           }
         }
         break;
-        
+
       case 'licenseNumber':
         if (value) {
           // Check basic format
           if (!VALIDATION_PATTERNS.LICENSE_PATTERN.test(value)) {
             return 'License number should contain letters and numbers (e.g., RE123456789)';
           }
-          
+
           // Check minimum length for meaningful license numbers
           if (value.length < 5) {
             return 'License number must be at least 5 characters';
           }
-          
+
           // Check for obviously invalid patterns
           if (/^[0-9]+$/.test(value) && value.length < 8) {
             return 'License number appears too short for a valid license';
           }
-          
+
           // Check for repeated characters (likely invalid)
           if (/(.)\1{4,}/.test(value)) {
             return 'License number cannot contain 5 or more repeated characters';
           }
         }
         break;
-        
+
       case 'zipcode':
         if (value) {
           // Determine validation pattern based on country
           const country = formData.country.toLowerCase();
           let isValid = false;
-          
-          if (country.includes('united states') || country.includes('usa') || country === 'us') {
+
+          if (
+            country.includes('united states') ||
+            country.includes('usa') ||
+            country === 'us'
+          ) {
             isValid = VALIDATION_PATTERNS.US_ZIPCODE_PATTERN.test(value);
             if (!isValid) {
               return 'US ZIP code should be 5 digits or 5+4 format (e.g., 12345 or 12345-6789)';
@@ -432,7 +474,11 @@ function SettingsContent() {
             if (!isValid) {
               return 'Canadian postal code should be in format A1A 1A1';
             }
-          } else if (country.includes('united kingdom') || country.includes('uk') || country.includes('britain')) {
+          } else if (
+            country.includes('united kingdom') ||
+            country.includes('uk') ||
+            country.includes('britain')
+          ) {
             isValid = VALIDATION_PATTERNS.UK_POSTCODE_PATTERN.test(value);
             if (!isValid) {
               return 'UK postcode should be in valid format (e.g., SW1A 1AA)';
@@ -444,25 +490,25 @@ function SettingsContent() {
               return 'Postal code should contain only letters, numbers, spaces, and hyphens';
             }
           }
-          
+
           // Additional checks for all postal codes
           if (value.length < 3) {
             return 'Postal code must be at least 3 characters';
           }
-          
+
           // Check for obviously invalid patterns
           if (/^[0\s\-]+$/.test(value)) {
             return 'Please enter a valid postal code';
           }
         }
         break;
-        
+
       case 'newPassword':
         if (value && value.length < 8) {
           return 'Password must be at least 8 characters long';
         }
         break;
-        
+
       case 'confirmPassword':
         if (value && value !== formData.newPassword) {
           return 'Passwords do not match';
@@ -477,10 +523,14 @@ function SettingsContent() {
   const formatZipcode = (value: string, country: string): string => {
     // Remove all non-alphanumeric characters except spaces and hyphens
     const cleaned = value.replace(/[^A-Za-z0-9\s\-]/g, '').toUpperCase();
-    
+
     const countryLower = country.toLowerCase();
-    
-    if (countryLower.includes('united states') || countryLower.includes('usa') || countryLower === 'us') {
+
+    if (
+      countryLower.includes('united states') ||
+      countryLower.includes('usa') ||
+      countryLower === 'us'
+    ) {
       // US ZIP code formatting
       const digits = cleaned.replace(/\D/g, '');
       if (digits.length <= 5) {
@@ -501,30 +551,37 @@ function SettingsContent() {
         return `${alphanumeric.slice(0, 3)} ${alphanumeric.slice(3)}`;
       }
       return `${alphanumeric.slice(0, 3)} ${alphanumeric.slice(3, 6)}`;
-    } else if (countryLower.includes('united kingdom') || countryLower.includes('uk') || countryLower.includes('britain')) {
+    } else if (
+      countryLower.includes('united kingdom') ||
+      countryLower.includes('uk') ||
+      countryLower.includes('britain')
+    ) {
       // UK postcode formatting - more complex, keep as entered but clean
       return cleaned.slice(0, 8);
     }
-    
+
     // Generic formatting for other countries
     return cleaned.slice(0, 10);
   };
 
   // Phone formatting function using libphonenumber-js for better international support
-  const formatPhoneNumber = (value: string, previousValue: string = ''): string => {
+  const formatPhoneNumber = (
+    value: string,
+    previousValue: string = ''
+  ): string => {
     // Remove any characters that aren't allowed
     const cleaned = value.replace(/[^\d+\s\-\(\)]/g, '');
-    
+
     // If empty, return empty
     if (!cleaned) return '';
-    
+
     // Get just the digits for comparison
     const currentDigits = cleaned.replace(/\D/g, '');
     const previousDigits = previousValue.replace(/\D/g, '');
-    
+
     // Check if user is backspacing
     const isBackspacing = currentDigits.length < previousDigits.length;
-    
+
     // For international numbers (starting with +), use AsYouType
     if (cleaned.startsWith('+')) {
       try {
@@ -534,15 +591,15 @@ function SettingsContent() {
         return cleaned;
       }
     }
-    
+
     // For US numbers, use custom formatting that's more backspace-friendly
     if (currentDigits.length === 0) return '';
-    
+
     // If backspacing and we have 3 or fewer digits, don't format
     if (isBackspacing && currentDigits.length <= 3) {
       return currentDigits;
     }
-    
+
     // Apply US formatting based on digit count
     if (currentDigits.length <= 3) {
       return currentDigits;
@@ -567,33 +624,33 @@ function SettingsContent() {
 
   const handleInputChange = (field: string, value: string) => {
     let processedValue = value;
-    
+
     // Apply phone formatting
     if (field === 'phone') {
       processedValue = formatPhoneNumber(value, formData.phone);
     }
-    
+
     // Apply zipcode formatting
     if (field === 'zipcode') {
       processedValue = formatZipcode(value, formData.country);
     }
-    
+
     // Remove spaces from email and website fields
     if (field === 'email' || field === 'website') {
       processedValue = removeSpaces(value);
     }
-    
+
     // Real-time validation as user types
     const error = validateContent(field, processedValue);
-    
+
     setFormData(prev => ({
       ...prev,
-      [field]: processedValue
+      [field]: processedValue,
     }));
 
     setValidationErrors(prev => ({
       ...prev,
-      [field]: error || ''
+      [field]: error || '',
     }));
   };
 
@@ -690,9 +747,11 @@ function SettingsContent() {
       // Check if notification settings have changed and update if needed
       const currentEmailNotifications = settings?.email_notifications ?? true;
       const currentMarketingEmails = settings?.marketing_emails ?? true;
-      
-      if (formData.emailNotifications !== currentEmailNotifications || 
-          formData.marketingEmails !== currentMarketingEmails) {
+
+      if (
+        formData.emailNotifications !== currentEmailNotifications ||
+        formData.marketingEmails !== currentMarketingEmails
+      ) {
         updatePromises.push(
           updateUserSettings({
             email_notifications: formData.emailNotifications,
@@ -733,429 +792,540 @@ function SettingsContent() {
             {loading || !dataLoaded ? (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Loading your profile...</p>
+                  <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
+                  <p className="text-muted-foreground">
+                    Loading your profile...
+                  </p>
                 </div>
               </div>
             ) : (
-            <form onSubmit={e => {
-              e.preventDefault();
-              if (!Object.values(validationErrors).some(error => error) && isFormChanged) {
-                setConfirmOpen(true);
-              }
-            }} className="space-y-4">
-            {/* Profile Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Profile Information
-                </CardTitle>
-                <CardDescription>
-                  Manage your personal information and account details.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Profile Picture */}
-                <div className="flex items-center space-x-4">
-                  <div className="relative">
-                    <Avatar className="h-20 w-20">
-                      <AvatarImage
-                        src="/placeholder.svg?height=80&width=80&query=person"
-                        alt="Profile picture"
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  if (
+                    !Object.values(validationErrors).some(error => error) &&
+                    isFormChanged
+                  ) {
+                    setConfirmOpen(true);
+                  }
+                }}
+                className="space-y-4"
+              >
+                {/* Profile Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      Profile Information
+                    </CardTitle>
+                    <CardDescription>
+                      Manage your personal information and account details.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Profile Picture */}
+                    <div className="flex items-center space-x-4">
+                      <div className="relative">
+                        <Avatar className="h-20 w-20">
+                          <AvatarImage
+                            src="/placeholder.svg?height=80&width=80&query=person"
+                            alt="Profile picture"
+                          />
+                          <AvatarFallback className="text-lg">
+                            {formData.firstName.charAt(0)}
+                            {formData.lastName.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
+                        >
+                          <Camera className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Profile Picture</p>
+                        <p className="text-sm text-muted-foreground">
+                          JPG, PNG or GIF. Max size 2MB.
+                        </p>
+                        <Button variant="outline" size="sm">
+                          Upload new picture
+                        </Button>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Basic Information */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <label className="font-medium">First Name</label>
+                        <input
+                          type="text"
+                          className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                            validationErrors.firstName
+                              ? 'border-red-500 bg-background'
+                              : 'bg-background'
+                          }`}
+                          value={formData.firstName}
+                          onChange={e =>
+                            handleInputChange('firstName', e.target.value)
+                          }
+                          maxLength={50}
+                        />
+                        {validationErrors.firstName && (
+                          <p className="text-sm text-red-500">
+                            {validationErrors.firstName}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500">
+                          {formData.firstName.length}/50 characters
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="font-medium">Last Name</label>
+                        <input
+                          type="text"
+                          className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                            validationErrors.lastName
+                              ? 'border-red-500 bg-background'
+                              : 'bg-background'
+                          }`}
+                          value={formData.lastName}
+                          onChange={e =>
+                            handleInputChange('lastName', e.target.value)
+                          }
+                          maxLength={50}
+                        />
+                        {validationErrors.lastName && (
+                          <p className="text-sm text-red-500">
+                            {validationErrors.lastName}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500">
+                          {formData.lastName.length}/50 characters
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="font-medium">Email Address</label>
+                      <input
+                        type="text"
+                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.email
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        value={formData.email}
+                        onChange={e =>
+                          handleInputChange('email', e.target.value)
+                        }
+                        maxLength={254}
+                        autoComplete="email"
+                        inputMode="email"
+                        placeholder="your.email@example.com"
                       />
-                      <AvatarFallback className="text-lg">
-                        {formData.firstName.charAt(0)}{formData.lastName.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
-                    >
-                      <Camera className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Profile Picture</p>
-                    <p className="text-sm text-muted-foreground">
-                      JPG, PNG or GIF. Max size 2MB.
-                    </p>
-                    <Button variant="outline" size="sm">
-                      Upload new picture
-                    </Button>
-                  </div>
-                </div>
+                      {validationErrors.email && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.email}
+                        </p>
+                      )}
+                    </div>
 
-                <Separator />
+                    <div className="space-y-2">
+                      <label className="font-medium">Phone Number</label>
+                      <input
+                        type="tel"
+                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.phone
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        value={formData.phone}
+                        onChange={e =>
+                          handleInputChange('phone', e.target.value)
+                        }
+                        placeholder="(555) 123-4567 or +1 555 123 4567"
+                        autoComplete="tel"
+                        maxLength={25}
+                      />
+                      {validationErrors.phone && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.phone}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        Enter your phone number. International numbers should
+                        start with +
+                      </p>
+                    </div>
 
-                {/* Basic Information */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="font-medium">First Name</label>
-                    <input
-                      type="text"
-                      className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                        validationErrors.firstName ? 'bg-background border-red-500' : 'bg-background'
-                      }`}
-                      value={formData.firstName}
-                      onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      maxLength={50}
-                    />
-                    {validationErrors.firstName && (
-                      <p className="text-red-500 text-sm">{validationErrors.firstName}</p>
-                    )}
-                    <p className="text-gray-500 text-xs">
-                      {formData.firstName.length}/50 characters
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="font-medium">Last Name</label>
-                    <input
-                      type="text"
-                      className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                        validationErrors.lastName ? 'bg-background border-red-500' : 'bg-background'
-                      }`}
-                      value={formData.lastName}
-                      onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      maxLength={50}
-                    />
-                    {validationErrors.lastName && (
-                      <p className="text-red-500 text-sm">{validationErrors.lastName}</p>
-                    )}
-                    <p className="text-gray-500 text-xs">
-                      {formData.lastName.length}/50 characters
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="font-medium">Email Address</label>
-                  <input
-                    type="text"
-                    className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                      validationErrors.email ? 'bg-background border-red-500' : 'bg-background'
-                    }`}
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    maxLength={254}
-                    autoComplete="email"
-                    inputMode="email"
-                    placeholder="your.email@example.com"
-                  />
-                  {validationErrors.email && (
-                    <p className="text-red-500 text-sm">{validationErrors.email}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="font-medium">Phone Number</label>
-                  <input
-                    type="tel"
-                    className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                      validationErrors.phone ? 'bg-background border-red-500' : 'bg-background'
-                    }`}
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    placeholder="(555) 123-4567 or +1 555 123 4567"
-                    autoComplete="tel"
-                    maxLength={25}
-                  />
-                  {validationErrors.phone && (
-                    <p className="text-red-500 text-sm">{validationErrors.phone}</p>
-                  )}
-                  <p className="text-gray-500 text-xs">
-                    Enter your phone number. International numbers should start with +
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="font-medium">Business Name</label>
-                  <input
-                    type="text"
-                    className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                      validationErrors.businessName ? 'bg-background border-red-500' : 'bg-background'
-                    }`}
-                    value={formData.businessName}
-                    onChange={(e) => handleInputChange('businessName', e.target.value)}
-                    maxLength={100}
-                    placeholder="e.g., ABC Real Estate, Smith & Associates, etc."
-                  />
-                  {validationErrors.businessName && (
-                    <p className="text-red-500 text-sm">{validationErrors.businessName}</p>
-                  )}
-                  <p className="text-gray-500 text-xs">
-                    {formData.businessName.length}/100 characters
-                  </p>
-                </div>
+                    <div className="space-y-2">
+                      <label className="font-medium">Business Name</label>
+                      <input
+                        type="text"
+                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.businessName
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        value={formData.businessName}
+                        onChange={e =>
+                          handleInputChange('businessName', e.target.value)
+                        }
+                        maxLength={100}
+                        placeholder="e.g., ABC Real Estate, Smith & Associates, etc."
+                      />
+                      {validationErrors.businessName && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.businessName}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        {formData.businessName.length}/100 characters
+                      </p>
+                    </div>
 
-                <div className="space-y-2">
-                  <label className="font-medium">Bio</label>
-                  <textarea
-                    className={`w-full rounded-md border p-2 resize-none focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                      validationErrors.bio ? 'bg-background border-red-500' : 'bg-background'
-                    }`}
-                    rows={3}
-                    value={formData.bio}
-                    onChange={(e) => handleInputChange('bio', e.target.value)}
-                    maxLength={500}
-                    placeholder="Tell us about yourself and your real estate business..."
-                  />
-                  {validationErrors.bio && (
-                    <p className="text-red-500 text-sm">{validationErrors.bio}</p>
-                  )}
-                  <p className="text-gray-500 text-xs">
-                    {formData.bio.length}/500 characters
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="space-y-2">
+                      <label className="font-medium">Bio</label>
+                      <textarea
+                        className={`w-full resize-none rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.bio
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        rows={3}
+                        value={formData.bio}
+                        onChange={e => handleInputChange('bio', e.target.value)}
+                        maxLength={500}
+                        placeholder="Tell us about yourself and your real estate business..."
+                      />
+                      {validationErrors.bio && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.bio}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        {formData.bio.length}/500 characters
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
 
-            {/* Notification Preferences */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5" />
-                  Notification Preferences
-                </CardTitle>
-                <CardDescription>
-                  Configure how you want to receive notifications and updates.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="email-notifications">Email Notifications</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receive notifications about new calls and messages via email
-                    </p>
-                  </div>
-                  <Switch 
-                    id="email-notifications" 
-                    checked={formData.emailNotifications}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, emailNotifications: checked }))}
-                  />
-                </div>
+                {/* Notification Preferences */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Bell className="h-5 w-5" />
+                      Notification Preferences
+                    </CardTitle>
+                    <CardDescription>
+                      Configure how you want to receive notifications and
+                      updates.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="email-notifications">
+                          Email Notifications
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Receive notifications about new calls and messages via
+                          email
+                        </p>
+                      </div>
+                      <Switch
+                        id="email-notifications"
+                        checked={formData.emailNotifications}
+                        onCheckedChange={checked =>
+                          setFormData(prev => ({
+                            ...prev,
+                            emailNotifications: checked,
+                          }))
+                        }
+                      />
+                    </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="marketing-emails">Marketing Emails</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receive updates about new features and tips
-                    </p>
-                  </div>
-                  <Switch 
-                    id="marketing-emails" 
-                    checked={formData.marketingEmails}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, marketingEmails: checked }))}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="marketing-emails">
+                          Marketing Emails
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Receive updates about new features and tips
+                        </p>
+                      </div>
+                      <Switch
+                        id="marketing-emails"
+                        checked={formData.marketingEmails}
+                        onCheckedChange={checked =>
+                          setFormData(prev => ({
+                            ...prev,
+                            marketingEmails: checked,
+                          }))
+                        }
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
 
+                {/* Security Settings */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-5 w-5" />
+                      Security Settings
+                    </CardTitle>
+                    <CardDescription>
+                      Manage your password and security preferences.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="font-medium">Current Password</label>
+                      <input
+                        type="password"
+                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.currentPassword
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        value={formData.currentPassword}
+                        onChange={e =>
+                          handleInputChange('currentPassword', e.target.value)
+                        }
+                        maxLength={128}
+                      />
+                      {validationErrors.currentPassword && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.currentPassword}
+                        </p>
+                      )}
+                    </div>
 
-            {/* Security Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Security Settings
-                </CardTitle>
-                <CardDescription>
-                  Manage your password and security preferences.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="font-medium">Current Password</label>
-                  <input
-                    type="password"
-                    className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                      validationErrors.currentPassword ? 'bg-background border-red-500' : 'bg-background'
-                    }`}
-                    value={formData.currentPassword}
-                    onChange={(e) => handleInputChange('currentPassword', e.target.value)}
-                    maxLength={128}
-                  />
-                  {validationErrors.currentPassword && (
-                    <p className="text-red-500 text-sm">{validationErrors.currentPassword}</p>
-                  )}
-                </div>
+                    <div className="space-y-2">
+                      <label className="font-medium">New Password</label>
+                      <input
+                        type="password"
+                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.newPassword
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        value={formData.newPassword}
+                        onChange={e =>
+                          handleInputChange('newPassword', e.target.value)
+                        }
+                        maxLength={128}
+                      />
+                      {validationErrors.newPassword && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.newPassword}
+                        </p>
+                      )}
+                    </div>
 
-                <div className="space-y-2">
-                  <label className="font-medium">New Password</label>
-                  <input
-                    type="password"
-                    className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                      validationErrors.newPassword ? 'bg-background border-red-500' : 'bg-background'
-                    }`}
-                    value={formData.newPassword}
-                    onChange={(e) => handleInputChange('newPassword', e.target.value)}
-                    maxLength={128}
-                  />
-                  {validationErrors.newPassword && (
-                    <p className="text-red-500 text-sm">{validationErrors.newPassword}</p>
-                  )}
-                </div>
+                    <div className="space-y-2">
+                      <label className="font-medium">
+                        Confirm New Password
+                      </label>
+                      <input
+                        type="password"
+                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.confirmPassword
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        value={formData.confirmPassword}
+                        onChange={e =>
+                          handleInputChange('confirmPassword', e.target.value)
+                        }
+                        maxLength={128}
+                      />
+                      {validationErrors.confirmPassword && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.confirmPassword}
+                        </p>
+                      )}
+                    </div>
 
-                <div className="space-y-2">
-                  <label className="font-medium">Confirm New Password</label>
-                  <input
-                    type="password"
-                    className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                      validationErrors.confirmPassword ? 'bg-background border-red-500' : 'bg-background'
-                    }`}
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    maxLength={128}
-                  />
-                  {validationErrors.confirmPassword && (
-                    <p className="text-red-500 text-sm">{validationErrors.confirmPassword}</p>
-                  )}
-                </div>
+                    <Button variant="outline">Change Password</Button>
 
-                <Button variant="outline">Change Password</Button>
+                    <Separator />
 
-                <Separator />
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="two-factor">
+                          Two-Factor Authentication
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Add an extra layer of security to your account
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm">
+                        Enable 2FA
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="two-factor">Two-Factor Authentication</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Add an extra layer of security to your account
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Enable 2FA
+                {/* Business Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Business Information</CardTitle>
+                    <CardDescription>
+                      Professional details for your real estate business.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="font-medium">License Number</label>
+                      <input
+                        ref={licenseMaskRef}
+                        type="text"
+                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.licenseNumber
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        value={formData.licenseNumber}
+                        onChange={e =>
+                          handleInputChange('licenseNumber', e.target.value)
+                        }
+                        maxLength={50}
+                        placeholder="e.g., RE123456789"
+                        autoComplete="off"
+                      />
+                      {validationErrors.licenseNumber && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.licenseNumber}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        {formData.licenseNumber.length}/50 characters
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="font-medium">Brokerage</label>
+                      <input
+                        type="text"
+                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.brokerage
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        value={formData.brokerage}
+                        onChange={e =>
+                          handleInputChange('brokerage', e.target.value)
+                        }
+                        maxLength={100}
+                      />
+                      {validationErrors.brokerage && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.brokerage}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        {formData.brokerage.length}/100 characters
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="font-medium">Website</label>
+                      <input
+                        type="text"
+                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.website
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        value={formData.website}
+                        onChange={e =>
+                          handleInputChange('website', e.target.value)
+                        }
+                        maxLength={254}
+                        placeholder="https://your-website.com"
+                        autoComplete="url"
+                        inputMode="url"
+                      />
+                      {validationErrors.website && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.website}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        {formData.website.length}/254 characters
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="font-medium">Business Address</label>
+                      <AddressAutocomplete
+                        onPlaceSelect={handleAddressSelect}
+                        onInputChange={handleAddressInputChange}
+                        placeholder="Search for your business address..."
+                        value={formData.businessAddress}
+                        className="w-full"
+                      />
+                      <p className="text-xs text-gray-500">
+                        Search and select your business address from the
+                        suggestions.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Save Changes */}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={!isFormChanged || saving}
+                  >
+                    Cancel
                   </Button>
+                  <Button
+                    type="submit"
+                    disabled={
+                      saving ||
+                      Object.values(validationErrors).some(error => error) ||
+                      !isFormChanged
+                    }
+                  >
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                  <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Confirm Save</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to save these changes to your
+                          settings? This action will update your settings
+                          immediately.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel asChild>
+                          <Button
+                            variant="outline"
+                            onClick={() => setConfirmOpen(false)}
+                          >
+                            Cancel
+                          </Button>
+                        </AlertDialogCancel>
+                        <AlertDialogAction asChild>
+                          <Button onClick={doSave}>Confirm</Button>
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Business Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Business Information</CardTitle>
-                <CardDescription>
-                  Professional details for your real estate business.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="font-medium">License Number</label>
-                  <input
-                    ref={licenseMaskRef}
-                    type="text"
-                    className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                      validationErrors.licenseNumber ? 'bg-background border-red-500' : 'bg-background'
-                    }`}
-                    value={formData.licenseNumber}
-                    onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
-                    maxLength={50}
-                    placeholder="e.g., RE123456789"
-                    autoComplete="off"
-                  />
-                  {validationErrors.licenseNumber && (
-                    <p className="text-red-500 text-sm">{validationErrors.licenseNumber}</p>
-                  )}
-                  <p className="text-gray-500 text-xs">
-                    {formData.licenseNumber.length}/50 characters
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="font-medium">Brokerage</label>
-                  <input
-                    type="text"
-                    className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                      validationErrors.brokerage ? 'bg-background border-red-500' : 'bg-background'
-                    }`}
-                    value={formData.brokerage}
-                    onChange={(e) => handleInputChange('brokerage', e.target.value)}
-                    maxLength={100}
-                  />
-                  {validationErrors.brokerage && (
-                    <p className="text-red-500 text-sm">{validationErrors.brokerage}</p>
-                  )}
-                  <p className="text-gray-500 text-xs">
-                    {formData.brokerage.length}/100 characters
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="font-medium">Website</label>
-                  <input
-                    type="text"
-                    className={`w-full rounded-md border p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
-                      validationErrors.website ? 'bg-background border-red-500' : 'bg-background'
-                    }`}
-                    value={formData.website}
-                    onChange={(e) => handleInputChange('website', e.target.value)}
-                    maxLength={254}
-                    placeholder="https://your-website.com"
-                    autoComplete="url"
-                    inputMode="url"
-                  />
-                  {validationErrors.website && (
-                    <p className="text-red-500 text-sm">{validationErrors.website}</p>
-                  )}
-                  <p className="text-gray-500 text-xs">
-                    {formData.website.length}/254 characters
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="font-medium">Business Address</label>
-                  <AddressAutocomplete
-                    onPlaceSelect={handleAddressSelect}
-                    onInputChange={handleAddressInputChange}
-                    placeholder="Search for your business address..."
-                    value={formData.businessAddress}
-                    className="w-full"
-                  />
-                  <p className="text-gray-500 text-xs">
-                    Search and select your business address from the suggestions.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Save Changes */}
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={!isFormChanged || saving}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={saving || Object.values(validationErrors).some(error => error) || !isFormChanged}
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Button>
-              <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Confirm Save</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to save these changes to your settings? This action will update your settings immediately.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel asChild>
-                      <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
-                    </AlertDialogCancel>
-                    <AlertDialogAction asChild>
-                      <Button onClick={doSave}>Confirm</Button>
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-            </form>
+              </form>
             )}
           </TabsContent>
 

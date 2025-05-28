@@ -1,6 +1,6 @@
 /**
  * Centralized logging utility with environment-aware logging and PII protection
- * 
+ *
  * Features:
  * - Environment-aware logging (debug/info only in development)
  * - PII masking for user privacy
@@ -54,16 +54,16 @@ class Logger {
 
     // Handle objects
     const sanitized: any = {};
-    
+
     // Common sensitive fields to mask
     const sensitiveFields = ['email', 'password', 'token', 'secret', 'key'];
-    
+
     for (const [key, value] of Object.entries(data)) {
       // Check if current key is sensitive
-      const isSensitiveField = sensitiveFields.some(field => 
+      const isSensitiveField = sensitiveFields.some(field =>
         key.toLowerCase().includes(field.toLowerCase())
       );
-      
+
       if (isSensitiveField) {
         // Apply appropriate masking based on field type
         if (key.toLowerCase().includes('email')) {
@@ -83,7 +83,11 @@ class Logger {
   /**
    * Format log message with timestamp and level
    */
-  private formatMessage(level: LogLevel, component: string, message: string): string {
+  private formatMessage(
+    level: LogLevel,
+    component: string,
+    message: string
+  ): string {
     const timestamp = new Date().toISOString();
     return `[${timestamp}] [${level.toUpperCase()}] [${component}] ${message}`;
   }
@@ -91,15 +95,20 @@ class Logger {
   /**
    * Send logs to external service in production
    */
-  private sendToExternalService(level: LogLevel, message: string, context?: LogContext, error?: Error) {
+  private sendToExternalService(
+    level: LogLevel,
+    message: string,
+    context?: LogContext,
+    error?: Error
+  ) {
     if (!this.isProduction) return;
 
     // Sentry integration - now active!
     try {
       if (level === 'error' && error) {
-        Sentry.captureException(error, { 
+        Sentry.captureException(error, {
           extra: context,
-          tags: { component: 'logger' }
+          tags: { component: 'logger' },
         });
       } else {
         Sentry.addBreadcrumb({
@@ -133,7 +142,10 @@ class Logger {
   debug(component: string, message: string, context?: LogContext) {
     if (this.isDevelopment) {
       const formattedMessage = this.formatMessage('debug', component, message);
-      console.debug(formattedMessage, context ? this.sanitizeData(context) : '');
+      console.debug(
+        formattedMessage,
+        context ? this.sanitizeData(context) : ''
+      );
     }
   }
 
@@ -160,9 +172,18 @@ class Logger {
   /**
    * Error level logging (always logged)
    */
-  error(component: string, message: string, error?: Error, context?: LogContext) {
+  error(
+    component: string,
+    message: string,
+    error?: Error,
+    context?: LogContext
+  ) {
     const formattedMessage = this.formatMessage('error', component, message);
-    console.error(formattedMessage, error, context ? this.sanitizeData(context) : '');
+    console.error(
+      formattedMessage,
+      error,
+      context ? this.sanitizeData(context) : ''
+    );
     this.sendToExternalService('error', message, context, error);
   }
 
@@ -204,7 +225,7 @@ class Logger {
         hasSession: !!session,
         // Don't send PII to external services
       });
-    }
+    },
   };
 }
 
@@ -212,4 +233,4 @@ class Logger {
 export const logger = new Logger();
 
 // Export types for external use
-export type { LogLevel, LogContext }; 
+export type { LogLevel, LogContext };

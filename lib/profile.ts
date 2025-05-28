@@ -3,18 +3,18 @@ import type { User } from '@supabase/supabase-js';
 
 /**
  * Profile Management Module
- * 
+ *
  * This module handles user profile creation and management with atomic operations
  * to prevent race conditions. The key design principle is to use the database's
- * atomic upsert capabilities (ON CONFLICT clauses) rather than separate 
+ * atomic upsert capabilities (ON CONFLICT clauses) rather than separate
  * check-then-create operations.
- * 
+ *
  * Race Condition Prevention:
  * - ensureUserProfile() directly calls the stored procedure without checking existence first
  * - The create_full_profile stored procedure uses ON CONFLICT DO UPDATE clauses
  * - This eliminates the window where two parallel requests could both detect missing
  *   profiles and attempt creation, causing unique-key violations
- * 
+ *
  * Key Functions:
  * - ensureUserProfile(): Main entry point, uses atomic upsert approach
  * - createUserProfile(): Calls the atomic stored procedure
@@ -86,9 +86,11 @@ export interface CreateProfileResponse {
  * Creates a complete user profile with all related records atomically
  * Uses the create_full_profile stored procedure for transaction safety
  */
-export async function createUserProfile(userData: CreateProfileData): Promise<{ success: true; data: CreateProfileResponse }> {
+export async function createUserProfile(
+  userData: CreateProfileData
+): Promise<{ success: true; data: CreateProfileResponse }> {
   const supabase = getSupabaseClient();
-  
+
   try {
     // Validate required fields
     if (!userData.id || !userData.email) {
@@ -124,7 +126,7 @@ export async function createUserProfile(userData: CreateProfileData): Promise<{ 
       p_last_name: userData.lastName || null,
       p_full_name: userData.fullName || null,
       p_phone: userData.phone || null,
-      p_avatar_url: userData.avatarUrl || null
+      p_avatar_url: userData.avatarUrl || null,
     });
 
     if (error) {
@@ -133,23 +135,24 @@ export async function createUserProfile(userData: CreateProfileData): Promise<{ 
         message: error.message,
         details: error.details,
         hint: error.hint,
-        userId: userData.id
+        userId: userData.id,
       });
       throw new Error(`Failed to create profile: ${error.message}`);
     }
 
     if (!data || !data.success) {
-      throw new Error('Profile creation failed: Invalid response from stored procedure');
+      throw new Error(
+        'Profile creation failed: Invalid response from stored procedure'
+      );
     }
 
     console.log(`User profile creation completed for user ${userData.id}`, {
       profileCreated: !!data.profile,
       settingsCreated: !!data.settings,
-      subscriptionCreated: !!data.subscription
+      subscriptionCreated: !!data.subscription,
     });
 
     return { success: true, data: data as CreateProfileResponse };
-
   } catch (error: any) {
     console.error('Error creating user profile:', error);
     throw error;
@@ -163,17 +166,28 @@ export async function createUserProfile(userData: CreateProfileData): Promise<{ 
 export async function createProfileFromAuthUser(user: User) {
   // Guard against null/undefined email (common with some OAuth providers like Apple)
   if (!user.email) {
-    throw new Error(`Cannot create profile: User email is required but was not provided by the authentication provider. User ID: ${user.id}`);
+    throw new Error(
+      `Cannot create profile: User email is required but was not provided by the authentication provider. User ID: ${user.id}`
+    );
   }
 
   const metadata = user.user_metadata || {};
-  
+
   // Extract names with fallbacks for different OAuth providers
-  const firstName = metadata.first_name || metadata.given_name || metadata.name?.split(' ')[0];
-  const lastName = metadata.last_name || metadata.family_name || metadata.name?.split(' ').slice(1).join(' ');
-  const fullName = metadata.full_name || metadata.name || metadata.display_name || 
-                   (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName);
-  
+  const firstName =
+    metadata.first_name || metadata.given_name || metadata.name?.split(' ')[0];
+  const lastName =
+    metadata.last_name ||
+    metadata.family_name ||
+    metadata.name?.split(' ').slice(1).join(' ');
+  const fullName =
+    metadata.full_name ||
+    metadata.name ||
+    metadata.display_name ||
+    (firstName && lastName
+      ? `${firstName} ${lastName}`
+      : firstName || lastName);
+
   const profileData: CreateProfileData = {
     id: user.id,
     email: user.email,
@@ -190,7 +204,7 @@ export async function createProfileFromAuthUser(user: User) {
     hasFirstName: !!profileData.firstName,
     hasLastName: !!profileData.lastName,
     hasPhone: !!profileData.phone,
-    provider: metadata.provider || 'email'
+    provider: metadata.provider || 'email',
   });
 
   return await createUserProfile(profileData);
@@ -199,14 +213,14 @@ export async function createProfileFromAuthUser(user: User) {
 /**
  * Checks if a user profile exists
  * Throws errors for non-"not found" cases to prevent masking real issues
- * 
+ *
  * Note: This function is primarily used for debugging and testing purposes.
  * The main application flow uses atomic upsert operations via ensureUserProfile()
  * to prevent race conditions.
  */
 export async function checkProfileExists(userId: string): Promise<boolean> {
   const supabase = getSupabaseClient();
-  
+
   const { data, error } = await supabase
     .from('profiles')
     .select('id')
@@ -230,9 +244,9 @@ export async function checkProfileExists(userId: string): Promise<boolean> {
     code: error.code,
     message: error.message,
     details: error.details,
-    userId
+    userId,
   });
-  
+
   throw new Error(`Failed to check profile existence: ${error.message}`);
 }
 
@@ -248,20 +262,25 @@ export async function ensureUserProfile(user: User) {
     // This eliminates the race condition from separate check-then-create operations
     console.log(`Ensuring profile exists for user ${user.id}`);
     await createProfileFromAuthUser(user);
-    
+
     return { success: true };
   } catch (error: any) {
     // Log the error but check if it's a benign conflict error
     console.error('Error ensuring user profile:', error);
-    
+
     // If the error indicates the profile already exists (which can happen
     // in race conditions), we can consider this a success
-    if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
-      console.log(`Profile already exists for user ${user.id} - race condition handled gracefully`);
+    if (
+      error.message &&
+      error.message.includes('duplicate key value violates unique constraint')
+    ) {
+      console.log(
+        `Profile already exists for user ${user.id} - race condition handled gracefully`
+      );
       return { success: true };
     }
-    
+
     // For any other error, re-throw it
     throw error;
   }
-} 
+}

@@ -12,14 +12,20 @@ export function getSiteUrl() {
       PORT: process.env.PORT,
       NODE_ENV: process.env.NODE_ENV,
       isClient: typeof window !== 'undefined',
-      windowLocation: typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : 'N/A'
+      windowLocation:
+        typeof window !== 'undefined'
+          ? `${window.location.protocol}//${window.location.host}`
+          : 'N/A',
     });
   }
 
   // Use NEXT_PUBLIC_SITE_URL if available (production)
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     if (process.env.NODE_ENV === 'development') {
-      console.log('Using NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
+      console.log(
+        'Using NEXT_PUBLIC_SITE_URL:',
+        process.env.NEXT_PUBLIC_SITE_URL
+      );
     }
     return process.env.NEXT_PUBLIC_SITE_URL;
   }
@@ -44,7 +50,8 @@ export function getSiteUrl() {
 
   // Server-side fallback for development
   // Check for common development ports
-  const devPort = process.env.NEXT_PUBLIC_DEV_PORT || process.env.PORT || '3000';
+  const devPort =
+    process.env.NEXT_PUBLIC_DEV_PORT || process.env.PORT || '3000';
   const url = `http://localhost:${devPort}`;
   if (process.env.NODE_ENV === 'development') {
     console.log('Using server-side fallback:', url);

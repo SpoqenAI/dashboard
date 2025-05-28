@@ -27,7 +27,7 @@ export function UserNav() {
   const handleLogoutClick = async () => {
     try {
       await signOut();
-      
+
       toast({
         title: 'Signed out successfully',
         description: 'You have been logged out.',
@@ -49,12 +49,17 @@ export function UserNav() {
         <Button className="relative h-8 w-8 rounded-full bg-black text-white hover:bg-gray-800">
           <Avatar className="h-8 w-8">
             <AvatarImage
-              src={user?.user_metadata?.avatar_url || "/placeholder.svg?height=32&width=32&query=person"}
+              src={
+                user?.user_metadata?.avatar_url ||
+                '/placeholder.svg?height=32&width=32&query=person'
+              }
               alt="User"
             />
             <AvatarFallback>
               {user?.user_metadata?.first_name?.[0]?.toUpperCase() || ''}
-              {user?.user_metadata?.last_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
+              {user?.user_metadata?.last_name?.[0]?.toUpperCase() ||
+                user?.email?.[0]?.toUpperCase() ||
+                'U'}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -63,7 +68,9 @@ export function UserNav() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {user?.user_metadata?.display_name || user?.user_metadata?.full_name || 'User'}
+              {user?.user_metadata?.display_name ||
+                user?.user_metadata?.full_name ||
+                'User'}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
               {user?.email || 'No email'}

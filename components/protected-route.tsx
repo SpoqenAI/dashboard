@@ -11,10 +11,10 @@ interface ProtectedRouteProps {
   requireAuth?: boolean;
 }
 
-export function ProtectedRoute({ 
-  children, 
+export function ProtectedRoute({
+  children,
   redirectTo = '/login',
-  requireAuth = true 
+  requireAuth = true,
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -94,4 +94,4 @@ export function ProtectedRoute({
 
   // Render children if authentication requirements are met
   return <>{children}</>;
-} 
+}

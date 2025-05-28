@@ -86,127 +86,131 @@ export function useUserSettings() {
   const supabase = getSupabaseClient();
 
   // Fetch user settings and profile
-  const fetchUserData = useCallback(async (signal?: AbortSignal) => {
-    if (!user) {
-      setLoading(false);
-      setDataLoaded(false);
-      return;
-    }
-
-    // Check if already aborted before starting
-    if (signal?.aborted) {
-      return;
-    }
-
-    try {
-      setError(null);
-      setLoading(true);
-      setDataLoaded(false);
-      
-      // Check abort signal before making requests
-      if (signal?.aborted) {
-        return;
-      }
-      
-      // Fetch both settings and profile data in parallel
-      const [settingsResponse, profileResponse] = await Promise.all([
-        supabase
-          .from('user_settings')
-          .select('*')
-          .eq('id', user.id)
-          .single(),
-        supabase
-          .from('profiles')
-          .select('id, first_name, last_name, full_name, business_name, email, phone, bio, website, license_number, brokerage, city, state, avatar_url')
-          .eq('id', user.id)
-          .single()
-      ]);
-
-      // Check abort signal after requests complete
-      if (signal?.aborted) {
-        return;
-      }
-
-      const { data: settingsData, error: settingsError } = settingsResponse;
-      const { data: profileData, error: profileError } = profileResponse;
-
-      // Handle settings errors (ignore not found)
-      if (settingsError && settingsError.code !== 'PGRST116') {
-        throw settingsError;
-      }
-
-      // Handle profile errors (ignore not found)
-      if (profileError && profileError.code !== 'PGRST116') {
-        throw profileError;
-      }
-
-      // If no settings exist, create default settings
-      if (!settingsData) {
-        // Check abort signal before creating new settings
-        if (signal?.aborted) {
-          return;
-        }
-
-        const { data: newSettings, error: createError } = await supabase
-          .from('user_settings')
-          .insert({
-            id: user.id,
-            ai_greeting: 'Hello! Thank you for calling. How can I assist you today?',
-            assistant_name: 'Ava',
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          throw createError;
-        }
-
-        // Final abort check before updating state
-        if (signal?.aborted) {
-          return;
-        }
-
-        setSettings(newSettings);
-      } else {
-        // Final abort check before updating state
-        if (signal?.aborted) {
-          return;
-        }
-
-        setSettings(settingsData);
-      }
-
-      // Final abort check before updating profile state
-      if (signal?.aborted) {
-        return;
-      }
-
-      setProfile(profileData);
-      setDataLoaded(true);
-    } catch (err: any) {
-      // Don't update error state if request was aborted
-      if (signal?.aborted) {
-        return;
-      }
-
-      console.error('Error fetching user data:', err);
-      setError(err.message);
-      setDataLoaded(false);
-      toast({
-        title: 'Error loading settings',
-        description: 'Failed to load your settings. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      // Only update loading state if not aborted
-      if (!signal?.aborted) {
+  const fetchUserData = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!user) {
         setLoading(false);
+        setDataLoaded(false);
+        return;
       }
-    }
-  }, [user, supabase]);
+
+      // Check if already aborted before starting
+      if (signal?.aborted) {
+        return;
+      }
+
+      try {
+        setError(null);
+        setLoading(true);
+        setDataLoaded(false);
+
+        // Check abort signal before making requests
+        if (signal?.aborted) {
+          return;
+        }
+
+        // Fetch both settings and profile data in parallel
+        const [settingsResponse, profileResponse] = await Promise.all([
+          supabase.from('user_settings').select('*').eq('id', user.id).single(),
+          supabase
+            .from('profiles')
+            .select(
+              'id, first_name, last_name, full_name, business_name, email, phone, bio, website, license_number, brokerage, city, state, avatar_url'
+            )
+            .eq('id', user.id)
+            .single(),
+        ]);
+
+        // Check abort signal after requests complete
+        if (signal?.aborted) {
+          return;
+        }
+
+        const { data: settingsData, error: settingsError } = settingsResponse;
+        const { data: profileData, error: profileError } = profileResponse;
+
+        // Handle settings errors (ignore not found)
+        if (settingsError && settingsError.code !== 'PGRST116') {
+          throw settingsError;
+        }
+
+        // Handle profile errors (ignore not found)
+        if (profileError && profileError.code !== 'PGRST116') {
+          throw profileError;
+        }
+
+        // If no settings exist, create default settings
+        if (!settingsData) {
+          // Check abort signal before creating new settings
+          if (signal?.aborted) {
+            return;
+          }
+
+          const { data: newSettings, error: createError } = await supabase
+            .from('user_settings')
+            .insert({
+              id: user.id,
+              ai_greeting:
+                'Hello! Thank you for calling. How can I assist you today?',
+              assistant_name: 'Ava',
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            throw createError;
+          }
+
+          // Final abort check before updating state
+          if (signal?.aborted) {
+            return;
+          }
+
+          setSettings(newSettings);
+        } else {
+          // Final abort check before updating state
+          if (signal?.aborted) {
+            return;
+          }
+
+          setSettings(settingsData);
+        }
+
+        // Final abort check before updating profile state
+        if (signal?.aborted) {
+          return;
+        }
+
+        setProfile(profileData);
+        setDataLoaded(true);
+      } catch (err: any) {
+        // Don't update error state if request was aborted
+        if (signal?.aborted) {
+          return;
+        }
+
+        console.error('Error fetching user data:', err);
+        setError(err.message);
+        setDataLoaded(false);
+        toast({
+          title: 'Error loading settings',
+          description: 'Failed to load your settings. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        // Only update loading state if not aborted
+        if (!signal?.aborted) {
+          setLoading(false);
+        }
+      }
+    },
+    [user, supabase]
+  );
 
   // Update AI Receptionist settings
-  const updateAIReceptionistSettings = async (newSettings: AIReceptionistSettings) => {
+  const updateAIReceptionistSettings = async (
+    newSettings: AIReceptionistSettings
+  ) => {
     if (!user || !settings) {
       throw new Error('User not authenticated or settings not loaded');
     }
@@ -217,7 +221,7 @@ export function useUserSettings() {
     try {
       // Prepare profile updates if name or business name changed
       const profileUpdates: Partial<UserProfile> = {};
-      
+
       if (newSettings.yourName !== (profile?.full_name || '')) {
         profileUpdates.full_name = newSettings.yourName;
         // Try to split full name into first and last name
@@ -252,10 +256,7 @@ export function useUserSettings() {
       // Only update profiles if there are changes
       if (Object.keys(profileUpdates).length > 0) {
         operations.push(
-          supabase
-            .from('profiles')
-            .update(profileUpdates)
-            .eq('id', user.id)
+          supabase.from('profiles').update(profileUpdates).eq('id', user.id)
         );
       }
 
@@ -270,25 +271,32 @@ export function useUserSettings() {
       }
 
       // Only update local state if all database operations succeeded
-      setSettings(prev => prev ? {
-        ...prev,
-        assistant_name: newSettings.aiAssistantName,
-        ai_greeting: newSettings.greetingScript,
-      } : null);
+      setSettings(prev =>
+        prev
+          ? {
+              ...prev,
+              assistant_name: newSettings.aiAssistantName,
+              ai_greeting: newSettings.greetingScript,
+            }
+          : null
+      );
 
       // Only update profile state if there were profile updates
       if (Object.keys(profileUpdates).length > 0) {
-        setProfile(prev => prev ? {
-          ...prev,
-          ...profileUpdates,
-        } : null);
+        setProfile(prev =>
+          prev
+            ? {
+                ...prev,
+                ...profileUpdates,
+              }
+            : null
+        );
       }
 
       toast({
         title: 'Settings saved!',
         description: 'Your AI Receptionist settings have been updated.',
       });
-
     } catch (err: any) {
       console.error('Error updating settings:', err);
       setError(err.message);
@@ -327,7 +335,9 @@ export function useUserSettings() {
 
       // Verify that the update operation returned data
       if (!updatedSettings) {
-        throw new Error('Settings update failed: No data returned from database');
+        throw new Error(
+          'Settings update failed: No data returned from database'
+        );
       }
 
       // Update local state with the actual returned data from the database
@@ -337,7 +347,6 @@ export function useUserSettings() {
         title: 'Settings updated!',
         description: 'Your notification preferences have been saved.',
       });
-
     } catch (err: any) {
       console.error('Error updating user settings:', err);
       setError(err.message);
@@ -370,16 +379,25 @@ export function useUserSettings() {
       // If email is changing, we need to handle Supabase Auth email verification
       if (isEmailChanging) {
         // First, trigger Supabase Auth email update (this will send verification emails)
-        const { data: authData, error: authError } = await updateUserEmail(newEmail);
+        const { data: authData, error: authError } =
+          await updateUserEmail(newEmail);
 
         if (authError) {
           // Handle specific auth errors
           if (authError.message?.includes('email_address_not_authorized')) {
-            throw new Error('This email address is not authorized. Please use a different email.');
-          } else if (authError.message?.includes('email_change_token_already_sent')) {
-            throw new Error('Email verification already sent. Please check your email and try again later.');
+            throw new Error(
+              'This email address is not authorized. Please use a different email.'
+            );
+          } else if (
+            authError.message?.includes('email_change_token_already_sent')
+          ) {
+            throw new Error(
+              'Email verification already sent. Please check your email and try again later.'
+            );
           } else if (authError.message?.includes('same_email')) {
-            throw new Error('The new email address is the same as your current email.');
+            throw new Error(
+              'The new email address is the same as your current email.'
+            );
           } else {
             throw new Error(`Email update failed: ${authError.message}`);
           }
@@ -388,7 +406,8 @@ export function useUserSettings() {
         // Show success message for email verification
         toast({
           title: 'Email Verification Required',
-          description: 'Please check both your current and new email addresses for verification links. Your email will be updated after verification.',
+          description:
+            'Please check both your current and new email addresses for verification links. Your email will be updated after verification.',
         });
 
         // Update profile data excluding email (email will be updated after verification)
@@ -396,7 +415,9 @@ export function useUserSettings() {
         const profileUpdates: Partial<UserProfile> = {
           first_name: profileDataWithoutEmail.firstName.trim() || null,
           last_name: profileDataWithoutEmail.lastName.trim() || null,
-          full_name: `${profileDataWithoutEmail.firstName.trim()} ${profileDataWithoutEmail.lastName.trim()}`.trim() || null,
+          full_name:
+            `${profileDataWithoutEmail.firstName.trim()} ${profileDataWithoutEmail.lastName.trim()}`.trim() ||
+            null,
           phone: profileDataWithoutEmail.phone.trim() || null,
           business_name: profileDataWithoutEmail.businessName.trim() || null,
           bio: profileDataWithoutEmail.bio.trim() || null,
@@ -423,13 +444,14 @@ export function useUserSettings() {
         if (updatedProfile) {
           setProfile(updatedProfile as UserProfile);
         }
-
       } else {
         // Email is not changing, proceed with normal profile update
         const profileUpdates: Partial<UserProfile> = {
           first_name: profileData.firstName.trim() || null,
           last_name: profileData.lastName.trim() || null,
-          full_name: `${profileData.firstName.trim()} ${profileData.lastName.trim()}`.trim() || null,
+          full_name:
+            `${profileData.firstName.trim()} ${profileData.lastName.trim()}`.trim() ||
+            null,
           email: profileData.email.trim(),
           phone: profileData.phone.trim() || null,
           business_name: profileData.businessName.trim() || null,
@@ -462,7 +484,9 @@ export function useUserSettings() {
 
         // Verify that the upsert operation returned data
         if (!updatedProfile) {
-          throw new Error('Profile update failed: No data returned from database');
+          throw new Error(
+            'Profile update failed: No data returned from database'
+          );
         }
 
         // Update local state with the actual returned data from the database
@@ -473,13 +497,13 @@ export function useUserSettings() {
           description: 'Your profile information has been saved.',
         });
       }
-
     } catch (err: any) {
       console.error('Error updating profile:', err);
       setError(err.message);
       toast({
         title: 'Error saving profile',
-        description: err.message || 'Failed to save your profile. Please try again.',
+        description:
+          err.message || 'Failed to save your profile. Please try again.',
         variant: 'destructive',
       });
       throw err;
@@ -540,7 +564,9 @@ export function useUserSettings() {
       aiAssistantName: settings?.assistant_name || 'Ava',
       yourName: profile?.full_name || '',
       businessName: profile?.business_name || '',
-      greetingScript: settings?.ai_greeting || 'Hello! Thank you for calling. How can I assist you today?',
+      greetingScript:
+        settings?.ai_greeting ||
+        'Hello! Thank you for calling. How can I assist you today?',
     };
   }, [dataLoaded, settings, profile]);
 
@@ -553,7 +579,7 @@ export function useUserSettings() {
     if (user) {
       const abortController = new AbortController();
       fetchUserData(abortController.signal);
-      
+
       // Return cleanup function to abort ongoing requests
       return () => {
         abortController.abort();
@@ -582,4 +608,4 @@ export function useUserSettings() {
     getProfileFormData,
     refetch,
   };
-} 
+}

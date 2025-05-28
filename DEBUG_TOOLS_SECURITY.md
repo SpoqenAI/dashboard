@@ -18,12 +18,14 @@ Debug tools are controlled by environment settings:
 ### 2. Authentication Requirement
 
 All debug tools require user authentication:
+
 - Users must be logged in to access any debug functionality
 - Unauthenticated users are redirected with an access denied message
 
 ### 3. Admin Authorization (Production)
 
 In production environments, debug tools require admin privileges:
+
 - User email must be in the approved admin list
 - Admin status is checked against the user's profile in the database
 
@@ -44,6 +46,7 @@ NEXT_PUBLIC_ADMIN_EMAILS=***
 ### Development Setup
 
 In development (`.env.local`):
+
 ```env
 # Debug tools are enabled by default in development
 # No additional configuration needed for basic access
@@ -54,6 +57,7 @@ NEXT_PUBLIC_ADMIN_EMAILS=your-dev-email@example.com
 ### Production Setup
 
 In production environment:
+
 ```env
 # Explicitly enable debug tools (if needed)
 NEXT_PUBLIC_ENABLE_DEBUG=true
@@ -65,11 +69,13 @@ NEXT_PUBLIC_ADMIN_EMAILS=admin@spoqen.com,lead-dev@spoqen.com
 ## Access Control Logic
 
 ### Development Environment
+
 1. ✅ Debug tools enabled by default
 2. ✅ Any authenticated user can access
 3. ⚠️ Warning displayed about development environment
 
 ### Production Environment
+
 1. ❌ Debug tools disabled by default
 2. ✅ Can be enabled with `NEXT_PUBLIC_ENABLE_DEBUG=true`
 3. ✅ Requires admin email in `NEXT_PUBLIC_ADMIN_EMAILS`
@@ -96,13 +102,14 @@ Users will see an access denied page in these cases:
 ### Audit Trail
 
 The system logs authorization attempts:
+
 ```javascript
 console.log('Debug tool access attempt:', {
   userId: user.id,
   email: user.email,
   environment: process.env.NODE_ENV,
   debugEnabled: isDebugEnabled(),
-  isAdmin: isAdmin
+  isAdmin: isAdmin,
 });
 ```
 
@@ -158,10 +165,12 @@ checkAdminStatus(userId: string): Promise<boolean>
 ### Common Issues
 
 1. **"Debug tools are disabled"**
+
    - Set `NEXT_PUBLIC_ENABLE_DEBUG=true` in production
    - Verify environment variables are properly deployed
 
 2. **"Admin access required"**
+
    - Add user email to `NEXT_PUBLIC_ADMIN_EMAILS`
    - Ensure email matches exactly (case-sensitive)
    - Verify user has a profile in the database
@@ -175,6 +184,7 @@ checkAdminStatus(userId: string): Promise<boolean>
 To test admin access configuration:
 
 1. **Check environment variables**:
+
    ```javascript
    console.log('Debug enabled:', process.env.NEXT_PUBLIC_ENABLE_DEBUG);
    console.log('Admin emails:', process.env.NEXT_PUBLIC_ADMIN_EMAILS);
@@ -216,4 +226,4 @@ When implementing role-based access:
 1. Add `role` column to `profiles` table
 2. Update `checkAdminStatus()` to check database roles
 3. Maintain email-based fallback for backward compatibility
-4. Migrate existing admin emails to database roles 
+4. Migrate existing admin emails to database roles

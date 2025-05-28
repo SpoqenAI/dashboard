@@ -36,7 +36,13 @@ import { Filter } from 'bad-words';
 import PasswordStrengthBar from 'react-password-strength-bar';
 
 // Type definition for form field names to ensure type safety
-type FormFieldName = 'firstName' | 'lastName' | 'email' | 'phone' | 'password' | 'confirmPassword';
+type FormFieldName =
+  | 'firstName'
+  | 'lastName'
+  | 'email'
+  | 'phone'
+  | 'password'
+  | 'confirmPassword';
 
 // Form data type based on the field names
 type FormData = Record<FormFieldName, string>;
@@ -52,7 +58,9 @@ export default function SignupPage() {
     password: '',
     confirmPassword: '',
   });
-  const [validationErrors, setValidationErrors] = useState<Record<FormFieldName, string>>({
+  const [validationErrors, setValidationErrors] = useState<
+    Record<FormFieldName, string>
+  >({
     firstName: '',
     lastName: '',
     email: '',
@@ -60,7 +68,9 @@ export default function SignupPage() {
     password: '',
     confirmPassword: '',
   });
-  const [touchedFields, setTouchedFields] = useState<Record<FormFieldName, boolean>>({
+  const [touchedFields, setTouchedFields] = useState<
+    Record<FormFieldName, boolean>
+  >({
     firstName: false,
     lastName: false,
     email: false,
@@ -68,7 +78,14 @@ export default function SignupPage() {
     password: false,
     confirmPassword: false,
   });
-  const initialFormData: FormData = { firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '' };
+  const initialFormData: FormData = {
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+  };
   const [score, setScore] = useState(0);
 
   // Profanity/content filter
@@ -79,7 +96,8 @@ export default function SignupPage() {
   const VALIDATION_PATTERNS = {
     // Updated to support Unicode letters including accented and international characters
     NAME_PATTERN: /^[\p{L}'](?:[\p{L}\s\-'.])*[\p{L}']$|^[\p{L}']$/u,
-    EMAIL_PATTERN: /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/,
+    EMAIL_PATTERN:
+      /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/,
   };
 
   // Email mask ref: allow local-part, @, domain, dot, TLD (simple version)
@@ -105,26 +123,34 @@ export default function SignupPage() {
       const limitedDigits = digits.slice(0, 15);
       if (limitedDigits.length === 0) return '+';
       if (limitedDigits.length <= 4) return `+${limitedDigits}`;
-      if (limitedDigits.length <= 7) return `+${limitedDigits.slice(0, limitedDigits.length - 3)} ${limitedDigits.slice(-3)}`;
-      if (limitedDigits.length <= 10) return `+${limitedDigits.slice(0, limitedDigits.length - 7)} ${limitedDigits.slice(-7, -4)} ${limitedDigits.slice(-4)}`;
+      if (limitedDigits.length <= 7)
+        return `+${limitedDigits.slice(0, limitedDigits.length - 3)} ${limitedDigits.slice(-3)}`;
+      if (limitedDigits.length <= 10)
+        return `+${limitedDigits.slice(0, limitedDigits.length - 7)} ${limitedDigits.slice(-7, -4)} ${limitedDigits.slice(-4)}`;
       return `+${limitedDigits.slice(0, limitedDigits.length - 10)} ${limitedDigits.slice(-10, -7)} ${limitedDigits.slice(-7, -4)} ${limitedDigits.slice(-4)}`;
     }
     const digits = cleaned;
     const limitedDigits = digits.slice(0, 10);
     if (limitedDigits.length === 0) return '';
     if (limitedDigits.length <= 3) return `(${limitedDigits}`;
-    if (limitedDigits.length <= 6) return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3)}`;
+    if (limitedDigits.length <= 6)
+      return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3)}`;
     return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3, 6)}-${limitedDigits.slice(6)}`;
   };
 
   // Validation logic
-  const validateContent = (field: FormFieldName, value: string, currentPassword?: string): string | null => {
+  const validateContent = (
+    field: FormFieldName,
+    value: string,
+    currentPassword?: string
+  ): string | null => {
     switch (field) {
       case 'firstName':
       case 'lastName': {
         if (!value) return 'This field is required';
         if (value.length > 50) return 'Please keep this under 50 characters';
-        if (filter.isProfane(value)) return 'Please use professional, appropriate language';
+        if (filter.isProfane(value))
+          return 'Please use professional, appropriate language';
         if (!VALIDATION_PATTERNS.NAME_PATTERN.test(value)) {
           return 'Please use only letters, spaces, and common punctuation';
         }
@@ -133,10 +159,14 @@ export default function SignupPage() {
       case 'email': {
         if (!value) return 'This field is required';
         if (value.length > 254) return 'Please use a shorter email address';
-        if (!VALIDATION_PATTERNS.EMAIL_PATTERN.test(value)) return 'Please check your email format (e.g., name@example.com)';
-        if (value.includes('..')) return 'Please remove consecutive dots from your email';
-        if (value.startsWith('.') || value.endsWith('.')) return 'Email addresses cannot start or end with a dot';
-        if (value.includes('@.') || value.includes('.@')) return 'Please check the format around the @ symbol';
+        if (!VALIDATION_PATTERNS.EMAIL_PATTERN.test(value))
+          return 'Please check your email format (e.g., name@example.com)';
+        if (value.includes('..'))
+          return 'Please remove consecutive dots from your email';
+        if (value.startsWith('.') || value.endsWith('.'))
+          return 'Email addresses cannot start or end with a dot';
+        if (value.includes('@.') || value.includes('.@'))
+          return 'Please check the format around the @ symbol';
         const parts = value.split('@');
         if (parts.length === 2) {
           const domain = parts[1];
@@ -151,24 +181,37 @@ export default function SignupPage() {
         const isInternational = value.startsWith('+');
         const digitsOnly = value.replace(/\D/g, '');
         if (isInternational) {
-          if (digitsOnly.length < 7) return 'Please enter at least 7 digits for international numbers';
-          if (digitsOnly.length > 15) return 'International numbers cannot exceed 15 digits';
+          if (digitsOnly.length < 7)
+            return 'Please enter at least 7 digits for international numbers';
+          if (digitsOnly.length > 15)
+            return 'International numbers cannot exceed 15 digits';
           if (digitsOnly.length >= 10) {
             const countryCodeLength = digitsOnly.length - 10;
             if (countryCodeLength > 4) return 'Please check your country code';
           }
-          if (digitsOnly.length < 8) return 'Please enter a complete international number';
+          if (digitsOnly.length < 8)
+            return 'Please enter a complete international number';
         } else {
           if (digitsOnly.length > 0 && digitsOnly.length < 3) return null;
-          if (digitsOnly.length > 0 && digitsOnly.length < 10) return 'Please enter a complete 10-digit phone number';
-          if (digitsOnly.length > 10) return 'US phone numbers should be exactly 10 digits';
+          if (digitsOnly.length > 0 && digitsOnly.length < 10)
+            return 'Please enter a complete 10-digit phone number';
+          if (digitsOnly.length > 10)
+            return 'US phone numbers should be exactly 10 digits';
           if (digitsOnly.length === 10) {
             const areaCode = digitsOnly.substring(0, 3);
             const exchange = digitsOnly.substring(3, 6);
-            if (areaCode.startsWith('0') || areaCode.startsWith('1')) return 'Please enter a valid area code';
-            if (exchange.startsWith('0') || exchange.startsWith('1')) return 'Please enter a valid exchange code';
-            if (areaCode === '911' || exchange === '911') return 'Please use a different phone number';
-            if (areaCode === '000' || exchange === '000' || (areaCode === '555' && exchange === '555')) return 'Please enter a valid phone number';
+            if (areaCode.startsWith('0') || areaCode.startsWith('1'))
+              return 'Please enter a valid area code';
+            if (exchange.startsWith('0') || exchange.startsWith('1'))
+              return 'Please enter a valid exchange code';
+            if (areaCode === '911' || exchange === '911')
+              return 'Please use a different phone number';
+            if (
+              areaCode === '000' ||
+              exchange === '000' ||
+              (areaCode === '555' && exchange === '555')
+            )
+              return 'Please enter a valid phone number';
           }
         }
         return null;
@@ -176,17 +219,23 @@ export default function SignupPage() {
       case 'password': {
         if (!value) return 'This field is required';
         if (value.length < 8) return 'Please use at least 8 characters';
-        if (value.length > 128) return 'Please keep password under 128 characters';
-        if (!/[A-Z]/.test(value)) return 'Please include at least one uppercase letter';
-        if (!/[a-z]/.test(value)) return 'Please include at least one lowercase letter';
+        if (value.length > 128)
+          return 'Please keep password under 128 characters';
+        if (!/[A-Z]/.test(value))
+          return 'Please include at least one uppercase letter';
+        if (!/[a-z]/.test(value))
+          return 'Please include at least one lowercase letter';
         if (!/[0-9]/.test(value)) return 'Please include at least one number';
-        if (!/[!@#$%^&*(),.?":{}|<>\[\]\\/\-_+=~`';]/.test(value)) return 'Please include at least one special character (!@#$%^&* etc.)';
+        if (!/[!@#$%^&*(),.?":{}|<>\[\]\\/\-_+=~`';]/.test(value))
+          return 'Please include at least one special character (!@#$%^&* etc.)';
         return null;
       }
       case 'confirmPassword': {
         if (!value) return 'This field is required';
-        const passwordToCompare = currentPassword !== undefined ? currentPassword : formData.password;
-        if (value !== passwordToCompare) return 'Please make sure both passwords match';
+        const passwordToCompare =
+          currentPassword !== undefined ? currentPassword : formData.password;
+        if (value !== passwordToCompare)
+          return 'Please make sure both passwords match';
         return null;
       }
       default:
@@ -197,16 +246,16 @@ export default function SignupPage() {
   // Handle field blur (when user leaves the field)
   const handleFieldBlur = (field: FormFieldName) => {
     setTouchedFields(prev => ({ ...prev, [field]: true }));
-    
+
     let valueToValidate = formData[field];
-    
+
     // Auto-trim name fields when user leaves the field
     if (field === 'firstName' || field === 'lastName') {
       const trimmedValue = valueToValidate.trim();
       setFormData(prev => ({ ...prev, [field]: trimmedValue }));
       valueToValidate = trimmedValue;
     }
-    
+
     const error = validateContent(field, valueToValidate);
     setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
   };
@@ -218,25 +267,41 @@ export default function SignupPage() {
       processedValue = formatPhoneNumber(value);
     }
     setFormData(prev => ({ ...prev, [field]: processedValue }));
-    
+
     // Only show validation errors for fields that have been touched (blurred)
     // Exception: show validation for confirmPassword immediately if password field has been touched
-    if (touchedFields[field] || (field === 'confirmPassword' && touchedFields.password)) {
+    if (
+      touchedFields[field] ||
+      (field === 'confirmPassword' && touchedFields.password)
+    ) {
       // For name fields, validate against the trimmed value but don't update the form data yet
-      const valueForValidation = (field === 'firstName' || field === 'lastName') ? processedValue.trim() : processedValue;
+      const valueForValidation =
+        field === 'firstName' || field === 'lastName'
+          ? processedValue.trim()
+          : processedValue;
       const error = validateContent(field, valueForValidation);
       setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
     }
-    
+
     // Re-validate confirmPassword when password changes and confirmPassword has been touched
     if (field === 'password' && touchedFields.confirmPassword) {
-      const confirmPasswordError = validateContent('confirmPassword', formData.confirmPassword, processedValue);
-      setValidationErrors(prev => ({ ...prev, confirmPassword: confirmPasswordError || '' }));
+      const confirmPasswordError = validateContent(
+        'confirmPassword',
+        formData.confirmPassword,
+        processedValue
+      );
+      setValidationErrors(prev => ({
+        ...prev,
+        confirmPassword: confirmPasswordError || '',
+      }));
     }
   };
 
-  const isFormChanged = JSON.stringify(formData) !== JSON.stringify(initialFormData);
-  const hasValidationErrors = Object.values(validationErrors).some(error => error);
+  const isFormChanged =
+    JSON.stringify(formData) !== JSON.stringify(initialFormData);
+  const hasValidationErrors = Object.values(validationErrors).some(
+    error => error
+  );
 
   // Cancel logic
   const handleCancel = () => {
@@ -292,9 +357,16 @@ export default function SignupPage() {
   // Form submit handler
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     // Mark all fields as touched and validate them
-    const allFields: FormFieldName[] = ['firstName', 'lastName', 'email', 'phone', 'password', 'confirmPassword'];
+    const allFields: FormFieldName[] = [
+      'firstName',
+      'lastName',
+      'email',
+      'phone',
+      'password',
+      'confirmPassword',
+    ];
     const newTouchedFields: Record<FormFieldName, boolean> = {
       firstName: false,
       lastName: false,
@@ -311,27 +383,30 @@ export default function SignupPage() {
       password: '',
       confirmPassword: '',
     };
-    
+
     allFields.forEach(field => {
       newTouchedFields[field] = true;
       let valueToValidate = formData[field];
-      
+
       // Use trimmed values for name field validation
       if (field === 'firstName' || field === 'lastName') {
         valueToValidate = valueToValidate.trim();
       }
-      
+
       const error = validateContent(field, valueToValidate);
       newValidationErrors[field] = error || '';
     });
-    
+
     setTouchedFields(newTouchedFields);
     setValidationErrors(newValidationErrors);
-    
+
     // Check if there are any validation errors
     const hasErrors = Object.values(newValidationErrors).some(error => error);
-    
-    if (!hasErrors && JSON.stringify(formData) !== JSON.stringify(initialFormData)) {
+
+    if (
+      !hasErrors &&
+      JSON.stringify(formData) !== JSON.stringify(initialFormData)
+    ) {
       await doSignup();
     }
   };
@@ -348,177 +423,207 @@ export default function SignupPage() {
     <ProtectedRoute requireAuth={false}>
       <div className="flex min-h-screen flex-col">
         <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2 text-xl font-bold">
-            <PhoneCall className="h-5 w-5 text-primary" />
-            <Link href="/">Spoqen</Link>
+          <div className="container flex h-16 items-center justify-between">
+            <div className="flex items-center gap-2 text-xl font-bold">
+              <PhoneCall className="h-5 w-5 text-primary" />
+              <Link href="/">Spoqen</Link>
+            </div>
+            <nav className="flex items-center gap-4">
+              <Link href="/login" className="text-sm font-medium">
+                Login
+              </Link>
+            </nav>
           </div>
-          <nav className="flex items-center gap-4">
-            <Link href="/login" className="text-sm font-medium">
-              Login
-            </Link>
-          </nav>
-        </div>
-      </header>
-      <main className="flex flex-1 items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <form onSubmit={handleSubmit}>
-            <CardHeader>
-              <CardTitle>Create an account</CardTitle>
-              <CardDescription>
-                Start your 14-day free trial. No credit card required.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col gap-4 sm:flex-row sm:gap-2">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
+        </header>
+        <main className="flex flex-1 items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <form onSubmit={handleSubmit}>
+              <CardHeader>
+                <CardTitle>Create an account</CardTitle>
+                <CardDescription>
+                  Start your 14-day free trial. No credit card required.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:gap-2">
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      placeholder="Enter your first name"
+                      value={formData.firstName}
+                      onChange={e =>
+                        handleInputChange('firstName', e.target.value)
+                      }
+                      onBlur={() => handleFieldBlur('firstName')}
+                      required
+                      aria-invalid={!!validationErrors.firstName}
+                      maxLength={50}
+                      inputMode="text"
+                    />
+                    {validationErrors.firstName && (
+                      <p className="text-sm text-muted-foreground">
+                        {validationErrors.firstName}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      placeholder="Enter your last name"
+                      value={formData.lastName}
+                      onChange={e =>
+                        handleInputChange('lastName', e.target.value)
+                      }
+                      onBlur={() => handleFieldBlur('lastName')}
+                      required
+                      aria-invalid={!!validationErrors.lastName}
+                      maxLength={50}
+                      inputMode="text"
+                    />
+                    {validationErrors.lastName && (
+                      <p className="text-sm text-muted-foreground">
+                        {validationErrors.lastName}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    id="firstName"
-                    placeholder="Enter your first name"
-                    value={formData.firstName}
-                    onChange={e => handleInputChange('firstName', e.target.value)}
-                    onBlur={() => handleFieldBlur('firstName')}
+                    id="email"
+                    type="text"
+                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={e => handleInputChange('email', e.target.value)}
+                    onBlur={() => handleFieldBlur('email')}
                     required
-                    aria-invalid={!!validationErrors.firstName}
-                    maxLength={50}
-                    inputMode="text"
+                    aria-invalid={!!validationErrors.email}
+                    maxLength={254}
+                    inputMode="email"
+                    autoComplete="email"
+                    ref={emailMaskRef}
                   />
-                  {validationErrors.firstName && (
-                    <p className="text-muted-foreground text-sm">{validationErrors.firstName}</p>
+                  {validationErrors.email && (
+                    <p className="text-sm text-muted-foreground">
+                      {validationErrors.email}
+                    </p>
                   )}
                 </div>
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
                   <Input
-                    id="lastName"
-                    placeholder="Enter your last name"
-                    value={formData.lastName}
-                    onChange={e => handleInputChange('lastName', e.target.value)}
-                    onBlur={() => handleFieldBlur('lastName')}
-                    required
-                    aria-invalid={!!validationErrors.lastName}
-                    maxLength={50}
-                    inputMode="text"
+                    id="phone"
+                    type="tel"
+                    placeholder="(555) 123-4567 or +1 555 123 4567"
+                    value={formData.phone}
+                    onChange={e => handleInputChange('phone', e.target.value)}
+                    onBlur={() => handleFieldBlur('phone')}
+                    aria-invalid={!!validationErrors.phone}
+                    maxLength={20}
+                    inputMode="tel"
+                    autoComplete="tel"
                   />
-                  {validationErrors.lastName && (
-                    <p className="text-muted-foreground text-sm">{validationErrors.lastName}</p>
+                  {validationErrors.phone && (
+                    <p className="text-sm text-muted-foreground">
+                      {validationErrors.phone}
+                    </p>
                   )}
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="text"
-                  placeholder="Enter your email"
-                  value={formData.email}
-                  onChange={e => handleInputChange('email', e.target.value)}
-                  onBlur={() => handleFieldBlur('email')}
-                  required
-                  aria-invalid={!!validationErrors.email}
-                  maxLength={254}
-                  inputMode="email"
-                  autoComplete="email"
-                  ref={emailMaskRef}
-                />
-                {validationErrors.email && (
-                  <p className="text-muted-foreground text-sm">{validationErrors.email}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="(555) 123-4567 or +1 555 123 4567"
-                  value={formData.phone}
-                  onChange={e => handleInputChange('phone', e.target.value)}
-                  onBlur={() => handleFieldBlur('phone')}
-                  aria-invalid={!!validationErrors.phone}
-                  maxLength={20}
-                  inputMode="tel"
-                  autoComplete="tel"
-                />
-                {validationErrors.phone && (
-                  <p className="text-muted-foreground text-sm">{validationErrors.phone}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Create a password"
-                  value={formData.password}
-                  onChange={e => handleInputChange('password', e.target.value)}
-                  onBlur={() => handleFieldBlur('password')}
-                  required
-                  aria-invalid={!!validationErrors.password}
-                  maxLength={128}
-                />
-                <PasswordStrengthBar
-                  password={formData.password}
-                  minLength={8}
-                  scoreWords={['Too weak', 'Weak', 'Okay', 'Strong', 'Very strong']}
-                  onChangeScore={setScore}
-                />
-                {validationErrors.password && (
-                  <p className="text-muted-foreground text-sm">{validationErrors.password}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={e => handleInputChange('confirmPassword', e.target.value)}
-                  onBlur={() => handleFieldBlur('confirmPassword')}
-                  required
-                  aria-invalid={!!validationErrors.confirmPassword}
-                  maxLength={128}
-                />
-                {validationErrors.confirmPassword && (
-                  <p className="text-muted-foreground text-sm">{validationErrors.confirmPassword}</p>
-                )}
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-4">
-              <div className="w-full">
-                <Button
-                  className="w-full"
-                  type="submit"
-                  disabled={
-                    isLoading ||
-                    !areRequiredFieldsFilled ||
-                    Object.values(validationErrors).some(error => error) ||
-                    JSON.stringify(formData) === JSON.stringify(initialFormData) ||
-                    formData.password.length < 8 ||
-                    score < 2
-                  }
-                >
-                  {isLoading ? 'Creating Account...' : 'Create Account'}
-                </Button>
-              </div>
-              <SocialLogin mode="signup" />
-              <div className="text-center text-sm text-muted-foreground">
-                By creating an account, you agree to our{' '}
-                <Link href="/terms" className="underline underline-offset-4">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link href="/privacy" className="underline underline-offset-4">
-                  Privacy Policy
-                </Link>
-                .
-              </div>
-            </CardFooter>
-          </form>
-        </Card>
-      </main>
-    </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Create a password"
+                    value={formData.password}
+                    onChange={e =>
+                      handleInputChange('password', e.target.value)
+                    }
+                    onBlur={() => handleFieldBlur('password')}
+                    required
+                    aria-invalid={!!validationErrors.password}
+                    maxLength={128}
+                  />
+                  <PasswordStrengthBar
+                    password={formData.password}
+                    minLength={8}
+                    scoreWords={[
+                      'Too weak',
+                      'Weak',
+                      'Okay',
+                      'Strong',
+                      'Very strong',
+                    ]}
+                    onChangeScore={setScore}
+                  />
+                  {validationErrors.password && (
+                    <p className="text-sm text-muted-foreground">
+                      {validationErrors.password}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
+                    onChange={e =>
+                      handleInputChange('confirmPassword', e.target.value)
+                    }
+                    onBlur={() => handleFieldBlur('confirmPassword')}
+                    required
+                    aria-invalid={!!validationErrors.confirmPassword}
+                    maxLength={128}
+                  />
+                  {validationErrors.confirmPassword && (
+                    <p className="text-sm text-muted-foreground">
+                      {validationErrors.confirmPassword}
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col space-y-4">
+                <div className="w-full">
+                  <Button
+                    className="w-full"
+                    type="submit"
+                    disabled={
+                      isLoading ||
+                      !areRequiredFieldsFilled ||
+                      Object.values(validationErrors).some(error => error) ||
+                      JSON.stringify(formData) ===
+                        JSON.stringify(initialFormData) ||
+                      formData.password.length < 8 ||
+                      score < 2
+                    }
+                  >
+                    {isLoading ? 'Creating Account...' : 'Create Account'}
+                  </Button>
+                </div>
+                <SocialLogin mode="signup" />
+                <div className="text-center text-sm text-muted-foreground">
+                  By creating an account, you agree to our{' '}
+                  <Link href="/terms" className="underline underline-offset-4">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link
+                    href="/privacy"
+                    className="underline underline-offset-4"
+                  >
+                    Privacy Policy
+                  </Link>
+                  .
+                </div>
+              </CardFooter>
+            </form>
+          </Card>
+        </main>
+      </div>
     </ProtectedRoute>
   );
 }

@@ -34,6 +34,7 @@ We've implemented a **robust application-level solution** that ensures every use
 Created a comprehensive profile management system with the following functions:
 
 #### `createUserProfile(userData: CreateProfileData)`
+
 - Replicates the exact behavior of the `handle_new_user()` database function
 - Creates records in `profiles`, `user_settings`, and `user_subscriptions` tables
 - Includes comprehensive validation and error handling
@@ -41,17 +42,20 @@ Created a comprehensive profile management system with the following functions:
 - **Enhanced with detailed error logging for RLS issues**
 
 #### `createProfileFromAuthUser(user: User)`
+
 - Extracts user data from Supabase Auth user object
 - Handles both OAuth and email/password signup metadata
 - Automatically maps user metadata to profile fields
 - **Improved metadata extraction with fallbacks for different OAuth providers**
 
 #### `ensureUserProfile(user: User)`
+
 - Checks if profile exists and creates it if missing
 - Perfect for handling edge cases and OAuth users
 - Non-destructive - won't overwrite existing profiles
 
 #### `checkProfileExists(userId: string)`
+
 - Utility function to verify profile existence
 - Used for conditional profile creation
 
@@ -60,7 +64,13 @@ Created a comprehensive profile management system with the following functions:
 Updated the `signUp` function to handle profile creation with proper session timing:
 
 ```typescript
-export async function signUp(email: string, password: string, firstName?: string, lastName?: string, phone?: string) {
+export async function signUp(
+  email: string,
+  password: string,
+  firstName?: string,
+  lastName?: string,
+  phone?: string
+) {
   // ... existing signup logic ...
 
   // Since email confirmations are disabled, users get immediate sessions
@@ -71,11 +81,12 @@ export async function signUp(email: string, password: string, firstName?: string
         userId: data.user.id,
         email: data.user.email,
         hasSession: !!data.session,
-        sessionExpiry: data.session.expires_at
+        sessionExpiry: data.session.expires_at,
       });
 
       // Create display name from firstName and lastName, handling undefined/empty values
-      const displayName = [firstName, lastName].filter(Boolean).join(' ') || undefined;
+      const displayName =
+        [firstName, lastName].filter(Boolean).join(' ') || undefined;
 
       await createUserProfile({
         id: data.user.id,
@@ -85,20 +96,25 @@ export async function signUp(email: string, password: string, firstName?: string
         fullName: displayName,
         phone,
       });
-      console.log('Signup: Profile created successfully for user:', data.user.id);
+      console.log(
+        'Signup: Profile created successfully for user:',
+        data.user.id
+      );
     } catch (profileError: any) {
       console.error('Signup: Failed to create user profile:', {
         userId: data.user.id,
         error: profileError.message,
         errorCode: profileError.code,
-        stack: profileError.stack
+        stack: profileError.stack,
       });
-      
+
       // Don't fail the signup process, profile will be created in auth callback
       console.log('Signup: Profile creation will be retried in auth callback');
     }
   } else if (data.user && !data.session) {
-    console.log('Signup: User created but no session - profile will be created after email confirmation');
+    console.log(
+      'Signup: User created but no session - profile will be created after email confirmation'
+    );
   }
 
   return { data, error };
@@ -117,16 +133,19 @@ if (data.user) {
       userId: data.user.id,
       email: data.user.email,
       hasSession: !!data.session,
-      userMetadata: data.user.user_metadata
+      userMetadata: data.user.user_metadata,
     });
-    
+
     await ensureUserProfile(data.user);
-    console.log('Auth callback: Profile ensured successfully for user:', data.user.id);
+    console.log(
+      'Auth callback: Profile ensured successfully for user:',
+      data.user.id
+    );
   } catch (profileError: any) {
     console.error('Auth callback: Failed to ensure user profile:', {
       userId: data.user.id,
       error: profileError.message,
-      stack: profileError.stack
+      stack: profileError.stack,
     });
     // Don't fail the auth flow, but log the error for monitoring
   }
@@ -145,12 +164,14 @@ Created a comprehensive debug page to troubleshoot profile creation issues:
 ## Key Features
 
 ### ✅ Comprehensive Coverage
+
 - **Email/Password Signup**: Profiles created immediately after successful auth (if session exists)
 - **OAuth Signup**: Profiles created during auth callback processing
 - **Edge Cases**: Missing profiles detected and created automatically
 - **RLS Timing Issues**: Handles session timing problems gracefully
 
 ### ✅ Robust Error Handling
+
 - Validation for all input data (email format, phone numbers, URLs)
 - Graceful handling of duplicate records
 - **Detailed RLS error logging and debugging**
@@ -158,11 +179,13 @@ Created a comprehensive debug page to troubleshoot profile creation issues:
 - Comprehensive logging for monitoring and debugging
 
 ### ✅ Data Integrity
+
 - Replicates exact behavior of the original `handle_new_user()` function
 - Creates records in all three tables: `profiles`, `user_settings`, `user_subscriptions`
 - Maintains referential integrity and proper defaults
 
 ### ✅ Production Ready
+
 - Handles race conditions and concurrent requests
 - Includes proper TypeScript types
 - Comprehensive error messages for debugging
@@ -209,10 +232,12 @@ Created a comprehensive debug page to troubleshoot profile creation issues:
 ### Common RLS Error Messages
 
 1. **"new row violates row-level security policy for table 'profiles'"**
+
    - **Cause**: User session not properly established
    - **Solution**: Profile creation will retry in auth callback with proper session
 
 2. **"Invalid Refresh Token: Refresh Token Not Found"**
+
    - **Cause**: Session management issue or expired tokens
    - **Solution**: User needs to log in again
 
@@ -223,13 +248,18 @@ Created a comprehensive debug page to troubleshoot profile creation issues:
 ### Debug Steps
 
 1. **Check User Session**:
+
    ```typescript
-   const { data: { user }, error } = await supabase.auth.getUser();
+   const {
+     data: { user },
+     error,
+   } = await supabase.auth.getUser();
    console.log('Current user:', user);
    console.log('Session error:', error);
    ```
 
 2. **Test RLS Policies**:
+
    - Use the `/debug-profile` page
    - Check if direct inserts work with current session
    - Review error details for specific policy violations
@@ -247,7 +277,10 @@ The solution includes comprehensive logging:
 ```typescript
 // Success logs
 console.log('Signup: Profile created successfully for user:', data.user.id);
-console.log('Auth callback: Profile ensured successfully for user:', data.user.id);
+console.log(
+  'Auth callback: Profile ensured successfully for user:',
+  data.user.id
+);
 
 // Warning logs
 console.warn('Profile already exists for user', userData.id);
@@ -257,7 +290,7 @@ console.error('Signup: Failed to create user profile:', {
   userId: data.user.id,
   error: profileError.message,
   errorCode: profileError.code,
-  stack: profileError.stack
+  stack: profileError.stack,
 });
 ```
 
@@ -271,7 +304,7 @@ LEFT JOIN public.profiles p ON u.id = p.id
 WHERE p.id IS NULL;
 
 -- Check profile creation success rate
-SELECT 
+SELECT
   COUNT(u.id) as total_users,
   COUNT(p.id) as users_with_profiles,
   ROUND(COUNT(p.id)::numeric / COUNT(u.id) * 100, 2) as success_rate
@@ -279,12 +312,12 @@ FROM auth.users u
 LEFT JOIN public.profiles p ON u.id = p.id;
 
 -- Check recent signups and profile creation
-SELECT 
+SELECT
   u.id,
   u.email,
   u.created_at as user_created,
   p.created_at as profile_created,
-  CASE 
+  CASE
     WHEN p.id IS NULL THEN 'Missing Profile'
     WHEN p.created_at > u.created_at + INTERVAL '5 minutes' THEN 'Delayed Creation'
     ELSE 'Normal'
@@ -298,29 +331,34 @@ ORDER BY u.created_at DESC;
 ## Advantages Over Database Triggers
 
 ### 1. **Platform Independence**
+
 - Works on any Supabase plan (including free tier)
 - No dependency on database-level permissions
 - Portable to other platforms if needed
 
 ### 2. **Better Error Handling**
+
 - Application-level error handling and logging
 - Can implement retry mechanisms
 - Non-blocking failures (auth continues even if profile creation fails)
 - **Detailed RLS error debugging**
 
 ### 3. **More Control**
+
 - Can customize behavior based on signup method
 - Easy to add conditional logic
 - Can integrate with external services
 - **Session timing awareness**
 
 ### 4. **Easier Testing**
+
 - Can unit test profile creation logic
 - Can mock dependencies for testing
 - Easier to debug and troubleshoot
 - **Built-in debug tools**
 
 ### 5. **Monitoring and Observability**
+
 - Application-level logging and metrics
 - Can integrate with monitoring services
 - Better visibility into failures and success rates
@@ -331,6 +369,7 @@ ORDER BY u.created_at DESC;
 If you previously had any trigger-based setup:
 
 1. **Remove the commented trigger** from `supabase.sql`:
+
    ```sql
    -- Remove or keep commented:
    -- CREATE TRIGGER on_auth_user_created
@@ -348,18 +387,21 @@ If you previously had any trigger-based setup:
 ### Common Issues
 
 1. **Profile not created for new user**
+
    - Check console logs for error messages
    - Use `/debug-profile` to test profile creation
    - Verify user has proper permissions on tables
    - Check if RLS policies allow insertion
 
 2. **OAuth users missing profiles**
+
    - Verify auth callback is processing correctly
    - Check that `ensureUserProfile` is being called
    - Review OAuth provider metadata mapping
    - Use debug tool to test OAuth user profile creation
 
 3. **RLS Policy Violations**
+
    - **Most common issue**: Session timing problems
    - Check if user has active session during profile creation
    - Verify `auth.uid()` returns correct user ID
@@ -377,18 +419,18 @@ If you previously had any trigger-based setup:
 SELECT proname FROM pg_proc WHERE proname = 'handle_new_user';
 
 -- Check table permissions
-SELECT grantee, privilege_type 
-FROM information_schema.role_table_grants 
+SELECT grantee, privilege_type
+FROM information_schema.role_table_grants
 WHERE table_name = 'profiles';
 
 -- Check RLS policies
-SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual 
-FROM pg_policies 
+SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual
+FROM pg_policies
 WHERE tablename = 'profiles';
 
 -- Check recent profile creations
-SELECT id, email, created_at 
-FROM public.profiles 
+SELECT id, email, created_at
+FROM public.profiles
 WHERE created_at > NOW() - INTERVAL '1 hour'
 ORDER BY created_at DESC;
 ```
@@ -405,4 +447,4 @@ This solution provides a **robust, production-ready alternative** to database tr
 - ✅ **Resolves RLS policy timing issues**
 - ✅ **Includes comprehensive debugging tools**
 
-The application-level approach is actually **superior to database triggers** for this use case, providing more control, better error handling, easier maintenance, and **real-time debugging capabilities**. 
+The application-level approach is actually **superior to database triggers** for this use case, providing more control, better error handling, easier maintenance, and **real-time debugging capabilities**.

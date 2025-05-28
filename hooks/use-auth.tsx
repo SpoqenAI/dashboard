@@ -22,7 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-  
+
   // Create a stable Supabase client reference
   const supabase = useMemo(() => getSupabaseClient(), []);
 
@@ -30,14 +30,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
         if (error) {
           logger.auth.error('Error getting session', error);
         } else {
           setSession(session);
           setUser(session?.user ?? null);
-          logger.auth.debug('Initial session retrieved', { hasSession: !!session });
+          logger.auth.debug('Initial session retrieved', {
+            hasSession: !!session,
+          });
         }
       } catch (error) {
         logger.auth.error('Error in getInitialSession', error as Error);
@@ -49,10 +54,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getInitialSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
       async (event: string, session: Session | null) => {
         logger.auth.event(event, session);
-        
+
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -102,7 +109,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshSession = async () => {
     try {
-      const { data: { session }, error } = await supabase.auth.refreshSession();
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.refreshSession();
       if (error) {
         logger.auth.error('Error refreshing session', error);
         throw error;
@@ -124,11 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshSession,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
@@ -137,4 +143,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-} 
+}

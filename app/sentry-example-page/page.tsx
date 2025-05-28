@@ -54,10 +54,7 @@ export default function Page() {
 
         <p className="description">
           Click the button below, and view the sample error on the Sentry{' '}
-          <a
-            target="_blank"
-            href={process.env.NEXT_PUBLIC_SENTRY_ISSUES_URL}
-          >
+          <a target="_blank" href={process.env.NEXT_PUBLIC_SENTRY_ISSUES_URL}>
             Issues Page
           </a>
           . For more details about setting up Sentry,{' '}
@@ -93,12 +90,12 @@ export default function Page() {
               // Handle errors from Sentry span creation or fetch operation
               // This prevents unhandled promise rejections and ensures the component remains stable
               console.error('Error in Sentry example:', error);
-              
+
               // If the error is our intentional SentryExampleFrontendError, still mark as sent
               if (error instanceof SentryExampleFrontendError) {
                 setHasSentError(true);
               }
-              
+
               // For other errors, we could optionally show an error state or just log
               // The error will still be captured by Sentry if it's properly configured
             }

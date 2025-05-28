@@ -95,18 +95,18 @@ body {
 
 /* Custom styles for Geoapify Autocomplete to match our form design */
 .address-autocomplete-wrapper .geoapify-autocomplete-input {
-  @apply w-full rounded-md border bg-background p-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black;
+  @apply w-full rounded-md border bg-background p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black;
   font-family: inherit;
   font-size: 14px;
 }
 
 .address-autocomplete-wrapper .geoapify-autocomplete-items {
-  @apply border border-gray-200 rounded-md bg-white shadow-lg mt-1;
+  @apply mt-1 rounded-md border border-gray-200 bg-white shadow-lg;
   z-index: 1000;
 }
 
 .address-autocomplete-wrapper .geoapify-autocomplete-item {
-  @apply p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0;
+  @apply cursor-pointer border-b border-gray-100 p-2 last:border-b-0 hover:bg-gray-50;
   font-size: 14px;
 }
 

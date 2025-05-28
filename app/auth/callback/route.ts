@@ -58,22 +58,29 @@ export async function GET(request: NextRequest) {
 
     if (exchangeError) {
       logger.error('AUTH', 'Error exchanging code for session', exchangeError, {
-        errorMessage: exchangeError.message || 'Unknown error'
+        errorMessage: exchangeError.message || 'Unknown error',
       });
-      
+
       // Add more specific error handling for common issues
       let errorMessage = 'Authentication failed. Please try again.';
-      
+
       if (exchangeError.message?.includes('expired')) {
-        errorMessage = 'The verification link has expired. Please request a new verification email.';
+        errorMessage =
+          'The verification link has expired. Please request a new verification email.';
       } else if (exchangeError.message?.includes('invalid')) {
-        errorMessage = 'The verification link is invalid. Please request a new verification email.';
+        errorMessage =
+          'The verification link is invalid. Please request a new verification email.';
       } else if (exchangeError.message?.includes('already_used')) {
-        errorMessage = 'This verification link has already been used. Please try logging in directly.';
-      } else if (exchangeError.message?.includes('code challenge') || exchangeError.message?.includes('code verifier')) {
-        errorMessage = 'The verification link is not compatible with this browser session. Please try logging in directly or request a new verification email.';
+        errorMessage =
+          'This verification link has already been used. Please try logging in directly.';
+      } else if (
+        exchangeError.message?.includes('code challenge') ||
+        exchangeError.message?.includes('code verifier')
+      ) {
+        errorMessage =
+          'The verification link is not compatible with this browser session. Please try logging in directly or request a new verification email.';
       }
-      
+
       return NextResponse.redirect(
         new URL(
           `/login?error=exchange_failed&message=${encodeURIComponent(errorMessage)}`,
@@ -99,7 +106,7 @@ export async function GET(request: NextRequest) {
       : 'unknown';
     logger.info('AUTH', 'Authentication successful', {
       userId: maskedUserId,
-      type
+      type,
     });
 
     // Ensure user profile exists (especially important for OAuth users)
@@ -109,18 +116,27 @@ export async function GET(request: NextRequest) {
           userId: logger.maskUserId(data.user.id),
           email: logger.maskEmail(data.user.email),
           hasSession: !!data.session,
-          hasUserMetadata: !!data.user.user_metadata
+          hasUserMetadata: !!data.user.user_metadata,
         });
-        
+
         await ensureUserProfile(data.user);
-        logger.info('AUTH', 'Auth callback: Profile ensured successfully for user', {
-          userId: logger.maskUserId(data.user.id)
-        });
+        logger.info(
+          'AUTH',
+          'Auth callback: Profile ensured successfully for user',
+          {
+            userId: logger.maskUserId(data.user.id),
+          }
+        );
       } catch (profileError: any) {
-        logger.error('AUTH', 'Auth callback: Failed to ensure user profile', profileError, {
-          userId: logger.maskUserId(data.user.id),
-          errorMessage: profileError.message
-        });
+        logger.error(
+          'AUTH',
+          'Auth callback: Failed to ensure user profile',
+          profileError,
+          {
+            userId: logger.maskUserId(data.user.id),
+            errorMessage: profileError.message,
+          }
+        );
         // Don't fail the auth flow, but log the error for monitoring
       }
     }
@@ -135,7 +151,7 @@ export async function GET(request: NextRequest) {
     } else if (type === 'email_change') {
       // Email change verification flow
       const user = data.user;
-      
+
       if (user && user.email) {
         try {
           // Update the profile table with the new verified email
@@ -145,52 +161,69 @@ export async function GET(request: NextRequest) {
             .eq('id', user.id);
 
           if (profileUpdateError) {
-            logger.error('AUTH', 'Failed to update profile email after verification', profileUpdateError, {
-              userId: logger.maskUserId(user.id),
-              newEmail: logger.maskEmail(user.email)
-            });
+            logger.error(
+              'AUTH',
+              'Failed to update profile email after verification',
+              profileUpdateError,
+              {
+                userId: logger.maskUserId(user.id),
+                newEmail: logger.maskEmail(user.email),
+              }
+            );
           } else {
-            logger.info('AUTH', 'Profile email updated successfully after verification', {
-              userId: logger.maskUserId(user.id),
-              newEmail: logger.maskEmail(user.email)
-            });
+            logger.info(
+              'AUTH',
+              'Profile email updated successfully after verification',
+              {
+                userId: logger.maskUserId(user.id),
+                newEmail: logger.maskEmail(user.email),
+              }
+            );
           }
         } catch (error: any) {
-          logger.error('AUTH', 'Error updating profile email after verification', error, {
-            userId: logger.maskUserId(user.id),
-            errorMessage: error.message
-          });
+          logger.error(
+            'AUTH',
+            'Error updating profile email after verification',
+            error,
+            {
+              userId: logger.maskUserId(user.id),
+              errorMessage: error.message,
+            }
+          );
         }
       }
-      
+
       // Redirect to profile page with success message
-      return NextResponse.redirect(new URL('/profile?email_updated=true', request.url));
+      return NextResponse.redirect(
+        new URL('/profile?email_updated=true', request.url)
+      );
     } else {
       // OAuth or email verification flow
       // Check if this is email verification (user exists but was just confirming email)
       const user = data.user;
-      
+
       if (user) {
         // Check if user just confirmed their email (email_confirmed_at is recent)
         const emailConfirmedAt = user.email_confirmed_at;
         const createdAt = user.created_at;
-        
+
         if (emailConfirmedAt && createdAt) {
           const emailConfirmedTime = new Date(emailConfirmedAt).getTime();
           const createdTime = new Date(createdAt).getTime();
           const now = Date.now();
-          
+
           // If email was confirmed recently (within 10 minutes) and user was created recently (within 1 hour)
           // this is likely an email verification flow
-          const isRecentEmailConfirmation = (now - emailConfirmedTime) < 10 * 60 * 1000; // 10 minutes
-          const isRecentSignup = (now - createdTime) < 60 * 60 * 1000; // 1 hour
-          
+          const isRecentEmailConfirmation =
+            now - emailConfirmedTime < 10 * 60 * 1000; // 10 minutes
+          const isRecentSignup = now - createdTime < 60 * 60 * 1000; // 1 hour
+
           if (isRecentEmailConfirmation && isRecentSignup) {
             // This is email verification for a new user - redirect to onboarding
             return NextResponse.redirect(new URL('/onboarding', request.url));
           }
         }
-        
+
         // Check if this is a new user (first time signing in via OAuth)
         const isNewUser =
           user.created_at &&

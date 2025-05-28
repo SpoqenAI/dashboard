@@ -5,6 +5,7 @@ This document outlines the authentication state management implementation for th
 ## Overview
 
 The application now has a comprehensive authentication system that:
+
 - Manages user sessions and authentication state globally
 - Protects routes that require authentication
 - Redirects unauthenticated users to login
@@ -16,12 +17,14 @@ The application now has a comprehensive authentication system that:
 ### 1. AuthProvider (`hooks/use-auth.tsx`)
 
 The main authentication context provider that:
+
 - Manages user session state
 - Listens for authentication changes
 - Provides auth utilities (signOut, refreshSession)
 - Handles automatic redirects on sign out
 
 **Key Features:**
+
 - Real-time session monitoring
 - Automatic token refresh
 - Error handling and logging
@@ -32,11 +35,13 @@ The main authentication context provider that:
 A wrapper component that controls access to pages based on authentication status:
 
 **Props:**
+
 - `requireAuth` (boolean, default: true) - Whether authentication is required
 - `redirectTo` (string, default: '/login') - Where to redirect unauthenticated users
 - `children` - The content to render if auth requirements are met
 
 **Usage:**
+
 ```tsx
 // Protect a page that requires authentication
 <ProtectedRoute>
@@ -52,6 +57,7 @@ A wrapper component that controls access to pages based on authentication status
 ### 3. UserNav (`components/user-nav.tsx`)
 
 Updated user navigation component that:
+
 - Displays actual user information from auth context
 - Shows user avatar with fallback initials
 - Provides sign-out functionality
@@ -62,11 +68,13 @@ Updated user navigation component that:
 The following pages are now protected and require authentication:
 
 ### Dashboard (`/dashboard`)
+
 - Main application dashboard
 - Redirects to `/login` if not authenticated
 - Wrapped with `<ProtectedRoute>`
 
 ### Settings (`/settings`)
+
 - User settings and profile management
 - Redirects to `/login` if not authenticated
 - Wrapped with `<ProtectedRoute>`
@@ -76,11 +84,13 @@ The following pages are now protected and require authentication:
 The following pages prevent authenticated users from accessing them:
 
 ### Login (`/login`)
+
 - Login form for existing users
 - Redirects to `/dashboard` if already authenticated
 - Wrapped with `<ProtectedRoute requireAuth={false}>`
 
 ### Signup (`/signup`)
+
 - Registration form for new users
 - Redirects to `/dashboard` if already authenticated
 - Wrapped with `<ProtectedRoute requireAuth={false}>`
@@ -88,12 +98,14 @@ The following pages prevent authenticated users from accessing them:
 ## Authentication Flow
 
 ### 1. Initial Load
+
 1. AuthProvider initializes and checks for existing session
 2. Loading state is shown while checking authentication
 3. User state is set based on session status
 4. ProtectedRoute components evaluate auth requirements
 
 ### 2. Login Process
+
 1. User submits login form
 2. Supabase authentication is called
 3. AuthProvider detects auth state change
@@ -101,6 +113,7 @@ The following pages prevent authenticated users from accessing them:
 5. Protected routes become accessible
 
 ### 3. Logout Process
+
 1. User clicks logout in UserNav
 2. signOut function is called from auth context
 3. AuthProvider detects sign out event
@@ -108,6 +121,7 @@ The following pages prevent authenticated users from accessing them:
 5. Protected routes become inaccessible
 
 ### 4. Route Protection
+
 1. ProtectedRoute checks current auth state
 2. If requirements not met, shows loading/redirect state
 3. useEffect handles actual navigation
@@ -116,14 +130,17 @@ The following pages prevent authenticated users from accessing them:
 ## Integration Points
 
 ### Root Layout (`app/layout.tsx`)
+
 - Wraps entire application with AuthProvider
 - Ensures auth context is available everywhere
 
 ### Dashboard Header (`components/dashboard-header.tsx`)
+
 - Uses UserNav component for authenticated user actions
 - Displays user information and logout option
 
 ### Signup Flow (`app/signup/page.tsx` or `components/signup-form.tsx`)
+
 - Handles new user registration process
 - Integrates with Supabase auth for account creation
 - Automatically triggers AuthProvider state updates upon successful signup
@@ -131,6 +148,7 @@ The following pages prevent authenticated users from accessing them:
 - Provides error handling and validation feedback during registration
 
 ### OAuth Callback Handler (`app/auth/callback/route.ts` or similar)
+
 - Processes OAuth authentication responses from third-party providers
 - Exchanges authorization codes for user sessions
 - Integrates with AuthProvider to establish authenticated state
@@ -138,20 +156,22 @@ The following pages prevent authenticated users from accessing them:
 - Manages error states for failed OAuth authentication attempts
 
 ### Auth Hook (`hooks/use-auth.tsx`)
+
 - Provides `useAuth()` hook for accessing auth state
 - Available in any component within AuthProvider
 
 ## Usage Examples
 
 ### Accessing Auth State
+
 ```tsx
 import { useAuth } from '@/hooks/use-auth';
 
 function MyComponent() {
   const { user, loading, signOut } = useAuth();
-  
+
   if (loading) return <div>Loading...</div>;
-  
+
   return (
     <div>
       <p>Welcome, {user?.email}</p>
@@ -162,6 +182,7 @@ function MyComponent() {
 ```
 
 ### Protecting a New Page
+
 ```tsx
 import { ProtectedRoute } from '@/components/protected-route';
 
@@ -175,6 +196,7 @@ export default function NewPage() {
 ```
 
 ### Creating a Public Page
+
 ```tsx
 // No wrapper needed for public pages
 export default function PublicPage() {
@@ -206,5 +228,3 @@ export default function LoginOnlyPage() {
 3. **Sign Out Flow**: Test the logout functionality from the user menu
 4. **Session Persistence**: Refresh the page while logged in to verify session persistence
 5. **Route Navigation**: Navigate between protected and public routes
-
- 

@@ -114,21 +114,27 @@ function LoginForm() {
 
       // Handle specific error cases - only expose essential information
       if (error.message) {
-        if (error.message.includes('Email not confirmed') || 
-            error.message.includes('email_not_confirmed')) {
+        if (
+          error.message.includes('Email not confirmed') ||
+          error.message.includes('email_not_confirmed')
+        ) {
           title = 'Email not verified';
-          description = 'Please check your email and click the verification link before logging in. Check your spam folder if you don\'t see the email.';
+          description =
+            "Please check your email and click the verification link before logging in. Check your spam folder if you don't see the email.";
           setShowResendVerification(true);
         } else if (error.message.includes('Invalid login credentials')) {
-          description = 'Invalid email or password. Please check your credentials and try again.';
+          description =
+            'Invalid email or password. Please check your credentials and try again.';
           setShowResendVerification(false);
         } else if (error.message.includes('Too many requests')) {
           title = 'Too many attempts';
-          description = 'Too many login attempts. Please wait a few minutes before trying again.';
+          description =
+            'Too many login attempts. Please wait a few minutes before trying again.';
           setShowResendVerification(false);
         } else {
           // For all other errors, use generic message to avoid exposing sensitive information
-          description = 'Unable to sign in at this time. Please try again later.';
+          description =
+            'Unable to sign in at this time. Please try again later.';
           setShowResendVerification(false);
         }
       }
@@ -158,7 +164,9 @@ function LoginForm() {
 
     const now = Date.now();
     if (now - lastResendTime < RESEND_COOLDOWN) {
-      const remainingTime = Math.ceil((RESEND_COOLDOWN - (now - lastResendTime)) / 1000);
+      const remainingTime = Math.ceil(
+        (RESEND_COOLDOWN - (now - lastResendTime)) / 1000
+      );
       toast({
         title: 'Please wait',
         description: `You can resend the verification email in ${remainingTime} seconds.`,
@@ -256,9 +264,9 @@ function LoginForm() {
               </Button>
 
               {showResendVerification && (
-                <Button 
-                  variant="outline" 
-                  className="w-full" 
+                <Button
+                  variant="outline"
+                  className="w-full"
                   onClick={handleResendVerification}
                   disabled={isLoading}
                   type="button"

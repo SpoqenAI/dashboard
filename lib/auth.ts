@@ -4,12 +4,19 @@ import { createUserProfile } from './profile';
 import { logger } from './logger';
 import type { Provider } from '@supabase/supabase-js';
 
-export async function signUp(email: string, password: string, firstName?: string, lastName?: string, phone?: string) {
+export async function signUp(
+  email: string,
+  password: string,
+  firstName?: string,
+  lastName?: string,
+  phone?: string
+) {
   const supabase = getSupabaseClient();
   const siteUrl = getSiteUrl();
 
   // Compose display name
-  const displayName = firstName && lastName ? `${firstName} ${lastName}` : undefined;
+  const displayName =
+    firstName && lastName ? `${firstName} ${lastName}` : undefined;
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -20,7 +27,9 @@ export async function signUp(email: string, password: string, firstName?: string
         site_url: siteUrl,
         ...(firstName ? { first_name: firstName } : {}),
         ...(lastName ? { last_name: lastName } : {}),
-        ...(displayName ? { display_name: displayName, full_name: displayName } : {}),
+        ...(displayName
+          ? { display_name: displayName, full_name: displayName }
+          : {}),
         ...(phone ? { phone } : {}),
       },
     },
@@ -34,7 +43,7 @@ export async function signUp(email: string, password: string, firstName?: string
         userId: data.user.id,
         email: data.user.email,
         hasSession: !!data.session,
-        sessionExpiry: data.session.expires_at
+        sessionExpiry: data.session.expires_at,
       });
 
       await createUserProfile({
@@ -46,19 +55,21 @@ export async function signUp(email: string, password: string, firstName?: string
         phone,
       });
       logger.auth.info('Profile created successfully for user', {
-        userId: data.user.id
+        userId: data.user.id,
       });
     } catch (profileError: any) {
       logger.auth.error('Failed to create user profile', profileError, {
         userId: data.user.id,
-        errorCode: profileError.code
+        errorCode: profileError.code,
       });
-      
+
       // Don't fail the signup process, profile will be created in auth callback
       logger.auth.info('Profile creation will be retried in auth callback');
     }
   } else if (data.user && !data.session) {
-    logger.auth.info('User created but no session - profile will be created after email confirmation');
+    logger.auth.info(
+      'User created but no session - profile will be created after email confirmation'
+    );
   }
 
   return { data, error };

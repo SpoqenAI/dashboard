@@ -11,9 +11,12 @@ const path = require('path');
 async function applyMigration() {
   try {
     // Read the migration file
-    const migrationPath = path.join(__dirname, '../supabase/migrations/20250129_create_full_profile_procedure.sql');
+    const migrationPath = path.join(
+      __dirname,
+      '../supabase/migrations/20250129_create_full_profile_procedure.sql'
+    );
     const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
-    
+
     console.log('Migration SQL loaded successfully');
     console.log('='.repeat(60));
     console.log('To apply this migration to your Supabase database:');
@@ -30,11 +33,10 @@ async function applyMigration() {
     console.log('');
     console.log('Alternatively, if you have Supabase CLI installed:');
     console.log('supabase db push');
-    
   } catch (error) {
     console.error('Error reading migration file:', error.message);
     process.exit(1);
   }
 }
 
-applyMigration(); 
+applyMigration();
