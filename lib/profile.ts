@@ -62,52 +62,47 @@ export async function createUserProfile(userData: CreateProfileData) {
 
     const { data: profileResult, error: profileError } = await supabase
       .from('profiles')
-      .insert(profileData)
+      .upsert(profileData, { onConflict: 'id' })
       .select()
       .single();
 
     if (profileError) {
-      // If it's a unique constraint violation, the profile might already exist
-      if (profileError.code === '23505') {
-        console.warn(`Profile already exists for user ${userData.id}`);
-      } else {
-        console.error('Profile creation error details:', {
-          code: profileError.code,
-          message: profileError.message,
-          details: profileError.details,
-          hint: profileError.hint,
-          userId: userData.id
-        });
-        throw new Error(`Failed to create profile: ${profileError.message}`);
-      }
+      console.error('Profile upsert error details:', {
+        code: profileError.code,
+        message: profileError.message,
+        details: profileError.details,
+        hint: profileError.hint,
+        userId: userData.id
+      });
+      throw new Error(`Failed to upsert profile: ${profileError.message}`);
     } else {
-      console.log('Profile created successfully:', profileResult?.id);
+      console.log('Profile upserted successfully:', profileResult?.id);
     }
 
     // 2. Create user settings with defaults
     const { error: settingsError } = await supabase
       .from('user_settings')
-      .insert({ id: userData.id })
+      .upsert({ id: userData.id }, { onConflict: 'id' })
       .select()
       .single();
 
-    if (settingsError && settingsError.code !== '23505') {
-      throw new Error(`Failed to create user settings: ${settingsError.message}`);
+    if (settingsError) {
+      throw new Error(`Failed to upsert user settings: ${settingsError.message}`);
     }
 
     // 3. Create user subscription with free plan
     const { error: subscriptionError } = await supabase
       .from('user_subscriptions')
-      .insert({ 
+      .upsert({ 
         id: userData.id,
         plan_type: 'free',
         status: 'active'
-      })
+      }, { onConflict: 'id' })
       .select()
       .single();
 
-    if (subscriptionError && subscriptionError.code !== '23505') {
-      throw new Error(`Failed to create user subscription: ${subscriptionError.message}`);
+    if (subscriptionError) {
+      throw new Error(`Failed to upsert user subscription: ${subscriptionError.message}`);
     }
 
     console.log(`User profile creation completed for user ${userData.id}`);
