@@ -86,7 +86,8 @@ export default function DashboardPage() {
   const VALIDATION_PATTERNS = {
     // Names: letters, single spaces (no consecutive), basic punctuation (limited)
     // Prevents ReDoS by avoiding nested quantifiers and limiting repetition
-    NAME_PATTERN: /^[a-zA-Z](?:[a-zA-Z\s\-'.])*[a-zA-Z]$|^[a-zA-Z]$/,
+    // Updated to support Unicode letters including accented and international characters
+    NAME_PATTERN: /^[\p{L}](?:[\p{L}\s\-'.])*[\p{L}]$|^[\p{L}]$/u,
     
     // Business names: alphanumeric, single spaces, limited punctuation
     // More restrictive to prevent ReDoS while allowing common business name formats
