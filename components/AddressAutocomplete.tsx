@@ -43,7 +43,21 @@ class AutocompleteErrorBoundary extends Component<ErrorBoundaryProps, ErrorBound
 
   componentDidCatch(error: Error, errorInfo: any) {
     console.error('AddressAutocomplete Error Boundary caught an error:', error, errorInfo);
-    this.props.onError(`Geocoding service error: ${error.message}`);
+    
+    let errorMessage = `Geocoding service error: ${error.message}`;
+    
+    // Handle specific error types
+    if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('NetworkError')) {
+      errorMessage = 'Network error: Please check your internet connection and try again';
+    } else if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+      errorMessage = 'Request timeout: The address service is taking too long to respond';
+    } else if (error.message.includes('API key') || error.message.includes('authentication')) {
+      errorMessage = 'Authentication error: Please check your API key configuration';
+    } else if (error.message.includes('quota') || error.message.includes('limit')) {
+      errorMessage = 'Service limit reached: Please try again later';
+    }
+    
+    this.props.onError(errorMessage);
   }
 
   render() {
@@ -95,6 +109,14 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
     }
   };
 
+  // Check network connectivity locally
+  const checkNetworkConnectivity = (): boolean => {
+    if (typeof navigator !== 'undefined' && 'onLine' in navigator) {
+      return navigator.onLine;
+    }
+    return true; // Assume online if we can't check
+  };
+
   const handlePlaceSelect = (value: any) => {
     try {
       setIsLoading(true);
@@ -141,7 +163,21 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
 
       setIsLoading(false);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred while processing the address';
+      let errorMessage = 'An unexpected error occurred while processing the address';
+      
+      if (err instanceof Error) {
+        // Handle specific error types
+        if (err.message.includes('fetch') || err.message.includes('network') || err.message.includes('NetworkError')) {
+          errorMessage = 'Network error: Please check your internet connection and try again';
+        } else if (err.message.includes('timeout') || err.message.includes('Timeout')) {
+          errorMessage = 'Request timeout: The address service is taking too long to respond';
+        } else if (err.message.includes('geoapify') || err.message.includes('geocod')) {
+          errorMessage = 'Geocoding API error: Unable to fetch address suggestions';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       handleError(errorMessage);
     }
   };
@@ -158,6 +194,12 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
           // Clear any previous errors when user starts typing
           if (error) {
             clearError();
+          }
+          
+          // Check network connectivity when user starts typing
+          if (target.value.length > 2 && !checkNetworkConnectivity()) {
+            handleError('No internet connection: Please check your network and try again');
+            return;
           }
           
           if (onInputChange) {
@@ -187,28 +229,6 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
       }
     }
   }, [error, onInputChange]);
-
-  // Monitor for network errors or API failures
-  useEffect(() => {
-    const handleNetworkError = () => {
-      handleError('Network error: Please check your internet connection and try again');
-    };
-
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      if (event.reason && event.reason.toString().includes('geoapify')) {
-        handleError('Geocoding API error: Unable to fetch address suggestions');
-        event.preventDefault();
-      }
-    };
-
-    window.addEventListener('offline', handleNetworkError);
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-    return () => {
-      window.removeEventListener('offline', handleNetworkError);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-    };
-  }, []);
 
   if (!apiKey) {
     return (
