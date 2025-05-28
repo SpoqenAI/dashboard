@@ -17,8 +17,15 @@ export default function Page() {
 
   useEffect(() => {
     async function checkConnectivity() {
-      const result = await Sentry.diagnoseSdkConnectivity();
-      setIsConnected(result !== 'sentry-unreachable');
+      try {
+        const result = await Sentry.diagnoseSdkConnectivity();
+        setIsConnected(result !== 'sentry-unreachable');
+      } catch (error) {
+        // Handle error gracefully by setting isConnected to false
+        // This ensures the component remains stable even if the connectivity check fails
+        console.warn('Failed to check Sentry connectivity:', error);
+        setIsConnected(false);
+      }
     }
     checkConnectivity();
   }, []);
