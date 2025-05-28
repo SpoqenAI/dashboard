@@ -1,6 +1,26 @@
 import { getSupabaseClient } from './supabase/client';
 import type { User } from '@supabase/supabase-js';
 
+/**
+ * Profile Management Module
+ * 
+ * This module handles user profile creation and management with atomic operations
+ * to prevent race conditions. The key design principle is to use the database's
+ * atomic upsert capabilities (ON CONFLICT clauses) rather than separate 
+ * check-then-create operations.
+ * 
+ * Race Condition Prevention:
+ * - ensureUserProfile() directly calls the stored procedure without checking existence first
+ * - The create_full_profile stored procedure uses ON CONFLICT DO UPDATE clauses
+ * - This eliminates the window where two parallel requests could both detect missing
+ *   profiles and attempt creation, causing unique-key violations
+ * 
+ * Key Functions:
+ * - ensureUserProfile(): Main entry point, uses atomic upsert approach
+ * - createUserProfile(): Calls the atomic stored procedure
+ * - checkProfileExists(): Primarily for debugging/testing purposes
+ */
+
 export interface CreateProfileData {
   id: string;
   email: string;
@@ -179,6 +199,10 @@ export async function createProfileFromAuthUser(user: User) {
 /**
  * Checks if a user profile exists
  * Throws errors for non-"not found" cases to prevent masking real issues
+ * 
+ * Note: This function is primarily used for debugging and testing purposes.
+ * The main application flow uses atomic upsert operations via ensureUserProfile()
+ * to prevent race conditions.
  */
 export async function checkProfileExists(userId: string): Promise<boolean> {
   const supabase = getSupabaseClient();
@@ -214,20 +238,30 @@ export async function checkProfileExists(userId: string): Promise<boolean> {
 
 /**
  * Ensures a user has a complete profile setup
- * Creates missing profile if it doesn't exist
+ * Uses atomic upsert operation to prevent race conditions
+ * The stored procedure handles conflicts gracefully with ON CONFLICT clauses
  */
 export async function ensureUserProfile(user: User) {
   try {
-    const profileExists = await checkProfileExists(user.id);
-    
-    if (!profileExists) {
-      console.log(`Creating missing profile for user ${user.id}`);
-      await createProfileFromAuthUser(user);
-    }
+    // Directly attempt profile creation - the stored procedure handles
+    // conflicts gracefully with ON CONFLICT DO UPDATE clauses
+    // This eliminates the race condition from separate check-then-create operations
+    console.log(`Ensuring profile exists for user ${user.id}`);
+    await createProfileFromAuthUser(user);
     
     return { success: true };
   } catch (error: any) {
+    // Log the error but check if it's a benign conflict error
     console.error('Error ensuring user profile:', error);
+    
+    // If the error indicates the profile already exists (which can happen
+    // in race conditions), we can consider this a success
+    if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
+      console.log(`Profile already exists for user ${user.id} - race condition handled gracefully`);
+      return { success: true };
+    }
+    
+    // For any other error, re-throw it
     throw error;
   }
 } 
