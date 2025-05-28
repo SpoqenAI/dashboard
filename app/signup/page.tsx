@@ -220,7 +220,13 @@ export default function SignupPage() {
   const doSignup = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await signUp(formData.email, formData.password);
+      const { data, error } = await signUp(
+        formData.email,
+        formData.password,
+        formData.firstName.trim(),
+        formData.lastName.trim(),
+        formData.phone.trim() || undefined
+      );
       if (error) {
         throw error;
       }

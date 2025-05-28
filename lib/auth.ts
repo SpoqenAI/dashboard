@@ -2,9 +2,12 @@ import { getSupabaseClient } from './supabase/client';
 import { getSiteUrl } from './site-url';
 import type { Provider } from '@supabase/supabase-js';
 
-export async function signUp(email: string, password: string) {
+export async function signUp(email: string, password: string, firstName?: string, lastName?: string, phone?: string) {
   const supabase = getSupabaseClient();
   const siteUrl = getSiteUrl();
+
+  // Compose display name
+  const displayName = firstName && lastName ? `${firstName} ${lastName}` : undefined;
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -12,8 +15,11 @@ export async function signUp(email: string, password: string) {
     options: {
       emailRedirectTo: `${siteUrl}/auth/callback`,
       data: {
-        // Store the site URL in the user metadata for reference
         site_url: siteUrl,
+        ...(firstName ? { first_name: firstName } : {}),
+        ...(lastName ? { last_name: lastName } : {}),
+        ...(displayName ? { display_name: displayName, full_name: displayName } : {}),
+        ...(phone ? { phone } : {}),
       },
     },
   });
