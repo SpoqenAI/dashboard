@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Development Setup Script for Spoqen Dashboard
 # This script ensures consistent port configuration for email verification
