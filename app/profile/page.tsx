@@ -79,9 +79,16 @@ export default function ProfilePage() {
 
   // Handle form field changes
   const handleInputChange = (field: keyof FormData, value: string) => {
+    let processedValue = value;
+    
+    // Format phone number as user types
+    if (field === 'phone') {
+      processedValue = formatPhoneNumber(value);
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: processedValue
     }));
     
     // Clear validation error for this field when user starts typing
@@ -91,6 +98,59 @@ export default function ProfilePage() {
         [field]: ''
       }));
     }
+  };
+
+  // Phone number formatting function
+  const formatPhoneNumber = (value: string): string => {
+    // Remove all non-digit and non-plus characters
+    const cleaned = value.replace(/[^\d+]/g, '');
+    if (cleaned.startsWith('+')) {
+      const digits = cleaned.slice(1);
+      const limitedDigits = digits.slice(0, 15);
+      if (limitedDigits.length === 0) return '+';
+      if (limitedDigits.length <= 4) return `+${limitedDigits}`;
+      if (limitedDigits.length <= 7) return `+${limitedDigits.slice(0, limitedDigits.length - 3)} ${limitedDigits.slice(-3)}`;
+      if (limitedDigits.length <= 10) return `+${limitedDigits.slice(0, limitedDigits.length - 7)} ${limitedDigits.slice(-7, -4)} ${limitedDigits.slice(-4)}`;
+      return `+${limitedDigits.slice(0, limitedDigits.length - 10)} ${limitedDigits.slice(-10, -7)} ${limitedDigits.slice(-7, -4)} ${limitedDigits.slice(-4)}`;
+    }
+    const digits = cleaned;
+    const limitedDigits = digits.slice(0, 10);
+    if (limitedDigits.length === 0) return '';
+    if (limitedDigits.length <= 3) return `(${limitedDigits}`;
+    if (limitedDigits.length <= 6) return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3)}`;
+    return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3, 6)}-${limitedDigits.slice(6)}`;
+  };
+
+  // Phone number validation function
+  const validatePhoneNumber = (value: string): string | null => {
+    if (!value) return null; // Optional field
+    
+    const isInternational = value.startsWith('+');
+    const digitsOnly = value.replace(/\D/g, '');
+    
+    if (isInternational) {
+      if (digitsOnly.length < 7) return 'Please enter at least 7 digits for international numbers';
+      if (digitsOnly.length > 15) return 'International numbers cannot exceed 15 digits';
+      if (digitsOnly.length >= 10) {
+        const countryCodeLength = digitsOnly.length - 10;
+        if (countryCodeLength > 4) return 'Please check your country code';
+      }
+      if (digitsOnly.length < 8) return 'Please enter a complete international number';
+    } else {
+      if (digitsOnly.length > 0 && digitsOnly.length < 3) return null; // Allow partial input
+      if (digitsOnly.length > 0 && digitsOnly.length < 10) return 'Please enter a complete 10-digit phone number';
+      if (digitsOnly.length > 10) return 'US phone numbers should be exactly 10 digits';
+      if (digitsOnly.length === 10) {
+        const areaCode = digitsOnly.substring(0, 3);
+        const exchange = digitsOnly.substring(3, 6);
+        if (areaCode.startsWith('0') || areaCode.startsWith('1')) return 'Please enter a valid area code';
+        if (exchange.startsWith('0') || exchange.startsWith('1')) return 'Please enter a valid exchange code';
+        if (areaCode === '911' || exchange === '911') return 'Please use a different phone number';
+        if (areaCode === '000' || exchange === '000' || (areaCode === '555' && exchange === '555')) return 'Please enter a valid phone number';
+      }
+    }
+    
+    return null;
   };
 
   // Form validation function
@@ -121,8 +181,10 @@ export default function ProfilePage() {
       errors.website = 'Website must start with http:// or https://';
     }
 
-    if (formData.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/[\s\-\(\)]/g, ''))) {
-      errors.phone = 'Please enter a valid phone number';
+    // Use the new phone validation function
+    const phoneError = validatePhoneNumber(formData.phone);
+    if (phoneError) {
+      errors.phone = phoneError;
     }
 
     setValidationErrors(errors);
@@ -342,7 +404,7 @@ export default function ProfilePage() {
                     type="tel" 
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
-                    placeholder="Enter your phone number"
+                    placeholder="(555) 123-4567 or +1 555 123 4567"
                     className={validationErrors.phone ? 'border-red-500' : ''}
                   />
                   {validationErrors.phone && (
