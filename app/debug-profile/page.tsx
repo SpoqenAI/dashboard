@@ -31,8 +31,13 @@ export default function DebugProfilePage() {
         return;
       }
 
+      // Return early if auth is still loading - don't set authorization state yet
+      if (authLoading) {
+        return;
+      }
+
       // Require authentication in all cases
-      if (authLoading || !user) {
+      if (!user) {
         setIsAuthorized(false);
         return;
       }
