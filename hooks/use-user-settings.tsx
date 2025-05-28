@@ -302,6 +302,55 @@ export function useUserSettings() {
     }
   };
 
+  // Update user settings (notifications, theme, etc.)
+  const updateUserSettings = async (settingsData: Partial<UserSettings>) => {
+    if (!user || !settings) {
+      throw new Error('User not authenticated or settings not loaded');
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      // Update user settings
+      const { data: updatedSettings, error: settingsError } = await supabase
+        .from('user_settings')
+        .update(settingsData)
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (settingsError) {
+        throw settingsError;
+      }
+
+      // Verify that the update operation returned data
+      if (!updatedSettings) {
+        throw new Error('Settings update failed: No data returned from database');
+      }
+
+      // Update local state with the actual returned data from the database
+      setSettings(updatedSettings as UserSettings);
+
+      toast({
+        title: 'Settings updated!',
+        description: 'Your notification preferences have been saved.',
+      });
+
+    } catch (err: any) {
+      console.error('Error updating user settings:', err);
+      setError(err.message);
+      toast({
+        title: 'Error saving settings',
+        description: 'Failed to save your settings. Please try again.',
+        variant: 'destructive',
+      });
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Update profile data
   const updateProfile = async (profileData: ProfileUpdateData) => {
     if (!user) {
@@ -464,6 +513,7 @@ export function useUserSettings() {
     updateAIReceptionistSettings,
     getAIReceptionistSettings,
     updateProfile,
+    updateUserSettings,
     getProfileFormData,
     refetch,
   };

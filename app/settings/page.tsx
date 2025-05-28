@@ -52,7 +52,9 @@ function SettingsContent() {
     saving, 
     error, 
     dataLoaded, 
+    settings,
     updateProfile, 
+    updateUserSettings,
     getProfileFormData 
   } = useUserSettings();
   
@@ -124,13 +126,13 @@ function SettingsContent() {
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-        emailNotifications: true,
-        marketingEmails: true,
+        emailNotifications: settings?.email_notifications ?? true,
+        marketingEmails: settings?.marketing_emails ?? true,
       };
       setFormData(newFormData);
       setSavedData(newFormData);
     }
-  }, [dataLoaded, getProfileFormData]);
+  }, [dataLoaded, getProfileFormData, settings]);
 
   // Initialize content filter
   const filter = new Filter();
@@ -664,25 +666,47 @@ function SettingsContent() {
         }
       }
 
+      // Prepare update operations
+      const updatePromises = [];
+
       // Save profile data to Supabase
-      await updateProfile({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formattedPhone,
-        businessName: formData.businessName,
-        bio: formData.bio,
-        licenseNumber: formData.licenseNumber,
-        brokerage: formData.brokerage,
-        website: formData.website,
-        city: formData.city,
-        state: formData.state,
-      });
+      updatePromises.push(
+        updateProfile({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formattedPhone,
+          businessName: formData.businessName,
+          bio: formData.bio,
+          licenseNumber: formData.licenseNumber,
+          brokerage: formData.brokerage,
+          website: formData.website,
+          city: formData.city,
+          state: formData.state,
+        })
+      );
+
+      // Check if notification settings have changed and update if needed
+      const currentEmailNotifications = settings?.email_notifications ?? true;
+      const currentMarketingEmails = settings?.marketing_emails ?? true;
+      
+      if (formData.emailNotifications !== currentEmailNotifications || 
+          formData.marketingEmails !== currentMarketingEmails) {
+        updatePromises.push(
+          updateUserSettings({
+            email_notifications: formData.emailNotifications,
+            marketing_emails: formData.marketingEmails,
+          })
+        );
+      }
+
+      // Execute all updates concurrently
+      await Promise.all(updatePromises);
 
       setSavedData({ ...formData });
     } catch (error) {
       console.error('Error saving settings:', error);
-      // Error toast is handled by the updateProfile function
+      // Error toast is handled by the updateProfile and updateUserSettings functions
     }
   };
 
