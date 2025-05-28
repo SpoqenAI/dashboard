@@ -329,7 +329,7 @@ export function useUserSettings() {
       };
 
       // Update or insert profile
-      const { error: profileError } = await supabase
+      const { data: updatedProfile, error: profileError } = await supabase
         .from('profiles')
         .upsert(
           {
@@ -339,21 +339,21 @@ export function useUserSettings() {
           {
             onConflict: 'id',
           }
-        );
+        )
+        .select()
+        .single();
 
       if (profileError) {
         throw profileError;
       }
 
-      // Update local state
-      setProfile(prev => prev ? {
-        ...prev,
-        ...profileUpdates,
-      } : {
-        id: user.id,
-        ...profileUpdates,
-        avatar_url: null,
-      } as UserProfile);
+      // Verify that the upsert operation returned data
+      if (!updatedProfile) {
+        throw new Error('Profile update failed: No data returned from database');
+      }
+
+      // Update local state with the actual returned data from the database
+      setProfile(updatedProfile as UserProfile);
 
       toast({
         title: 'Profile updated!',
