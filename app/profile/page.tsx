@@ -144,20 +144,38 @@ export default function ProfilePage() {
     }
 
     try {
-      // Update profile data (excluding assistantName)
+      // Prepare update operations
       const { assistantName, ...profileData } = formData;
-      await updateProfile(profileData);
-
-      // Update AI assistant settings if assistant name changed
       const currentAISettings = getAIReceptionistSettings();
+      
+      // Create array of promises for concurrent execution
+      const updatePromises = [updateProfile(profileData)];
+      
+      // Only update AI assistant settings if the name has changed
       if (formData.assistantName !== currentAISettings.aiAssistantName) {
-        await updateAIReceptionistSettings({
-          ...currentAISettings,
-          aiAssistantName: formData.assistantName,
-        });
+        updatePromises.push(
+          updateAIReceptionistSettings({
+            ...currentAISettings,
+            aiAssistantName: formData.assistantName,
+          })
+        );
       }
+
+      // Execute all updates concurrently
+      await Promise.all(updatePromises);
+
+      // Show success toast after all updates complete
+      toast({
+        title: 'Profile Updated',
+        description: 'Your profile has been successfully updated.',
+      });
     } catch (error) {
-      // Error handling is done in the updateProfile function
+      // Show error toast to inform users of failures
+      toast({
+        title: 'Update Failed',
+        description: 'Failed to update your profile. Please try again.',
+        variant: 'destructive',
+      });
       console.error('Failed to save profile:', error);
     }
   };
