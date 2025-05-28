@@ -35,10 +35,16 @@ import { useMask } from '@react-input/mask';
 import { Filter } from 'bad-words';
 import PasswordStrengthBar from 'react-password-strength-bar';
 
+// Type definition for form field names to ensure type safety
+type FormFieldName = 'firstName' | 'lastName' | 'email' | 'phone' | 'password' | 'confirmPassword';
+
+// Form data type based on the field names
+type FormData = Record<FormFieldName, string>;
+
 export default function SignupPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
     email: '',
@@ -46,9 +52,23 @@ export default function SignupPage() {
     password: '',
     confirmPassword: '',
   });
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
-  const initialFormData = { firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '' };
+  const [validationErrors, setValidationErrors] = useState<Record<FormFieldName, string>>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const [touchedFields, setTouchedFields] = useState<Record<FormFieldName, boolean>>({
+    firstName: false,
+    lastName: false,
+    email: false,
+    phone: false,
+    password: false,
+    confirmPassword: false,
+  });
+  const initialFormData: FormData = { firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '' };
   const [score, setScore] = useState(0);
 
   // Profanity/content filter
@@ -97,7 +117,7 @@ export default function SignupPage() {
   };
 
   // Validation logic
-  const validateContent = (field: string, value: string): string | null => {
+  const validateContent = (field: FormFieldName, value: string): string | null => {
     switch (field) {
       case 'firstName':
       case 'lastName': {
@@ -173,10 +193,10 @@ export default function SignupPage() {
   };
 
   // Handle field blur (when user leaves the field)
-  const handleFieldBlur = (field: string) => {
+  const handleFieldBlur = (field: FormFieldName) => {
     setTouchedFields(prev => ({ ...prev, [field]: true }));
     
-    let valueToValidate = formData[field as keyof typeof formData];
+    let valueToValidate = formData[field];
     
     // Auto-trim name fields when user leaves the field
     if (field === 'firstName' || field === 'lastName') {
@@ -190,7 +210,7 @@ export default function SignupPage() {
   };
 
   // Unified input handler
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: FormFieldName, value: string) => {
     let processedValue = value;
     if (field === 'phone') {
       processedValue = formatPhoneNumber(value);
@@ -219,8 +239,22 @@ export default function SignupPage() {
   // Cancel logic
   const handleCancel = () => {
     setFormData({ ...initialFormData });
-    setValidationErrors({});
-    setTouchedFields({});
+    setValidationErrors({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+    });
+    setTouchedFields({
+      firstName: false,
+      lastName: false,
+      email: false,
+      phone: false,
+      password: false,
+      confirmPassword: false,
+    });
   };
 
   // Actual signup logic (direct submit)
@@ -258,13 +292,27 @@ export default function SignupPage() {
     e.preventDefault();
     
     // Mark all fields as touched and validate them
-    const allFields = ['firstName', 'lastName', 'email', 'phone', 'password', 'confirmPassword'];
-    const newTouchedFields: Record<string, boolean> = {};
-    const newValidationErrors: Record<string, string> = {};
+    const allFields: FormFieldName[] = ['firstName', 'lastName', 'email', 'phone', 'password', 'confirmPassword'];
+    const newTouchedFields: Record<FormFieldName, boolean> = {
+      firstName: false,
+      lastName: false,
+      email: false,
+      phone: false,
+      password: false,
+      confirmPassword: false,
+    };
+    const newValidationErrors: Record<FormFieldName, string> = {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+    };
     
     allFields.forEach(field => {
       newTouchedFields[field] = true;
-      let valueToValidate = formData[field as keyof typeof formData];
+      let valueToValidate = formData[field];
       
       // Use trimmed values for name field validation
       if (field === 'firstName' || field === 'lastName') {
