@@ -242,6 +242,47 @@ export default function DebugAuthPage() {
     alert('All browser storage cleared! Please refresh the page and try again.');
   };
 
+  // Safe JSON serialization that handles circular references and non-serializable objects
+  const safeStringify = (obj: any, space?: number): string => {
+    const seen = new WeakSet();
+    
+    try {
+      return JSON.stringify(obj, (key, value) => {
+        // Handle circular references
+        if (typeof value === 'object' && value !== null) {
+          if (seen.has(value)) {
+            return '[Circular Reference]';
+          }
+          seen.add(value);
+        }
+        
+        // Handle functions
+        if (typeof value === 'function') {
+          return '[Function]';
+        }
+        
+        // Handle undefined
+        if (value === undefined) {
+          return '[Undefined]';
+        }
+        
+        // Handle symbols
+        if (typeof value === 'symbol') {
+          return '[Symbol]';
+        }
+        
+        // Handle BigInt
+        if (typeof value === 'bigint') {
+          return `[BigInt: ${value.toString()}]`;
+        }
+        
+        return value;
+      }, space);
+    } catch (error) {
+      return `[Serialization Error: ${error instanceof Error ? error.message : 'Unknown error'}]`;
+    }
+  };
+
   return (
     <div className="container mx-auto py-8">
       {/* Security Warning */}
@@ -287,7 +328,7 @@ export default function DebugAuthPage() {
             <div className="mt-6">
               <h3 className="text-lg font-semibold mb-2">Debug Information:</h3>
               <pre className="bg-gray-100 p-4 rounded-md overflow-auto text-sm">
-                {JSON.stringify(debugInfo, null, 2)}
+                {safeStringify(debugInfo, 2)}
               </pre>
             </div>
           )}
