@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       
       return NextResponse.redirect(
         new URL(
-          `/login?error=exchange_failed&message=${encodeURIComponent(errorMessage)}&details=${encodeURIComponent(exchangeError.message || 'Unknown error')}`,
+          `/login?error=exchange_failed&message=${encodeURIComponent(errorMessage)}`,
           request.url
         )
       );
