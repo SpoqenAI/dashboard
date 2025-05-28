@@ -21,7 +21,7 @@ const requiredFiles = [
 ];
 
 console.log('📁 Checking required files...');
-let allFilesExist = true;
+let missingFiles = [];
 
 requiredFiles.forEach(file => {
   const filePath = path.join(process.cwd(), file);
@@ -29,12 +29,13 @@ requiredFiles.forEach(file => {
     console.log(`  ✅ ${file}`);
   } else {
     console.log(`  ❌ ${file} - MISSING`);
-    allFilesExist = false;
+    missingFiles.push(file);
   }
 });
 
-if (!allFilesExist) {
+if (missingFiles.length > 0) {
   console.log('\n❌ Some required files are missing. Please check the implementation.');
+  console.log('Missing files:', missingFiles.join(', '));
   process.exit(1);
 }
 
@@ -49,12 +50,14 @@ const requiredFunctions = [
   'checkProfileExists'
 ];
 
+let missingFunctions = [];
+
 requiredFunctions.forEach(func => {
   if (profileContent.includes(`export async function ${func}`)) {
     console.log(`  ✅ ${func}`);
   } else {
     console.log(`  ❌ ${func} - MISSING`);
-    allFilesExist = false;
+    missingFunctions.push(func);
   }
 });
 
@@ -62,41 +65,47 @@ requiredFunctions.forEach(func => {
 console.log('\n🔍 Checking auth.ts integration...');
 const authContent = fs.readFileSync(path.join(process.cwd(), 'lib/auth.ts'), 'utf8');
 
+let authIssues = [];
+
 if (authContent.includes('import { createUserProfile }')) {
   console.log('  ✅ Profile import added');
 } else {
   console.log('  ❌ Profile import missing');
-  allFilesExist = false;
+  authIssues.push('Profile import missing');
 }
 
 if (authContent.includes('await createUserProfile(')) {
   console.log('  ✅ Profile creation call added');
 } else {
   console.log('  ❌ Profile creation call missing');
-  allFilesExist = false;
+  authIssues.push('Profile creation call missing');
 }
 
 // Check if callback route has been updated
 console.log('\n🔍 Checking auth callback integration...');
 const callbackContent = fs.readFileSync(path.join(process.cwd(), 'app/auth/callback/route.ts'), 'utf8');
 
+let callbackIssues = [];
+
 if (callbackContent.includes('import { ensureUserProfile }')) {
   console.log('  ✅ ensureUserProfile import added');
 } else {
   console.log('  ❌ ensureUserProfile import missing');
-  allFilesExist = false;
+  callbackIssues.push('ensureUserProfile import missing');
 }
 
 if (callbackContent.includes('await ensureUserProfile(')) {
   console.log('  ✅ ensureUserProfile call added');
 } else {
   console.log('  ❌ ensureUserProfile call missing');
-  allFilesExist = false;
+  callbackIssues.push('ensureUserProfile call missing');
 }
 
 // Final result
 console.log('\n' + '='.repeat(50));
-if (allFilesExist) {
+const allImplementationComplete = missingFunctions.length === 0 && authIssues.length === 0 && callbackIssues.length === 0;
+
+if (allImplementationComplete) {
   console.log('🎉 Profile Creation Implementation: COMPLETE');
   console.log('\n✅ All required files and functions are present');
   console.log('✅ Auth integration is properly configured');
@@ -116,6 +125,16 @@ if (allFilesExist) {
 } else {
   console.log('❌ Profile Creation Implementation: INCOMPLETE');
   console.log('\n🔧 Please fix the missing components above');
+  
+  if (missingFunctions.length > 0) {
+    console.log('Missing functions:', missingFunctions.join(', '));
+  }
+  if (authIssues.length > 0) {
+    console.log('Auth integration issues:', authIssues.join(', '));
+  }
+  if (callbackIssues.length > 0) {
+    console.log('Callback integration issues:', callbackIssues.join(', '));
+  }
 }
 
 console.log('\n' + '='.repeat(50)); 
