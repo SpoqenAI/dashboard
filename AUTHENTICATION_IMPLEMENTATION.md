@@ -123,6 +123,20 @@ The following pages prevent authenticated users from accessing them:
 - Uses UserNav component for authenticated user actions
 - Displays user information and logout option
 
+### Signup Flow (`app/signup/page.tsx` or `components/signup-form.tsx`)
+- Handles new user registration process
+- Integrates with Supabase auth for account creation
+- Automatically triggers AuthProvider state updates upon successful signup
+- Redirects authenticated users to dashboard via ProtectedRoute wrapper
+- Provides error handling and validation feedback during registration
+
+### OAuth Callback Handler (`app/auth/callback/route.ts` or similar)
+- Processes OAuth authentication responses from third-party providers
+- Exchanges authorization codes for user sessions
+- Integrates with AuthProvider to establish authenticated state
+- Handles OAuth flow completion and redirects users to intended destination
+- Manages error states for failed OAuth authentication attempts
+
 ### Auth Hook (`hooks/use-auth.tsx`)
 - Provides `useAuth()` hook for accessing auth state
 - Available in any component within AuthProvider
