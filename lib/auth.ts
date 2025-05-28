@@ -1,6 +1,7 @@
 import { getSupabaseClient } from './supabase/client';
 import { getSiteUrl } from './site-url';
 import { createUserProfile } from './profile';
+import { logger } from './logger';
 import type { Provider } from '@supabase/supabase-js';
 
 export async function signUp(email: string, password: string, firstName?: string, lastName?: string, phone?: string) {
@@ -29,7 +30,7 @@ export async function signUp(email: string, password: string, firstName?: string
   // Try to create profile if user was created and we have a session
   if (data.user && data.session && !error) {
     try {
-      console.log('Signup: Attempting to create profile for user:', {
+      logger.auth.info('Attempting to create profile for user', {
         userId: data.user.id,
         email: data.user.email,
         hasSession: !!data.session,
@@ -44,20 +45,20 @@ export async function signUp(email: string, password: string, firstName?: string
         fullName: displayName,
         phone,
       });
-      console.log('Signup: Profile created successfully for user:', data.user.id);
+      logger.auth.info('Profile created successfully for user', {
+        userId: data.user.id
+      });
     } catch (profileError: any) {
-      console.error('Signup: Failed to create user profile:', {
+      logger.auth.error('Failed to create user profile', profileError, {
         userId: data.user.id,
-        error: profileError.message,
-        errorCode: profileError.code,
-        stack: profileError.stack
+        errorCode: profileError.code
       });
       
       // Don't fail the signup process, profile will be created in auth callback
-      console.log('Signup: Profile creation will be retried in auth callback');
+      logger.auth.info('Profile creation will be retried in auth callback');
     }
   } else if (data.user && !data.session) {
-    console.log('Signup: User created but no session - profile will be created after email confirmation');
+    logger.auth.info('User created but no session - profile will be created after email confirmation');
   }
 
   return { data, error };
