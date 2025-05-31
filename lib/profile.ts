@@ -105,7 +105,7 @@ export async function createUserProfile(
     }
 
     // Validate phone number if provided
-    if (userData.phone && userData.phone.trim()) {
+    if (userData.phone?.trim()) {
       const phoneRegex = /^[\+]?[0-9\(\)\-\s\.]{10,}$/;
       if (!phoneRegex.test(userData.phone)) {
         throw new Error(`Invalid phone number format: ${userData.phone}`);
@@ -113,7 +113,7 @@ export async function createUserProfile(
     }
 
     // Validate avatar URL if provided
-    if (userData.avatarUrl && userData.avatarUrl.trim()) {
+    if (userData.avatarUrl?.trim()) {
       if (!userData.avatarUrl.match(/^https?:\/\/.*/)) {
         throw new Error(`Invalid avatar URL format: ${userData.avatarUrl}`);
       }
@@ -275,8 +275,7 @@ export async function ensureUserProfile(user: User) {
     // If the error indicates the profile already exists (which can happen
     // in race conditions), we can consider this a success
     if (
-      error.message &&
-      error.message.includes('duplicate key value violates unique constraint')
+      error.message?.includes('duplicate key value violates unique constraint')
     ) {
       logger.auth.info(
         `Profile already exists for user ${logger.maskUserId(user.id)} - race condition handled gracefully`
