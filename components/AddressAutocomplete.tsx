@@ -12,6 +12,7 @@ import {
   GeoapifyContext,
 } from '@geoapify/react-geocoder-autocomplete';
 import '@geoapify/geocoder-autocomplete/styles/minimal.css';
+import { logger } from '@/lib/logger';
 
 interface AddressData {
   city?: string;
@@ -193,12 +194,13 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         return;
       }
 
-      // Console.log the extracted data as requested
-      console.log('Selected address data:', {
-        city: addressData.city,
-        state: addressData.state,
-        postcode: addressData.postcode,
-        country: addressData.country,
+      // Log the extracted data securely (only in development, with potential PII protection)
+      logger.debug('AddressAutocomplete', 'Address data extracted successfully', {
+        hasCity: !!addressData.city,
+        hasState: !!addressData.state,
+        hasPostcode: !!addressData.postcode,
+        hasCountry: !!addressData.country,
+        // Note: We log presence of data rather than the actual values to protect privacy
       });
 
       // Call the parent callback if provided
