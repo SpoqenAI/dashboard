@@ -264,7 +264,9 @@ export async function ensureUserProfile(user: User) {
     // Directly attempt profile creation - the stored procedure handles
     // conflicts gracefully with ON CONFLICT DO UPDATE clauses
     // This eliminates the race condition from separate check-then-create operations
-    logger.auth.info(`Ensuring profile exists for user ${logger.maskUserId(user.id)}`);
+    logger.auth.info(
+      `Ensuring profile exists for user ${logger.maskUserId(user.id)}`
+    );
     await createProfileFromAuthUser(user);
 
     return { success: true };

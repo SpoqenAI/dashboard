@@ -296,9 +296,12 @@ export default function SignupPage() {
     formData.confirmPassword.trim() !== '';
 
   // Computed variable for submit button disabled state
-  const hasValidationErrors = Object.values(validationErrors).some(error => error);
-  const isFormChanged = JSON.stringify(formData) !== JSON.stringify(initialFormData);
-  const isSubmitDisabled = 
+  const hasValidationErrors = Object.values(validationErrors).some(
+    error => error
+  );
+  const isFormChanged =
+    JSON.stringify(formData) !== JSON.stringify(initialFormData);
+  const isSubmitDisabled =
     isLoading ||
     !areRequiredFieldsFilled ||
     hasValidationErrors ||

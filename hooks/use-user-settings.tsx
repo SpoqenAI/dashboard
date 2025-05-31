@@ -244,15 +244,14 @@ export function useUserSettings() {
         p_user_id: user.id,
         p_assistant_name: newSettings.aiAssistantName,
         p_ai_greeting: newSettings.greetingScript,
-        p_first_name: 'first_name' in profileUpdates 
-          ? profileUpdates.first_name 
-          : null,
-        p_last_name: 'last_name' in profileUpdates 
-          ? profileUpdates.last_name 
-          : null,
-        p_business_name: 'business_name' in profileUpdates 
-          ? profileUpdates.business_name 
-          : null,
+        p_first_name:
+          'first_name' in profileUpdates ? profileUpdates.first_name : null,
+        p_last_name:
+          'last_name' in profileUpdates ? profileUpdates.last_name : null,
+        p_business_name:
+          'business_name' in profileUpdates
+            ? profileUpdates.business_name
+            : null,
       });
 
       if (error) {

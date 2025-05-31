@@ -351,7 +351,8 @@ function SettingsContent() {
               return 'Please enter at least 7 digits for international numbers';
             if (digitsOnly.length >= 10) {
               const countryCodeLength = digitsOnly.length - 10;
-              if (countryCodeLength > 4) return 'Please check your country code';
+              if (countryCodeLength > 4)
+                return 'Please check your country code';
             }
           } else {
             if (digitsOnly.length > 0 && digitsOnly.length < 10)

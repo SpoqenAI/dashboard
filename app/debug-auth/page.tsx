@@ -57,9 +57,14 @@ export default function DebugAuthPage() {
         setIsAuthorized(true);
       }
     } catch (error) {
-      logger.error('DEBUG_AUTH', 'Error checking authorization', error as Error, {
-        userId: user ? logger.maskUserId(user.id) : 'no-user',
-      });
+      logger.error(
+        'DEBUG_AUTH',
+        'Error checking authorization',
+        error as Error,
+        {
+          userId: user ? logger.maskUserId(user.id) : 'no-user',
+        }
+      );
       setIsAuthorized(false);
     } finally {
       setAuthCheckLoading(false);
