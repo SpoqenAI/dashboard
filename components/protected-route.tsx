@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -30,7 +31,7 @@ export function ProtectedRoute({
     if (requireAuth && !user) {
       // User is not authenticated, redirect to login only if not already there
       if (pathname !== redirectTo) {
-        console.log('User not authenticated, redirecting to:', redirectTo);
+        logger.info('ProtectedRoute', 'User not authenticated, redirecting to:', { redirectTo });
         setIsRedirecting(true);
         router.replace(redirectTo);
       }
@@ -38,7 +39,7 @@ export function ProtectedRoute({
       // User is authenticated but shouldn't be (e.g., on login page)
       // Only redirect if not already on dashboard
       if (pathname !== '/dashboard') {
-        console.log('User already authenticated, redirecting to dashboard');
+        logger.info('ProtectedRoute', 'User already authenticated, redirecting to dashboard');
         setIsRedirecting(true);
         router.replace('/dashboard');
       }
