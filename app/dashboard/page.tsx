@@ -41,6 +41,10 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 
+// Initialize content filter outside component to prevent recreation on every render
+const contentFilter = new Filter();
+contentFilter.addWords('scam', 'fraud', 'fake', 'illegal', 'drugs');
+
 export default function DashboardPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [validationErrors, setValidationErrors] = useState<
@@ -71,12 +75,6 @@ export default function DashboardPage() {
       setFormData(currentSettings);
     }
   }, [dataLoaded, getAIReceptionistSettings]);
-
-  // Initialize content filter
-  const filter = new Filter();
-
-  // Add custom inappropriate words for business context
-  filter.addWords('scam', 'fraud', 'fake', 'illegal', 'drugs');
 
   // Validation rules for each field
   const fieldLimits = {
@@ -112,8 +110,8 @@ export default function DashboardPage() {
       return `Maximum ${limits.maxLength} characters allowed`;
     }
 
-    // Check for inappropriate content
-    if (filter.isProfane(value)) {
+    // Check for inappropriate content using the pre-initialized filter
+    if (contentFilter.isProfane(value)) {
       return 'Please use professional, appropriate language';
     }
 
