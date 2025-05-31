@@ -264,7 +264,7 @@ function SettingsContent() {
         }
         break;
 
-      case 'email':
+      case 'email': {
         // Check basic format first
         if (!VALIDATION_PATTERNS.EMAIL_PATTERN.test(value)) {
           return 'Please enter a valid email address';
@@ -292,6 +292,7 @@ function SettingsContent() {
           }
         }
         break;
+      }
 
       case 'phone':
         if (value) {
