@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           case 'SIGNED_OUT':
             logger.auth.info('User signed out');
             // Redirect to login page when signed out, but only if not already on login page
-            if (pathname !== '/login') {
+            if (window.location.pathname !== '/login') {
               router.replace('/login');
             }
             break;
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription?.unsubscribe();
     };
-  }, [supabase, router, pathname]);
+  }, [supabase, router]);
 
   const signOut = async () => {
     try {
