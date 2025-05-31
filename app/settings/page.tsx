@@ -50,6 +50,7 @@ import {
   formatIncompletePhoneNumber,
   AsYouType,
 } from 'libphonenumber-js';
+import PasswordStrengthBar from 'react-password-strength-bar';
 
 function SettingsContent() {
   const searchParams = useSearchParams();
@@ -116,6 +117,9 @@ function SettingsContent() {
     emailNotifications: true,
     marketingEmails: true,
   });
+
+  // Password strength score state
+  const [newPasswordScore, setNewPasswordScore] = useState(0);
 
   // Load profile data when available
   useEffect(() => {
@@ -504,17 +508,28 @@ function SettingsContent() {
         }
         break;
 
-      case 'newPassword':
-        if (value && value.length < 8) {
-          return 'Password must be at least 8 characters long';
-        }
-        break;
-
-      case 'confirmPassword':
-        if (value && value !== formData.newPassword) {
-          return 'Passwords do not match';
-        }
-        break;
+      case 'newPassword': {
+        if (!value) return null; // Optional field
+        if (value.length < 8) return 'Please use at least 8 characters';
+        if (value.length > 128)
+          return 'Please keep password under 128 characters';
+        if (!/[A-Z]/.test(value))
+          return 'Please include at least one uppercase letter';
+        if (!/[a-z]/.test(value))
+          return 'Please include at least one lowercase letter';
+        if (!/[0-9]/.test(value)) return 'Please include at least one number';
+        if (!/[!@#$%^&*(),.?":{}|<>\[\]\\/\-_+=~`';]/.test(value))
+          return 'Please include at least one special character (!@#$%^&* etc.)';
+        return null;
+      }
+      case 'confirmPassword': {
+        if (!value && !formData.newPassword) return null; // Both empty is OK
+        if (!value && formData.newPassword) return 'This field is required';
+        const passwordToCompare = formData.newPassword;
+        if (value !== passwordToCompare)
+          return 'Please make sure both passwords match';
+        return null;
+      }
     }
 
     return null;
@@ -775,6 +790,7 @@ function SettingsContent() {
   const handleCancel = () => {
     setFormData({ ...savedData });
     setValidationErrors({});
+    setNewPasswordScore(0);
   };
 
   return (
@@ -1086,68 +1102,74 @@ function SettingsContent() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <label className="font-medium">Current Password</label>
-                      <input
+                      <Label htmlFor="currentPassword">Current Password</Label>
+                      <Input
+                        id="currentPassword"
                         type="password"
-                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                          validationErrors.currentPassword
-                            ? 'border-red-500 bg-background'
-                            : 'bg-background'
-                        }`}
+                        placeholder="Enter your current password"
                         value={formData.currentPassword}
                         onChange={e =>
                           handleInputChange('currentPassword', e.target.value)
                         }
+                        aria-invalid={!!validationErrors.currentPassword}
                         maxLength={128}
                       />
                       {validationErrors.currentPassword && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-muted-foreground">
                           {validationErrors.currentPassword}
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <label className="font-medium">New Password</label>
-                      <input
+                      <Label htmlFor="newPassword">New Password</Label>
+                      <Input
+                        id="newPassword"
                         type="password"
-                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                          validationErrors.newPassword
-                            ? 'border-red-500 bg-background'
-                            : 'bg-background'
-                        }`}
+                        placeholder="Create a new password"
                         value={formData.newPassword}
                         onChange={e =>
                           handleInputChange('newPassword', e.target.value)
                         }
+                        aria-invalid={!!validationErrors.newPassword}
                         maxLength={128}
                       />
+                      <PasswordStrengthBar
+                        password={formData.newPassword}
+                        minLength={8}
+                        scoreWords={[
+                          'Too weak',
+                          'Weak',
+                          'Okay',
+                          'Strong',
+                          'Very strong',
+                        ]}
+                        onChangeScore={setNewPasswordScore}
+                      />
                       {validationErrors.newPassword && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-muted-foreground">
                           {validationErrors.newPassword}
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <label className="font-medium">
+                      <Label htmlFor="confirmPassword">
                         Confirm New Password
-                      </label>
-                      <input
+                      </Label>
+                      <Input
+                        id="confirmPassword"
                         type="password"
-                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                          validationErrors.confirmPassword
-                            ? 'border-red-500 bg-background'
-                            : 'bg-background'
-                        }`}
+                        placeholder="Confirm your new password"
                         value={formData.confirmPassword}
                         onChange={e =>
                           handleInputChange('confirmPassword', e.target.value)
                         }
+                        aria-invalid={!!validationErrors.confirmPassword}
                         maxLength={128}
                       />
                       {validationErrors.confirmPassword && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-muted-foreground">
                           {validationErrors.confirmPassword}
                         </p>
                       )}

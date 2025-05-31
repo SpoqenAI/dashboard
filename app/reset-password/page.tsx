@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { PhoneCall, ArrowLeft } from 'lucide-react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import PasswordStrengthBar from 'react-password-strength-bar';
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -29,6 +30,7 @@ function ResetPasswordForm() {
     password: '',
     confirmPassword: '',
   });
+  const [score, setScore] = useState(0);
 
   // Validate recovery session on component mount
   useEffect(() => {
@@ -118,23 +120,65 @@ function ResetPasswordForm() {
       return;
     }
 
-    if (formData.password.length < 12) {
+    // Updated password validation to match signup page requirements
+    if (formData.password.length < 8) {
       toast({
         title: 'Password too short',
-        description: 'Password must be at least 12 characters long.',
+        description: 'Password must be at least 8 characters long.',
         variant: 'destructive',
       });
       return;
     }
 
-    // Add password strength validation
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
-    if (!passwordRegex.test(formData.password)) {
+    if (formData.password.length > 128) {
+      toast({
+        title: 'Password too long',
+        description: 'Please keep password under 128 characters.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!/[A-Z]/.test(formData.password)) {
+      toast({
+        title: 'Password requirements not met',
+        description: 'Please include at least one uppercase letter.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!/[a-z]/.test(formData.password)) {
+      toast({
+        title: 'Password requirements not met',
+        description: 'Please include at least one lowercase letter.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!/[0-9]/.test(formData.password)) {
+      toast({
+        title: 'Password requirements not met',
+        description: 'Please include at least one number.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!/[!@#$%^&*(),.?":{}|<>\[\]\\/\-_+=~`';]/.test(formData.password)) {
+      toast({
+        title: 'Password requirements not met',
+        description: 'Please include at least one special character (!@#$%^&* etc.).',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (score < 2) {
       toast({
         title: 'Password too weak',
-        description:
-          'Password must include uppercase, lowercase, numbers, and special characters.',
+        description: 'Please create a stronger password.',
         variant: 'destructive',
       });
       return;
@@ -260,16 +304,25 @@ function ResetPasswordForm() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Enter your new password"
+                  placeholder="Create a password"
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  minLength={12}
+                  aria-invalid={false}
+                  maxLength={128}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Password must be at least 12 characters long and include
-                  uppercase, lowercase, numbers, and special characters
-                </p>
+                <PasswordStrengthBar
+                  password={formData.password}
+                  minLength={8}
+                  scoreWords={[
+                    'Too weak',
+                    'Weak',
+                    'Okay',
+                    'Strong',
+                    'Very strong',
+                  ]}
+                  onChangeScore={setScore}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm New Password</Label>
@@ -280,12 +333,23 @@ function ResetPasswordForm() {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
-                  minLength={12}
+                  aria-invalid={false}
+                  maxLength={128}
                 />
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
-              <Button className="w-full" type="submit" disabled={isLoading}>
+              <Button 
+                className="w-full" 
+                type="submit" 
+                disabled={
+                  isLoading ||
+                  !formData.password.trim() ||
+                  !formData.confirmPassword.trim() ||
+                  formData.password.length < 8 ||
+                  score < 2
+                }
+              >
                 {isLoading ? 'Updating Password...' : 'Update Password'}
               </Button>
               <Button variant="outline" asChild className="w-full">
