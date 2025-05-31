@@ -96,6 +96,9 @@ function SettingsContent() {
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
+  const [touchedFields, setTouchedFields] = useState<
+    Record<string, boolean>
+  >({});
   const [savedData, setSavedData] = useState({
     firstName: '',
     lastName: '',
@@ -188,9 +191,10 @@ function SettingsContent() {
     BUSINESS_NAME_PATTERN:
       /^(?:[A-Za-z0-9](?:[A-Za-z0-9\s\-'.&,()]*[A-Za-z0-9])?)$/,
 
-    // Email: RFC 5322 compliant pattern with practical constraints
+    // Email pattern supporting RFC-5322 compliant characters including '+' in local part
+    // Allows letters, numbers, dots, underscores, hyphens, and plus signs in local part
     EMAIL_PATTERN:
-      /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/,
+      /^[a-zA-Z0-9]([a-zA-Z0-9._+-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/,
 
     // Phone: simple pattern for input - only digits and plus signs allowed
     PHONE_INPUT_PATTERN: /^[\d+\s\-\(\)]*$/,
@@ -208,6 +212,37 @@ function SettingsContent() {
     UK_POSTCODE_PATTERN:
       /^[A-Za-z]{1,2}[0-9Rr][0-9A-Za-z]?\s?[0-9][ABD-HJLNP-UW-Zabd-hjlnp-uw-z]{2}$/,
     GENERIC_ZIPCODE_PATTERN: /^[A-Za-z0-9\s\-]{3,10}$/,
+  };
+
+  // Email mask ref: allow local-part, @, domain, dot, TLD (simple version)
+  // This mask is not strict RFC, but prevents spaces and most invalid chars
+  const emailMaskRef = useMask({
+    // Accepts up to 64 chars for local, 1 @, up to 255 for domain, dot, and 2-10 for TLD
+    // The mask is loose, but blocks spaces and most symbols
+    mask: '***************************************************************************************************************************************************************************************************************************************************************',
+    replacement: { '*': /[a-zA-Z0-9._%+\-@]/ },
+    showMask: false,
+    // Optionally, you can add a validator here for stricter enforcement
+  });
+
+  // Helper to remove spaces from email
+  const removeSpaces = (value: string): string => value.replace(/\s/g, '');
+
+  // Handle field blur (when user leaves the field) - for consistent UX with signup page
+  const handleFieldBlur = (field: string) => {
+    setTouchedFields(prev => ({ ...prev, [field]: true }));
+
+    let valueToValidate = formData[field as keyof typeof formData];
+
+    // Auto-trim name fields when user leaves the field
+    if (field === 'firstName' || field === 'lastName') {
+      const trimmedValue = (valueToValidate as string).trim();
+      setFormData(prev => ({ ...prev, [field]: trimmedValue }));
+      valueToValidate = trimmedValue;
+    }
+
+    const error = validateContent(field, valueToValidate as string);
+    setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
   };
 
   const validateContent = (field: string, value: string): string | null => {
@@ -271,20 +306,20 @@ function SettingsContent() {
       case 'email': {
         // Check basic format first
         if (!VALIDATION_PATTERNS.EMAIL_PATTERN.test(value)) {
-          return 'Please enter a valid email address';
+          return 'Please check your email format (e.g., name@example.com)';
         }
 
         // Additional email validation checks
         if (value.includes('..')) {
-          return 'Email cannot contain consecutive dots';
+          return 'Please remove consecutive dots from your email';
         }
 
         if (value.startsWith('.') || value.endsWith('.')) {
-          return 'Email cannot start or end with a dot';
+          return 'Email addresses cannot start or end with a dot';
         }
 
         if (value.includes('@.') || value.includes('.@')) {
-          return 'Invalid email format around @ symbol';
+          return 'Please check the format around the @ symbol';
         }
 
         // Check for valid TLD (at least 2 characters)
@@ -292,7 +327,7 @@ function SettingsContent() {
         if (parts.length === 2) {
           const domain = parts[1];
           if (!domain.includes('.') || domain.split('.').pop()!.length < 2) {
-            return 'Email must have a valid domain extension';
+            return 'Please include a valid domain (e.g., gmail.com)';
           }
         }
         break;
@@ -633,11 +668,6 @@ function SettingsContent() {
     showMask: false,
   });
 
-  // Helper function to remove spaces from input
-  const removeSpaces = (value: string): string => {
-    return value.replace(/\s/g, '');
-  };
-
   const handleInputChange = (field: string, value: string) => {
     let processedValue = value;
 
@@ -656,18 +686,19 @@ function SettingsContent() {
       processedValue = removeSpaces(value);
     }
 
-    // Real-time validation as user types
-    const error = validateContent(field, processedValue);
-
     setFormData(prev => ({
       ...prev,
       [field]: processedValue,
     }));
 
-    setValidationErrors(prev => ({
-      ...prev,
-      [field]: error || '',
-    }));
+    // Only show validation errors for fields that have been touched
+    if (touchedFields[field]) {
+      const error = validateContent(field, processedValue);
+      setValidationErrors(prev => ({
+        ...prev,
+        [field]: error || '',
+      }));
+    }
   };
 
   const handleAddressSelect = (addressData: {
@@ -889,6 +920,7 @@ function SettingsContent() {
                           onChange={e =>
                             handleInputChange('firstName', e.target.value)
                           }
+                          onBlur={() => handleFieldBlur('firstName')}
                           maxLength={50}
                         />
                         {validationErrors.firstName && (
@@ -913,6 +945,7 @@ function SettingsContent() {
                           onChange={e =>
                             handleInputChange('lastName', e.target.value)
                           }
+                          onBlur={() => handleFieldBlur('lastName')}
                           maxLength={50}
                         />
                         {validationErrors.lastName && (
@@ -927,25 +960,25 @@ function SettingsContent() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="font-medium">Email Address</label>
-                      <input
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input
+                        id="email"
                         type="text"
-                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                          validationErrors.email
-                            ? 'border-red-500 bg-background'
-                            : 'bg-background'
-                        }`}
+                        placeholder="Enter your email"
                         value={formData.email}
                         onChange={e =>
                           handleInputChange('email', e.target.value)
                         }
+                        onBlur={() => handleFieldBlur('email')}
+                        required
+                        aria-invalid={!!validationErrors.email}
                         maxLength={254}
-                        autoComplete="email"
                         inputMode="email"
-                        placeholder="your.email@example.com"
+                        autoComplete="email"
+                        ref={emailMaskRef}
                       />
                       {validationErrors.email && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-muted-foreground">
                           {validationErrors.email}
                         </p>
                       )}
@@ -964,6 +997,7 @@ function SettingsContent() {
                         onChange={e =>
                           handleInputChange('phone', e.target.value)
                         }
+                        onBlur={() => handleFieldBlur('phone')}
                         placeholder="(555) 123-4567 or +1 555 123 4567"
                         autoComplete="tel"
                         maxLength={25}
@@ -992,6 +1026,7 @@ function SettingsContent() {
                         onChange={e =>
                           handleInputChange('businessName', e.target.value)
                         }
+                        onBlur={() => handleFieldBlur('businessName')}
                         maxLength={100}
                         placeholder="e.g., ABC Real Estate, Smith & Associates, etc."
                       />
@@ -1016,6 +1051,7 @@ function SettingsContent() {
                         rows={3}
                         value={formData.bio}
                         onChange={e => handleInputChange('bio', e.target.value)}
+                        onBlur={() => handleFieldBlur('bio')}
                         maxLength={500}
                         placeholder="Tell us about yourself and your real estate business..."
                       />
@@ -1111,6 +1147,7 @@ function SettingsContent() {
                         onChange={e =>
                           handleInputChange('currentPassword', e.target.value)
                         }
+                        onBlur={() => handleFieldBlur('currentPassword')}
                         aria-invalid={!!validationErrors.currentPassword}
                         maxLength={128}
                       />
@@ -1131,6 +1168,7 @@ function SettingsContent() {
                         onChange={e =>
                           handleInputChange('newPassword', e.target.value)
                         }
+                        onBlur={() => handleFieldBlur('newPassword')}
                         aria-invalid={!!validationErrors.newPassword}
                         maxLength={128}
                       />
@@ -1165,6 +1203,7 @@ function SettingsContent() {
                         onChange={e =>
                           handleInputChange('confirmPassword', e.target.value)
                         }
+                        onBlur={() => handleFieldBlur('confirmPassword')}
                         aria-invalid={!!validationErrors.confirmPassword}
                         maxLength={128}
                       />
@@ -1218,6 +1257,7 @@ function SettingsContent() {
                         onChange={e =>
                           handleInputChange('licenseNumber', e.target.value)
                         }
+                        onBlur={() => handleFieldBlur('licenseNumber')}
                         maxLength={50}
                         placeholder="e.g., RE123456789"
                         autoComplete="off"
@@ -1245,6 +1285,7 @@ function SettingsContent() {
                         onChange={e =>
                           handleInputChange('brokerage', e.target.value)
                         }
+                        onBlur={() => handleFieldBlur('brokerage')}
                         maxLength={100}
                       />
                       {validationErrors.brokerage && (
@@ -1270,6 +1311,7 @@ function SettingsContent() {
                         onChange={e =>
                           handleInputChange('website', e.target.value)
                         }
+                        onBlur={() => handleFieldBlur('website')}
                         maxLength={254}
                         placeholder="https://your-website.com"
                         autoComplete="url"
