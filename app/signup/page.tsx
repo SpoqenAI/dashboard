@@ -322,6 +322,7 @@ export default function SignupPage() {
       password: false,
       confirmPassword: false,
     });
+    setScore(0);
   };
 
   // Actual signup logic (direct submit)
