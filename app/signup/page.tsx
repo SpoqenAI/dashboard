@@ -21,16 +21,6 @@ import { PhoneCall } from 'lucide-react';
 import { signUp } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
 import { SocialLogin } from '@/components/auth/social-login';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from '@/components/ui/alert-dialog';
 import { useMask } from '@react-input/mask';
 import { Filter } from 'bad-words';
 import PasswordStrengthBar from 'react-password-strength-bar';
@@ -105,9 +95,9 @@ export default function SignupPage() {
   // Email mask ref: allow local-part, @, domain, dot, TLD (simple version)
   // This mask is not strict RFC, but prevents spaces and most invalid chars
   const emailMaskRef = useMask({
-    // Accepts up to 64 chars for local, 1 @, up to 255 for domain, dot, and 2-10 for TLD
+    // Accepts up to 64 chars - sufficient for most real-world email addresses
     // The mask is loose, but blocks spaces and most symbols
-    mask: '***************************************************************************************************************************************************************************************************************************************************************',
+    mask: '****************************************************************', // ~64 chars
     replacement: { '*': /[a-zA-Z0-9._%+\-@]/ },
     showMask: false,
     // Optionally, you can add a validator here for stricter enforcement
@@ -183,16 +173,14 @@ export default function SignupPage() {
         const isInternational = value.startsWith('+');
         const digitsOnly = value.replace(/\D/g, '');
         if (isInternational) {
-          if (digitsOnly.length < 7)
-            return 'Please enter at least 7 digits for international numbers';
           if (digitsOnly.length > 15)
             return 'International numbers cannot exceed 15 digits';
+          if (digitsOnly.length < 7)
+            return 'Please enter at least 7 digits for international numbers';
           if (digitsOnly.length >= 10) {
             const countryCodeLength = digitsOnly.length - 10;
             if (countryCodeLength > 4) return 'Please check your country code';
           }
-          if (digitsOnly.length < 8)
-            return 'Please enter a complete international number';
         } else {
           if (digitsOnly.length > 0 && digitsOnly.length < 3) return null;
           if (digitsOnly.length > 0 && digitsOnly.length < 10)
@@ -299,11 +287,24 @@ export default function SignupPage() {
     }
   };
 
-  const isFormChanged =
-    JSON.stringify(formData) !== JSON.stringify(initialFormData);
-  const hasValidationErrors = Object.values(validationErrors).some(
-    error => error
-  );
+  // Helper to check if all required fields are filled (except phone)
+  const areRequiredFieldsFilled =
+    formData.firstName.trim() !== '' &&
+    formData.lastName.trim() !== '' &&
+    formData.email.trim() !== '' &&
+    formData.password.trim() !== '' &&
+    formData.confirmPassword.trim() !== '';
+
+  // Computed variable for submit button disabled state
+  const hasValidationErrors = Object.values(validationErrors).some(error => error);
+  const isFormChanged = JSON.stringify(formData) !== JSON.stringify(initialFormData);
+  const isSubmitDisabled = 
+    isLoading ||
+    !areRequiredFieldsFilled ||
+    hasValidationErrors ||
+    !isFormChanged ||
+    formData.password.length < 8 ||
+    score < 2;
 
   // Cancel logic
   const handleCancel = () => {
@@ -413,14 +414,6 @@ export default function SignupPage() {
       await doSignup();
     }
   };
-
-  // Helper to check if all required fields are filled (except phone)
-  const areRequiredFieldsFilled =
-    formData.firstName.trim() !== '' &&
-    formData.lastName.trim() !== '' &&
-    formData.email.trim() !== '' &&
-    formData.password.trim() !== '' &&
-    formData.confirmPassword.trim() !== '';
 
   return (
     <ProtectedRoute requireAuth={false}>
@@ -594,15 +587,7 @@ export default function SignupPage() {
                   <Button
                     className="w-full"
                     type="submit"
-                    disabled={
-                      isLoading ||
-                      !areRequiredFieldsFilled ||
-                      Object.values(validationErrors).some(error => error) ||
-                      JSON.stringify(formData) ===
-                        JSON.stringify(initialFormData) ||
-                      formData.password.length < 8 ||
-                      score < 2
-                    }
+                    disabled={isSubmitDisabled}
                   >
                     {isLoading ? 'Creating Account...' : 'Create Account'}
                   </Button>
