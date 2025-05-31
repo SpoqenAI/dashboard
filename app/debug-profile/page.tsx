@@ -14,6 +14,7 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2, Shield, AlertTriangle } from 'lucide-react';
 import { getAdminEmails, isDebugEnabled, isProduction } from '@/lib/config';
+import { logger } from '@/lib/logger';
 
 export default function DebugProfilePage() {
   const [results, setResults] = useState<string[]>([]);
@@ -57,7 +58,7 @@ export default function DebugProfilePage() {
         setIsAuthorized(true);
       }
     } catch (error) {
-      console.error('Error checking authorization:', error);
+      logger.error('DebugProfile', 'Error checking authorization:', error as Error);
       setIsAuthorized(false);
     } finally {
       setAuthCheckLoading(false);
@@ -76,7 +77,7 @@ export default function DebugProfilePage() {
         .single();
 
       if (error) {
-        console.error('Error checking admin status:', error);
+        logger.error('DebugProfile', 'Error checking admin status:', error as Error);
         return false;
       }
 
@@ -84,7 +85,7 @@ export default function DebugProfilePage() {
       const adminEmails = getAdminEmails();
       return adminEmails.includes(profile?.email || '');
     } catch (error) {
-      console.error('Error in admin check:', error);
+      logger.error('DebugProfile', 'Error in admin check:', error as Error);
       return false;
     }
   };
@@ -139,12 +140,12 @@ export default function DebugProfilePage() {
           addResult('✅ Profile created successfully!');
         } catch (profileError: any) {
           addResult(`❌ Profile creation failed: ${profileError.message}`);
-          console.error('Profile creation error:', profileError);
+          logger.error('DebugProfile', 'Profile creation error:', profileError as Error);
         }
       }
     } catch (error: any) {
       addResult(`❌ Error: ${error.message}`);
-      console.error('Debug error:', error);
+      logger.error('DebugProfile', 'Debug error:', error as Error);
     } finally {
       setIsLoading(false);
     }
