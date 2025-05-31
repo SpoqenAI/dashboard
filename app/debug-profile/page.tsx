@@ -164,6 +164,15 @@ export default function DebugProfilePage() {
         data: { user },
         error,
       } = await supabase.auth.getUser();
+      
+      // Explicitly check for auth error first
+      if (error) {
+        addResult(`❌ Authentication Error: ${error.message}`);
+        addResult(`📊 Auth error details: ${JSON.stringify(error, null, 2)}`);
+        addResult('⚠️ Cannot proceed with insert test due to authentication failure');
+        return;
+      }
+      
       if (!user) {
         addResult('❌ No authenticated user for RLS test');
         return;
