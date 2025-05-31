@@ -122,14 +122,10 @@ export async function signOut() {
 
 export async function resendVerificationEmail(email: string) {
   const supabase = getSupabaseClient();
-  const siteUrl = getSiteUrl();
 
   const { data, error } = await supabase.auth.resend({
     type: 'signup',
     email,
-    options: {
-      emailRedirectTo: `${siteUrl}/auth/callback`,
-    },
   });
 
   return { data, error };
