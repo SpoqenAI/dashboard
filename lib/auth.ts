@@ -38,34 +38,36 @@ export async function signUp(
   // Since email confirmations are disabled, users get immediate sessions
   // Try to create profile if user was created and we have a session
   if (data.user && data.session && !error) {
-    try {
-      logger.auth.info('Attempting to create profile for user', {
-        userId: data.user.id,
-        email: data.user.email,
-        hasSession: !!data.session,
-        sessionExpiry: data.session.expires_at,
+    // Fire-and-forget profile creation to avoid blocking the signup flow
+    createUserProfile({
+      id: data.user.id,
+      email: data.user.email!,
+      firstName,
+      lastName,
+      fullName: displayName,
+      phone,
+    })
+      .then(() => {
+        logger.auth.info('Profile created successfully for user', {
+          userId: data.user.id,
+        });
+      })
+      .catch((profileError: any) => {
+        logger.auth.error('Failed to create user profile', profileError, {
+          userId: data.user.id,
+          errorCode: profileError.code,
+        });
+
+        // Don't fail the signup process, profile will be created in auth callback
+        logger.auth.info('Profile creation will be retried in auth callback');
       });
 
-      await createUserProfile({
-        id: data.user.id,
-        email: data.user.email!,
-        firstName,
-        lastName,
-        fullName: displayName,
-        phone,
-      });
-      logger.auth.info('Profile created successfully for user', {
-        userId: data.user.id,
-      });
-    } catch (profileError: any) {
-      logger.auth.error('Failed to create user profile', profileError, {
-        userId: data.user.id,
-        errorCode: profileError.code,
-      });
-
-      // Don't fail the signup process, profile will be created in auth callback
-      logger.auth.info('Profile creation will be retried in auth callback');
-    }
+    logger.auth.info('Profile creation initiated (non-blocking) for user', {
+      userId: data.user.id,
+      email: data.user.email,
+      hasSession: !!data.session,
+      sessionExpiry: data.session.expires_at,
+    });
   } else if (data.user && !data.session) {
     logger.auth.info(
       'User created but no session - profile will be created after email confirmation'
