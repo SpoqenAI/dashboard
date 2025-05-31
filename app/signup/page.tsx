@@ -96,8 +96,10 @@ export default function SignupPage() {
   const VALIDATION_PATTERNS = {
     // Updated to support Unicode letters including accented and international characters
     NAME_PATTERN: /^[\p{L}'](?:[\p{L}\s\-'.])*[\p{L}']$|^[\p{L}']$/u,
+    // Email pattern supporting RFC-5322 compliant characters including '+' in local part
+    // Allows letters, numbers, dots, underscores, hyphens, and plus signs in local part
     EMAIL_PATTERN:
-      /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/,
+      /^[a-zA-Z0-9]([a-zA-Z0-9._+-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/,
   };
 
   // Email mask ref: allow local-part, @, domain, dot, TLD (simple version)
