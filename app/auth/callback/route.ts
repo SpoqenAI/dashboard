@@ -101,11 +101,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Log successful authentication with masked user ID for security
-    const maskedUserId = data.user?.id
-      ? `${data.user.id.substring(0, 6)}...`
-      : 'unknown';
     logger.info('AUTH', 'Authentication successful', {
-      userId: maskedUserId,
+      userId: data.user?.id ? logger.maskUserId(data.user.id) : 'unknown',
       type,
     });
 

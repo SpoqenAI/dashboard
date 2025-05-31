@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Loader2, Shield, AlertTriangle } from 'lucide-react';
 import { getAdminEmails, isDebugEnabled, isProduction } from '@/lib/config';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { logger } from '@/lib/logger';
 
 export default function DebugAuthPage() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
@@ -56,7 +57,9 @@ export default function DebugAuthPage() {
         setIsAuthorized(true);
       }
     } catch (error) {
-      console.error('Error checking authorization:', error);
+      logger.error('DEBUG_AUTH', 'Error checking authorization', error as Error, {
+        userId: user ? logger.maskUserId(user.id) : 'no-user',
+      });
       setIsAuthorized(false);
     } finally {
       setAuthCheckLoading(false);
@@ -75,7 +78,9 @@ export default function DebugAuthPage() {
         .single();
 
       if (error) {
-        console.error('Error checking admin status:', error);
+        logger.error('DEBUG_AUTH', 'Error checking admin status', error, {
+          userId: logger.maskUserId(userId),
+        });
         return false;
       }
 
@@ -83,7 +88,9 @@ export default function DebugAuthPage() {
       const adminEmails = getAdminEmails();
       return adminEmails.includes(profile?.email || '');
     } catch (error) {
-      console.error('Error in admin check:', error);
+      logger.error('DEBUG_AUTH', 'Error in admin check', error as Error, {
+        userId: logger.maskUserId(userId),
+      });
       return false;
     }
   };

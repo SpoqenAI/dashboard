@@ -148,7 +148,7 @@ export async function createUserProfile(
     }
 
     logger.auth.info(
-      `User profile creation completed for user ${userData.id}`,
+      `User profile creation completed for user ${logger.maskUserId(userData.id)}`,
       {
         profileCreated: !!data.profile,
         settingsCreated: !!data.settings,
@@ -171,7 +171,7 @@ export async function createProfileFromAuthUser(user: User) {
   // Guard against null/undefined email (common with some OAuth providers like Apple)
   if (!user.email) {
     throw new Error(
-      `Cannot create profile: User email is required but was not provided by the authentication provider. User ID: ${user.id}`
+      `Cannot create profile: User email is required but was not provided by the authentication provider. User ID: ${logger.maskUserId(user.id)}`
     );
   }
 
@@ -203,8 +203,8 @@ export async function createProfileFromAuthUser(user: User) {
   };
 
   logger.auth.info(`Creating profile from auth user:`, {
-    userId: user.id,
-    email: user.email,
+    userId: logger.maskUserId(user.id),
+    email: logger.maskEmail(user.email),
     hasFirstName: !!profileData.firstName,
     hasLastName: !!profileData.lastName,
     hasPhone: !!profileData.phone,
@@ -264,7 +264,7 @@ export async function ensureUserProfile(user: User) {
     // Directly attempt profile creation - the stored procedure handles
     // conflicts gracefully with ON CONFLICT DO UPDATE clauses
     // This eliminates the race condition from separate check-then-create operations
-    logger.auth.info(`Ensuring profile exists for user ${user.id}`);
+    logger.auth.info(`Ensuring profile exists for user ${logger.maskUserId(user.id)}`);
     await createProfileFromAuthUser(user);
 
     return { success: true };
@@ -279,7 +279,7 @@ export async function ensureUserProfile(user: User) {
       error.message.includes('duplicate key value violates unique constraint')
     ) {
       logger.auth.info(
-        `Profile already exists for user ${user.id} - race condition handled gracefully`
+        `Profile already exists for user ${logger.maskUserId(user.id)} - race condition handled gracefully`
       );
       return { success: true };
     }

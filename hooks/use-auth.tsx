@@ -66,21 +66,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Handle different auth events
         switch (event) {
-          case 'SIGNED_IN':
-            logger.auth.event('User signed in', session);
-            break;
           case 'SIGNED_OUT':
             logger.auth.info('User signed out');
             // Redirect to login page when signed out, but only if not already on login page
             if (window.location.pathname !== '/login') {
               router.replace('/login');
             }
-            break;
-          case 'TOKEN_REFRESHED':
-            logger.auth.event('Token refreshed', session);
-            break;
-          case 'USER_UPDATED':
-            logger.auth.event('User updated', session);
             break;
         }
       }
