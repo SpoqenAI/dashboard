@@ -131,12 +131,12 @@ export async function createUserProfile(
     });
 
     if (error) {
-      console.error('Profile creation error details:', {
+      logger.error('PROFILE', 'Profile creation error details', error, {
         code: error.code,
         message: error.message,
         details: error.details,
         hint: error.hint,
-        userId: userData.id,
+        userId: logger.maskUserId(userData.id),
       });
       throw new Error(`Failed to create profile: ${error.message}`);
     }
@@ -155,7 +155,7 @@ export async function createUserProfile(
 
     return { success: true, data: data as CreateProfileResponse };
   } catch (error: any) {
-    console.error('Error creating user profile:', error);
+    logger.error('PROFILE', 'Error creating user profile', error);
     throw error;
   }
 }
@@ -241,11 +241,11 @@ export async function checkProfileExists(userId: string): Promise<boolean> {
 
   // For any other error (network, permission, etc.), throw it
   // so calling functions can handle appropriately
-  console.error('Database error checking profile existence:', {
+  logger.error('PROFILE', 'Database error checking profile existence', error, {
     code: error.code,
     message: error.message,
     details: error.details,
-    userId,
+    userId: logger.maskUserId(userId),
   });
 
   throw new Error(`Failed to check profile existence: ${error.message}`);
@@ -267,7 +267,7 @@ export async function ensureUserProfile(user: User) {
     return { success: true };
   } catch (error: any) {
     // Log the error but check if it's a benign conflict error
-    console.error('Error ensuring user profile:', error);
+    logger.error('PROFILE', 'Error ensuring user profile', error);
 
     // If the error indicates the profile already exists (which can happen
     // in race conditions), we can consider this a success
