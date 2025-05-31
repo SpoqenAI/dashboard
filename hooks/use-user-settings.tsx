@@ -239,58 +239,35 @@ export function useUserSettings() {
         profileUpdates.business_name = newSettings.businessName;
       }
 
-      // Prepare all database operations
-      const operations = [];
+      // Use stored procedure for atomic updates across both tables
+      const { data: result, error } = await supabase.rpc('update_ai_settings', {
+        p_user_id: user.id,
+        p_assistant_name: newSettings.aiAssistantName,
+        p_ai_greeting: newSettings.greetingScript,
+        p_first_name: Object.prototype.hasOwnProperty.call(profileUpdates, 'first_name') ? profileUpdates.first_name : null,
+        p_last_name: Object.prototype.hasOwnProperty.call(profileUpdates, 'last_name') ? profileUpdates.last_name : null,
+        p_business_name: Object.prototype.hasOwnProperty.call(profileUpdates, 'business_name') ? profileUpdates.business_name : null,
+      });
 
-      // Always update user_settings
-      operations.push(
-        supabase
-          .from('user_settings')
-          .update({
-            assistant_name: newSettings.aiAssistantName,
-            ai_greeting: newSettings.greetingScript,
-          })
-          .eq('id', user.id)
-      );
+      if (error) {
+        throw error;
+      }
 
-      // Only update profiles if there are changes
-      if (Object.keys(profileUpdates).length > 0) {
-        operations.push(
-          supabase.from('profiles').update(profileUpdates).eq('id', user.id)
+      // Verify that the update operation returned data
+      if (!result || !result.success) {
+        throw new Error(
+          'Settings update failed: No valid response from stored procedure'
         );
       }
 
-      // Execute all operations concurrently and wait for all to complete
-      const results = await Promise.all(operations);
-
-      // Check if any operation failed
-      const errors = results.filter(result => result.error);
-      if (errors.length > 0) {
-        // If any operation failed, throw the first error
-        throw errors[0].error;
+      // Update local state with the returned data from the stored procedure
+      if (result.settings) {
+        setSettings(result.settings as UserSettings);
       }
 
-      // Only update local state if all database operations succeeded
-      setSettings(prev =>
-        prev
-          ? {
-              ...prev,
-              assistant_name: newSettings.aiAssistantName,
-              ai_greeting: newSettings.greetingScript,
-            }
-          : null
-      );
-
-      // Only update profile state if there were profile updates
-      if (Object.keys(profileUpdates).length > 0) {
-        setProfile(prev =>
-          prev
-            ? {
-                ...prev,
-                ...profileUpdates,
-              }
-            : null
-        );
+      // Update profile state if profile was updated
+      if (result.profile_updated && result.profile) {
+        setProfile(result.profile as UserProfile);
       }
 
       toast({
