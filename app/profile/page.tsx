@@ -20,6 +20,7 @@ import { Camera, Save, Loader2 } from 'lucide-react';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from '@/components/ui/use-toast';
+import { logger } from '@/lib/logger';
 
 function ProfilePageContent() {
   const { user } = useAuth();
@@ -313,7 +314,7 @@ function ProfilePageContent() {
         description: 'Failed to update your profile. Please try again.',
         variant: 'destructive',
       });
-      console.error('Failed to save profile:', error);
+      logger.error('profile', 'Failed to save profile', error as Error);
     }
   };
 
