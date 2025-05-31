@@ -2,10 +2,12 @@
  * Returns the site URL based on environment variables
  * Falls back to localhost with flexible port detection for development
  */
+import { logger } from '@/lib/logger';
+
 export function getSiteUrl() {
   // Debug logging to help troubleshoot PKCE issues (only in development)
   if (process.env.NODE_ENV === 'development') {
-    console.log('getSiteUrl() called with env vars:', {
+    logger.debug('SITE_URL', 'getSiteUrl() called with env vars', {
       NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
       NEXT_PUBLIC_VERCEL_URL: process.env.NEXT_PUBLIC_VERCEL_URL,
       NEXT_PUBLIC_DEV_PORT: process.env.NEXT_PUBLIC_DEV_PORT,
@@ -22,9 +24,10 @@ export function getSiteUrl() {
   // Use NEXT_PUBLIC_SITE_URL if available (production)
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     if (process.env.NODE_ENV === 'development') {
-      console.log(
-        'Using NEXT_PUBLIC_SITE_URL:',
-        process.env.NEXT_PUBLIC_SITE_URL
+      logger.debug(
+        'SITE_URL',
+        'Using NEXT_PUBLIC_SITE_URL',
+        { url: process.env.NEXT_PUBLIC_SITE_URL }
       );
     }
     return process.env.NEXT_PUBLIC_SITE_URL;
@@ -34,7 +37,7 @@ export function getSiteUrl() {
   if (process.env.NEXT_PUBLIC_VERCEL_URL) {
     const url = `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
     if (process.env.NODE_ENV === 'development') {
-      console.log('Using NEXT_PUBLIC_VERCEL_URL:', url);
+      logger.debug('SITE_URL', 'Using NEXT_PUBLIC_VERCEL_URL', { url });
     }
     return url;
   }
@@ -43,7 +46,7 @@ export function getSiteUrl() {
   if (typeof window !== 'undefined') {
     const url = `${window.location.protocol}//${window.location.host}`;
     if (process.env.NODE_ENV === 'development') {
-      console.log('Using window.location:', url);
+      logger.debug('SITE_URL', 'Using window.location', { url });
     }
     return url;
   }
@@ -54,7 +57,7 @@ export function getSiteUrl() {
     process.env.NEXT_PUBLIC_DEV_PORT || process.env.PORT || '3000';
   const url = `http://localhost:${devPort}`;
   if (process.env.NODE_ENV === 'development') {
-    console.log('Using server-side fallback:', url);
+    logger.debug('SITE_URL', 'Using server-side fallback', { url });
   }
   return url;
 }
