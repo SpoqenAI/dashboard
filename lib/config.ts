@@ -3,6 +3,14 @@
  */
 
 /**
+ * Simple email validation function
+ */
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
  * Get admin emails from environment variable or fallback to default list
  * In production, set ADMIN_EMAILS as a comma-separated list
  * For development fallbacks, set FALLBACK_ADMIN_EMAILS as a comma-separated list
@@ -14,7 +22,7 @@ export function getAdminEmails(): string[] {
     return envAdminEmails
       .split(',')
       .map(email => email.trim())
-      .filter(Boolean);
+      .filter(email => email && isValidEmail(email));
   }
 
   // Fallback admin emails from environment variables
@@ -25,12 +33,12 @@ export function getAdminEmails(): string[] {
     return fallbackAdminEmails
       .split(',')
       .map(email => email.trim())
-      .filter(Boolean);
+      .filter(email => email && isValidEmail(email));
   }
 
-  // Final fallback - empty array or placeholder emails
-  // This ensures no real emails are hardcoded in the source
-  return ['admin@example.com', 'developer@example.com'];
+  // Final fallback - empty array for security
+  // This ensures no real emails are hardcoded and fails securely
+  return [];
 }
 
 /**
