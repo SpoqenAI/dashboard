@@ -29,6 +29,7 @@ import { DashboardHeader } from '@/components/dashboard-header';
 import { RecentCallsList } from '@/components/recent-calls-list';
 import { StatsCards } from '@/components/stats-cards';
 import { toast } from '@/components/ui/use-toast';
+import { logger } from '@/lib/logger';
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -165,6 +166,11 @@ export default function DashboardPage() {
       setIsEditing(false);
       setValidationErrors({});
       
+      // Log successful save
+      logger.info('DASHBOARD', 'AI receptionist settings saved successfully', {
+        settingsUpdated: Object.keys(formData),
+      });
+      
       // Show success toast
       toast({
         title: "Settings saved",
@@ -172,7 +178,9 @@ export default function DashboardPage() {
       });
     } catch (error) {
       // Error handling is done in the hook
-      console.error('Failed to save settings:', error);
+      logger.error('DASHBOARD', 'Failed to save settings', error as Error, {
+        formData: logger.sanitizeData(formData),
+      });
       
       // Show error toast
       toast({
