@@ -52,20 +52,27 @@ Sentry.init({
 
 ## 5. Enable in Logger
 
-Uncomment the Sentry integration in `lib/logger.ts`:
+The Sentry integration is already active in `lib/logger.ts` with this implementation:
 
 ```typescript
-// Sentry integration
-if (typeof window !== 'undefined' && window.Sentry) {
+// Sentry integration - now active!
+try {
   if (level === 'error' && error) {
-    window.Sentry.captureException(error, { extra: context });
+    Sentry.captureException(error, {
+      extra: context,
+      tags: { component: 'logger' },
+    });
   } else {
-    window.Sentry.addBreadcrumb({
+    Sentry.addBreadcrumb({
       message,
       level: level as any,
       data: context,
+      category: 'logger',
     });
   }
+} catch (sentryError) {
+  // Fail silently if Sentry has issues
+  console.warn('Failed to send to Sentry:', sentryError);
 }
 ```
 
