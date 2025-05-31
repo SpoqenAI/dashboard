@@ -147,11 +147,14 @@ export async function createUserProfile(
       );
     }
 
-    logger.auth.info(`User profile creation completed for user ${userData.id}`, {
-      profileCreated: !!data.profile,
-      settingsCreated: !!data.settings,
-      subscriptionCreated: !!data.subscription,
-    });
+    logger.auth.info(
+      `User profile creation completed for user ${userData.id}`,
+      {
+        profileCreated: !!data.profile,
+        settingsCreated: !!data.settings,
+        subscriptionCreated: !!data.subscription,
+      }
+    );
 
     return { success: true, data: data as CreateProfileResponse };
   } catch (error: any) {

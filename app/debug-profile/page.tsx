@@ -58,7 +58,11 @@ export default function DebugProfilePage() {
         setIsAuthorized(true);
       }
     } catch (error) {
-      logger.error('DebugProfile', 'Error checking authorization:', error as Error);
+      logger.error(
+        'DebugProfile',
+        'Error checking authorization:',
+        error as Error
+      );
       setIsAuthorized(false);
     } finally {
       setAuthCheckLoading(false);
@@ -77,7 +81,11 @@ export default function DebugProfilePage() {
         .single();
 
       if (error) {
-        logger.error('DebugProfile', 'Error checking admin status:', error as Error);
+        logger.error(
+          'DebugProfile',
+          'Error checking admin status:',
+          error as Error
+        );
         return false;
       }
 
@@ -140,7 +148,11 @@ export default function DebugProfilePage() {
           addResult('✅ Profile created successfully!');
         } catch (profileError: any) {
           addResult(`❌ Profile creation failed: ${profileError.message}`);
-          logger.error('DebugProfile', 'Profile creation error:', profileError as Error);
+          logger.error(
+            'DebugProfile',
+            'Profile creation error:',
+            profileError as Error
+          );
         }
       }
     } catch (error: any) {
@@ -165,15 +177,17 @@ export default function DebugProfilePage() {
         data: { user },
         error,
       } = await supabase.auth.getUser();
-      
+
       // Explicitly check for auth error first
       if (error) {
         addResult(`❌ Authentication Error: ${error.message}`);
         addResult(`📊 Auth error details: ${JSON.stringify(error, null, 2)}`);
-        addResult('⚠️ Cannot proceed with insert test due to authentication failure');
+        addResult(
+          '⚠️ Cannot proceed with insert test due to authentication failure'
+        );
         return;
       }
-      
+
       if (!user) {
         addResult('❌ No authenticated user for RLS test');
         return;

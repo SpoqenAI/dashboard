@@ -165,28 +165,30 @@ export default function DashboardPage() {
       await updateAIReceptionistSettings(formData);
       setIsEditing(false);
       setValidationErrors({});
-      
+
       // Log successful save
       logger.info('DASHBOARD', 'AI receptionist settings saved successfully', {
         settingsUpdated: Object.keys(formData),
       });
-      
+
       // Show success toast
       toast({
-        title: "Settings saved",
-        description: "Your AI receptionist settings have been updated successfully.",
+        title: 'Settings saved',
+        description:
+          'Your AI receptionist settings have been updated successfully.',
       });
     } catch (error) {
       // Error handling is done in the hook
       logger.error('DASHBOARD', 'Failed to save settings', error as Error, {
         formData: logger.sanitizeData(formData),
       });
-      
+
       // Show error toast
       toast({
-        title: "Failed to save settings",
-        description: "There was an error saving your settings. Please try again.",
-        variant: "destructive",
+        title: 'Failed to save settings',
+        description:
+          'There was an error saving your settings. Please try again.',
+        variant: 'destructive',
       });
     }
   };

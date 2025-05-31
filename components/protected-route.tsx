@@ -31,7 +31,11 @@ export function ProtectedRoute({
     if (requireAuth && !user) {
       // User is not authenticated, redirect to login only if not already there
       if (pathname !== redirectTo) {
-        logger.info('ProtectedRoute', 'User not authenticated, redirecting to:', { redirectTo });
+        logger.info(
+          'ProtectedRoute',
+          'User not authenticated, redirecting to:',
+          { redirectTo }
+        );
         setIsRedirecting(true);
         router.replace(redirectTo);
       }
@@ -39,7 +43,10 @@ export function ProtectedRoute({
       // User is authenticated but shouldn't be (e.g., on login page)
       // Only redirect if not already on dashboard
       if (pathname !== '/dashboard') {
-        logger.info('ProtectedRoute', 'User already authenticated, redirecting to dashboard');
+        logger.info(
+          'ProtectedRoute',
+          'User already authenticated, redirecting to dashboard'
+        );
         setIsRedirecting(true);
         router.replace('/dashboard');
       }

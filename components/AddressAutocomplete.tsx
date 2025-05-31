@@ -195,13 +195,17 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
       }
 
       // Log the extracted data securely (only in development, with potential PII protection)
-      logger.debug('AddressAutocomplete', 'Address data extracted successfully', {
-        hasCity: !!addressData.city,
-        hasState: !!addressData.state,
-        hasPostcode: !!addressData.postcode,
-        hasCountry: !!addressData.country,
-        // Note: We log presence of data rather than the actual values to protect privacy
-      });
+      logger.debug(
+        'AddressAutocomplete',
+        'Address data extracted successfully',
+        {
+          hasCity: !!addressData.city,
+          hasState: !!addressData.state,
+          hasPostcode: !!addressData.postcode,
+          hasCountry: !!addressData.country,
+          // Note: We log presence of data rather than the actual values to protect privacy
+        }
+      );
 
       // Call the parent callback if provided
       if (onPlaceSelect) {

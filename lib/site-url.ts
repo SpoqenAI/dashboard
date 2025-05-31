@@ -24,11 +24,9 @@ export function getSiteUrl() {
   // Use NEXT_PUBLIC_SITE_URL if available (production)
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     if (process.env.NODE_ENV === 'development') {
-      logger.debug(
-        'SITE_URL',
-        'Using NEXT_PUBLIC_SITE_URL',
-        { url: process.env.NEXT_PUBLIC_SITE_URL }
-      );
+      logger.debug('SITE_URL', 'Using NEXT_PUBLIC_SITE_URL', {
+        url: process.env.NEXT_PUBLIC_SITE_URL,
+      });
     }
     return process.env.NEXT_PUBLIC_SITE_URL;
   }

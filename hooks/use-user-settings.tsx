@@ -244,9 +244,24 @@ export function useUserSettings() {
         p_user_id: user.id,
         p_assistant_name: newSettings.aiAssistantName,
         p_ai_greeting: newSettings.greetingScript,
-        p_first_name: Object.prototype.hasOwnProperty.call(profileUpdates, 'first_name') ? profileUpdates.first_name : null,
-        p_last_name: Object.prototype.hasOwnProperty.call(profileUpdates, 'last_name') ? profileUpdates.last_name : null,
-        p_business_name: Object.prototype.hasOwnProperty.call(profileUpdates, 'business_name') ? profileUpdates.business_name : null,
+        p_first_name: Object.prototype.hasOwnProperty.call(
+          profileUpdates,
+          'first_name'
+        )
+          ? profileUpdates.first_name
+          : null,
+        p_last_name: Object.prototype.hasOwnProperty.call(
+          profileUpdates,
+          'last_name'
+        )
+          ? profileUpdates.last_name
+          : null,
+        p_business_name: Object.prototype.hasOwnProperty.call(
+          profileUpdates,
+          'business_name'
+        )
+          ? profileUpdates.business_name
+          : null,
       });
 
       if (error) {

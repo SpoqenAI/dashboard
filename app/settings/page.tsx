@@ -96,9 +96,9 @@ function SettingsContent() {
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
-  const [touchedFields, setTouchedFields] = useState<
-    Record<string, boolean>
-  >({});
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>(
+    {}
+  );
   const [savedData, setSavedData] = useState({
     firstName: '',
     lastName: '',

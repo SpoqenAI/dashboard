@@ -157,7 +157,11 @@ class Logger {
       const formattedMessage = this.formatMessage('info', component, message);
       console.info(formattedMessage, context ? this.sanitizeData(context) : '');
     }
-    this.sendToExternalService('info', message, context ? this.sanitizeData(context) : undefined);
+    this.sendToExternalService(
+      'info',
+      message,
+      context ? this.sanitizeData(context) : undefined
+    );
   }
 
   /**
@@ -166,7 +170,11 @@ class Logger {
   warn(component: string, message: string, context?: LogContext) {
     const formattedMessage = this.formatMessage('warn', component, message);
     console.warn(formattedMessage, context ? this.sanitizeData(context) : '');
-    this.sendToExternalService('warn', message, context ? this.sanitizeData(context) : undefined);
+    this.sendToExternalService(
+      'warn',
+      message,
+      context ? this.sanitizeData(context) : undefined
+    );
   }
 
   /**
@@ -184,7 +192,12 @@ class Logger {
       error,
       context ? this.sanitizeData(context) : ''
     );
-    this.sendToExternalService('error', message, context ? this.sanitizeData(context) : undefined, error);
+    this.sendToExternalService(
+      'error',
+      message,
+      context ? this.sanitizeData(context) : undefined,
+      error
+    );
   }
 
   /**

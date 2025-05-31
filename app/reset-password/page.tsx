@@ -169,7 +169,8 @@ function ResetPasswordForm() {
     if (!/[!@#$%^&*(),.?":{}|<>\[\]\\/\-_+=~`';]/.test(formData.password)) {
       toast({
         title: 'Password requirements not met',
-        description: 'Please include at least one special character (!@#$%^&* etc.).',
+        description:
+          'Please include at least one special character (!@#$%^&* etc.).',
         variant: 'destructive',
       });
       return;
@@ -339,9 +340,9 @@ function ResetPasswordForm() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
-              <Button 
-                className="w-full" 
-                type="submit" 
+              <Button
+                className="w-full"
+                type="submit"
                 disabled={
                   isLoading ||
                   !formData.password.trim() ||
