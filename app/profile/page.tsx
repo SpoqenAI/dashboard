@@ -178,14 +178,12 @@ function ProfilePageContent() {
 
   // Phone number validation function
   const validatePhoneNumber = (value: string): string | null => {
-    if (!value) return null; // Optional field
+    if (!value.trim()) return null;
 
-    const isInternational = value.startsWith('+');
     const digitsOnly = value.replace(/\D/g, '');
+    const hasCountryCode = value.startsWith('+');
 
-    if (isInternational) {
-      if (digitsOnly.length < 7)
-        return 'Please enter at least 7 digits for international numbers';
+    if (hasCountryCode) {
       if (digitsOnly.length > 15)
         return 'International numbers cannot exceed 15 digits';
       if (digitsOnly.length >= 10) {
@@ -195,7 +193,6 @@ function ProfilePageContent() {
       if (digitsOnly.length < 8)
         return 'Please enter a complete international number';
     } else {
-      if (digitsOnly.length > 0 && digitsOnly.length < 3) return null; // Allow partial input
       if (digitsOnly.length > 0 && digitsOnly.length < 10)
         return 'Please enter a complete 10-digit phone number';
       if (digitsOnly.length > 10)
