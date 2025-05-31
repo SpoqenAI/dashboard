@@ -19,7 +19,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera, Save, Loader2 } from 'lucide-react';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { updateUserEmail } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
 
 function ProfilePageContent() {
