@@ -290,10 +290,19 @@ export default function DebugAuthPage() {
       if (isAuthCookie) {
         // Clear the cookie by setting it to expire in the past
         const cookieNameOriginal = cookie.split('=')[0].trim();
-        document.cookie = `${cookieNameOriginal}=;expires=${new Date().toUTCString()};path=/`;
-        // Also try clearing with domain variants
-        document.cookie = `${cookieNameOriginal}=;expires=${new Date().toUTCString()};path=/;domain=${window.location.hostname}`;
-        document.cookie = `${cookieNameOriginal}=;expires=${new Date().toUTCString()};path=/;domain=.${window.location.hostname}`;
+        const pastDate = 'Thu, 01 Jan 1970 00:00:00 GMT';
+        
+        // Basic cookie deletion
+        document.cookie = `${cookieNameOriginal}=;expires=${pastDate};path=/`;
+        
+        // Also try clearing with domain variants and secure attributes
+        document.cookie = `${cookieNameOriginal}=;expires=${pastDate};path=/;domain=${window.location.hostname};secure;samesite=lax`;
+        document.cookie = `${cookieNameOriginal}=;expires=${pastDate};path=/;domain=.${window.location.hostname};secure;samesite=lax`;
+        
+        // Additional variants for different cookie configurations
+        document.cookie = `${cookieNameOriginal}=;expires=${pastDate};path=/;secure;samesite=lax`;
+        document.cookie = `${cookieNameOriginal}=;expires=${pastDate};path=/;samesite=lax`;
+        document.cookie = `${cookieNameOriginal}=;expires=${pastDate};path=/;httponly=false;secure;samesite=lax`;
       }
     });
 
