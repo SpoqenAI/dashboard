@@ -1,5 +1,6 @@
 import { getSupabaseClient } from './supabase/client';
 import type { User } from '@supabase/supabase-js';
+import { logger } from './logger';
 
 /**
  * Profile Management Module
@@ -146,7 +147,7 @@ export async function createUserProfile(
       );
     }
 
-    console.log(`User profile creation completed for user ${userData.id}`, {
+    logger.auth.info(`User profile creation completed for user ${userData.id}`, {
       profileCreated: !!data.profile,
       settingsCreated: !!data.settings,
       subscriptionCreated: !!data.subscription,
@@ -198,7 +199,7 @@ export async function createProfileFromAuthUser(user: User) {
     avatarUrl: metadata.avatar_url || metadata.picture || undefined,
   };
 
-  console.log('Creating profile from auth user:', {
+  logger.auth.info(`Creating profile from auth user:`, {
     userId: user.id,
     email: user.email,
     hasFirstName: !!profileData.firstName,
@@ -260,7 +261,7 @@ export async function ensureUserProfile(user: User) {
     // Directly attempt profile creation - the stored procedure handles
     // conflicts gracefully with ON CONFLICT DO UPDATE clauses
     // This eliminates the race condition from separate check-then-create operations
-    console.log(`Ensuring profile exists for user ${user.id}`);
+    logger.auth.info(`Ensuring profile exists for user ${user.id}`);
     await createProfileFromAuthUser(user);
 
     return { success: true };
@@ -274,7 +275,7 @@ export async function ensureUserProfile(user: User) {
       error.message &&
       error.message.includes('duplicate key value violates unique constraint')
     ) {
-      console.log(
+      logger.auth.info(
         `Profile already exists for user ${user.id} - race condition handled gracefully`
       );
       return { success: true };
