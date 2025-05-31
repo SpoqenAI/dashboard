@@ -405,11 +405,18 @@ export function useUserSettings() {
           state: profileDataWithoutEmail.state.trim() || null,
         };
 
-        // Update profile without email
+        // Update or insert profile without email
         const { data: updatedProfile, error: profileError } = await supabase
           .from('profiles')
-          .update(profileUpdates)
-          .eq('id', user.id)
+          .upsert(
+            {
+              id: user.id,
+              ...profileUpdates,
+            },
+            {
+              onConflict: 'id',
+            }
+          )
           .select()
           .single();
 
