@@ -612,7 +612,7 @@ function SettingsContent() {
 
   // License number mask configuration - flexible alphanumeric
   const licenseMaskRef = useMask({
-    mask: '______________',
+    mask: '__________________________________________________',
     replacement: { _: /[A-Za-z0-9]/ },
     showMask: false,
   });
