@@ -52,6 +52,10 @@ import {
 } from 'libphonenumber-js';
 import PasswordStrengthBar from 'react-password-strength-bar';
 
+// Initialize content filter outside component to prevent recreation on every render
+const contentFilter = new Filter();
+contentFilter.addWords('scam', 'fraud', 'fake', 'illegal', 'drugs');
+
 function SettingsContent() {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab') || 'profile';
@@ -153,12 +157,6 @@ function SettingsContent() {
       setSavedData(newFormData);
     }
   }, [dataLoaded, getProfileFormData, settings]);
-
-  // Initialize content filter
-  const filter = new Filter();
-
-  // Add custom inappropriate words for business context
-  filter.addWords('scam', 'fraud', 'fake', 'illegal', 'drugs');
 
   // Validation rules for each field
   const fieldLimits = {
@@ -274,7 +272,7 @@ function SettingsContent() {
         'country',
       ].includes(field)
     ) {
-      if (filter.isProfane(value)) {
+      if (contentFilter.isProfane(value)) {
         return 'Please use professional, appropriate language';
       }
     }
