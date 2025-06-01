@@ -52,6 +52,10 @@ jobs:
       - name: Check bundle size
         run: pnpm run analyze
         continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SITE_URL: https://spoqen-dashboard.vercel.app
 
       - name: Comment PR
         uses: actions/github-script@v7
