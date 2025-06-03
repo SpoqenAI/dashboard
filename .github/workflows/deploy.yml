@@ -6,7 +6,7 @@ name: Deploy (Legacy - Disabled)
 
 # Minimal trigger to satisfy YAML requirements, but jobs are disabled
 on:
-  workflow_dispatch:  # Manual trigger only, jobs won't run due to if: false
+  workflow_dispatch: # Manual trigger only, jobs won't run due to if: false
 
 permissions:
   contents: read
@@ -78,7 +78,7 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     needs: deploy
-    if: always() && false  # Disabled
+    if: always() && false # Disabled
 
     steps:
       - name: Notify deployment status

@@ -71,4 +71,4 @@ jobs:
               ? '✅ Deployment successful!' 
               : '❌ Deployment failed!';
 
-            console.log(`${message} - Status: ${status}`); 
+            console.log(`${message} - Status: ${status}`);

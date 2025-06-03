@@ -32,7 +32,7 @@ jobs:
         with:
           script: |
             const previewUrl = '${{ steps.vercel-deploy.outputs.preview-url }}';
-            
+
             if (previewUrl) {
               const comment = `## 🚀 Preview Deployment Ready!
               
@@ -74,4 +74,4 @@ jobs:
 
       - name: Output Preview URL
         run: |
-          echo "Preview URL: ${{ steps.vercel-deploy.outputs.preview-url }}" 
+          echo "Preview URL: ${{ steps.vercel-deploy.outputs.preview-url }}"
