@@ -1,12 +1,10 @@
-# LEGACY WORKFLOW - NOT ACTIVE
-# This workflow has been replaced by vercel-deploy.yml
-# Keeping for reference and potential rollback if needed
+name: Vercel Production Deployment
 
-name: Deploy (Legacy - Disabled)
-
-# Minimal trigger to satisfy YAML requirements, but jobs are disabled
 on:
-  workflow_dispatch:  # Manual trigger only, jobs won't run due to if: false
+  push:
+    branches: [main]
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -18,45 +16,38 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: production
-    # This job will never run because of the if: false condition
-    if: false
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+      - name: Set environment variables in Vercel
+        uses: dkershner6/vercel-set-env-action@v3
         with:
-          version: 8
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Run tests
-        run: pnpm test -- --passWithNoTests
-
-      - name: Build application
-        run: pnpm build
+          token: ${{ secrets.VERCEL_TOKEN }}
+          projectName: my-v0-project
+          envVariableKeys: NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_SITE_URL
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          TARGET_NEXT_PUBLIC_SUPABASE_URL: preview,development,production
+          TYPE_NEXT_PUBLIC_SUPABASE_URL: encrypted
+
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          TARGET_NEXT_PUBLIC_SUPABASE_ANON_KEY: preview,development,production
+          TYPE_NEXT_PUBLIC_SUPABASE_ANON_KEY: encrypted
+
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          TARGET_NEXT_PUBLIC_SITE_URL: preview,development,production
+          TYPE_NEXT_PUBLIC_SITE_URL: encrypted
 
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25.2.0
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vercel-args: '--prod'
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
-          working-directory: ./
 
       - name: Create deployment status
         uses: actions/github-script@v7
@@ -78,7 +69,7 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     needs: deploy
-    if: always() && false  # Disabled
+    if: always()
 
     steps:
       - name: Notify deployment status
@@ -90,4 +81,4 @@ jobs:
               ? '✅ Deployment successful!' 
               : '❌ Deployment failed!';
 
-            console.log(`${message} - Status: ${status}`);
+            console.log(`${message} - Status: ${status}`); 

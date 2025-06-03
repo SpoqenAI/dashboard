@@ -1,0 +1,77 @@
+name: Vercel Preview Deployment
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+  deployments: write
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Vercel Preview
+        uses: amondnet/vercel-action@v25.2.0
+        id: vercel-deploy
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Comment Preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const previewUrl = '${{ steps.vercel-deploy.outputs.preview-url }}';
+            
+            if (previewUrl) {
+              const comment = `## 🚀 Preview Deployment Ready!
+              
+              **Preview URL**: ${previewUrl}
+              
+              This preview deployment will be updated automatically when you push new commits to this PR.
+              
+              *Deployed via Vercel Preview*`;
+
+              // Find existing preview comment
+              const comments = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+
+              const existingComment = comments.data.find(comment => 
+                comment.body.includes('🚀 Preview Deployment Ready!')
+              );
+
+              if (existingComment) {
+                // Update existing comment
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: comment
+                });
+              } else {
+                // Create new comment
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: comment
+                });
+              }
+            }
+
+      - name: Output Preview URL
+        run: |
+          echo "Preview URL: ${{ steps.vercel-deploy.outputs.preview-url }}" 
