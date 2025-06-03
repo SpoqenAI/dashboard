@@ -13,6 +13,7 @@ This repository is configured to automatically deploy to Vercel using GitHub Act
 **Triggers:** Push to `main` branch or published releases
 
 This workflow:
+
 - Deploys to production using Vercel's build process
 - Creates deployment status updates
 - Follows the gist's recommended pattern of letting Vercel handle the build
@@ -22,6 +23,7 @@ This workflow:
 **Triggers:** Pull requests to `main` branch
 
 This workflow:
+
 - Creates preview deployments for every pull request
 - Posts preview URL as a comment on the PR
 - Updates the comment when new commits are pushed
@@ -32,23 +34,26 @@ This workflow:
 **Status:** Disabled but kept for reference
 
 This was the original deployment workflow that:
+
 - Built the project locally in GitHub Actions
 - Ran tests and validations before deployment
 - Then deployed to Vercel
 - Provided more control over the build process
 
-*This workflow has been replaced by `vercel-deploy.yml` for better alignment with the gist's recommendations.*
+_This workflow has been replaced by `vercel-deploy.yml` for better alignment with the gist's recommendations._
 
 ## Required Secrets
 
 The following secrets must be configured in your GitHub repository settings:
 
 ### Vercel Configuration
+
 - `VERCEL_TOKEN` - Your Vercel account token ([create here](https://vercel.com/account/tokens))
 - `VERCEL_ORG_ID` - Your organization ID from `.vercel/project.json`
 - `VERCEL_PROJECT_ID` - Your project ID from `.vercel/project.json`
 
 ### Environment Variables
+
 - `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous key
 - `NEXT_PUBLIC_SITE_URL` - Your production site URL
@@ -58,6 +63,7 @@ The following secrets must be configured in your GitHub repository settings:
 ### 1. Vercel Project Setup
 
 Your project should be linked to Vercel with a configuration similar to:
+
 ```json
 {
   "projectId": "prj_XXXXXXXXXXXXXXXXXXXXXXX",
@@ -66,6 +72,7 @@ Your project should be linked to Vercel with a configuration similar to:
 ```
 
 To get these values:
+
 1. Run `vercel` command in your project directory
 2. Check the generated `.vercel/project.json` file
 3. Use these values in your GitHub secrets
@@ -83,6 +90,7 @@ To get these values:
 
 **✅ Active Approach: Vercel-Handled Build**
 Using `vercel-deploy.yml` - follows the gist's pattern exactly:
+
 - Faster deployment process
 - Vercel handles the build optimization
 - Uses existing environment variables from Vercel dashboard
@@ -90,6 +98,7 @@ Using `vercel-deploy.yml` - follows the gist's pattern exactly:
 
 **❌ Legacy Approach: GitHub Actions Build**
 The previous `deploy.yml` workflow has been disabled:
+
 - Previously built the project locally in GitHub Actions
 - Ran tests before deployment
 - More control over build process
@@ -98,12 +107,14 @@ The previous `deploy.yml` workflow has been disabled:
 ## Features
 
 ### Preview Deployments
+
 - 🚀 Automatic preview URLs for all pull requests
 - 💬 Preview URL posted as PR comment
 - 🔄 Updates automatically on new commits
 - 🧪 Perfect for testing and code review
 
 ### Production Deployments
+
 - ✅ Automatic deployment on main branch pushes
 - 🏷️ Support for release-based deployments
 - 📊 Deployment status tracking
@@ -111,6 +122,7 @@ The previous `deploy.yml` workflow has been disabled:
 - ⚡ Optimized build process handled by Vercel
 
 ### Security
+
 - ✅ Proper permissions configured to avoid integration errors
 - 🔒 Environment variables securely managed
 - 🛡️ Separation between preview and production environments
@@ -118,7 +130,9 @@ The previous `deploy.yml` workflow has been disabled:
 ## Troubleshooting
 
 ### "Resource not accessible by integration" Error
+
 This error is resolved by the proper `permissions` configuration in the workflow files:
+
 ```yaml
 permissions:
   contents: read
@@ -127,18 +141,23 @@ permissions:
 ```
 
 ### Environment Variables Not Available
+
 If environment variables aren't available in Vercel:
+
 1. Check that all secrets are properly configured in GitHub
 2. Verify environment variables are set in your Vercel dashboard
 3. Ensure the workflows have access to required secrets
 
 ### Preview Deployment Issues
+
 - Check that the `VERCEL_TOKEN` has access to create deployments
 - Verify the `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` are correct
 - Ensure the repository has the correct permissions
 
 ### Switching Back to Legacy Workflow
+
 If you need to switch back to the legacy GitHub Actions build approach:
+
 1. Disable `vercel-deploy.yml` by adding `if: false` to the jobs
 2. Re-enable `deploy.yml` by:
    - Changing the trigger from `workflow_dispatch` to the original triggers
