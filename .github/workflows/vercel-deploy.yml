@@ -21,24 +21,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set environment variables in Vercel
-        uses: dkershner6/vercel-set-env-action@v3
-        with:
-          token: ${{ secrets.VERCEL_TOKEN }}
-          projectName: dashboard
-          envVariableKeys: NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_SITE_URL
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          TARGET_NEXT_PUBLIC_SUPABASE_URL: preview,development,production
-          TYPE_NEXT_PUBLIC_SUPABASE_URL: encrypted
-
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          TARGET_NEXT_PUBLIC_SUPABASE_ANON_KEY: preview,development,production
-          TYPE_NEXT_PUBLIC_SUPABASE_ANON_KEY: encrypted
-
-          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
-          TARGET_NEXT_PUBLIC_SITE_URL: preview,development,production
-          TYPE_NEXT_PUBLIC_SITE_URL: encrypted
+      # Skip environment variable setting - use Vercel dashboard configuration instead
+      # - name: Set environment variables in Vercel
+      #   uses: dkershner6/vercel-set-env-action@v3
+      #   with:
+      #     token: ${{ secrets.VERCEL_TOKEN }}
+      #     projectName: dashboard
+      #     envVariableKeys: NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_SITE_URL
 
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25.2.0
