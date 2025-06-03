@@ -25,7 +25,7 @@ jobs:
         uses: dkershner6/vercel-set-env-action@v3
         with:
           token: ${{ secrets.VERCEL_TOKEN }}
-          projectName: spoqen-dashboard
+          projectName: dashboard
           envVariableKeys: NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_SITE_URL
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
