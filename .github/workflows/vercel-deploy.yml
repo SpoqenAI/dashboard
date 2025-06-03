@@ -37,6 +37,7 @@ jobs:
           vercel-args: '--prod'
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          github-comment: false
 
       - name: Create deployment status
         uses: actions/github-script@v7
@@ -48,7 +49,7 @@ jobs:
                 repo: context.repo.repo,
                 deployment_id: context.payload.deployment.id,
                 state: 'success',
-                environment_url: 'https://spoqen-dashboard.vercel.app',
+                environment_url: 'https://www.spoqen.com',
                 description: 'Deployment completed successfully'
               });
             } else {
