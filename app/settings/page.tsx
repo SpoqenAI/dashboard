@@ -45,10 +45,156 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import PasswordStrengthBar from 'react-password-strength-bar';
+import { StripeCheckout } from '@/components/stripe-checkout';
+import { useSubscription } from '@/hooks/use-subscription';
+import { Loader2, Calendar, AlertTriangle } from 'lucide-react';
 
 // Initialize content filter outside component to prevent recreation on every render
 const contentFilter = new Filter();
 contentFilter.addWords('scam', 'fraud', 'fake', 'illegal', 'drugs');
+
+function BillingContent() {
+  const { subscription, loading, error, cancelSubscription, isPro } = useSubscription();
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelSubscription = async () => {
+    try {
+      setCancelling(true);
+      await cancelSubscription();
+      toast({
+        title: 'Success',
+        description: 'Your subscription has been cancelled and will end at the current billing period.',
+      });
+    } catch (error) {
+      console.error('Cancel subscription error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to cancel subscription. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-2" />
+            <p className="text-destructive">Error loading subscription: {error}</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Current Subscription Status */}
+      {subscription && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Current Subscription</CardTitle>
+            <CardDescription>
+              Manage your subscription and billing information.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-md border p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-medium capitalize">{subscription.plan_type} Plan</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {subscription.plan_type === 'professional' ? '$49/month' : 'Free'}
+                  </p>
+                </div>
+                <div className={`rounded-full px-2 py-1 text-xs font-medium ${
+                  subscription.status === 'active' 
+                    ? 'bg-green-100 text-green-800' 
+                    : subscription.status === 'past_due'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {subscription.status === 'active' ? 'Active' : 
+                   subscription.status === 'past_due' ? 'Past Due' :
+                   subscription.status === 'cancelled' ? 'Cancelled' : 'Inactive'}
+                </div>
+              </div>
+
+              {subscription.current_period_start && subscription.current_period_end && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                  <Calendar className="h-4 w-4" />
+                  <span>
+                    Current period: {formatDate(subscription.current_period_start)} - {formatDate(subscription.current_period_end)}
+                  </span>
+                </div>
+              )}
+
+              {subscription.cancel_at_period_end && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md mb-4">
+                  <p className="text-sm text-yellow-800">
+                    Your subscription will be cancelled at the end of the current billing period ({formatDate(subscription.current_period_end)}).
+                  </p>
+                </div>
+              )}
+
+              {subscription.plan_type === 'professional' && subscription.status === 'active' && !subscription.cancel_at_period_end && (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelSubscription}
+                    disabled={cancelling}
+                    className="text-destructive"
+                  >
+                    {cancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Cancel Subscription
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Plan Selection */}
+      {(!subscription || subscription.plan_type === 'free' || subscription.status !== 'active') && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Upgrade Your Plan</CardTitle>
+            <CardDescription>
+              Choose the perfect plan for your real estate business.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StripeCheckout currentPlan={subscription?.plan_type || 'free'} />
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
 
 function SettingsContent() {
   const searchParams = useSearchParams();
@@ -1329,121 +1475,7 @@ function SettingsContent() {
           </TabsContent>
 
           <TabsContent value="billing" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Subscription Plan</CardTitle>
-                <CardDescription>
-                  Manage your subscription and billing information.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-md border p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Professional Plan</h3>
-                      <p className="text-sm text-muted-foreground">$49/month</p>
-                    </div>
-                    <div className="rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                      Active
-                    </div>
-                  </div>
-                  <div className="mt-4 text-sm text-muted-foreground">
-                    <ul className="space-y-1">
-                      <li>• Unlimited AI call answering</li>
-                      <li>• Customizable greeting and questions</li>
-                      <li>• Instant email summaries</li>
-                      <li>• Basic analytics</li>
-                    </ul>
-                  </div>
-                  <div className="mt-4 flex gap-2">
-                    <Button variant="outline" size="sm">
-                      Change Plan
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive"
-                    >
-                      Cancel Subscription
-                    </Button>
-                  </div>
-                </div>
-                <Separator className="my-4" />
-                <div>
-                  <h3 className="mb-4 text-lg font-medium">Payment Method</h3>
-                  <div className="flex items-center justify-between rounded-md border p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="rounded-md bg-muted p-2">
-                        <svg
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <rect width="24" height="24" rx="4" fill="#0A2540" />
-                          <path
-                            d="M14 9.5V11.5H16V9.5H14ZM14 13.5V15.5H16V13.5H14ZM10 9.5V11.5H12V9.5H10ZM10 13.5V15.5H12V13.5H10ZM6 9.5V11.5H8V9.5H6ZM6 13.5V15.5H8V13.5H6Z"
-                            fill="white"
-                          />
-                        </svg>
-                      </div>
-                      <div>
-                        <div className="font-medium">•••• •••• •••• 4242</div>
-                        <div className="text-xs text-muted-foreground">
-                          Expires 12/2025
-                        </div>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      Edit
-                    </Button>
-                  </div>
-                </div>
-                <Separator className="my-4" />
-                <div>
-                  <h3 className="mb-4 text-lg font-medium">Billing History</h3>
-                  <div className="rounded-md border">
-                    <div className="flex items-center justify-between border-b p-4">
-                      <div>
-                        <div className="font-medium">May 01, 2025</div>
-                        <div className="text-xs text-muted-foreground">
-                          Professional Plan - Monthly
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">$49.00</div>
-                        <div className="text-xs text-green-600">Paid</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between border-b p-4">
-                      <div>
-                        <div className="font-medium">Apr 01, 2025</div>
-                        <div className="text-xs text-muted-foreground">
-                          Professional Plan - Monthly
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">$49.00</div>
-                        <div className="text-xs text-green-600">Paid</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-4">
-                      <div>
-                        <div className="font-medium">Mar 01, 2025</div>
-                        <div className="text-xs text-muted-foreground">
-                          Professional Plan - Monthly
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">$49.00</div>
-                        <div className="text-xs text-green-600">Paid</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <BillingContent />
           </TabsContent>
         </Tabs>
       </DashboardShell>
