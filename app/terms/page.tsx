@@ -22,7 +22,7 @@ export default function TermsOfService() {
           "Agreement") govern your access to and use of the Spoqen AI-powered
           receptionist service, including our website, any associated software,
           applications, and services (collectively, the "Service") provided by
-          [Your Company Name] ("Spoqen," "we," "us," or "our").
+          Spoqen.
         </p>
         <p className="mb-4">
           By creating an account, accessing, or using the Service, you
