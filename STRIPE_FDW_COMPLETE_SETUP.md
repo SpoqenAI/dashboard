@@ -7,17 +7,20 @@ I've successfully set up the foundation for Stripe Foreign Data Wrapper (FDW) in
 ## What's Been Done
 
 ### 1. Database Structure
+
 - ✅ Created `stripe` schema for FDW tables
 - ✅ Set up foreign tables for customers, subscriptions, prices, products, and invoices
 - ✅ Created helper views and functions for easy data access
 - ✅ Added subscription cancellation function
 
 ### 2. API Endpoints
+
 - ✅ Created `/api/stripe/cancel-subscription` endpoint
 - ✅ Updated webhook to handle more subscription events
 - ✅ Webhook now syncs subscription status to local database
 
 ### 3. Frontend Integration
+
 - ✅ Updated billing settings page with cancel/reactivate buttons
 - ✅ Added proper status badges and formatting
 - ✅ Integrated with the `useStripeSubscription` hook
@@ -41,7 +44,7 @@ I've successfully set up the foundation for Stripe Foreign Data Wrapper (FDW) in
 Run this query in your Supabase SQL Editor:
 
 ```sql
-SELECT id, name, description, created_at 
+SELECT id, name, description, created_at
 FROM vault.secrets;
 ```
 
@@ -103,6 +106,7 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 ## How It Works
 
 ### Data Flow
+
 1. **Primary**: Stripe FDW provides real-time data directly from Stripe
 2. **Fallback**: Local `user_subscriptions` table (updated via webhooks)
 3. **Cache**: Subscription data is cached in the React hook
@@ -110,35 +114,42 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 ### Key Components
 
 #### Database Functions
+
 - `get_user_subscription_details()` - Gets subscription data with FDW fallback
 - `cancel_user_subscription()` - Marks subscription for cancellation
 - `current_user_subscription` view - Real-time subscription data
 
 #### API Routes
+
 - `/api/stripe/create-checkout-session` - Creates new subscriptions
 - `/api/stripe/cancel-subscription` - Cancels subscriptions
 - `/api/stripe/create-portal-session` - Opens Stripe billing portal
 - `/api/stripe/webhook` - Syncs subscription changes
 
 #### Frontend Hook
+
 - `useStripeSubscription()` - Manages subscription state with automatic fallbacks
 
 ## Troubleshooting
 
 ### "relation 'stripe.customers' does not exist"
+
 - Make sure you're on Supabase Pro plan or higher
 - Verify the wrappers extension is enabled
 - Check that the migration ran successfully
 
 ### "permission denied for foreign table"
+
 - Run: `GRANT SELECT ON ALL TABLES IN SCHEMA stripe TO authenticated;`
 
 ### No subscription data showing
+
 1. Check if user has `stripe_customer_id` in profiles table
 2. Verify webhook is receiving events: `stripe listen --forward-to localhost:3000/api/stripe/webhook`
 3. Check browser console for errors
 
 ### FDW queries are slow
+
 - This is normal for first query (cold start)
 - Consider implementing pagination for large datasets
 - Use specific columns instead of `SELECT *`
@@ -146,17 +157,18 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 ## Advanced Features
 
 ### Subscription Analytics
+
 You can now query subscription metrics:
 
 ```sql
 -- Active subscriptions by status
-SELECT status, COUNT(*) 
-FROM stripe.subscriptions 
+SELECT status, COUNT(*)
+FROM stripe.subscriptions
 WHERE status != 'canceled'
 GROUP BY status;
 
 -- Monthly recurring revenue
-SELECT 
+SELECT
   SUM(sp.unit_amount / 100) as mrr
 FROM stripe.subscriptions ss
 JOIN stripe.prices sp ON (ss.items->0->'price'->>'id')::text = sp.id
@@ -164,7 +176,9 @@ WHERE ss.status = 'active';
 ```
 
 ### Custom Subscription Plans
+
 To add more plans, update:
+
 1. Stripe products/prices in Stripe Dashboard
 2. Update `/api/stripe/create-checkout-session` with new price IDs
 3. Update plan type logic in database functions
@@ -189,8 +203,9 @@ To add more plans, update:
 ## Support
 
 If you encounter issues:
+
 1. Check Supabase logs: Dashboard → Logs → Postgres
 2. Check Stripe logs: [Stripe Dashboard → Developers → Logs](https://dashboard.stripe.com/logs)
 3. Test webhook events: [Stripe Webhook Testing](https://stripe.com/docs/webhooks/test)
 
-The implementation is designed to be resilient - even if FDW fails, the webhook fallback ensures your billing continues to work! 
+The implementation is designed to be resilient - even if FDW fails, the webhook fallback ensures your billing continues to work!

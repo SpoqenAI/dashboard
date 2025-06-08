@@ -2,8 +2,10 @@ import React from 'react';
 
 export default function TermsOfService() {
   return (
-    <div className="container mx-auto max-w-3xl py-12 px-4 text-gray-800">
-      <h1 className="text-4xl font-extrabold mb-8 text-center">Terms of Service for Spoqen</h1>
+    <div className="container mx-auto max-w-3xl px-4 py-12 text-gray-800">
+      <h1 className="mb-8 text-center text-4xl font-extrabold">
+        Terms of Service for Spoqen
+      </h1>
 
       <p className="mb-6 text-sm text-gray-600">
         Effective Date: {new Date().toLocaleDateString()}
@@ -12,313 +14,978 @@ export default function TermsOfService() {
       </p>
 
       <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">1. Introduction / Agreement to Terms</h2>
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          1. Introduction / Agreement to Terms
+        </h2>
         <p className="mb-4">
-          Welcome to Spoqen! These Terms of Service ("Terms," "TOS," or "Agreement") govern your access to and use of the Spoqen AI-powered receptionist service, including our website, any associated software, applications, and services (collectively, the "Service") provided by [Your Company Name] ("Spoqen," "we," "us," or "our").
+          Welcome to Spoqen! These Terms of Service ("Terms," "TOS," or
+          "Agreement") govern your access to and use of the Spoqen AI-powered
+          receptionist service, including our website, any associated software,
+          applications, and services (collectively, the "Service") provided by
+          [Your Company Name] ("Spoqen," "we," "us," or "our").
         </p>
         <p className="mb-4">
-          By creating an account, accessing, or using the Service, you acknowledge that you have read, understood, and agree to be bound by these Terms, including our integrated Privacy Policy. If you do not agree with these Terms, you must not access or use the Service. This acceptance forms a legally binding contract. It is important for users to understand that their engagement with the Service signifies their consent to these provisions.
+          By creating an account, accessing, or using the Service, you
+          acknowledge that you have read, understood, and agree to be bound by
+          these Terms, including our integrated Privacy Policy. If you do not
+          agree with these Terms, you must not access or use the Service. This
+          acceptance forms a legally binding contract. It is important for users
+          to understand that their engagement with the Service signifies their
+          consent to these provisions.
         </p>
         <p className="mb-4">
-          If you are using the Service on behalf of an organization or entity ("Organization"), then you are agreeing to these Terms on behalf of that Organization, and you represent and warrant that you have the authority to bind the Organization to these Terms. In that case, "User," "you," and "your" refer to that Organization.
+          If you are using the Service on behalf of an organization or entity
+          ("Organization"), then you are agreeing to these Terms on behalf of
+          that Organization, and you represent and warrant that you have the
+          authority to bind the Organization to these Terms. In that case,
+          "User," "you," and "your" refer to that Organization.
         </p>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">2. Definitions</h2>
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          2. Definitions
+        </h2>
         <p className="mb-4">
-          To ensure clarity and avoid ambiguity throughout this Agreement, the following key terms shall have the meanings ascribed to them below:
+          To ensure clarity and avoid ambiguity throughout this Agreement, the
+          following key terms shall have the meanings ascribed to them below:
         </p>
-        <ul className="list-disc list-inside ml-4 space-y-2">
-          <li><strong>"Service":</strong> Refers to the Spoqen AI-powered receptionist service, including the website, associated software, applications, and all related services provided by Spoqen, as further described in Section 4.</li>
-          <li><strong>"User" or "Customer":</strong> The business entity (e.g., a real estate business) that subscribes to the Service, and its authorized employees, agents, or contractors who are permitted to access and use the Service on the entity's behalf.</li>
-          <li><strong>"Caller":</strong> An individual who initiates a phone call to the User and whose call is answered or processed by the Service.</li>
-          <li><strong>"User Content":</strong> Any data, information, text, graphics, or other material provided, inputted, uploaded, or submitted by the User to the Service, or configured by the User within the Service. This includes, but is not limited to, business information, calendar integration details, contact lists, and specific instructions or scripts for the AI receptionist. This distinction is important as the User retains ownership of this content.</li>
-          <li><strong>"Caller Data":</strong> Any information pertaining to Callers that is captured, processed, or generated by the Service on behalf of the User. This includes, but is not limited to, Callers' names, phone numbers, the content and purpose of their calls, voice recordings of calls, and text transcripts of such recordings. The proper handling and definition of Caller Data are fundamental for privacy compliance, as the User is typically the data controller for this information, while Spoqen acts as a data processor.</li>
-          <li><strong>"AI":</strong> Artificial Intelligence, referring to the complex algorithms, machine learning models, and related technologies employed by Spoqen to deliver the Service's functionalities, such as understanding spoken language, responding to inquiries, and scheduling appointments.</li>
-          <li><strong>"Intellectual Property Rights":</strong> All proprietary rights of any kind, including but not limited to, patents, copyrights, trademarks, service marks, trade names, trade secrets, database rights, design rights, and any other intangible proprietary rights, whether registered or unregistered, and all applications, renewals, extensions, and restorations thereof, now or hereafter in force and effect worldwide.</li>
-          <li><strong>"Subscription Term":</strong> The period during which the User is authorized to access and use the Service, as specified in an Order Form or selected during the online subscription process.</li>
-          <li><strong>"Order Form":</strong> Any written or electronic document, including an online order confirmation page, executed by or agreed to by the User and Spoqen, that specifies the particular Service subscribed to, the Subscription Term, applicable fees, usage limits, and other commercial terms related to the subscription.</li>
-          <li><strong>"Personal Data":</strong> Any information relating to an identified or identifiable natural person, as defined under applicable data protection laws (e.g., GDPR, CCPA). This can include elements of User Content and Caller Data.</li>
-          <li><strong>"Privacy Policy":</strong> The Spoqen Privacy Policy, which is integrated into these Terms (see Section 9) and describes how Spoqen collects, uses, shares, and protects Personal Data.</li>
+        <ul className="ml-4 list-inside list-disc space-y-2">
+          <li>
+            <strong>"Service":</strong> Refers to the Spoqen AI-powered
+            receptionist service, including the website, associated software,
+            applications, and all related services provided by Spoqen, as
+            further described in Section 4.
+          </li>
+          <li>
+            <strong>"User" or "Customer":</strong> The business entity (e.g., a
+            real estate business) that subscribes to the Service, and its
+            authorized employees, agents, or contractors who are permitted to
+            access and use the Service on the entity's behalf.
+          </li>
+          <li>
+            <strong>"Caller":</strong> An individual who initiates a phone call
+            to the User and whose call is answered or processed by the Service.
+          </li>
+          <li>
+            <strong>"User Content":</strong> Any data, information, text,
+            graphics, or other material provided, inputted, uploaded, or
+            submitted by the User to the Service, or configured by the User
+            within the Service. This includes, but is not limited to, business
+            information, calendar integration details, contact lists, and
+            specific instructions or scripts for the AI receptionist. This
+            distinction is important as the User retains ownership of this
+            content.
+          </li>
+          <li>
+            <strong>"Caller Data":</strong> Any information pertaining to
+            Callers that is captured, processed, or generated by the Service on
+            behalf of the User. This includes, but is not limited to, Callers'
+            names, phone numbers, the content and purpose of their calls, voice
+            recordings of calls, and text transcripts of such recordings. The
+            proper handling and definition of Caller Data are fundamental for
+            privacy compliance, as the User is typically the data controller for
+            this information, while Spoqen acts as a data processor.
+          </li>
+          <li>
+            <strong>"AI":</strong> Artificial Intelligence, referring to the
+            complex algorithms, machine learning models, and related
+            technologies employed by Spoqen to deliver the Service's
+            functionalities, such as understanding spoken language, responding
+            to inquiries, and scheduling appointments.
+          </li>
+          <li>
+            <strong>"Intellectual Property Rights":</strong> All proprietary
+            rights of any kind, including but not limited to, patents,
+            copyrights, trademarks, service marks, trade names, trade secrets,
+            database rights, design rights, and any other intangible proprietary
+            rights, whether registered or unregistered, and all applications,
+            renewals, extensions, and restorations thereof, now or hereafter in
+            force and effect worldwide.
+          </li>
+          <li>
+            <strong>"Subscription Term":</strong> The period during which the
+            User is authorized to access and use the Service, as specified in an
+            Order Form or selected during the online subscription process.
+          </li>
+          <li>
+            <strong>"Order Form":</strong> Any written or electronic document,
+            including an online order confirmation page, executed by or agreed
+            to by the User and Spoqen, that specifies the particular Service
+            subscribed to, the Subscription Term, applicable fees, usage limits,
+            and other commercial terms related to the subscription.
+          </li>
+          <li>
+            <strong>"Personal Data":</strong> Any information relating to an
+            identified or identifiable natural person, as defined under
+            applicable data protection laws (e.g., GDPR, CCPA). This can include
+            elements of User Content and Caller Data.
+          </li>
+          <li>
+            <strong>"Privacy Policy":</strong> The Spoqen Privacy Policy, which
+            is integrated into these Terms (see Section 9) and describes how
+            Spoqen collects, uses, shares, and protects Personal Data.
+          </li>
         </ul>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">3. User Accounts & Security</h2>
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          3. User Accounts & Security
+        </h2>
         <p className="mb-4">
-          To access and use the Spoqen Service, you must register for an account ("Account"). You agree to provide accurate, current, and complete information during the registration process and to promptly update such information as necessary to maintain its accuracy, currency, and completeness. Providing false or misleading information may result in suspension or termination of your Account.
+          To access and use the Spoqen Service, you must register for an account
+          ("Account"). You agree to provide accurate, current, and complete
+          information during the registration process and to promptly update
+          such information as necessary to maintain its accuracy, currency, and
+          completeness. Providing false or misleading information may result in
+          suspension or termination of your Account.
         </p>
         <p className="mb-4">
-          You are solely responsible for all activities that occur under your Account, whether or not such activities are authorized by you or undertaken by you, your employees, or a third party on your behalf. This responsibility underscores the importance of safeguarding Account credentials. You are responsible for maintaining the confidentiality of your Account password and any other security information associated with your Account. Spoqen encourages the use of strong, unique passwords and regular updates to such passwords.
+          You are solely responsible for all activities that occur under your
+          Account, whether or not such activities are authorized by you or
+          undertaken by you, your employees, or a third party on your behalf.
+          This responsibility underscores the importance of safeguarding Account
+          credentials. You are responsible for maintaining the confidentiality
+          of your Account password and any other security information associated
+          with your Account. Spoqen encourages the use of strong, unique
+          passwords and regular updates to such passwords.
         </p>
         <p className="mb-4">
-          You must notify Spoqen immediately upon becoming aware of any unauthorized use of your Account, any breach of security, or any suspected compromise of your Account credentials. Spoqen will not be liable for any loss or damage arising from your failure to comply with these security obligations, such as losses incurred due to a compromised password that was not promptly reported or was a result of user negligence.
+          You must notify Spoqen immediately upon becoming aware of any
+          unauthorized use of your Account, any breach of security, or any
+          suspected compromise of your Account credentials. Spoqen will not be
+          liable for any loss or damage arising from your failure to comply with
+          these security obligations, such as losses incurred due to a
+          compromised password that was not promptly reported or was a result of
+          user negligence.
         </p>
         <p className="mb-4">
-          Users shall not: (i) select or use as a username a name of another person with the intent to impersonate that person; (ii) use as a username a name subject to any rights of a person other than the User without appropriate authorization; or (iii) use a username that is otherwise offensive, vulgar, or obscene. Account credentials may not be shared with individuals outside your Organization or used by more than one individual within your Organization unless explicitly permitted by your Subscription Plan.
+          Users shall not: (i) select or use as a username a name of another
+          person with the intent to impersonate that person; (ii) use as a
+          username a name subject to any rights of a person other than the User
+          without appropriate authorization; or (iii) use a username that is
+          otherwise offensive, vulgar, or obscene. Account credentials may not
+          be shared with individuals outside your Organization or used by more
+          than one individual within your Organization unless explicitly
+          permitted by your Subscription Plan.
         </p>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">4. The Spoqen Service</h2>
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          4. The Spoqen Service
+        </h2>
         <p className="mb-4">
-          Subject to your full compliance with these Terms and timely payment of all applicable Subscription Fees, Spoqen grants you a limited, non-exclusive, non-transferable, non-sublicensable, revocable license during the Subscription Term to access and use the Service. This license is granted solely for your internal business purposes in connection with your real estate business operations, as specifically permitted by these Terms and any applicable Order Form.
+          Subject to your full compliance with these Terms and timely payment of
+          all applicable Subscription Fees, Spoqen grants you a limited,
+          non-exclusive, non-transferable, non-sublicensable, revocable license
+          during the Subscription Term to access and use the Service. This
+          license is granted solely for your internal business purposes in
+          connection with your real estate business operations, as specifically
+          permitted by these Terms and any applicable Order Form.
         </p>
         <p className="mb-4">
-          Spoqen is an AI-powered receptionist service designed specifically for real estate businesses. Its key functions include, but are not limited to:
+          Spoqen is an AI-powered receptionist service designed specifically for
+          real estate businesses. Its key functions include, but are not limited
+          to:
         </p>
-        <ul className="list-disc list-inside ml-4 space-y-2 mb-4">
+        <ul className="mb-4 ml-4 list-inside list-disc space-y-2">
           <li>Answering incoming phone calls on a 24/7 basis.</li>
-          <li>Asking qualifying questions to Callers to understand their needs and intent.</li>
-          <li>Capturing Caller information, such as name, phone number, email address (if provided), and the reason for their call.</li>
-          <li>Booking appointments directly into your integrated calendar system (e.g., Google Calendar, Microsoft Outlook Calendar), based on your configured availability and rules.</li>
+          <li>
+            Asking qualifying questions to Callers to understand their needs and
+            intent.
+          </li>
+          <li>
+            Capturing Caller information, such as name, phone number, email
+            address (if provided), and the reason for their call.
+          </li>
+          <li>
+            Booking appointments directly into your integrated calendar system
+            (e.g., Google Calendar, Microsoft Outlook Calendar), based on your
+            configured availability and rules.
+          </li>
         </ul>
         <p className="mb-4">
-          The Service utilizes AI, which may interact with Callers via voice and/or text-based communication. It is important for Users to understand that while the AI is designed to be sophisticated, its capabilities are not limitless, and its performance can be variable.
+          The Service utilizes AI, which may interact with Callers via voice
+          and/or text-based communication. It is important for Users to
+          understand that while the AI is designed to be sophisticated, its
+          capabilities are not limitless, and its performance can be variable.
         </p>
         <p className="mb-4">
-          Spoqen will use commercially reasonable efforts to make the Service available twenty-four hours a day, seven days a week (24/7), except for: (a) planned downtime, for which Spoqen will endeavor to provide reasonable advance notice (e.g., via email or a notification within the Service); or (b) any unavailability caused by circumstances beyond Spoqen's reasonable control, including but not limited to acts of God, acts of government, floods, fires, earthquakes, civil unrest, acts of terror, strikes or other labor problems (other than those involving Spoqen employees), Internet service provider failures or delays, or denial of service attacks (collectively, "Force Majeure Events").
+          Spoqen will use commercially reasonable efforts to make the Service
+          available twenty-four hours a day, seven days a week (24/7), except
+          for: (a) planned downtime, for which Spoqen will endeavor to provide
+          reasonable advance notice (e.g., via email or a notification within
+          the Service); or (b) any unavailability caused by circumstances beyond
+          Spoqen's reasonable control, including but not limited to acts of God,
+          acts of government, floods, fires, earthquakes, civil unrest, acts of
+          terror, strikes or other labor problems (other than those involving
+          Spoqen employees), Internet service provider failures or delays, or
+          denial of service attacks (collectively, "Force Majeure Events").
         </p>
         <p className="mb-4">
-          Spoqen reserves the right to modify, enhance, suspend, or discontinue, temporarily or permanently, the Service or any feature, function, or part thereof, with or without notice, at its sole discretion. Reasons for such actions may include, but are not limited to, routine maintenance, an upgrade of software or hardware, implementation of new features, or addressing security vulnerabilities. Spoqen will not be liable to you or to any third party for any modification, suspension, or discontinuance of the Service or any part thereof. However, if Spoqen permanently discontinues the Service in its entirety without cause, and you have prepaid fees for a period extending beyond the discontinuance date, Spoqen may, at its discretion, offer a pro-rata refund of such prepaid, unused fees.
+          Spoqen reserves the right to modify, enhance, suspend, or discontinue,
+          temporarily or permanently, the Service or any feature, function, or
+          part thereof, with or without notice, at its sole discretion. Reasons
+          for such actions may include, but are not limited to, routine
+          maintenance, an upgrade of software or hardware, implementation of new
+          features, or addressing security vulnerabilities. Spoqen will not be
+          liable to you or to any third party for any modification, suspension,
+          or discontinuance of the Service or any part thereof. However, if
+          Spoqen permanently discontinues the Service in its entirety without
+          cause, and you have prepaid fees for a period extending beyond the
+          discontinuance date, Spoqen may, at its discretion, offer a pro-rata
+          refund of such prepaid, unused fees.
         </p>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">5. Subscriptions & Payment</h2>
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          5. Subscriptions & Payment
+        </h2>
         <p className="mb-4">
-          The Service is offered under various subscription plans ("Subscription Plans"), the details of which, including features and limitations, are available on the Spoqen website or will be specified in an applicable Order Form. Fees for each Subscription Plan ("Subscription Fees") are also set forth on our website or in the Order Form. All Subscription Fees are quoted in United States Dollars (USD) unless expressly stated otherwise.
+          The Service is offered under various subscription plans ("Subscription
+          Plans"), the details of which, including features and limitations, are
+          available on the Spoqen website or will be specified in an applicable
+          Order Form. Fees for each Subscription Plan ("Subscription Fees") are
+          also set forth on our website or in the Order Form. All Subscription
+          Fees are quoted in United States Dollars (USD) unless expressly stated
+          otherwise.
         </p>
         <p className="mb-4">
-          You agree to pay all applicable Subscription Fees for the Service in advance, according to the billing frequency (e.g., monthly, annually) associated with your chosen Subscription Plan. By providing a payment method (e.g., credit card, bank account), you authorize Spoqen, or its designated third-party payment processor, to charge your selected payment method for all Subscription Fees due for your chosen Subscription Term and any renewal terms. If Spoqen agrees to invoice you for Subscription Fees, full payment must be received within thirty (30) days from the invoice date, unless otherwise specified in the Order Form. Late payments may be subject to a service charge equal to the lesser of 1.5% per month on the overdue amount or the maximum rate permitted by applicable law, plus any costs of collection.
+          You agree to pay all applicable Subscription Fees for the Service in
+          advance, according to the billing frequency (e.g., monthly, annually)
+          associated with your chosen Subscription Plan. By providing a payment
+          method (e.g., credit card, bank account), you authorize Spoqen, or its
+          designated third-party payment processor, to charge your selected
+          payment method for all Subscription Fees due for your chosen
+          Subscription Term and any renewal terms. If Spoqen agrees to invoice
+          you for Subscription Fees, full payment must be received within thirty
+          (30) days from the invoice date, unless otherwise specified in the
+          Order Form. Late payments may be subject to a service charge equal to
+          the lesser of 1.5% per month on the overdue amount or the maximum rate
+          permitted by applicable law, plus any costs of collection.
         </p>
         <p className="mb-4">
-          <strong className="block">AUTOMATIC RENEWAL:</strong> UNLESS YOU NOTIFY SPOQEN IN WRITING (VIA EMAIL TO admin@spoqen.comOR THROUGH YOUR ACCOUNT SETTINGS, IF AVAILABLE) AT LEAST THIRTY (30) DAYS BEFORE THE END OF YOUR THEN-CURRENT SUBSCRIPTION TERM THAT YOU WISH TO CANCEL YOUR SUBSCRIPTION, YOUR SUBSCRIPTION WILL AUTOMATICALLY RENEW FOR SUCCESSIVE PERIODS EQUAL IN DURATION TO YOUR INITIAL SUBSCRIPTION TERM (E.G., MONTHLY OR ANNUALLY). SUCH RENEWALS WILL BE AT SPOQEN'S THEN-CURRENT NON-PROMOTIONAL SUBSCRIPTION FEE FOR THE APPLICABLE SUBSCRIPTION PLAN. YOU AUTHORIZE SPOQEN (OR ITS PAYMENT PROCESSOR) TO CHARGE YOUR PAYMENT METHOD ON FILE FOR THE RENEWAL SUBSCRIPTION FEES. You may cancel your subscription at any time, but such cancellation will only become effective at the end of your then-current Subscription Term.
+          <strong className="block">AUTOMATIC RENEWAL:</strong> UNLESS YOU
+          NOTIFY SPOQEN IN WRITING (VIA EMAIL TO admin@spoqen.comOR THROUGH YOUR
+          ACCOUNT SETTINGS, IF AVAILABLE) AT LEAST THIRTY (30) DAYS BEFORE THE
+          END OF YOUR THEN-CURRENT SUBSCRIPTION TERM THAT YOU WISH TO CANCEL
+          YOUR SUBSCRIPTION, YOUR SUBSCRIPTION WILL AUTOMATICALLY RENEW FOR
+          SUCCESSIVE PERIODS EQUAL IN DURATION TO YOUR INITIAL SUBSCRIPTION TERM
+          (E.G., MONTHLY OR ANNUALLY). SUCH RENEWALS WILL BE AT SPOQEN'S
+          THEN-CURRENT NON-PROMOTIONAL SUBSCRIPTION FEE FOR THE APPLICABLE
+          SUBSCRIPTION PLAN. YOU AUTHORIZE SPOQEN (OR ITS PAYMENT PROCESSOR) TO
+          CHARGE YOUR PAYMENT METHOD ON FILE FOR THE RENEWAL SUBSCRIPTION FEES.
+          You may cancel your subscription at any time, but such cancellation
+          will only become effective at the end of your then-current
+          Subscription Term.
         </p>
         <p className="mb-4">
-          <strong className="block">REFUND POLICY:</strong> NO REFUNDS. ALL PAYMENTS ARE NON-REFUNDABLE AND THERE ARE NO REFUNDS OR CREDITS FOR PARTIALLY USED SUBSCRIPTION PERIODS, UNUSED TIME, SERVICE DOWNGRADES, OR FOR ANY OTHER REASON. ONCE A PAYMENT OR DEPOSIT IS MADE FOR THE SERVICE, IT IS NON-REFUNDABLE. This strict no-refund policy is due to the immediate costs incurred by Spoqen in provisioning the Service upon subscription, which include but are not limited to AI model resource allocation, telephony infrastructure costs, and account setup and configuration expenses. If you cancel your subscription, you will continue to have access to the Service through the end of your current paid Subscription Term, but no refund will be issued for any remaining portion of that term.
+          <strong className="block">REFUND POLICY:</strong> NO REFUNDS. ALL
+          PAYMENTS ARE NON-REFUNDABLE AND THERE ARE NO REFUNDS OR CREDITS FOR
+          PARTIALLY USED SUBSCRIPTION PERIODS, UNUSED TIME, SERVICE DOWNGRADES,
+          OR FOR ANY OTHER REASON. ONCE A PAYMENT OR DEPOSIT IS MADE FOR THE
+          SERVICE, IT IS NON-REFUNDABLE. This strict no-refund policy is due to
+          the immediate costs incurred by Spoqen in provisioning the Service
+          upon subscription, which include but are not limited to AI model
+          resource allocation, telephony infrastructure costs, and account setup
+          and configuration expenses. If you cancel your subscription, you will
+          continue to have access to the Service through the end of your current
+          paid Subscription Term, but no refund will be issued for any remaining
+          portion of that term.
         </p>
         <p className="mb-4">
-          Spoqen reserves the right to change its Subscription Fees or introduce new charges at any time, in its sole discretion. Spoqen will provide you with reasonable prior notice of any changes to Subscription Fees, typically at least thirty (30) days before the changes become effective. Any fee changes will apply to subsequent Subscription Terms or renewals and will not affect your current Subscription Term. Your continued use of the Service after a fee change constitutes your agreement to pay the modified Subscription Fees.
+          Spoqen reserves the right to change its Subscription Fees or introduce
+          new charges at any time, in its sole discretion. Spoqen will provide
+          you with reasonable prior notice of any changes to Subscription Fees,
+          typically at least thirty (30) days before the changes become
+          effective. Any fee changes will apply to subsequent Subscription Terms
+          or renewals and will not affect your current Subscription Term. Your
+          continued use of the Service after a fee change constitutes your
+          agreement to pay the modified Subscription Fees.
         </p>
         <p className="mb-4">
-          All Subscription Fees are exclusive of any and all applicable federal, state, local, or foreign taxes, levies, duties, or similar governmental assessments, including value-added tax (VAT), sales tax, use tax, or withholding taxes (collectively, "Taxes"). You are responsible for paying all Taxes associated with your purchases hereunder, excluding only Taxes based solely on Spoqen's net income. If Spoqen has a legal obligation to pay or collect Taxes for which you are responsible, the appropriate amount will be invoiced to and paid by you, unless you provide Spoqen with a valid tax exemption certificate authorized by the appropriate taxing authority.
+          All Subscription Fees are exclusive of any and all applicable federal,
+          state, local, or foreign taxes, levies, duties, or similar
+          governmental assessments, including value-added tax (VAT), sales tax,
+          use tax, or withholding taxes (collectively, "Taxes"). You are
+          responsible for paying all Taxes associated with your purchases
+          hereunder, excluding only Taxes based solely on Spoqen's net income.
+          If Spoqen has a legal obligation to pay or collect Taxes for which you
+          are responsible, the appropriate amount will be invoiced to and paid
+          by you, unless you provide Spoqen with a valid tax exemption
+          certificate authorized by the appropriate taxing authority.
         </p>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">6. Intellectual Property Rights</h2>
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          6. Intellectual Property Rights
+        </h2>
         <p className="mb-4">
-          You acknowledge and agree that the Service, including but not limited to all underlying software, AI models, algorithms, code, designs, text, graphics, logos, user interfaces, documentation, and any improvements, modifications, enhancements, or derivative works thereof, as well as all Intellectual Property Rights therein, are and will remain the exclusive property of Spoqen or its licensors. Spoqen reserves all rights not expressly granted to you in these Terms. This Agreement does not transfer any ownership of Spoqen's Intellectual Property Rights to you.
+          You acknowledge and agree that the Service, including but not limited
+          to all underlying software, AI models, algorithms, code, designs,
+          text, graphics, logos, user interfaces, documentation, and any
+          improvements, modifications, enhancements, or derivative works
+          thereof, as well as all Intellectual Property Rights therein, are and
+          will remain the exclusive property of Spoqen or its licensors. Spoqen
+          reserves all rights not expressly granted to you in these Terms. This
+          Agreement does not transfer any ownership of Spoqen's Intellectual
+          Property Rights to you.
         </p>
         <p className="mb-4">
-          As between you and Spoqen, you retain all right, title, and interest in and to your User Content (e.g., your calendar data, specific business information you provide for AI configuration). You are solely responsible for the accuracy, quality, integrity, legality, reliability, appropriateness, and intellectual property ownership or right to use of all your User Content.
+          As between you and Spoqen, you retain all right, title, and interest
+          in and to your User Content (e.g., your calendar data, specific
+          business information you provide for AI configuration). You are solely
+          responsible for the accuracy, quality, integrity, legality,
+          reliability, appropriateness, and intellectual property ownership or
+          right to use of all your User Content.
         </p>
         <p className="mb-4">
-          Similarly, as between you and Spoqen, you are considered the owner or controller of Caller Data. Spoqen acknowledges that it acts as a "service provider" or "data processor" with respect to Caller Data, as those terms are understood under applicable data protection laws (such as CCPA/CPRA and GDPR, respectively). Spoqen will only process Caller Data on your behalf, in accordance with your lawful instructions, these Terms, and the integrated Privacy Policy.
+          Similarly, as between you and Spoqen, you are considered the owner or
+          controller of Caller Data. Spoqen acknowledges that it acts as a
+          "service provider" or "data processor" with respect to Caller Data, as
+          those terms are understood under applicable data protection laws (such
+          as CCPA/CPRA and GDPR, respectively). Spoqen will only process Caller
+          Data on your behalf, in accordance with your lawful instructions,
+          these Terms, and the integrated Privacy Policy.
         </p>
         <p className="mb-4">
-          To enable Spoqen to provide, maintain, secure, and improve the Service, you grant Spoqen a worldwide, non-exclusive, royalty-free, fully paid-up, sublicensable (solely to Spoqen's third-party service providers who assist in delivering the Service and are bound by confidentiality and data protection obligations), and transferable (in connection with a merger, acquisition, or sale of assets) license during the Subscription Term to host, access, use, process, copy, reproduce, modify, display, transmit, and distribute your User Content and Caller Data. This license is strictly for the purposes of:
+          To enable Spoqen to provide, maintain, secure, and improve the
+          Service, you grant Spoqen a worldwide, non-exclusive, royalty-free,
+          fully paid-up, sublicensable (solely to Spoqen's third-party service
+          providers who assist in delivering the Service and are bound by
+          confidentiality and data protection obligations), and transferable (in
+          connection with a merger, acquisition, or sale of assets) license
+          during the Subscription Term to host, access, use, process, copy,
+          reproduce, modify, display, transmit, and distribute your User Content
+          and Caller Data. This license is strictly for the purposes of:
         </p>
-        <ul className="list-disc list-inside ml-4 space-y-2 mb-4">
+        <ul className="mb-4 ml-4 list-inside list-disc space-y-2">
           <li>(a) providing and operating the Service for you;</li>
-          <li>(b) preventing or addressing service, security, support, or technical issues;</li>
-          <li>(c) complying with legal requirements or lawful governmental requests; and</li>
-          <li>(d) as otherwise expressly permitted in these Terms or the Privacy Policy.</li>
+          <li>
+            (b) preventing or addressing service, security, support, or
+            technical issues;
+          </li>
+          <li>
+            (c) complying with legal requirements or lawful governmental
+            requests; and
+          </li>
+          <li>
+            (d) as otherwise expressly permitted in these Terms or the Privacy
+            Policy.
+          </li>
         </ul>
         <p className="mb-4">
-          Specifically, for the purpose of improving the Service, our AI models, and overall service performance, you agree and grant Spoqen the right to use User Content and Caller Data, including but not limited to voice recordings and their transcripts. When User Content or Caller Data is used for AI model training, development, and improvement, Spoqen will take commercially reasonable steps to de-identify and/or aggregate such data to the extent feasible, with the objective of protecting individual privacy. Such data, when used for these improvement purposes, will not be used to specifically identify any individual Caller or User to unrelated third parties, other than as permitted or required by law or as detailed in our Privacy Policy. Your continued use of the Service signifies your consent to this use of data for service and AI enhancement purposes.
+          Specifically, for the purpose of improving the Service, our AI models,
+          and overall service performance, you agree and grant Spoqen the right
+          to use User Content and Caller Data, including but not limited to
+          voice recordings and their transcripts. When User Content or Caller
+          Data is used for AI model training, development, and improvement,
+          Spoqen will take commercially reasonable steps to de-identify and/or
+          aggregate such data to the extent feasible, with the objective of
+          protecting individual privacy. Such data, when used for these
+          improvement purposes, will not be used to specifically identify any
+          individual Caller or User to unrelated third parties, other than as
+          permitted or required by law or as detailed in our Privacy Policy.
+          Your continued use of the Service signifies your consent to this use
+          of data for service and AI enhancement purposes.
         </p>
         <p className="mb-4">
-          If you or any of your Authorized Users provide Spoqen with any suggestions, ideas, enhancement requests, feedback, recommendations, or other information regarding the Service ("Feedback"), you hereby grant Spoqen a worldwide, perpetual, irrevocable, royalty-free, fully paid-up, non-exclusive, sublicensable, and transferable license to use, disclose, reproduce, modify, adapt, publish, translate, create derivative works from, distribute, perform, display, and otherwise exploit such Feedback in any manner and for any purpose, without any obligation, attribution, or compensation to you or any third party. Spoqen is under no obligation to implement any Feedback.
+          If you or any of your Authorized Users provide Spoqen with any
+          suggestions, ideas, enhancement requests, feedback, recommendations,
+          or other information regarding the Service ("Feedback"), you hereby
+          grant Spoqen a worldwide, perpetual, irrevocable, royalty-free, fully
+          paid-up, non-exclusive, sublicensable, and transferable license to
+          use, disclose, reproduce, modify, adapt, publish, translate, create
+          derivative works from, distribute, perform, display, and otherwise
+          exploit such Feedback in any manner and for any purpose, without any
+          obligation, attribution, or compensation to you or any third party.
+          Spoqen is under no obligation to implement any Feedback.
         </p>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">7. User Responsibilities</h2>
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          7. User Responsibilities
+        </h2>
         <p className="mb-4">
-          You agree to use the Service in strict compliance with all applicable local, state, national, and international laws, rules, and regulations. This includes, but is not limited to, laws related to data privacy and security (such as GDPR, CCPA/CPRA), telecommunications, anti-spam (e.g., TCPA, CAN-SPAM), and the transmission of technical or Personal Data.
+          You agree to use the Service in strict compliance with all applicable
+          local, state, national, and international laws, rules, and
+          regulations. This includes, but is not limited to, laws related to
+          data privacy and security (such as GDPR, CCPA/CPRA),
+          telecommunications, anti-spam (e.g., TCPA, CAN-SPAM), and the
+          transmission of technical or Personal Data.
         </p>
         <p className="mb-4">
-          <strong>Compliance with Call Recording Laws:</strong> You acknowledge and agree that you are solely responsible for complying with all applicable laws, rules, and regulations regarding the recording of telephone calls and other electronic communications involving Callers. This includes, without limitation, obtaining any and all necessary consents from Callers before any recording takes place or before allowing Spoqen to record any communications on your behalf. You understand that laws concerning call recording vary significantly by jurisdiction. Some jurisdictions require consent from only one party to the communication ("one-party consent"), while others require consent from all parties involved in the communication ("two-party consent" or "all-party consent"). Spoqen may provide features or functionalities designed to assist with notification to Callers that a call is being recorded (e.g., a pre-recorded announcement). However, your use of any such features does not absolve you of your independent and sole responsibility to ensure full compliance with all applicable call recording laws and consent requirements. You agree to clearly and conspicuously inform your Callers that their calls may be recorded by the Spoqen Service, acting on your behalf, and the purposes for which such recordings are made (e.g., for quality assurance, record-keeping, to facilitate the services provided by Spoqen).
+          <strong>Compliance with Call Recording Laws:</strong> You acknowledge
+          and agree that you are solely responsible for complying with all
+          applicable laws, rules, and regulations regarding the recording of
+          telephone calls and other electronic communications involving Callers.
+          This includes, without limitation, obtaining any and all necessary
+          consents from Callers before any recording takes place or before
+          allowing Spoqen to record any communications on your behalf. You
+          understand that laws concerning call recording vary significantly by
+          jurisdiction. Some jurisdictions require consent from only one party
+          to the communication ("one-party consent"), while others require
+          consent from all parties involved in the communication ("two-party
+          consent" or "all-party consent"). Spoqen may provide features or
+          functionalities designed to assist with notification to Callers that a
+          call is being recorded (e.g., a pre-recorded announcement). However,
+          your use of any such features does not absolve you of your independent
+          and sole responsibility to ensure full compliance with all applicable
+          call recording laws and consent requirements. You agree to clearly and
+          conspicuously inform your Callers that their calls may be recorded by
+          the Spoqen Service, acting on your behalf, and the purposes for which
+          such recordings are made (e.g., for quality assurance, record-keeping,
+          to facilitate the services provided by Spoqen).
         </p>
         <p className="mb-4">
-          You are responsible for the accuracy, content, legality, and integrity of all User Content you provide or configure within the Service. You represent and warrant that you have obtained all necessary rights, consents, licenses, and permissions to provide, use, and process all User Content and Caller Data within the Service as contemplated by these Terms, and that your use of such data does not and will not violate any third-party rights (including Intellectual Property Rights and privacy rights) or any applicable laws.
+          You are responsible for the accuracy, content, legality, and integrity
+          of all User Content you provide or configure within the Service. You
+          represent and warrant that you have obtained all necessary rights,
+          consents, licenses, and permissions to provide, use, and process all
+          User Content and Caller Data within the Service as contemplated by
+          these Terms, and that your use of such data does not and will not
+          violate any third-party rights (including Intellectual Property Rights
+          and privacy rights) or any applicable laws.
         </p>
         <p className="mb-4">
-          You are responsible for ensuring that any of your employees, agents, contractors, or other individuals whom you authorize to access or use the Service ("Authorized Users") are aware of and comply with all provisions of these Terms. You will be fully liable for any breach of these Terms by any of your Authorized Users as if it were a breach by you.
+          You are responsible for ensuring that any of your employees, agents,
+          contractors, or other individuals whom you authorize to access or use
+          the Service ("Authorized Users") are aware of and comply with all
+          provisions of these Terms. You will be fully liable for any breach of
+          these Terms by any of your Authorized Users as if it were a breach by
+          you.
         </p>
         <p className="mb-4">
-          If you choose to integrate the Service with any third-party applications, platforms, or services (e.g., your CRM system, calendar applications), you represent and warrant that you have the necessary authority, rights, and consents to permit Spoqen to access, transmit, and process data from such third-party applications as required to provide the Service and fulfill your instructions.
+          If you choose to integrate the Service with any third-party
+          applications, platforms, or services (e.g., your CRM system, calendar
+          applications), you represent and warrant that you have the necessary
+          authority, rights, and consents to permit Spoqen to access, transmit,
+          and process data from such third-party applications as required to
+          provide the Service and fulfill your instructions.
         </p>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">8. Prohibited Conduct</h2>
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          8. Prohibited Conduct
+        </h2>
         <p className="mb-4">
-          You agree not to misuse the Spoqen Service or assist, encourage, or enable others to do so. Specifically, you agree not to, and not to permit any Authorized User or third party to, directly or indirectly, do any of the following:
+          You agree not to misuse the Spoqen Service or assist, encourage, or
+          enable others to do so. Specifically, you agree not to, and not to
+          permit any Authorized User or third party to, directly or indirectly,
+          do any of the following:
         </p>
-        <ul className="list-disc list-inside ml-4 space-y-2 mb-4">
-          <li>Use the Service for any illegal, fraudulent, or unauthorized purpose, or in violation of any applicable local, state, national, or international law, rule, or regulation.</li>
-          <li>Interfere with, disrupt, or negatively affect the integrity, security, or performance of the Service, its underlying infrastructure, or the data contained therein; or attempt to gain unauthorized access to the Service, its related systems, networks, or other users' accounts.</li>
-          <li>Copy, modify, adapt, translate, reverse engineer, decompile, disassemble, or otherwise attempt to discover or derive the source code, object code, underlying structure, ideas, know-how, algorithms, or trade secrets relevant to the Service or any part thereof, except as expressly permitted by applicable law despite this limitation.</li>
-          <li>Sell, resell, license, sublicense, distribute, rent, lease, timeshare, or otherwise transfer or make available your rights to access or use the Service, or any portion thereof, to any third party, unless expressly authorized by Spoqen in writing.</li>
-          <li>Use the Service for purposes of competitive analysis, benchmarking, the development, provision, or use of a competing software service or product, or any other purpose that is to Spoqen's commercial disadvantage.</li>
-          <li>Transmit, store, or process any User Content or Caller Data that is, or to engage in any activity that is, unlawful, abusive, harassing, defamatory, libelous, threatening, obscene, pornographic, hateful, discriminatory, or otherwise objectionable or harmful, or that infringes upon or violates the rights of any third party (including intellectual property, privacy, or publicity rights).</li>
-          <li>Use the Service to send, transmit, or facilitate unsolicited communications, "spam," "junk mail," "chain letters," "pyramid schemes," or bulk messages in violation of applicable laws such as the Telephone Consumer Protection Act (TCPA) or the CAN-SPAM Act.</li>
-          <li>Impersonate any person or entity, or falsely state or otherwise misrepresent your affiliation with a person or entity, or create a false identity to mislead others.</li>
-          <li>Use the Service to knowingly collect, store, process, or transmit any highly sensitive personal information, such as financial account numbers (other than for payment to Spoqen as per Section 5), Social Security Numbers, driver's license numbers, passport numbers, government-issued identification numbers, health information protected under HIPAA (unless Spoqen has entered into a separate Business Associate Agreement with you for such purpose), biometric data, or other categories of sensitive data that are not reasonably necessary for the intended receptionist functions of the Service. YOU AGREE NOT TO USE THE SERVICE TO COLLECT, MANAGE, OR PROCESS SENSITIVE PERSONAL INFORMATION BEYOND ITS INTENDED RECEPTIONIST FUNCTIONS. SPOQEN WILL NOT HAVE ANY LIABILITY OR RESPONSIBILITY RESULTING FROM YOUR USE OF THE SERVICE TO COLLECT OR PROCESS SUCH INFORMATION INAPPROPRIATELY.</li>
+        <ul className="mb-4 ml-4 list-inside list-disc space-y-2">
+          <li>
+            Use the Service for any illegal, fraudulent, or unauthorized
+            purpose, or in violation of any applicable local, state, national,
+            or international law, rule, or regulation.
+          </li>
+          <li>
+            Interfere with, disrupt, or negatively affect the integrity,
+            security, or performance of the Service, its underlying
+            infrastructure, or the data contained therein; or attempt to gain
+            unauthorized access to the Service, its related systems, networks,
+            or other users' accounts.
+          </li>
+          <li>
+            Copy, modify, adapt, translate, reverse engineer, decompile,
+            disassemble, or otherwise attempt to discover or derive the source
+            code, object code, underlying structure, ideas, know-how,
+            algorithms, or trade secrets relevant to the Service or any part
+            thereof, except as expressly permitted by applicable law despite
+            this limitation.
+          </li>
+          <li>
+            Sell, resell, license, sublicense, distribute, rent, lease,
+            timeshare, or otherwise transfer or make available your rights to
+            access or use the Service, or any portion thereof, to any third
+            party, unless expressly authorized by Spoqen in writing.
+          </li>
+          <li>
+            Use the Service for purposes of competitive analysis, benchmarking,
+            the development, provision, or use of a competing software service
+            or product, or any other purpose that is to Spoqen's commercial
+            disadvantage.
+          </li>
+          <li>
+            Transmit, store, or process any User Content or Caller Data that is,
+            or to engage in any activity that is, unlawful, abusive, harassing,
+            defamatory, libelous, threatening, obscene, pornographic, hateful,
+            discriminatory, or otherwise objectionable or harmful, or that
+            infringes upon or violates the rights of any third party (including
+            intellectual property, privacy, or publicity rights).
+          </li>
+          <li>
+            Use the Service to send, transmit, or facilitate unsolicited
+            communications, "spam," "junk mail," "chain letters," "pyramid
+            schemes," or bulk messages in violation of applicable laws such as
+            the Telephone Consumer Protection Act (TCPA) or the CAN-SPAM Act.
+          </li>
+          <li>
+            Impersonate any person or entity, or falsely state or otherwise
+            misrepresent your affiliation with a person or entity, or create a
+            false identity to mislead others.
+          </li>
+          <li>
+            Use the Service to knowingly collect, store, process, or transmit
+            any highly sensitive personal information, such as financial account
+            numbers (other than for payment to Spoqen as per Section 5), Social
+            Security Numbers, driver's license numbers, passport numbers,
+            government-issued identification numbers, health information
+            protected under HIPAA (unless Spoqen has entered into a separate
+            Business Associate Agreement with you for such purpose), biometric
+            data, or other categories of sensitive data that are not reasonably
+            necessary for the intended receptionist functions of the Service.
+            YOU AGREE NOT TO USE THE SERVICE TO COLLECT, MANAGE, OR PROCESS
+            SENSITIVE PERSONAL INFORMATION BEYOND ITS INTENDED RECEPTIONIST
+            FUNCTIONS. SPOQEN WILL NOT HAVE ANY LIABILITY OR RESPONSIBILITY
+            RESULTING FROM YOUR USE OF THE SERVICE TO COLLECT OR PROCESS SUCH
+            INFORMATION INAPPROPRIATELY.
+          </li>
         </ul>
         <p className="mb-4 font-bold">
-          NO EMERGENCY SERVICE USE: THE SPOQEN SERVICE IS NOT DESIGNED, INTENDED, OR SUITABLE FOR PLACING, SUPPORTING, OR CARRYING EMERGENCY CALLS OR COMMUNICATIONS TO ANY EMERGENCY SERVICES, INCLUDING BUT NOT LIMITED TO POLICE DEPARTMENTS, FIRE DEPARTMENTS, HOSPITALS, PUBLIC SAFETY ANSWERING POINTS (PSAPS), OR ANY "911," "E911," OR SIMILAR EMERGENCY RESPONSE SERVICES (COLLECTIVELY, "EMERGENCY SERVICES"). YOU ACKNOWLEDGE AND AGREE THAT IT IS YOUR SOLE RESPONSIBILITY TO ENSURE THAT YOU AND YOUR CALLERS HAVE AN ALTERNATIVE MEANS OF PLACING EMERGENCY CALLS (E.G., VIA A TRADITIONAL TELEPHONE LINE OR MOBILE PHONE). SPOQEN, ITS AFFILIATES, AND ITS PERSONNEL ARE NOT, AND WILL NOT BE, LIABLE FOR ANY CLAIM, DAMAGE, LOSS, OR LIABILITY ARISING FROM OR RELATING TO THE INABILITY TO USE THE SERVICE FOR EMERGENCY CALLS OR TO ACCESS EMERGENCY SERVICES, OR ANY DELAYS OR FAILURES IN DOING SO.
+          NO EMERGENCY SERVICE USE: THE SPOQEN SERVICE IS NOT DESIGNED,
+          INTENDED, OR SUITABLE FOR PLACING, SUPPORTING, OR CARRYING EMERGENCY
+          CALLS OR COMMUNICATIONS TO ANY EMERGENCY SERVICES, INCLUDING BUT NOT
+          LIMITED TO POLICE DEPARTMENTS, FIRE DEPARTMENTS, HOSPITALS, PUBLIC
+          SAFETY ANSWERING POINTS (PSAPS), OR ANY "911," "E911," OR SIMILAR
+          EMERGENCY RESPONSE SERVICES (COLLECTIVELY, "EMERGENCY SERVICES"). YOU
+          ACKNOWLEDGE AND AGREE THAT IT IS YOUR SOLE RESPONSIBILITY TO ENSURE
+          THAT YOU AND YOUR CALLERS HAVE AN ALTERNATIVE MEANS OF PLACING
+          EMERGENCY CALLS (E.G., VIA A TRADITIONAL TELEPHONE LINE OR MOBILE
+          PHONE). SPOQEN, ITS AFFILIATES, AND ITS PERSONNEL ARE NOT, AND WILL
+          NOT BE, LIABLE FOR ANY CLAIM, DAMAGE, LOSS, OR LIABILITY ARISING FROM
+          OR RELATING TO THE INABILITY TO USE THE SERVICE FOR EMERGENCY CALLS OR
+          TO ACCESS EMERGENCY SERVICES, OR ANY DELAYS OR FAILURES IN DOING SO.
         </p>
         <p className="mb-4">
-          Violation of any of these prohibitions may result in immediate suspension or termination of your access to the Service, without prejudice to any other rights or remedies Spoqen may have.
+          Violation of any of these prohibitions may result in immediate
+          suspension or termination of your access to the Service, without
+          prejudice to any other rights or remedies Spoqen may have.
         </p>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">9. Privacy Policy</h2>
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          9. Privacy Policy
+        </h2>
 
-        <h3 className="text-xl font-bold mt-4 mb-2">9.1. Introduction and Scope</h3>
+        <h3 className="mb-2 mt-4 text-xl font-bold">
+          9.1. Introduction and Scope
+        </h3>
         <p className="mb-4">
-          Spoqen ("we," "us," "our") is committed to protecting your privacy and the privacy of individuals whose information we process. This Privacy Policy explains how we collect, use, disclose, and safeguard Personal Data when you, as a business User ("User," "you," "your"), use our Spoqen AI-powered receptionist service (the "Service"). It also applies to information we process on your behalf from individuals who call your business and interact with the Service ("Callers").
+          Spoqen ("we," "us," "our") is committed to protecting your privacy and
+          the privacy of individuals whose information we process. This Privacy
+          Policy explains how we collect, use, disclose, and safeguard Personal
+          Data when you, as a business User ("User," "you," "your"), use our
+          Spoqen AI-powered receptionist service (the "Service"). It also
+          applies to information we process on your behalf from individuals who
+          call your business and interact with the Service ("Callers").
         </p>
         <p className="mb-4">
-          For the purposes of applicable data protection laws, such as the EU General Data Protection Regulation (GDPR) or the California Consumer Privacy Act (CCPA) as amended by the California Privacy Rights Act (CPRA):
+          For the purposes of applicable data protection laws, such as the EU
+          General Data Protection Regulation (GDPR) or the California Consumer
+          Privacy Act (CCPA) as amended by the California Privacy Rights Act
+          (CPRA):
         </p>
-        <ul className="list-disc list-inside ml-4 space-y-2 mb-4">
-          <li>With respect to <strong>Caller Data</strong> (e.g., recordings of calls between Callers and the AI receptionist, Caller contact details captured during such calls), the User is typically the 'Data Controller' (under GDPR) or 'Business' (under CCPA/CPRA). In this capacity, the User determines the purposes and means of processing Caller Data. Spoqen acts as a 'Data Processor' (under GDPR) or 'Service Provider' (under CCPA/CPRA) on behalf of the User, processing Caller Data in accordance with the User's lawful instructions and the terms of this Agreement.</li>
-          <li>With respect to <strong>User Information</strong> (e.g., account registration details, payment information of the business User), Spoqen is typically the 'Data Controller' or 'Business,' as we determine the purposes and means of processing this information for managing our relationship with you and providing the Service.</li>
+        <ul className="mb-4 ml-4 list-inside list-disc space-y-2">
+          <li>
+            With respect to <strong>Caller Data</strong> (e.g., recordings of
+            calls between Callers and the AI receptionist, Caller contact
+            details captured during such calls), the User is typically the 'Data
+            Controller' (under GDPR) or 'Business' (under CCPA/CPRA). In this
+            capacity, the User determines the purposes and means of processing
+            Caller Data. Spoqen acts as a 'Data Processor' (under GDPR) or
+            'Service Provider' (under CCPA/CPRA) on behalf of the User,
+            processing Caller Data in accordance with the User's lawful
+            instructions and the terms of this Agreement.
+          </li>
+          <li>
+            With respect to <strong>User Information</strong> (e.g., account
+            registration details, payment information of the business User),
+            Spoqen is typically the 'Data Controller' or 'Business,' as we
+            determine the purposes and means of processing this information for
+            managing our relationship with you and providing the Service.
+          </li>
         </ul>
 
-        <h3 className="text-xl font-bold mt-4 mb-2">9.2. Information We Collect</h3>
+        <h3 className="mb-2 mt-4 text-xl font-bold">
+          9.2. Information We Collect
+        </h3>
         <p className="mb-4">
-          We collect various types of information in connection with the Service:
+          We collect various types of information in connection with the
+          Service:
         </p>
-        <p className="mb-2"><strong>A. Information Collected Directly from or About Business Users:</strong></p>
-        <ul className="list-disc list-inside ml-4 space-y-2 mb-4">
-          <li><strong>Account Information:</strong> When you register for an Account, subscribe to the Service, or communicate with us, we collect information such as your name, your business's name, email address, phone number, physical business address, and account password.</li>
-          <li><strong>Payment Information:</strong> To process payments for the Service, we collect payment details (e.g., credit card number, billing address, bank account information). This information is typically collected and processed directly by our third-party payment processors who are compliant with payment card industry standards (e.g., PCI DSS).</li>
-          <li><strong>Calendar Data:</strong> If you choose to integrate the Service with your calendar application(s) (e.g., Google Calendar, Microsoft Outlook Calendar, Apple Calendar), we will access and store information from your calendar(s) as necessary to perform the Service, such as identifying your availability, booking appointments, and sending appointment confirmations.</li>
-          <li><strong>Configuration Data:</strong> Information you provide to configure the Service, such as scripts for the AI receptionist, specific questions to ask Callers, business hours, and preferences for call handling.</li>
-          <li><strong>Communications with Us:</strong> If you contact us for customer support, to provide feedback, or for other inquiries, we may collect records and copies of your correspondence (including email addresses and the content of the communication).</li>
-          <li><strong>Service Usage Data and Analytics:</strong> We automatically collect certain information about how you and your Authorized Users interact with and use the Service. This may include IP addresses, browser type, operating system, device identifiers, pages viewed, features used, dates and times of access, and other diagnostic data.</li>
+        <p className="mb-2">
+          <strong>
+            A. Information Collected Directly from or About Business Users:
+          </strong>
+        </p>
+        <ul className="mb-4 ml-4 list-inside list-disc space-y-2">
+          <li>
+            <strong>Account Information:</strong> When you register for an
+            Account, subscribe to the Service, or communicate with us, we
+            collect information such as your name, your business's name, email
+            address, phone number, physical business address, and account
+            password.
+          </li>
+          <li>
+            <strong>Payment Information:</strong> To process payments for the
+            Service, we collect payment details (e.g., credit card number,
+            billing address, bank account information). This information is
+            typically collected and processed directly by our third-party
+            payment processors who are compliant with payment card industry
+            standards (e.g., PCI DSS).
+          </li>
+          <li>
+            <strong>Calendar Data:</strong> If you choose to integrate the
+            Service with your calendar application(s) (e.g., Google Calendar,
+            Microsoft Outlook Calendar, Apple Calendar), we will access and
+            store information from your calendar(s) as necessary to perform the
+            Service, such as identifying your availability, booking
+            appointments, and sending appointment confirmations.
+          </li>
+          <li>
+            <strong>Configuration Data:</strong> Information you provide to
+            configure the Service, such as scripts for the AI receptionist,
+            specific questions to ask Callers, business hours, and preferences
+            for call handling.
+          </li>
+          <li>
+            <strong>Communications with Us:</strong> If you contact us for
+            customer support, to provide feedback, or for other inquiries, we
+            may collect records and copies of your correspondence (including
+            email addresses and the content of the communication).
+          </li>
+          <li>
+            <strong>Service Usage Data and Analytics:</strong> We automatically
+            collect certain information about how you and your Authorized Users
+            interact with and use the Service. This may include IP addresses,
+            browser type, operating system, device identifiers, pages viewed,
+            features used, dates and times of access, and other diagnostic data.
+          </li>
         </ul>
-        <p className="mb-2"><strong>B. Information Processed on the User's Behalf (Caller Data):</strong></p>
-        <p className="mb-4">
-          When Callers interact with the Service (i.e., the AI receptionist answering calls on your behalf), we process the following types of information based on your instructions and configurations:
+        <p className="mb-2">
+          <strong>
+            B. Information Processed on the User's Behalf (Caller Data):
+          </strong>
         </p>
-        <ul className="list-disc list-inside ml-4 space-y-2 mb-4">
-          <li><strong>Caller Contact Information:</strong> This may include the Caller's phone number (typically captured via Caller ID), and any name or other contact details (like email address) the Caller voluntarily provides during the conversation.</li>
-          <li><strong>Voice Recordings and Transcripts:</strong> The Service records the audio of phone calls between Callers and the AI receptionist. We may also generate text transcripts of these voice recordings. As stated in Section 7 (User Responsibilities), you, the User, are solely responsible for ensuring that all necessary consents are obtained from Callers for such recordings and processing in compliance with applicable laws.</li>
-          <li><strong>Content of Communications:</strong> The substance of the conversation between the Caller and the AI receptionist, including the reason for the call, questions asked by the Caller, responses provided by the AI, and any information exchanged.</li>
-          <li><strong>Appointment Information:</strong> If an appointment is booked through the Service, we process information related to that appointment, such as the scheduled date and time, the purpose of the appointment (if provided), and any notes related to the booking.</li>
+        <p className="mb-4">
+          When Callers interact with the Service (i.e., the AI receptionist
+          answering calls on your behalf), we process the following types of
+          information based on your instructions and configurations:
+        </p>
+        <ul className="mb-4 ml-4 list-inside list-disc space-y-2">
+          <li>
+            <strong>Caller Contact Information:</strong> This may include the
+            Caller's phone number (typically captured via Caller ID), and any
+            name or other contact details (like email address) the Caller
+            voluntarily provides during the conversation.
+          </li>
+          <li>
+            <strong>Voice Recordings and Transcripts:</strong> The Service
+            records the audio of phone calls between Callers and the AI
+            receptionist. We may also generate text transcripts of these voice
+            recordings. As stated in Section 7 (User Responsibilities), you, the
+            User, are solely responsible for ensuring that all necessary
+            consents are obtained from Callers for such recordings and
+            processing in compliance with applicable laws.
+          </li>
+          <li>
+            <strong>Content of Communications:</strong> The substance of the
+            conversation between the Caller and the AI receptionist, including
+            the reason for the call, questions asked by the Caller, responses
+            provided by the AI, and any information exchanged.
+          </li>
+          <li>
+            <strong>Appointment Information:</strong> If an appointment is
+            booked through the Service, we process information related to that
+            appointment, such as the scheduled date and time, the purpose of the
+            appointment (if provided), and any notes related to the booking.
+          </li>
         </ul>
 
         {/* This section replaces the visual table with a structured list for readability */}
-        <h4 className="text-lg font-bold mt-4 mb-2">Summary of Personal Information Processing</h4>
+        <h4 className="mb-2 mt-4 text-lg font-bold">
+          Summary of Personal Information Processing
+        </h4>
         <div className="space-y-4 text-sm">
-          <div className="p-3 border rounded-md">
-            <p><strong>Category:</strong> User Account Information (name, email, etc.)</p>
-            <p><strong>Source:</strong> Provided by User</p>
-            <p><strong>Purpose:</strong> Account management, service provision, billing, communication, security, legal compliance</p>
+          <div className="rounded-md border p-3">
+            <p>
+              <strong>Category:</strong> User Account Information (name, email,
+              etc.)
+            </p>
+            <p>
+              <strong>Source:</strong> Provided by User
+            </p>
+            <p>
+              <strong>Purpose:</strong> Account management, service provision,
+              billing, communication, security, legal compliance
+            </p>
           </div>
-          <div className="p-3 border rounded-md">
-            <p><strong>Category:</strong> User Payment Information (credit card details)</p>
-            <p><strong>Source:</strong> Provided by User</p>
-            <p><strong>Purpose:</strong> Processing payments for the Service</p>
+          <div className="rounded-md border p-3">
+            <p>
+              <strong>Category:</strong> User Payment Information (credit card
+              details)
+            </p>
+            <p>
+              <strong>Source:</strong> Provided by User
+            </p>
+            <p>
+              <strong>Purpose:</strong> Processing payments for the Service
+            </p>
           </div>
-          <div className="p-3 border rounded-md">
-            <p><strong>Category:</strong> User Calendar Data (events, availability)</p>
-            <p><strong>Source:</strong> Integrated System (User's calendar) with User authorization</p>
-            <p><strong>Purpose:</strong> Booking appointments, identifying availability, providing Service functionality</p>
+          <div className="rounded-md border p-3">
+            <p>
+              <strong>Category:</strong> User Calendar Data (events,
+              availability)
+            </p>
+            <p>
+              <strong>Source:</strong> Integrated System (User's calendar) with
+              User authorization
+            </p>
+            <p>
+              <strong>Purpose:</strong> Booking appointments, identifying
+              availability, providing Service functionality
+            </p>
           </div>
-          <div className="p-3 border rounded-md">
-            <p><strong>Category:</strong> Caller Contact Information (name, phone number)</p>
-            <p><strong>Source:</strong> Collected from Caller (via Caller ID or verbally)</p>
-            <p><strong>Purpose:</strong> Identifying Caller, facilitating communication, booking appointments, providing Service on User's behalf</p>
+          <div className="rounded-md border p-3">
+            <p>
+              <strong>Category:</strong> Caller Contact Information (name, phone
+              number)
+            </p>
+            <p>
+              <strong>Source:</strong> Collected from Caller (via Caller ID or
+              verbally)
+            </p>
+            <p>
+              <strong>Purpose:</strong> Identifying Caller, facilitating
+              communication, booking appointments, providing Service on User's
+              behalf
+            </p>
           </div>
-          <div className="p-3 border rounded-md">
-            <p><strong>Category:</strong> Caller Voice Recordings & Transcripts</p>
-            <p><strong>Source:</strong> Generated by Service during calls with Callers</p>
-            <p><strong>Purpose:</strong> Service functionality, record-keeping for User, AI model training & improvement (de-identified/aggregated)</p>
+          <div className="rounded-md border p-3">
+            <p>
+              <strong>Category:</strong> Caller Voice Recordings & Transcripts
+            </p>
+            <p>
+              <strong>Source:</strong> Generated by Service during calls with
+              Callers
+            </p>
+            <p>
+              <strong>Purpose:</strong> Service functionality, record-keeping
+              for User, AI model training & improvement
+              (de-identified/aggregated)
+            </p>
           </div>
         </div>
 
-        <h3 className="text-xl font-bold mt-6 mb-2">9.3. How We Use Your Information</h3>
+        <h3 className="mb-2 mt-6 text-xl font-bold">
+          9.3. How We Use Your Information
+        </h3>
         <p className="mb-4">
-          We use the information we collect and process for the following purposes:
+          We use the information we collect and process for the following
+          purposes:
         </p>
-        <ul className="list-disc list-inside ml-4 space-y-2 mb-4">
-          <li><strong>To Provide, Operate, and Maintain the Service:</strong> To create and manage your Account, enable you to access and use the Service's features, process your transactions, and provide customer support.</li>
-          <li><strong>For Billing and Account Management:</strong> To process payments, send invoices and payment reminders, manage your subscription, and communicate with you about administrative matters related to your Account.</li>
-          <li><strong>To Improve the Service and Our AI Models:</strong> We use User Content and Caller Data, including voice recordings and transcripts, to train, develop, test, and improve our AI models, algorithms, and the overall functionality, accuracy, and performance of the Service. When using data for these improvement purposes, we employ measures such as de-identification or aggregation where reasonably feasible to protect individual privacy.</li>
-          <li><strong>To Communicate with Users:</strong> To send you important service-related announcements, updates, security alerts, and support messages. We may also send you marketing communications where permitted by law. You can opt-out of marketing communications at any time.</li>
-          <li><strong>For Personalization:</strong> To personalize your experience with the Service, such as by remembering your preferences.</li>
-          <li><strong>For Research and Development:</strong> To conduct research and analysis related to our Service (often using aggregated or de-identified data).</li>
-          <li><strong>For Security and Fraud Prevention:</strong> To monitor for and prevent fraudulent activity, enforce our Terms, and protect the rights, property, or safety of Spoqen, our Users, Callers, or the public.</li>
-          <li><strong>For Legal Compliance and Protection:</strong> To comply with applicable laws, regulations, legal processes, or enforceable governmental requests.</li>
+        <ul className="mb-4 ml-4 list-inside list-disc space-y-2">
+          <li>
+            <strong>To Provide, Operate, and Maintain the Service:</strong> To
+            create and manage your Account, enable you to access and use the
+            Service's features, process your transactions, and provide customer
+            support.
+          </li>
+          <li>
+            <strong>For Billing and Account Management:</strong> To process
+            payments, send invoices and payment reminders, manage your
+            subscription, and communicate with you about administrative matters
+            related to your Account.
+          </li>
+          <li>
+            <strong>To Improve the Service and Our AI Models:</strong> We use
+            User Content and Caller Data, including voice recordings and
+            transcripts, to train, develop, test, and improve our AI models,
+            algorithms, and the overall functionality, accuracy, and performance
+            of the Service. When using data for these improvement purposes, we
+            employ measures such as de-identification or aggregation where
+            reasonably feasible to protect individual privacy.
+          </li>
+          <li>
+            <strong>To Communicate with Users:</strong> To send you important
+            service-related announcements, updates, security alerts, and support
+            messages. We may also send you marketing communications where
+            permitted by law. You can opt-out of marketing communications at any
+            time.
+          </li>
+          <li>
+            <strong>For Personalization:</strong> To personalize your experience
+            with the Service, such as by remembering your preferences.
+          </li>
+          <li>
+            <strong>For Research and Development:</strong> To conduct research
+            and analysis related to our Service (often using aggregated or
+            de-identified data).
+          </li>
+          <li>
+            <strong>For Security and Fraud Prevention:</strong> To monitor for
+            and prevent fraudulent activity, enforce our Terms, and protect the
+            rights, property, or safety of Spoqen, our Users, Callers, or the
+            public.
+          </li>
+          <li>
+            <strong>For Legal Compliance and Protection:</strong> To comply with
+            applicable laws, regulations, legal processes, or enforceable
+            governmental requests.
+          </li>
         </ul>
 
-        <h3 className="text-xl font-bold mt-4 mb-2">9.4. How We Share Your Information</h3>
+        <h3 className="mb-2 mt-4 text-xl font-bold">
+          9.4. How We Share Your Information
+        </h3>
         <p className="mb-4">
-          We do not sell your Personal Data in the traditional sense. We may share your information in the following circumstances:
+          We do not sell your Personal Data in the traditional sense. We may
+          share your information in the following circumstances:
         </p>
-        <ul className="list-disc list-inside ml-4 space-y-2 mb-4">
-          <li><strong>With Third-Party Service Providers (Sub-processors):</strong> We engage trusted third-party companies and individuals to perform services on our behalf (e.g., payment processors, cloud hosting providers, telephony providers). These third parties have access to your information only to perform these tasks on our behalf and are contractually obligated to protect it.</li>
-          <li><strong>With the User (for Caller Data):</strong> Users have access to the Caller Data related to their account, including call recordings and transcripts, through the Service interface.</li>
-          <li><strong>For Legal Reasons and Protection:</strong> We may disclose your information to third parties if we believe in good faith that such disclosure is necessary to comply with a law, enforce our Terms, address fraud or security issues, or protect against harm to the rights, property, or safety of Spoqen, our Users, or the public.</li>
-          <li><strong>In Connection with a Business Transfer:</strong> If Spoqen is involved in a merger, acquisition, or sale of assets, your information may be transferred as part of that transaction.</li>
-          <li><strong>With Your Explicit Consent or at Your Direction:</strong> We may share your information with third parties when we have your explicit consent to do so.</li>
-          <li><strong>Aggregated or De-identified Data:</strong> We may share aggregated or de-identified information, which cannot reasonably be used to identify you, with third parties for various purposes.</li>
+        <ul className="mb-4 ml-4 list-inside list-disc space-y-2">
+          <li>
+            <strong>
+              With Third-Party Service Providers (Sub-processors):
+            </strong>{' '}
+            We engage trusted third-party companies and individuals to perform
+            services on our behalf (e.g., payment processors, cloud hosting
+            providers, telephony providers). These third parties have access to
+            your information only to perform these tasks on our behalf and are
+            contractually obligated to protect it.
+          </li>
+          <li>
+            <strong>With the User (for Caller Data):</strong> Users have access
+            to the Caller Data related to their account, including call
+            recordings and transcripts, through the Service interface.
+          </li>
+          <li>
+            <strong>For Legal Reasons and Protection:</strong> We may disclose
+            your information to third parties if we believe in good faith that
+            such disclosure is necessary to comply with a law, enforce our
+            Terms, address fraud or security issues, or protect against harm to
+            the rights, property, or safety of Spoqen, our Users, or the public.
+          </li>
+          <li>
+            <strong>In Connection with a Business Transfer:</strong> If Spoqen
+            is involved in a merger, acquisition, or sale of assets, your
+            information may be transferred as part of that transaction.
+          </li>
+          <li>
+            <strong>With Your Explicit Consent or at Your Direction:</strong> We
+            may share your information with third parties when we have your
+            explicit consent to do so.
+          </li>
+          <li>
+            <strong>Aggregated or De-identified Data:</strong> We may share
+            aggregated or de-identified information, which cannot reasonably be
+            used to identify you, with third parties for various purposes.
+          </li>
         </ul>
 
-        <h3 className="text-xl font-bold mt-4 mb-2">9.5. Data Security</h3>
+        <h3 className="mb-2 mt-4 text-xl font-bold">9.5. Data Security</h3>
         <p className="mb-4">
-          We implement and maintain commercially reasonable administrative, technical, and physical security measures designed to protect the Personal Data we process. However, no method of transmission over the Internet or method of electronic storage is 100% secure. Therefore, we cannot guarantee its absolute security.
+          We implement and maintain commercially reasonable administrative,
+          technical, and physical security measures designed to protect the
+          Personal Data we process. However, no method of transmission over the
+          Internet or method of electronic storage is 100% secure. Therefore, we
+          cannot guarantee its absolute security.
         </p>
 
-        <h3 className="text-xl font-bold mt-4 mb-2">9.6. Data Retention</h3>
+        <h3 className="mb-2 mt-4 text-xl font-bold">9.6. Data Retention</h3>
         <p className="mb-4">
-          We retain User Information for as long as your Account is active or as needed to provide you with the Service and comply with our legal obligations. Caller Data is retained in accordance with your instructions. Upon termination of your Account, we will delete or return Caller Data according to our policies, unless required by law to retain it.
+          We retain User Information for as long as your Account is active or as
+          needed to provide you with the Service and comply with our legal
+          obligations. Caller Data is retained in accordance with your
+          instructions. Upon termination of your Account, we will delete or
+          return Caller Data according to our policies, unless required by law
+          to retain it.
         </p>
 
-        <h3 className="text-xl font-bold mt-4 mb-2">9.7. Your Data Protection Rights</h3>
+        <h3 className="mb-2 mt-4 text-xl font-bold">
+          9.7. Your Data Protection Rights
+        </h3>
         <p className="mb-4">
-          Depending on your location, you may have rights to access, rectify, erase, restrict processing, object to processing, and data portability. To exercise rights regarding your User Information, please contact us. If you are a Caller, you should direct your request to the User (the real estate business you called).
+          Depending on your location, you may have rights to access, rectify,
+          erase, restrict processing, object to processing, and data
+          portability. To exercise rights regarding your User Information,
+          please contact us. If you are a Caller, you should direct your request
+          to the User (the real estate business you called).
         </p>
         <p className="mb-4">
-          <strong>Specific Information for California Residents (CCPA/CPRA):</strong> California residents have specific rights including the Right to Know/Access, Right to Delete, Right to Correct, and the Right to Opt-Out of Sale/Sharing. Spoqen does not "sell" Personal Data in the traditional monetary sense. For Caller Data, we act as a "Service Provider" and only process it for purposes specified in our contract with the User.
+          <strong>
+            Specific Information for California Residents (CCPA/CPRA):
+          </strong>{' '}
+          California residents have specific rights including the Right to
+          Know/Access, Right to Delete, Right to Correct, and the Right to
+          Opt-Out of Sale/Sharing. Spoqen does not "sell" Personal Data in the
+          traditional monetary sense. For Caller Data, we act as a "Service
+          Provider" and only process it for purposes specified in our contract
+          with the User.
         </p>
         <p className="mb-4">
-          <strong>Specific Information for Individuals in the EEA, UK, and Switzerland:</strong> If you are located in these regions, you have rights under GDPR or equivalent laws. Our legal basis for processing User Information is typically contractual necessity, legitimate interests, or consent. For Caller Data, the User is the Data Controller and is responsible for establishing the lawful basis for processing.
+          <strong>
+            Specific Information for Individuals in the EEA, UK, and
+            Switzerland:
+          </strong>{' '}
+          If you are located in these regions, you have rights under GDPR or
+          equivalent laws. Our legal basis for processing User Information is
+          typically contractual necessity, legitimate interests, or consent. For
+          Caller Data, the User is the Data Controller and is responsible for
+          establishing the lawful basis for processing.
         </p>
 
-        <h3 className="text-xl font-bold mt-4 mb-2">9.8. Third-Party Integrations and Links</h3>
+        <h3 className="mb-2 mt-4 text-xl font-bold">
+          9.8. Third-Party Integrations and Links
+        </h3>
         <p className="mb-4">
-          The Service may allow you to integrate with third-party services. This Privacy Policy does not apply to the practices of such third parties. We encourage you to review their privacy policies.
-        </p>
-        
-        <h3 className="text-xl font-bold mt-4 mb-2">9.9. Cookies and Similar Tracking Technologies</h3>
-        <p className="mb-4">
-          We use Cookies and similar technologies to operate and improve the Service, understand usage, and personalize your experience. You can typically manage Cookie preferences through your web browser settings.
-        </p>
-
-        <h3 className="text-xl font-bold mt-4 mb-2">9.10. Children's Privacy</h3>
-        <p className="mb-4">
-          The Spoqen Service is not directed to or intended for use by individuals under the age of 13. We do not knowingly collect Personal Data from children.
+          The Service may allow you to integrate with third-party services. This
+          Privacy Policy does not apply to the practices of such third parties.
+          We encourage you to review their privacy policies.
         </p>
 
-        <h3 className="text-xl font-bold mt-4 mb-2">9.11. Changes to this Privacy Policy</h3>
+        <h3 className="mb-2 mt-4 text-xl font-bold">
+          9.9. Cookies and Similar Tracking Technologies
+        </h3>
         <p className="mb-4">
-          We may update this Privacy Policy from time to time. If we make material changes, we will notify you by posting the updated policy on our website, and we may also provide notice via email or through the Service.
+          We use Cookies and similar technologies to operate and improve the
+          Service, understand usage, and personalize your experience. You can
+          typically manage Cookie preferences through your web browser settings.
         </p>
-        
-        <h3 className="text-xl font-bold mt-4 mb-2">9.12. Contact Us (for Privacy Inquiries)</h3>
+
+        <h3 className="mb-2 mt-4 text-xl font-bold">
+          9.10. Children's Privacy
+        </h3>
         <p className="mb-4">
-          If you have any questions or concerns about this Privacy Policy, please contact us at:
+          The Spoqen Service is not directed to or intended for use by
+          individuals under the age of 13. We do not knowingly collect Personal
+          Data from children.
+        </p>
+
+        <h3 className="mb-2 mt-4 text-xl font-bold">
+          9.11. Changes to this Privacy Policy
+        </h3>
+        <p className="mb-4">
+          We may update this Privacy Policy from time to time. If we make
+          material changes, we will notify you by posting the updated policy on
+          our website, and we may also provide notice via email or through the
+          Service.
+        </p>
+
+        <h3 className="mb-2 mt-4 text-xl font-bold">
+          9.12. Contact Us (for Privacy Inquiries)
+        </h3>
+        <p className="mb-4">
+          If you have any questions or concerns about this Privacy Policy,
+          please contact us at:
           <br />
           www.spoqen.com
           <br />
@@ -326,165 +993,409 @@ export default function TermsOfService() {
       </section>
 
       <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">10. Confidentiality</h2>
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          10. Confidentiality
+        </h2>
         <p className="mb-4">
-          Each party (as "Discloser") may disclose or make available to the other party (as "Recipient") certain non-public information concerning the Discloser's business, technology, products, or services that is marked confidential or that a reasonable person would understand to be confidential ("Confidential Information"). Spoqen's Confidential Information includes the non-public aspects of the Service, its technology, AI models, and pricing. Your Confidential Information may include non-public business information you provide to Spoqen outside the normal course of data processing.
+          Each party (as "Discloser") may disclose or make available to the
+          other party (as "Recipient") certain non-public information concerning
+          the Discloser's business, technology, products, or services that is
+          marked confidential or that a reasonable person would understand to be
+          confidential ("Confidential Information"). Spoqen's Confidential
+          Information includes the non-public aspects of the Service, its
+          technology, AI models, and pricing. Your Confidential Information may
+          include non-public business information you provide to Spoqen outside
+          the normal course of data processing.
         </p>
         <p className="mb-4">
-          The Recipient agrees to: (i) use the Discloser's Confidential Information solely for the purpose of performing its obligations or exercising its rights under this Agreement; (ii) maintain the Discloser's Confidential Information in strict confidence, using at least the same degree of care as it uses to protect its own confidential information; and (iii) not disclose such Confidential Information to any third party without consent, except to its employees, agents, and advisors who have a need to know and are bound by confidentiality obligations.
+          The Recipient agrees to: (i) use the Discloser's Confidential
+          Information solely for the purpose of performing its obligations or
+          exercising its rights under this Agreement; (ii) maintain the
+          Discloser's Confidential Information in strict confidence, using at
+          least the same degree of care as it uses to protect its own
+          confidential information; and (iii) not disclose such Confidential
+          Information to any third party without consent, except to its
+          employees, agents, and advisors who have a need to know and are bound
+          by confidentiality obligations.
         </p>
         <p className="mb-4">
-          The obligations of confidentiality shall not apply to information that: (i) was already known to the Recipient; (ii) is or becomes publicly known through no wrongful act of the Recipient; (iii) is rightfully received from a third party; or (iv) is independently developed by the Recipient.
+          The obligations of confidentiality shall not apply to information
+          that: (i) was already known to the Recipient; (ii) is or becomes
+          publicly known through no wrongful act of the Recipient; (iii) is
+          rightfully received from a third party; or (iv) is independently
+          developed by the Recipient.
         </p>
         <p className="mb-4">
-          If the Recipient is compelled by law to disclose Confidential Information, it will, to the extent legally permitted, provide the Discloser with prompt prior notice and reasonable assistance if the Discloser wishes to contest the disclosure.
-        </p>
-      </section>
-
-      <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">11. Disclaimer of Warranties</h2>
-        <p className="mb-4">
-          TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SERVICE, INCLUDING ALL SERVER AND NETWORK COMPONENTS, IS PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS, WITH ALL FAULTS AND WITHOUT ANY WARRANTIES OF ANY KIND. SPOQEN AND ITS AFFILIATES, LICENSORS, SUPPLIERS, AND AGENTS EXPRESSLY DISCLAIM ANY AND ALL WARRANTIES, WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE, WITH RESPECT TO THE SERVICE, INCLUDING, BUT NOT LIMITED TO, ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, QUIET ENJOYMENT, AND ANY WARRANTIES ARISING OUT OF COURSE OF DEALING, USAGE, OR TRADE.
-        </p>
-        <p className="mb-4">
-          <strong>SPECIFIC DISCLAIMER REGARDING AI ACCURACY AND OUTPUTS:</strong> YOU EXPRESSLY ACKNOWLEDGE AND AGREE THAT THE SPOQEN SERVICE UTILIZES ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING ALGORITHMS. AS WITH ANY AI-BASED SYSTEM, THE INFORMATION, RESPONSES, INTERPRETATIONS, APPOINTMENT BOOKINGS, MESSAGE TRANSCRIPTIONS, AND OTHER OUTPUTS GENERATED OR PROVIDED BY THE SERVICE ("AI OUTPUTS") MAY CONTAIN ERRORS, INACCURACIES, OMISSIONS, OR MAY BE INCOMPLETE. AI OUTPUTS ARE NOT INTENDED TO REPLACE HUMAN JUDGMENT, PROFESSIONAL ADVICE, OR INDEPENDENT VERIFICATION. SPOQEN DOES NOT MAKE ANY WARRANTY OR REPRESENTATION AS TO THE ACCURACY, COMPLETENESS, RELIABILITY, SUITABILITY, TIMELINESS, OR EFFECTIVENESS OF ANY AI OUTPUTS. YOU ARE SOLELY RESPONSIBLE FOR REVIEWING, EVALUATING, AND VERIFYING THE ACCURACY AND APPROPRIATENESS OF ANY AI OUTPUTS BEFORE RELYING ON THEM, ACTING UPON THEM, OR COMMUNICATING THEM TO CALLERS OR ANY THIRD PARTIES. SPOQEN SHALL HAVE NO LIABILITY WHATSOEVER FOR ANY DAMAGES, LOSSES, OR HARM ARISING FROM OR RELATED TO YOUR RELIANCE ON AI OUTPUTS.
-        </p>
-        <p className="mb-4">
-          SPOQEN DOES NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, TIMELY, SECURE, ERROR-FREE, OR FREE OF VIRUSES OR OTHER HARMFUL COMPONENTS, OR THAT ANY DEFECTS IN THE SERVICE WILL BE CORRECTED. SPOQEN DOES NOT WARRANT THAT THE SERVICE WILL MEET YOUR SPECIFIC REQUIREMENTS OR EXPECTATIONS, OR THAT THE USE OF THE SERVICE WILL ACHIEVE ANY PARTICULAR RESULTS OR OUTCOMES. NO ADVICE OR INFORMATION, WHETHER ORAL OR WRITTEN, OBTAINED BY YOU FROM SPOQEN OR THROUGH THE SERVICE SHALL CREATE ANY WARRANTY NOT EXPRESSLY STATED IN THESE TERMS.
-        </p>
-      </section>
-
-      <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">12. Limitation of Liability</h2>
-        <p className="mb-4">
-          TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL SPOQEN, ITS AFFILIATES, DIRECTORS, OFFICERS, EMPLOYEES, AGENTS, SUPPLIERS, OR LICENSORS BE LIABLE FOR ANY INDIRECT, PUNITIVE, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR EXEMPLARY DAMAGES, INCLUDING WITHOUT LIMITATION DAMAGES FOR LOSS OF PROFITS, REVENUE, GOODWILL, USE, DATA, OR OTHER INTANGIBLE LOSSES, ARISING OUT OF OR RELATING TO THIS AGREEMENT, YOUR ACCESS TO OR USE OF, OR INABILITY TO ACCESS OR USE, THE SERVICE, OR ANY CONTENT OR AI OUTPUTS OBTAINED FROM THE SERVICE, WHETHER BASED ON WARRANTY, CONTRACT, TORT (INCLUDING NEGLIGENCE), STATUTE, OR ANY OTHER LEGAL THEORY, AND EVEN IF SPOQEN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-        </p>
-        <p className="mb-4">
-          TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, SPOQEN'S TOTAL AGGREGATE LIABILITY TO YOU (AND ANY PARTY CLAIMING THROUGH YOU) FOR ALL CLAIMS, DAMAGES, LOSSES, LIABILITIES, COSTS, AND EXPENSES (INCLUDING ATTORNEYS' FEES) ARISING OUT OF OR RELATING TO THIS AGREEMENT OR YOUR ACCESS TO OR USE OF THE SERVICE, IN THE AGGREGATE, REGARDLESS OF THE FORM OF ACTION, WHETHER IN CONTRACT, TORT (INCLUDING NEGLIGENCE), STRICT LIABILITY, OR OTHERWISE, SHALL NOT EXCEED THE TOTAL AMOUNT OF SUBSCRIPTION FEES ACTUALLY PAID BY YOU TO SPOQEN FOR THE SERVICE DURING THE TWELVE (12) MONTH PERIOD IMMEDIATELY PRECEDING THE DATE ON WHICH THE FIRST EVENT GIVING RISE TO THE CLAIM OCCURRED. THE EXISTENCE OF MORE THAN ONE CLAIM WILL NOT ENLARGE THIS LIMIT.
-        </p>
-        <p className="mb-4">
-          YOU ACKNOWLEDGE AND AGREE THAT THE DISCLAIMERS OF WARRANTIES (SECTION 11) AND THE LIMITATIONS OF LIABILITY (THIS SECTION 12) SET FORTH IN THESE TERMS ARE FUNDAMENTAL ELEMENTS OF THE BASIS OF THE BARGAIN BETWEEN YOU AND SPOQEN. THESE PROVISIONS REFLECT A REASONABLE AND FAIR ALLOCATION OF RISK BETWEEN THE PARTIES, AND SPOQEN WOULD NOT BE ABLE TO PROVIDE THE SERVICE ON AN ECONOMICALLY REASONABLE BASIS WITHOUT THESE LIMITATIONS. THE FEES CHARGED FOR THE SERVICE REFLECT THIS ALLOCATION OF RISK AND THE LIMITATIONS OF LIABILITY SPECIFIED HEREIN.
-        </p>
-        <p className="mb-4">
-          Some jurisdictions do not allow the exclusion of certain implied warranties or the limitation or exclusion of liability for certain types of damages, such as incidental or consequential damages. Accordingly, some of the above limitations and exclusions may not apply to you if prohibited by applicable law. In such cases, Spoqen's liability will be limited to the greatest extent permitted by law.
+          If the Recipient is compelled by law to disclose Confidential
+          Information, it will, to the extent legally permitted, provide the
+          Discloser with prompt prior notice and reasonable assistance if the
+          Discloser wishes to contest the disclosure.
         </p>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">13. Indemnification</h2>
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          11. Disclaimer of Warranties
+        </h2>
         <p className="mb-4">
-          You agree to defend, indemnify, and hold harmless Spoqen, its affiliates, and their respective officers, directors, employees, contractors, agents, licensors, suppliers, successors, and assigns from and against any and all claims, demands, suits, actions, proceedings, damages, obligations, losses, liabilities, judgments, awards, costs, debts, and expenses (including but not limited to reasonable attorneys' fees and legal costs) arising out of or relating to:
+          TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SERVICE,
+          INCLUDING ALL SERVER AND NETWORK COMPONENTS, IS PROVIDED ON AN "AS IS"
+          AND "AS AVAILABLE" BASIS, WITH ALL FAULTS AND WITHOUT ANY WARRANTIES
+          OF ANY KIND. SPOQEN AND ITS AFFILIATES, LICENSORS, SUPPLIERS, AND
+          AGENTS EXPRESSLY DISCLAIM ANY AND ALL WARRANTIES, WHETHER EXPRESS,
+          IMPLIED, STATUTORY, OR OTHERWISE, WITH RESPECT TO THE SERVICE,
+          INCLUDING, BUT NOT LIMITED TO, ANY IMPLIED WARRANTIES OF
+          MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE,
+          NON-INFRINGEMENT, QUIET ENJOYMENT, AND ANY WARRANTIES ARISING OUT OF
+          COURSE OF DEALING, USAGE, OR TRADE.
         </p>
-        <ul className="list-disc list-inside ml-4 space-y-2 mb-4">
-          <li>(i) your access to or use of the Service, including any data or content transmitted or received by you;</li>
-          <li>(ii) your violation or alleged violation of any term of this Agreement, including but not limited to your breach of any representations or warranties contained herein;</li>
-          <li>(iii) your violation or alleged violation of any third-party right, including without limitation any right of privacy, publicity rights, or Intellectual Property Rights (this includes, specifically, any failure on your part to obtain necessary consents for call recording or the processing of Caller Data as required by applicable law);</li>
-          <li>(iv) any claim that your User Content or Caller Data, or your use thereof in connection with the Service, caused damage or harm to a third party;</li>
-          <li>(v) your gross negligence, willful misconduct, or fraudulent activity; or</li>
-          <li>(vi) your violation of any applicable law, rule, or regulation.</li>
+        <p className="mb-4">
+          <strong>
+            SPECIFIC DISCLAIMER REGARDING AI ACCURACY AND OUTPUTS:
+          </strong>{' '}
+          YOU EXPRESSLY ACKNOWLEDGE AND AGREE THAT THE SPOQEN SERVICE UTILIZES
+          ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING ALGORITHMS. AS WITH ANY
+          AI-BASED SYSTEM, THE INFORMATION, RESPONSES, INTERPRETATIONS,
+          APPOINTMENT BOOKINGS, MESSAGE TRANSCRIPTIONS, AND OTHER OUTPUTS
+          GENERATED OR PROVIDED BY THE SERVICE ("AI OUTPUTS") MAY CONTAIN
+          ERRORS, INACCURACIES, OMISSIONS, OR MAY BE INCOMPLETE. AI OUTPUTS ARE
+          NOT INTENDED TO REPLACE HUMAN JUDGMENT, PROFESSIONAL ADVICE, OR
+          INDEPENDENT VERIFICATION. SPOQEN DOES NOT MAKE ANY WARRANTY OR
+          REPRESENTATION AS TO THE ACCURACY, COMPLETENESS, RELIABILITY,
+          SUITABILITY, TIMELINESS, OR EFFECTIVENESS OF ANY AI OUTPUTS. YOU ARE
+          SOLELY RESPONSIBLE FOR REVIEWING, EVALUATING, AND VERIFYING THE
+          ACCURACY AND APPROPRIATENESS OF ANY AI OUTPUTS BEFORE RELYING ON THEM,
+          ACTING UPON THEM, OR COMMUNICATING THEM TO CALLERS OR ANY THIRD
+          PARTIES. SPOQEN SHALL HAVE NO LIABILITY WHATSOEVER FOR ANY DAMAGES,
+          LOSSES, OR HARM ARISING FROM OR RELATED TO YOUR RELIANCE ON AI
+          OUTPUTS.
+        </p>
+        <p className="mb-4">
+          SPOQEN DOES NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED,
+          TIMELY, SECURE, ERROR-FREE, OR FREE OF VIRUSES OR OTHER HARMFUL
+          COMPONENTS, OR THAT ANY DEFECTS IN THE SERVICE WILL BE CORRECTED.
+          SPOQEN DOES NOT WARRANT THAT THE SERVICE WILL MEET YOUR SPECIFIC
+          REQUIREMENTS OR EXPECTATIONS, OR THAT THE USE OF THE SERVICE WILL
+          ACHIEVE ANY PARTICULAR RESULTS OR OUTCOMES. NO ADVICE OR INFORMATION,
+          WHETHER ORAL OR WRITTEN, OBTAINED BY YOU FROM SPOQEN OR THROUGH THE
+          SERVICE SHALL CREATE ANY WARRANTY NOT EXPRESSLY STATED IN THESE TERMS.
+        </p>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          12. Limitation of Liability
+        </h2>
+        <p className="mb-4">
+          TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL
+          SPOQEN, ITS AFFILIATES, DIRECTORS, OFFICERS, EMPLOYEES, AGENTS,
+          SUPPLIERS, OR LICENSORS BE LIABLE FOR ANY INDIRECT, PUNITIVE,
+          INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR EXEMPLARY DAMAGES, INCLUDING
+          WITHOUT LIMITATION DAMAGES FOR LOSS OF PROFITS, REVENUE, GOODWILL,
+          USE, DATA, OR OTHER INTANGIBLE LOSSES, ARISING OUT OF OR RELATING TO
+          THIS AGREEMENT, YOUR ACCESS TO OR USE OF, OR INABILITY TO ACCESS OR
+          USE, THE SERVICE, OR ANY CONTENT OR AI OUTPUTS OBTAINED FROM THE
+          SERVICE, WHETHER BASED ON WARRANTY, CONTRACT, TORT (INCLUDING
+          NEGLIGENCE), STATUTE, OR ANY OTHER LEGAL THEORY, AND EVEN IF SPOQEN
+          HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+        </p>
+        <p className="mb-4">
+          TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, SPOQEN'S TOTAL
+          AGGREGATE LIABILITY TO YOU (AND ANY PARTY CLAIMING THROUGH YOU) FOR
+          ALL CLAIMS, DAMAGES, LOSSES, LIABILITIES, COSTS, AND EXPENSES
+          (INCLUDING ATTORNEYS' FEES) ARISING OUT OF OR RELATING TO THIS
+          AGREEMENT OR YOUR ACCESS TO OR USE OF THE SERVICE, IN THE AGGREGATE,
+          REGARDLESS OF THE FORM OF ACTION, WHETHER IN CONTRACT, TORT (INCLUDING
+          NEGLIGENCE), STRICT LIABILITY, OR OTHERWISE, SHALL NOT EXCEED THE
+          TOTAL AMOUNT OF SUBSCRIPTION FEES ACTUALLY PAID BY YOU TO SPOQEN FOR
+          THE SERVICE DURING THE TWELVE (12) MONTH PERIOD IMMEDIATELY PRECEDING
+          THE DATE ON WHICH THE FIRST EVENT GIVING RISE TO THE CLAIM OCCURRED.
+          THE EXISTENCE OF MORE THAN ONE CLAIM WILL NOT ENLARGE THIS LIMIT.
+        </p>
+        <p className="mb-4">
+          YOU ACKNOWLEDGE AND AGREE THAT THE DISCLAIMERS OF WARRANTIES (SECTION
+          11) AND THE LIMITATIONS OF LIABILITY (THIS SECTION 12) SET FORTH IN
+          THESE TERMS ARE FUNDAMENTAL ELEMENTS OF THE BASIS OF THE BARGAIN
+          BETWEEN YOU AND SPOQEN. THESE PROVISIONS REFLECT A REASONABLE AND FAIR
+          ALLOCATION OF RISK BETWEEN THE PARTIES, AND SPOQEN WOULD NOT BE ABLE
+          TO PROVIDE THE SERVICE ON AN ECONOMICALLY REASONABLE BASIS WITHOUT
+          THESE LIMITATIONS. THE FEES CHARGED FOR THE SERVICE REFLECT THIS
+          ALLOCATION OF RISK AND THE LIMITATIONS OF LIABILITY SPECIFIED HEREIN.
+        </p>
+        <p className="mb-4">
+          Some jurisdictions do not allow the exclusion of certain implied
+          warranties or the limitation or exclusion of liability for certain
+          types of damages, such as incidental or consequential damages.
+          Accordingly, some of the above limitations and exclusions may not
+          apply to you if prohibited by applicable law. In such cases, Spoqen's
+          liability will be limited to the greatest extent permitted by law.
+        </p>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          13. Indemnification
+        </h2>
+        <p className="mb-4">
+          You agree to defend, indemnify, and hold harmless Spoqen, its
+          affiliates, and their respective officers, directors, employees,
+          contractors, agents, licensors, suppliers, successors, and assigns
+          from and against any and all claims, demands, suits, actions,
+          proceedings, damages, obligations, losses, liabilities, judgments,
+          awards, costs, debts, and expenses (including but not limited to
+          reasonable attorneys' fees and legal costs) arising out of or relating
+          to:
+        </p>
+        <ul className="mb-4 ml-4 list-inside list-disc space-y-2">
+          <li>
+            (i) your access to or use of the Service, including any data or
+            content transmitted or received by you;
+          </li>
+          <li>
+            (ii) your violation or alleged violation of any term of this
+            Agreement, including but not limited to your breach of any
+            representations or warranties contained herein;
+          </li>
+          <li>
+            (iii) your violation or alleged violation of any third-party right,
+            including without limitation any right of privacy, publicity rights,
+            or Intellectual Property Rights (this includes, specifically, any
+            failure on your part to obtain necessary consents for call recording
+            or the processing of Caller Data as required by applicable law);
+          </li>
+          <li>
+            (iv) any claim that your User Content or Caller Data, or your use
+            thereof in connection with the Service, caused damage or harm to a
+            third party;
+          </li>
+          <li>
+            (v) your gross negligence, willful misconduct, or fraudulent
+            activity; or
+          </li>
+          <li>
+            (vi) your violation of any applicable law, rule, or regulation.
+          </li>
         </ul>
         <p className="mb-4">
-          Spoqen agrees to defend you, your officers, directors, and employees against any third-party claim, demand, suit, or proceeding ("Claim") alleging that your permitted use of the Service, in accordance with this Agreement, directly infringes or misappropriates a third party's valid U.S. patent, copyright, or trademark ("IP Claim"). Spoqen will indemnify you for any damages, attorneys' fees, and costs finally awarded against you as a result of, or for amounts paid by you under a court-approved settlement of, such an IP Claim, provided that you: (a) promptly give Spoqen written notice of the IP Claim; (b) give Spoqen sole and exclusive control of the defense and settlement of the IP Claim; and (c) provide Spoqen with all reasonable assistance, at Spoqen's expense.
+          Spoqen agrees to defend you, your officers, directors, and employees
+          against any third-party claim, demand, suit, or proceeding ("Claim")
+          alleging that your permitted use of the Service, in accordance with
+          this Agreement, directly infringes or misappropriates a third party's
+          valid U.S. patent, copyright, or trademark ("IP Claim"). Spoqen will
+          indemnify you for any damages, attorneys' fees, and costs finally
+          awarded against you as a result of, or for amounts paid by you under a
+          court-approved settlement of, such an IP Claim, provided that you: (a)
+          promptly give Spoqen written notice of the IP Claim; (b) give Spoqen
+          sole and exclusive control of the defense and settlement of the IP
+          Claim; and (c) provide Spoqen with all reasonable assistance, at
+          Spoqen's expense.
         </p>
         <p className="mb-4">
-          Spoqen's indemnification obligations will not apply to any IP Claim to the extent it arises from: (1) any modification of the Service by anyone other than Spoqen; (2) your use of the Service in combination with any other software, hardware, or data not provided by Spoqen; (3) your use of the Service in a manner not authorized by this Agreement; (4) any User Content or Caller Data; or (5) your continued use of the allegedly infringing Service after being notified.
+          Spoqen's indemnification obligations will not apply to any IP Claim to
+          the extent it arises from: (1) any modification of the Service by
+          anyone other than Spoqen; (2) your use of the Service in combination
+          with any other software, hardware, or data not provided by Spoqen; (3)
+          your use of the Service in a manner not authorized by this Agreement;
+          (4) any User Content or Caller Data; or (5) your continued use of the
+          allegedly infringing Service after being notified.
         </p>
         <p className="mb-4">
-          If the Service becomes the subject of an IP Claim, Spoqen may, at its option: (i) procure for you the right to continue using the Service; (ii) replace or modify the Service to make it non-infringing; or (iii) if options (i) and (ii) are not commercially reasonable, terminate this Agreement and refund any prepaid, unused Subscription Fees. THIS SECTION 13 STATES SPOQEN'S ENTIRE LIABILITY AND YOUR SOLE AND EXCLUSIVE REMEDY WITH RESPECT TO ANY IP CLAIM.
+          If the Service becomes the subject of an IP Claim, Spoqen may, at its
+          option: (i) procure for you the right to continue using the Service;
+          (ii) replace or modify the Service to make it non-infringing; or (iii)
+          if options (i) and (ii) are not commercially reasonable, terminate
+          this Agreement and refund any prepaid, unused Subscription Fees. THIS
+          SECTION 13 STATES SPOQEN'S ENTIRE LIABILITY AND YOUR SOLE AND
+          EXCLUSIVE REMEDY WITH RESPECT TO ANY IP CLAIM.
         </p>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">14. Term and Termination</h2>
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          14. Term and Termination
+        </h2>
         <p className="mb-4">
-          This Agreement commences on the date you first accept these Terms and will continue until all Subscription Terms have expired or this Agreement has been terminated.
+          This Agreement commences on the date you first accept these Terms and
+          will continue until all Subscription Terms have expired or this
+          Agreement has been terminated.
         </p>
         <p className="mb-4">
-          The initial term of your subscription ("Initial Subscription Term") will be as specified in your Order Form or selected during signup. As detailed in Section 5, subscriptions will automatically renew unless properly cancelled.
+          The initial term of your subscription ("Initial Subscription Term")
+          will be as specified in your Order Form or selected during signup. As
+          detailed in Section 5, subscriptions will automatically renew unless
+          properly cancelled.
         </p>
         <p className="mb-4">
-          You may terminate your subscription by cancelling your Service. Termination initiated by you will be effective at the end of your then-current Subscription Term. No refunds will be provided.
+          You may terminate your subscription by cancelling your Service.
+          Termination initiated by you will be effective at the end of your
+          then-current Subscription Term. No refunds will be provided.
         </p>
         <p className="mb-4">
-          Spoqen may suspend or terminate your access to the Service or this Agreement if: (i) you fail to pay undisputed fees; (ii) you materially breach this Agreement; (iii) you become the subject of a petition in bankruptcy; (iv) Spoqen is required to do so by law; or (v) Spoqen decides to discontinue the Service generally.
+          Spoqen may suspend or terminate your access to the Service or this
+          Agreement if: (i) you fail to pay undisputed fees; (ii) you materially
+          breach this Agreement; (iii) you become the subject of a petition in
+          bankruptcy; (iv) Spoqen is required to do so by law; or (v) Spoqen
+          decides to discontinue the Service generally.
         </p>
         <p className="mb-4">
-          Upon termination or expiration: (a) all rights and licenses granted to you will immediately cease; (b) you must immediately cease all use of the Service; (c) you will remain liable for any unpaid fees; (d) for 30 days following termination, Spoqen will make your data available for export, after which Spoqen may delete all such data; (e) provisions that by their nature should survive termination will so survive.
-        </p>
-      </section>
-
-      <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">15. Governing Law and Dispute Resolution</h2>
-        <p className="mb-4">
-          This Agreement shall be governed by and construed in accordance with the internal laws of the State of Delaware, United States of America, without giving effect to any choice or conflict of law provision or rule. The United Nations Convention on Contracts for the International Sale of Goods will not apply.
-        </p>
-        <p className="mb-4">
-          Any Dispute shall be resolved exclusively through final and binding arbitration, rather than in court, except that either party may assert claims in small claims court or seek equitable relief in court for infringement of intellectual property rights.
-        </p>
-        <p className="mb-4">
-          The arbitration will be administered by the American Arbitration Association ("AAA") under its Consumer or Commercial Arbitration Rules. The arbitration will be conducted in Delaware, unless you and Spoqen agree otherwise.
-        </p>
-        <p className="mb-4">
-          <strong>WAIVER OF JURY TRIAL:</strong> EACH PARTY HEREBY IRREVOCABLY WAIVES, TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, ANY RIGHT IT MAY HAVE TO A TRIAL BY JURY IN ANY LEGAL PROCEEDING.
-        </p>
-        <p className="mb-4">
-          <strong>WAIVER OF CLASS OR CONSOLIDATED ACTIONS:</strong> ALL CLAIMS AND DISPUTES WITHIN THE SCOPE OF THIS ARBITRATION AGREEMENT MUST BE ARBITRATED OR LITIGATED ON AN INDIVIDUAL BASIS AND NOT ON A CLASS BASIS.
-        </p>
-      </section>
-
-      <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">16. Changes to Terms</h2>
-        <p className="mb-4">
-          Spoqen reserves the right, in its sole discretion, to modify, amend, or replace these Terms of Service at any time. If a revision is material, as determined in Spoqen's sole discretion, we will use reasonable efforts to provide you with at least fifteen (15) or thirty (30) days' notice. Such notice may be provided by posting on the Spoqen website, by sending an email, or through a notification within the Service. It is your responsibility to keep your email address current and to periodically review these Terms.
-        </p>
-        <p className="mb-4">
-          By continuing to access or use our Service after any revisions become effective, you acknowledge that you have read, understood, and agree to be bound by the revised Terms. If you do not agree to the new or modified Terms, you must stop using the Service.
+          Upon termination or expiration: (a) all rights and licenses granted to
+          you will immediately cease; (b) you must immediately cease all use of
+          the Service; (c) you will remain liable for any unpaid fees; (d) for
+          30 days following termination, Spoqen will make your data available
+          for export, after which Spoqen may delete all such data; (e)
+          provisions that by their nature should survive termination will so
+          survive.
         </p>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">17. General Provisions</h2>
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          15. Governing Law and Dispute Resolution
+        </h2>
         <p className="mb-4">
-          <strong>Entire Agreement:</strong> These Terms of Service, together with any applicable Order Forms and the Spoqen Privacy Policy, constitute the entire agreement between you and Spoqen and supersede all prior understandings.
+          This Agreement shall be governed by and construed in accordance with
+          the internal laws of the State of Delaware, United States of America,
+          without giving effect to any choice or conflict of law provision or
+          rule. The United Nations Convention on Contracts for the International
+          Sale of Goods will not apply.
         </p>
         <p className="mb-4">
-          <strong>Severability:</strong> If any provision of these Terms is held to be invalid or unenforceable, the remaining provisions will continue in full force and effect.
+          Any Dispute shall be resolved exclusively through final and binding
+          arbitration, rather than in court, except that either party may assert
+          claims in small claims court or seek equitable relief in court for
+          infringement of intellectual property rights.
         </p>
         <p className="mb-4">
-          <strong>Waiver:</strong> No waiver by Spoqen of any term shall be deemed a further or continuing waiver. Any failure of Spoqen to assert a right shall not constitute a waiver. All waivers must be in writing.
+          The arbitration will be administered by the American Arbitration
+          Association ("AAA") under its Consumer or Commercial Arbitration
+          Rules. The arbitration will be conducted in Delaware, unless you and
+          Spoqen agree otherwise.
         </p>
         <p className="mb-4">
-          <strong>Assignment:</strong> You may not assign this Agreement without Spoqen's prior written consent. Spoqen may freely assign this Agreement.
+          <strong>WAIVER OF JURY TRIAL:</strong> EACH PARTY HEREBY IRREVOCABLY
+          WAIVES, TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, ANY RIGHT
+          IT MAY HAVE TO A TRIAL BY JURY IN ANY LEGAL PROCEEDING.
         </p>
         <p className="mb-4">
-          <strong>Notices:</strong> Notices from Spoqen to you will be in writing via email, posting on our website, or a notification in the Service. Notices from you to Spoqen must be sent to the contact address specified in Section 18.
-        </p>
-        <p className="mb-4">
-          <strong>Force Majeure:</strong> Spoqen shall not be liable for any failure or delay in performance caused by circumstances beyond its reasonable control.
-        </p>
-        <p className="mb-4">
-          <strong>Relationship of the Parties:</strong> The relationship between you and Spoqen is that of independent contractors. Nothing in this Agreement creates any agency, partnership, or employment relationship.
+          <strong>WAIVER OF CLASS OR CONSOLIDATED ACTIONS:</strong> ALL CLAIMS
+          AND DISPUTES WITHIN THE SCOPE OF THIS ARBITRATION AGREEMENT MUST BE
+          ARBITRATED OR LITIGATED ON AN INDIVIDUAL BASIS AND NOT ON A CLASS
+          BASIS.
         </p>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">18. Contact Information</h2>
-        <p>If you have any questions, comments, or concerns about these Terms of Service, please contact us:</p>
-        <address className="not-italic mt-2">
-          Spoqen<br />
-          Attn: Legal Department / Terms of Service Inquiry<br />
-          Email: <a href="mailto:admin@spoqen.com" className="text-blue-600 hover:underline">admin@spoqen.com</a><br />
-          Website: www.spoqen.com 
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          16. Changes to Terms
+        </h2>
+        <p className="mb-4">
+          Spoqen reserves the right, in its sole discretion, to modify, amend,
+          or replace these Terms of Service at any time. If a revision is
+          material, as determined in Spoqen's sole discretion, we will use
+          reasonable efforts to provide you with at least fifteen (15) or thirty
+          (30) days' notice. Such notice may be provided by posting on the
+          Spoqen website, by sending an email, or through a notification within
+          the Service. It is your responsibility to keep your email address
+          current and to periodically review these Terms.
+        </p>
+        <p className="mb-4">
+          By continuing to access or use our Service after any revisions become
+          effective, you acknowledge that you have read, understood, and agree
+          to be bound by the revised Terms. If you do not agree to the new or
+          modified Terms, you must stop using the Service.
+        </p>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          17. General Provisions
+        </h2>
+        <p className="mb-4">
+          <strong>Entire Agreement:</strong> These Terms of Service, together
+          with any applicable Order Forms and the Spoqen Privacy Policy,
+          constitute the entire agreement between you and Spoqen and supersede
+          all prior understandings.
+        </p>
+        <p className="mb-4">
+          <strong>Severability:</strong> If any provision of these Terms is held
+          to be invalid or unenforceable, the remaining provisions will continue
+          in full force and effect.
+        </p>
+        <p className="mb-4">
+          <strong>Waiver:</strong> No waiver by Spoqen of any term shall be
+          deemed a further or continuing waiver. Any failure of Spoqen to assert
+          a right shall not constitute a waiver. All waivers must be in writing.
+        </p>
+        <p className="mb-4">
+          <strong>Assignment:</strong> You may not assign this Agreement without
+          Spoqen's prior written consent. Spoqen may freely assign this
+          Agreement.
+        </p>
+        <p className="mb-4">
+          <strong>Notices:</strong> Notices from Spoqen to you will be in
+          writing via email, posting on our website, or a notification in the
+          Service. Notices from you to Spoqen must be sent to the contact
+          address specified in Section 18.
+        </p>
+        <p className="mb-4">
+          <strong>Force Majeure:</strong> Spoqen shall not be liable for any
+          failure or delay in performance caused by circumstances beyond its
+          reasonable control.
+        </p>
+        <p className="mb-4">
+          <strong>Relationship of the Parties:</strong> The relationship between
+          you and Spoqen is that of independent contractors. Nothing in this
+          Agreement creates any agency, partnership, or employment relationship.
+        </p>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          18. Contact Information
+        </h2>
+        <p>
+          If you have any questions, comments, or concerns about these Terms of
+          Service, please contact us:
+        </p>
+        <address className="mt-2 not-italic">
+          Spoqen
+          <br />
+          Attn: Legal Department / Terms of Service Inquiry
+          <br />
+          Email:{' '}
+          <a
+            href="mailto:admin@spoqen.com"
+            className="text-blue-600 hover:underline"
+          >
+            admin@spoqen.com
+          </a>
+          <br />
+          Website: www.spoqen.com
         </address>
       </section>
 
       <section>
-        <h2 className="text-2xl font-bold mb-4 border-b pb-2">19. Final Disclaimer</h2>
+        <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
+          19. Final Disclaimer
+        </h2>
         <p className="italic text-gray-600">
-          Disclaimer: This Terms of Service document is provided as a general template for the users of the Spoqen service. The information contained herein is for informational purposes only and does not constitute legal advice from Spoqen to its users regarding the users' own legal obligations or business practices. Each user should consult with a qualified legal professional to ensure that their use of the Spoqen service, and their own terms and conditions or privacy practices related to their business and their interactions with Callers, comply with all applicable laws and regulations in their specific jurisdiction(s) and the jurisdiction(s) in which they operate or their Callers reside. Spoqen is not responsible for any loss, damage, or cause of action, of any nature, directly or indirectly, resulting from a user's reliance on this document as a comprehensive legal solution for their own business without seeking appropriate, independent legal counsel tailored to their specific circumstances.
+          Disclaimer: This Terms of Service document is provided as a general
+          template for the users of the Spoqen service. The information
+          contained herein is for informational purposes only and does not
+          constitute legal advice from Spoqen to its users regarding the users'
+          own legal obligations or business practices. Each user should consult
+          with a qualified legal professional to ensure that their use of the
+          Spoqen service, and their own terms and conditions or privacy
+          practices related to their business and their interactions with
+          Callers, comply with all applicable laws and regulations in their
+          specific jurisdiction(s) and the jurisdiction(s) in which they operate
+          or their Callers reside. Spoqen is not responsible for any loss,
+          damage, or cause of action, of any nature, directly or indirectly,
+          resulting from a user's reliance on this document as a comprehensive
+          legal solution for their own business without seeking appropriate,
+          independent legal counsel tailored to their specific circumstances.
         </p>
       </section>
-
     </div>
   );
 }
