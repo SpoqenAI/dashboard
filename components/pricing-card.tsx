@@ -14,7 +14,7 @@ export function PricingCard() {
     <Card className="mx-auto w-full max-w-lg text-center">
       <CardHeader>
         <CardTitle>Simple Pricing</CardTitle>
-        <CardDescription>No hidden fees or contracts</CardDescription>
+        <CardDescription>No hidden fees</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center justify-center gap-2">
