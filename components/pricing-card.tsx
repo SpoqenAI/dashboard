@@ -9,16 +9,24 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
-export function PricingCard() {
+export function PricingCard({
+  title = 'Simple Pricing',
+  description = 'No hidden fees or contracts',
+  price = '$30',
+}: {
+  title?: string;
+  description?: string;
+  price?: string;
+}) {
   return (
     <Card className="mx-auto w-full max-w-lg text-center">
       <CardHeader>
-        <CardTitle>Simple Pricing</CardTitle>
-        <CardDescription>No hidden fees</CardDescription>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center justify-center gap-2">
-          <span className="text-5xl font-bold">$30</span>
+          <span className="text-5xl font-bold">{price}</span>
           <span className="text-sm text-muted-foreground">per month</span>
         </div>
       </CardContent>
