@@ -10,9 +10,9 @@ import {
 } from '@/components/ui/card';
 
 export function PricingCard({
-  title = "Simple Pricing",
-  description = "No hidden fees or contracts",
-  price = "$30",
+  title = 'Simple Pricing',
+  description = 'No hidden fees or contracts',
+  price = '$30',
 }: {
   title?: string;
   description?: string;
