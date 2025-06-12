@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle, PhoneCall, User } from 'lucide-react';
+import { PricingCard } from '@/components/pricing-card';
 
 export default function Home() {
   return (
@@ -113,19 +114,8 @@ export default function Home() {
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
                   Ready to Never Miss a Lead?
                 </h2>
-                <p className="max-w-[900px] text-gray-500 dark:text-gray-400 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Join 100+ real estate agents already using Spoqen to grow
-                  their business.
-                </p>
               </div>
-              <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                <Button size="lg" asChild>
-                  <Link href="/signup">
-                    Start Your Free Trial{' '}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
+              <PricingCard />
             </div>
           </div>
         </section>
