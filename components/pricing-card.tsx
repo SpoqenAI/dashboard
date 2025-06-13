@@ -11,7 +11,7 @@ import {
 
 export function PricingCard({
   title = 'Simple Pricing',
-  description = 'No hidden fees or contracts',
+  description = 'No hidden fees',
   price = '$30',
 }: {
   title?: string;
