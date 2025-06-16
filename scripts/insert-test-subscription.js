@@ -12,7 +12,9 @@ async function insertTestSubscription(userId, subscriptionId, customerId) {
 
   if (!supabaseUrl || !supabaseServiceKey) {
     console.error('❌ Missing Supabase environment variables');
-    console.log('Make sure NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set');
+    console.log(
+      'Make sure NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set'
+    );
     return;
   }
 
@@ -30,7 +32,9 @@ async function insertTestSubscription(userId, subscriptionId, customerId) {
       quantity: 1,
       cancel_at_period_end: false,
       current_period_start_at: new Date().toISOString(),
-      current_period_end_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+      current_period_end_at: new Date(
+        Date.now() + 30 * 24 * 60 * 60 * 1000
+      ).toISOString(), // 30 days from now
       ended_at: null,
       canceled_at: null,
       trial_start_at: null,
@@ -65,8 +69,9 @@ async function insertTestSubscription(userId, subscriptionId, customerId) {
     }
 
     console.log('\n🎉 Test subscription data inserted successfully!');
-    console.log('Now check your app - the subscription status should show as active.');
-
+    console.log(
+      'Now check your app - the subscription status should show as active.'
+    );
   } catch (error) {
     console.error('❌ Unexpected error:', error.message);
   }
@@ -78,10 +83,16 @@ const subscriptionId = process.argv[3];
 const customerId = process.argv[4];
 
 if (!userId) {
-  console.log('Usage: node scripts/insert-test-subscription.js [user_id] [subscription_id] [customer_id]');
-  console.log('Example: node scripts/insert-test-subscription.js 12345678-1234-1234-1234-123456789012');
-  console.log('\nsubscription_id and customer_id are optional and will be auto-generated if not provided.');
+  console.log(
+    'Usage: node scripts/insert-test-subscription.js [user_id] [subscription_id] [customer_id]'
+  );
+  console.log(
+    'Example: node scripts/insert-test-subscription.js 12345678-1234-1234-1234-123456789012'
+  );
+  console.log(
+    '\nsubscription_id and customer_id are optional and will be auto-generated if not provided.'
+  );
   process.exit(1);
 }
 
-insertTestSubscription(userId, subscriptionId, customerId); 
+insertTestSubscription(userId, subscriptionId, customerId);

@@ -1,11 +1,13 @@
 # Subscription Status Debug Guide
 
 ## Problem
+
 Paddle checkout works, but the subscription status card shows "No Active Subscription" even though the user has paid for a subscription.
 
 ## Root Cause Analysis
 
 The issue is likely one of the following:
+
 1. **Database Schema Mismatch**: App expects `subscriptions` table but only has `user_subscriptions`
 2. **Webhook Not Configured**: Paddle webhooks aren't reaching your app
 3. **Webhook Processing Error**: Webhooks are received but failing to process
@@ -14,13 +16,15 @@ The issue is likely one of the following:
 ## ✅ Fixes Applied
 
 ### 1. Database Schema Fixed
+
 - ✅ Created `subscriptions` table with proper Paddle schema
 - ✅ Added `paddle_customer_id` column to profiles table
 - ✅ Added proper indexes and RLS policies
 
 ### 2. Enhanced Debugging
+
 - ✅ Added console logging to `useSubscription` hook
-- ✅ Added detailed logging to webhook handler  
+- ✅ Added detailed logging to webhook handler
 - ✅ Created debug scripts to check database state
 
 ## 🔍 Debugging Steps
@@ -33,6 +37,7 @@ The issue is likely one of the following:
 4. Look for logs starting with `📊 Subscription data fetched:`
 
 **What to look for:**
+
 - `subscriptionFound: true/false` - tells you if data exists
 - `subscriptionData: {...}` - shows actual subscription details
 - Any error messages
@@ -46,6 +51,7 @@ node scripts/debug-subscription.js YOUR_USER_ID_HERE
 ```
 
 This will show you:
+
 - Data in `subscriptions` table (new Paddle table)
 - Data in `user_subscriptions` table (old table)
 - Profile data including `paddle_customer_id`
@@ -53,11 +59,13 @@ This will show you:
 ### Step 3: Verify Webhook Configuration
 
 1. **Check Paddle Dashboard:**
+
    - Go to Developer Tools → Notifications
    - Verify webhook URL: `https://your-domain.com/api/webhooks/paddle`
    - Verify events selected: `subscription.created`, `subscription.updated`, `subscription.canceled`
 
 2. **Check Webhook Secret:**
+
    - Make sure `PADDLE_WEBHOOK_SECRET` in `.env.local` matches Paddle dashboard
 
 3. **Test Webhook Locally (if needed):**
@@ -72,6 +80,7 @@ This will show you:
 2. **For Development:** Check terminal where `pnpm dev` is running
 
 Look for:
+
 - `✅ Processed subscription [id] for user [user_id]` - successful webhook processing
 - Any error messages from webhook handler
 
@@ -88,6 +97,7 @@ node scripts/insert-test-subscription.js YOUR_USER_ID SUBSCRIPTION_ID CUSTOMER_I
 ```
 
 Example:
+
 ```bash
 node scripts/insert-test-subscription.js 12345678-1234-1234-1234-123456789012 sub_01abc123 ctm_01def456
 ```
@@ -97,21 +107,28 @@ After running this, the subscription status should immediately show as active in
 ## 🔧 Common Issues & Solutions
 
 ### Issue 1: "subscriptions" table doesn't exist
+
 **Solution:** The migration should have fixed this. If not, check Supabase logs and make sure migration ran successfully.
 
 ### Issue 2: Webhooks not reaching app
+
 **Solutions:**
+
 - Verify webhook URL in Paddle dashboard
 - Check that webhook endpoint is publicly accessible
 - Verify `PADDLE_WEBHOOK_SECRET` matches
 
 ### Issue 3: Webhook signature verification failing
+
 **Solutions:**
+
 - Double-check `PADDLE_WEBHOOK_SECRET` in environment variables
 - Make sure webhook secret in Paddle dashboard matches
 
 ### Issue 4: User ID missing in webhook custom_data
+
 **Solutions:**
+
 - Verify your checkout flow is passing `user_id` in custom data
 - Check the checkout implementation in settings page
 
@@ -122,7 +139,7 @@ Make sure these are set in `.env.local`:
 ```bash
 # Paddle Configuration
 NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=your_client_token
-NEXT_PUBLIC_PADDLE_PRICE_ID=your_price_id  
+NEXT_PUBLIC_PADDLE_PRICE_ID=your_price_id
 PADDLE_API_KEY=your_api_key
 PADDLE_WEBHOOK_SECRET=your_webhook_secret
 
@@ -149,4 +166,4 @@ If the issue persists:
 3. **Verify webhook logs:** Check if webhooks are being received
 4. **Test payment flow:** Try a new test payment and monitor logs
 
-The enhanced logging should now make it much easier to identify exactly where the issue is occurring. 
+The enhanced logging should now make it much easier to identify exactly where the issue is occurring.

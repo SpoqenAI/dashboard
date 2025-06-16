@@ -12,7 +12,9 @@ async function debugSubscription(userId) {
 
   if (!supabaseUrl || !supabaseKey) {
     console.error('❌ Missing Supabase environment variables');
-    console.log('Make sure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set');
+    console.log(
+      'Make sure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set'
+    );
     return;
   }
 
@@ -31,7 +33,9 @@ async function debugSubscription(userId) {
     if (subError) {
       console.error('❌ Error querying subscriptions table:', subError.message);
     } else {
-      console.log(`✅ Found ${subscriptions.length} subscription(s) in subscriptions table:`);
+      console.log(
+        `✅ Found ${subscriptions.length} subscription(s) in subscriptions table:`
+      );
       subscriptions.forEach((sub, index) => {
         console.log(`   Subscription ${index + 1}:`, {
           id: sub.id,
@@ -50,9 +54,14 @@ async function debugSubscription(userId) {
       .eq('id', userId);
 
     if (userSubError) {
-      console.error('❌ Error querying user_subscriptions table:', userSubError.message);
+      console.error(
+        '❌ Error querying user_subscriptions table:',
+        userSubError.message
+      );
     } else {
-      console.log(`✅ Found ${userSubs.length} subscription(s) in user_subscriptions table:`);
+      console.log(
+        `✅ Found ${userSubs.length} subscription(s) in user_subscriptions table:`
+      );
       userSubs.forEach((sub, index) => {
         console.log(`   Subscription ${index + 1}:`, {
           plan_type: sub.plan_type,
@@ -80,7 +89,6 @@ async function debugSubscription(userId) {
         stripe_customer_id: profile.stripe_customer_id,
       });
     }
-
   } catch (error) {
     console.error('❌ Unexpected error:', error.message);
   }
@@ -91,8 +99,10 @@ const userId = process.argv[2];
 
 if (!userId) {
   console.log('Usage: node scripts/debug-subscription.js [user_id]');
-  console.log('Example: node scripts/debug-subscription.js 12345678-1234-1234-1234-123456789012');
+  console.log(
+    'Example: node scripts/debug-subscription.js 12345678-1234-1234-1234-123456789012'
+  );
   process.exit(1);
 }
 
-debugSubscription(userId); 
+debugSubscription(userId);

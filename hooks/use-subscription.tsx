@@ -72,12 +72,14 @@ export function useSubscription(): UseSubscriptionReturn {
         console.log('📊 Subscription data fetched:', {
           userId: user.id,
           subscriptionFound: !!data,
-          subscriptionData: data ? {
-            id: data.id,
-            status: data.status,
-            price_id: data.price_id,
-            current_period_end: data.current_period_end_at,
-          } : null,
+          subscriptionData: data
+            ? {
+                id: data.id,
+                status: data.status,
+                price_id: data.price_id,
+                current_period_end: data.current_period_end_at,
+              }
+            : null,
         });
 
         setSubscription(data);
