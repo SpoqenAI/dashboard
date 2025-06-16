@@ -2,17 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Paddle } from '@paddle/paddle-node-sdk';
 import { createClient } from '@/lib/supabase/server';
 
-const paddleApiKey = process.env.PADDLE_API_KEY;
-if (!paddleApiKey || paddleApiKey.trim() === '') {
-  console.error('PADDLE_API_KEY environment variable is missing or empty');
-  throw new Error(
-    'PADDLE_API_KEY environment variable is required for Paddle webhook processing'
-  );
-}
-
-const paddle = new Paddle(paddleApiKey);
-
 export async function POST(req: NextRequest) {
+  const paddleApiKey = process.env.PADDLE_API_KEY;
+  if (!paddleApiKey || paddleApiKey.trim() === '') {
+    console.error('PADDLE_API_KEY environment variable is missing or empty');
+    return NextResponse.json(
+      { error: 'PADDLE_API_KEY environment variable is required for Paddle webhook processing' },
+      { status: 500 }
+    );
+  }
+
+  const paddle = new Paddle(paddleApiKey);
   const supabase = await createClient();
   const signature = req.headers.get('paddle-signature') || '';
   const rawBody = await req.text();
