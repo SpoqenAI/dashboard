@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     // Handle different event types from Paddle
     switch (event.eventType) {
       case 'subscription.created':
-      case 'subscription.updated':
+      case 'subscription.updated': {
         const eventData = event.data as any;
         const subData = {
           id: eventData.id,
@@ -105,8 +105,9 @@ export async function POST(req: NextRequest) {
           `Processed subscription ${eventData.id} for user ${userId}.`
         );
         break;
+      }
 
-      case 'subscription.canceled':
+      case 'subscription.canceled': {
         const cancelEventData = event.data as any;
         const { error: cancelError } = await supabase
           .from('subscriptions')
@@ -121,9 +122,12 @@ export async function POST(req: NextRequest) {
           `Canceled subscription ${cancelEventData.id} for user ${userId}.`
         );
         break;
+      }
 
-      default:
+      default: {
         console.log(`Unhandled webhook event type: ${event.eventType}`);
+        break;
+      }
     }
 
     return NextResponse.json({ received: true });

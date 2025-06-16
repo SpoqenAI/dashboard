@@ -32,8 +32,15 @@ export interface PaddleCheckoutConfig {
 }
 
 // Environment variable helper
-export const getPaddlePriceId = (): string | null => {
-  return process.env.NEXT_PUBLIC_PADDLE_PRICE_ID || null;
+export const getPaddlePriceId = (): string => {
+  const priceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
+  if (!priceId || priceId.trim() === '') {
+    throw new Error(
+      'NEXT_PUBLIC_PADDLE_PRICE_ID environment variable is required but not set. ' +
+      'Please configure this environment variable with your Paddle price ID.'
+    );
+  }
+  return priceId;
 };
 
 // Validation helper
