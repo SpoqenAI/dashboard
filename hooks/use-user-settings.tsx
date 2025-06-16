@@ -590,6 +590,7 @@ export function useUserSettings() {
     saving,
     error,
     dataLoaded,
+    userId: user?.id,
     updateAIReceptionistSettings,
     getAIReceptionistSettings,
     updateProfile,

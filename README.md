@@ -203,7 +203,3 @@ chore: update dependencies
   - Ensure your code adheres to the linting rules.
   - It's recommended to set up your editor to auto-format on save.
   - You can typically run `pnpm lint` and `pnpm format` (if a format script is defined in `package.json`) to check and fix issues.
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
