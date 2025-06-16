@@ -1,9 +1,17 @@
 // Utility functions and types for Paddle integration
 
+export type PaddleSubscriptionStatus = 
+  | 'active'
+  | 'trialing'
+  | 'canceled'
+  | 'past_due'
+  | 'paused'
+  | 'deleted';
+
 export interface PaddleSubscription {
   id: string;
   user_id: string;
-  status: string;
+  status: PaddleSubscriptionStatus;
   price_id: string;
   quantity: number;
   cancel_at_period_end: boolean;
@@ -38,6 +46,14 @@ export const validatePaddleConfig = (): { isValid: boolean; missingVars: string[
   
   if (!process.env.NEXT_PUBLIC_PADDLE_PRICE_ID) {
     missingVars.push('NEXT_PUBLIC_PADDLE_PRICE_ID');
+  }
+  
+  if (!process.env.PADDLE_VENDOR_ID) {
+    missingVars.push('PADDLE_VENDOR_ID');
+  }
+  
+  if (!process.env.PADDLE_API_KEY) {
+    missingVars.push('PADDLE_API_KEY');
   }
   
   return {

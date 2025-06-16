@@ -829,6 +829,9 @@ function SettingsContent() {
               quantity: 1,
             },
           ],
+          customData: {
+            user_id: userId,
+          },
         };
         
         console.log('🚀 Trying minimal checkout first:', JSON.stringify(minimalCheckoutData, null, 2));
