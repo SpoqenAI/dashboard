@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Paddle } from '@paddle/paddle-node-sdk';
 import { createClient } from '@/lib/supabase/server';
 
-const paddle = new Paddle(process.env.PADDLE_API_KEY!);
+const paddleApiKey = process.env.PADDLE_API_KEY;
+if (!paddleApiKey || paddleApiKey.trim() === '') {
+  console.error('PADDLE_API_KEY environment variable is missing or empty');
+  throw new Error('PADDLE_API_KEY environment variable is required for Paddle webhook processing');
+}
+
+const paddle = new Paddle(paddleApiKey);
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -20,8 +26,20 @@ export async function POST(req: NextRequest) {
     // Extract the Supabase user ID from the custom data you passed earlier
     const userId = (event.data as any).custom_data?.user_id;
     if (!userId) {
-      console.warn(`Webhook event ${event.eventType} received without a user_id.`);
-      return NextResponse.json({ received: true }); // Acknowledge receipt
+      const errorMessage = `Critical: Webhook event ${event.eventType} received without a user_id. Event ID: ${(event.data as any).id || 'unknown'}`;
+      console.error(errorMessage, {
+        eventType: event.eventType,
+        eventId: (event.data as any).id,
+        customData: (event.data as any).custom_data,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Return 400 Bad Request so Paddle retries the webhook
+      return NextResponse.json({ 
+        error: 'Missing required user_id in custom_data',
+        eventType: event.eventType,
+        eventId: (event.data as any).id 
+      }, { status: 400 });
     }
 
     // Handle different event types from Paddle
@@ -45,7 +63,9 @@ export async function POST(req: NextRequest) {
         };
         
         // Upsert subscription details into your database
-        const { error: subError } = await supabase.from('subscriptions').upsert(subData);
+        const { error: subError } = await supabase
+          .from('subscriptions')
+          .upsert(subData, { onConflict: 'id' });
         if (subError) throw subError;
 
         // Also update the user's profile with their Paddle Customer ID
