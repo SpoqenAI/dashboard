@@ -50,6 +50,7 @@ export const validatePaddleConfig = (): {
 } => {
   const missingVars: string[] = [];
 
+  // Always check public environment variables (safe for client-side)
   if (!process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) {
     missingVars.push('NEXT_PUBLIC_PADDLE_CLIENT_TOKEN');
   }
@@ -58,16 +59,21 @@ export const validatePaddleConfig = (): {
     missingVars.push('NEXT_PUBLIC_PADDLE_PRICE_ID');
   }
 
-  if (!process.env.PADDLE_VENDOR_ID) {
-    missingVars.push('PADDLE_VENDOR_ID');
-  }
+  // Only check server-only environment variables when running in Node.js environment
+  const isServerSide = typeof window === 'undefined' && typeof process !== 'undefined' && process.versions?.node;
+  
+  if (isServerSide) {
+    if (!process.env.PADDLE_VENDOR_ID) {
+      missingVars.push('PADDLE_VENDOR_ID');
+    }
 
-  if (!process.env.PADDLE_API_KEY) {
-    missingVars.push('PADDLE_API_KEY');
-  }
+    if (!process.env.PADDLE_API_KEY) {
+      missingVars.push('PADDLE_API_KEY');
+    }
 
-  if (!process.env.PADDLE_WEBHOOK_SECRET) {
-    missingVars.push('PADDLE_WEBHOOK_SECRET');
+    if (!process.env.PADDLE_WEBHOOK_SECRET) {
+      missingVars.push('PADDLE_WEBHOOK_SECRET');
+    }
   }
 
   return {
