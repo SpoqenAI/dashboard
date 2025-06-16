@@ -38,7 +38,11 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Button size="lg" asChild className="bg-spoqen-gradient hover:opacity-90 border-0">
+                  <Button
+                    size="lg"
+                    asChild
+                    className="border-0 bg-spoqen-gradient hover:opacity-90"
+                  >
                     <Link href="/signup">
                       Get Started <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
@@ -51,9 +55,9 @@ export default function Home() {
               <div className="flex items-center justify-center">
                 <div className="relative aspect-video w-full max-w-[500px] overflow-hidden rounded-xl border bg-background shadow-xl">
                   <img
-                    src="/placeholder.svg?height=500&width=800&query=real estate agent on phone with modern dashboard interface"
-                    alt="Spoqen AI Receptionist Dashboard Preview"
-                    className="h-full w-full object-cover"
+                    src="/spoqen transparent logo.png"
+                    alt="Spoqen Logo"
+                    className="h-full w-full object-contain"
                   />
                 </div>
               </div>
