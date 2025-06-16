@@ -60,7 +60,8 @@ const config = {
         },
       },
       backgroundImage: {
-        'spoqen-gradient': 'linear-gradient(135deg, #eb39ff 0%, #7537ff 50%, #00b4d8 100%)',
+        'spoqen-gradient':
+          'linear-gradient(135deg, #eb39ff 0%, #7537ff 50%, #00b4d8 100%)',
       },
       borderRadius: {
         lg: 'var(--radius)',

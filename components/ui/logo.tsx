@@ -19,8 +19,8 @@ export function Logo({ className = '', width = 200, height = 60 }: LogoProps) {
   if (!mounted) {
     // Return a placeholder during hydration to avoid mismatch
     return (
-      <div 
-        className={`bg-spoqen-gradient bg-clip-text text-transparent font-bold text-2xl ${className}`}
+      <div
+        className={`bg-spoqen-gradient bg-clip-text text-2xl font-bold text-transparent ${className}`}
         style={{ width, height: height * 0.6 }}
       >
         Spoqen
@@ -38,4 +38,4 @@ export function Logo({ className = '', width = 200, height = 60 }: LogoProps) {
       priority
     />
   );
-} 
+}

@@ -95,7 +95,7 @@ body {
 
 /* Custom styles for Geoapify Autocomplete to match our dark theme design */
 .address-autocomplete-wrapper .geoapify-autocomplete-input {
-  @apply w-full rounded-md border bg-input text-foreground p-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary;
+  @apply w-full rounded-md border bg-input p-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary;
   font-family: inherit;
   font-size: 14px;
 }
