@@ -7,7 +7,10 @@ export async function POST(req: NextRequest) {
   if (!paddleApiKey || paddleApiKey.trim() === '') {
     console.error('PADDLE_API_KEY environment variable is missing or empty');
     return NextResponse.json(
-      { error: 'PADDLE_API_KEY environment variable is required for Paddle webhook processing' },
+      {
+        error:
+          'PADDLE_API_KEY environment variable is required for Paddle webhook processing',
+      },
       { status: 500 }
     );
   }
