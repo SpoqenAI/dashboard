@@ -60,6 +60,7 @@ export function useSubscription(): UseSubscriptionReturn {
         }
 
         if (fetchError) {
+          console.error('🚨 Subscription fetch error:', fetchError);
           throw fetchError;
         }
 
@@ -67,6 +68,19 @@ export function useSubscription(): UseSubscriptionReturn {
         if (signal?.aborted) {
           return;
         }
+
+        console.log('📊 Subscription data fetched:', {
+          userId: user.id,
+          subscriptionFound: !!data,
+          subscriptionData: data
+            ? {
+                id: data.id,
+                status: data.status,
+                price_id: data.price_id,
+                current_period_end: data.current_period_end_at,
+              }
+            : null,
+        });
 
         setSubscription(data);
       } catch (err: any) {

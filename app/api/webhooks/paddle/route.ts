@@ -104,7 +104,15 @@ export async function POST(req: NextRequest) {
         if (profError) throw profError;
 
         console.log(
-          `Processed subscription ${eventData.id} for user ${userId}.`
+          `✅ Processed subscription ${eventData.id} for user ${userId}.`,
+          {
+            subscriptionId: eventData.id,
+            userId: userId,
+            status: eventData.status,
+            priceId: eventData.items?.[0]?.price?.id,
+            customerId: eventData.customer_id,
+            currentPeriodEnd: eventData.current_period_end,
+          }
         );
         break;
       }
