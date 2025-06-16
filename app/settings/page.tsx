@@ -46,7 +46,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { useSubscription } from '@/hooks/use-subscription';
-import { getPaddlePriceId, isActiveSubscription, formatSubscriptionDate } from '@/lib/paddle';
+import {
+  getPaddlePriceId,
+  isActiveSubscription,
+  formatSubscriptionDate,
+} from '@/lib/paddle';
 import PasswordStrengthBar from 'react-password-strength-bar';
 
 // Initialize content filter outside component to prevent recreation on every render
@@ -133,11 +137,17 @@ function SettingsContent() {
   // Initialize Paddle on component mount
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) {
-      console.log('🚀 Initializing Paddle with token:', process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN?.slice(0, 10) + '...');
+      console.log(
+        '🚀 Initializing Paddle with token:',
+        process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN?.slice(0, 10) + '...'
+      );
       initializePaddle({
-        environment: process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT as 'sandbox' | 'production' || 'sandbox',
+        environment:
+          (process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT as
+            | 'sandbox'
+            | 'production') || 'sandbox',
         token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN,
-        eventCallback: (data) => {
+        eventCallback: data => {
           console.log('📦 Paddle event:', JSON.stringify(data, null, 2));
           if (data.name === 'checkout.completed') {
             console.log('✅ Checkout completed!');
@@ -147,24 +157,31 @@ function SettingsContent() {
             });
           }
           if (data.name === 'checkout.error') {
-            console.error('❌ Checkout error details:', JSON.stringify(data, null, 2));
+            console.error(
+              '❌ Checkout error details:',
+              JSON.stringify(data, null, 2)
+            );
             toast({
               title: 'Payment failed',
-              description: data.error?.detail || 'There was an error processing your payment.',
+              description:
+                data.error?.detail ||
+                'There was an error processing your payment.',
               variant: 'destructive',
             });
           }
         },
-      }).then((paddleInstance: Paddle | undefined) => {
-        if (paddleInstance) {
-          console.log('✅ Paddle initialized successfully');
-          setPaddle(paddleInstance);
-        } else {
-          console.error('❌ Failed to initialize Paddle');
-        }
-      }).catch((error) => {
-        console.error('❌ Paddle initialization error:', error);
-      });
+      })
+        .then((paddleInstance: Paddle | undefined) => {
+          if (paddleInstance) {
+            console.log('✅ Paddle initialized successfully');
+            setPaddle(paddleInstance);
+          } else {
+            console.error('❌ Failed to initialize Paddle');
+          }
+        })
+        .catch(error => {
+          console.error('❌ Paddle initialization error:', error);
+        });
     } else {
       console.error('❌ NEXT_PUBLIC_PADDLE_CLIENT_TOKEN not found');
     }
@@ -810,15 +827,22 @@ function SettingsContent() {
   const handlePlanChange = () => {
     const formData = getProfileFormData(); // Get current profile data
     const priceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
-    
-    console.log('🛒 Starting checkout with data:', JSON.stringify({
-      paddle: !!paddle,
-      userId,
-      email: formData.email,
-      priceId,
-      environment: process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT,
-    }, null, 2));
-    
+
+    console.log(
+      '🛒 Starting checkout with data:',
+      JSON.stringify(
+        {
+          paddle: !!paddle,
+          userId,
+          email: formData.email,
+          priceId,
+          environment: process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT,
+        },
+        null,
+        2
+      )
+    );
+
     if (paddle && userId && formData.email && priceId) {
       try {
         // First try minimal checkout
@@ -833,9 +857,12 @@ function SettingsContent() {
             user_id: userId,
           },
         };
-        
-        console.log('🚀 Trying minimal checkout first:', JSON.stringify(minimalCheckoutData, null, 2));
-        
+
+        console.log(
+          '🚀 Trying minimal checkout first:',
+          JSON.stringify(minimalCheckoutData, null, 2)
+        );
+
         paddle.Checkout.open(minimalCheckoutData);
         console.log('✅ Minimal checkout opened successfully');
       } catch (error) {
@@ -855,8 +882,8 @@ function SettingsContent() {
       });
       toast({
         title: 'Unable to process payment',
-        description: !priceId 
-          ? 'Payment configuration is missing. Please contact support.' 
+        description: !priceId
+          ? 'Payment configuration is missing. Please contact support.'
           : 'Please ensure you are logged in and try again.',
         variant: 'destructive',
       });
@@ -1479,13 +1506,17 @@ function SettingsContent() {
                         </p>
                       </div>
                       <div className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                        {subscription.status === 'trialing' ? 'Trial' : 'Active'}
+                        {subscription.status === 'trialing'
+                          ? 'Trial'
+                          : 'Active'}
                       </div>
                     </div>
                     <div className="mt-4 text-sm text-muted-foreground">
                       <p>
                         Current period ends:{' '}
-                        {formatSubscriptionDate(subscription.current_period_end_at)}
+                        {formatSubscriptionDate(
+                          subscription.current_period_end_at
+                        )}
                       </p>
                       {subscription.cancel_at_period_end && (
                         <p className="text-amber-600">
@@ -1506,9 +1537,11 @@ function SettingsContent() {
                 ) : (
                   // No active subscription
                   <div className="rounded-md border p-4">
-                    <div className="text-center py-6">
-                      <h3 className="font-medium mb-2">No Active Subscription</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
+                    <div className="py-6 text-center">
+                      <h3 className="mb-2 font-medium">
+                        No Active Subscription
+                      </h3>
+                      <p className="mb-4 text-sm text-muted-foreground">
                         Subscribe to access premium features
                       </p>
                       <div className="mb-4 text-sm text-muted-foreground">

@@ -1,6 +1,6 @@
 // Utility functions and types for Paddle integration
 
-export type PaddleSubscriptionStatus = 
+export type PaddleSubscriptionStatus =
   | 'active'
   | 'trialing'
   | 'canceled'
@@ -37,25 +37,28 @@ export const getPaddlePriceId = (): string | null => {
 };
 
 // Validation helper
-export const validatePaddleConfig = (): { isValid: boolean; missingVars: string[] } => {
+export const validatePaddleConfig = (): {
+  isValid: boolean;
+  missingVars: string[];
+} => {
   const missingVars: string[] = [];
-  
+
   if (!process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) {
     missingVars.push('NEXT_PUBLIC_PADDLE_CLIENT_TOKEN');
   }
-  
+
   if (!process.env.NEXT_PUBLIC_PADDLE_PRICE_ID) {
     missingVars.push('NEXT_PUBLIC_PADDLE_PRICE_ID');
   }
-  
+
   if (!process.env.PADDLE_VENDOR_ID) {
     missingVars.push('PADDLE_VENDOR_ID');
   }
-  
+
   if (!process.env.PADDLE_API_KEY) {
     missingVars.push('PADDLE_API_KEY');
   }
-  
+
   return {
     isValid: missingVars.length === 0,
     missingVars,
@@ -63,16 +66,24 @@ export const validatePaddleConfig = (): { isValid: boolean; missingVars: string[
 };
 
 // Subscription status helpers
-export const isActiveSubscription = (subscription: PaddleSubscription): boolean => {
+export const isActiveSubscription = (
+  subscription: PaddleSubscription
+): boolean => {
   return subscription.status === 'active' || subscription.status === 'trialing';
 };
 
-export const isTrialSubscription = (subscription: PaddleSubscription): boolean => {
+export const isTrialSubscription = (
+  subscription: PaddleSubscription
+): boolean => {
   return subscription.status === 'trialing';
 };
 
-export const isCanceledSubscription = (subscription: PaddleSubscription): boolean => {
-  return subscription.status === 'canceled' || subscription.status === 'past_due';
+export const isCanceledSubscription = (
+  subscription: PaddleSubscription
+): boolean => {
+  return (
+    subscription.status === 'canceled' || subscription.status === 'past_due'
+  );
 };
 
 // Date helpers
@@ -85,10 +96,12 @@ export const formatSubscriptionDate = (dateString: string | null): string => {
   });
 };
 
-export const getDaysUntilBilling = (currentPeriodEnd: string | null): number => {
+export const getDaysUntilBilling = (
+  currentPeriodEnd: string | null
+): number => {
   if (!currentPeriodEnd) return 0;
   const endDate = new Date(currentPeriodEnd);
   const today = new Date();
   const diffTime = endDate.getTime() - today.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-}; 
+};

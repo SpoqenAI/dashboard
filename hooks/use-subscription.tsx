@@ -14,7 +14,9 @@ export interface UseSubscriptionReturn {
 
 export function useSubscription(): UseSubscriptionReturn {
   const { user } = useAuth();
-  const [subscription, setSubscription] = useState<PaddleSubscription | null>(null);
+  const [subscription, setSubscription] = useState<PaddleSubscription | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -114,4 +116,4 @@ export function useSubscription(): UseSubscriptionReturn {
     error,
     refetch,
   };
-} 
+}

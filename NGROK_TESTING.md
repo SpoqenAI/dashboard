@@ -3,18 +3,21 @@
 ## Quick Setup
 
 1. **Install ngrok** (if not already installed):
+
    ```bash
    brew install ngrok  # macOS
    # or download from https://ngrok.com/download
    ```
 
 2. **Start your Next.js app**:
+
    ```bash
    npm run dev
    # Make sure it's running on http://localhost:3000
    ```
 
 3. **Run the ngrok setup script**:
+
    ```bash
    ./scripts/setup-ngrok.sh
    ```
@@ -34,4 +37,4 @@ Once set up, any subscription events in Paddle will be sent to your local webhoo
 
 - ngrok URL changes each time you restart (unless you have a paid plan)
 - Remember to update the webhook URL in Paddle dashboard when ngrok restarts
-- Keep the ngrok terminal open while testing 
+- Keep the ngrok terminal open while testing

@@ -5,7 +5,9 @@ import { createClient } from '@/lib/supabase/server';
 const paddleApiKey = process.env.PADDLE_API_KEY;
 if (!paddleApiKey || paddleApiKey.trim() === '') {
   console.error('PADDLE_API_KEY environment variable is missing or empty');
-  throw new Error('PADDLE_API_KEY environment variable is required for Paddle webhook processing');
+  throw new Error(
+    'PADDLE_API_KEY environment variable is required for Paddle webhook processing'
+  );
 }
 
 const paddle = new Paddle(paddleApiKey);
@@ -18,9 +20,16 @@ export async function POST(req: NextRequest) {
 
   try {
     // Verify and parse the webhook to ensure it's authentic
-    const event = await paddle.webhooks.unmarshal(rawBody, webhookSecret, signature);
+    const event = await paddle.webhooks.unmarshal(
+      rawBody,
+      webhookSecret,
+      signature
+    );
     if (!event) {
-      return NextResponse.json({ error: 'Signature verification failed.' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Signature verification failed.' },
+        { status: 400 }
+      );
     }
 
     // Extract the Supabase user ID from the custom data you passed earlier
@@ -31,15 +40,18 @@ export async function POST(req: NextRequest) {
         eventType: event.eventType,
         eventId: (event.data as any).id,
         customData: (event.data as any).custom_data,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-      
+
       // Return 400 Bad Request so Paddle retries the webhook
-      return NextResponse.json({ 
-        error: 'Missing required user_id in custom_data',
-        eventType: event.eventType,
-        eventId: (event.data as any).id 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Missing required user_id in custom_data',
+          eventType: event.eventType,
+          eventId: (event.data as any).id,
+        },
+        { status: 400 }
+      );
     }
 
     // Handle different event types from Paddle
@@ -61,7 +73,7 @@ export async function POST(req: NextRequest) {
           trial_start_at: eventData.trial_dates?.starts_at,
           trial_end_at: eventData.trial_dates?.ends_at,
         };
-        
+
         // Upsert subscription details into your database
         const { error: subError } = await supabase
           .from('subscriptions')
@@ -74,8 +86,10 @@ export async function POST(req: NextRequest) {
           .update({ paddle_customer_id: eventData.customer_id })
           .eq('id', userId);
         if (profError) throw profError;
-        
-        console.log(`Processed subscription ${eventData.id} for user ${userId}.`);
+
+        console.log(
+          `Processed subscription ${eventData.id} for user ${userId}.`
+        );
         break;
 
       case 'subscription.canceled':
@@ -83,22 +97,27 @@ export async function POST(req: NextRequest) {
         const { error: cancelError } = await supabase
           .from('subscriptions')
           .update({
-              status: cancelEventData.status,
-              canceled_at: cancelEventData.canceled_at,
-              ended_at: cancelEventData.ended_at,
+            status: cancelEventData.status,
+            canceled_at: cancelEventData.canceled_at,
+            ended_at: cancelEventData.ended_at,
           })
           .eq('id', cancelEventData.id);
         if (cancelError) throw cancelError;
-        console.log(`Canceled subscription ${cancelEventData.id} for user ${userId}.`);
+        console.log(
+          `Canceled subscription ${cancelEventData.id} for user ${userId}.`
+        );
         break;
-        
+
       default:
         console.log(`Unhandled webhook event type: ${event.eventType}`);
     }
-    
+
     return NextResponse.json({ received: true });
   } catch (err: any) {
     console.error('Error processing webhook:', err.message);
-    return NextResponse.json({ error: 'Webhook handler failed.' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Webhook handler failed.' },
+      { status: 500 }
+    );
   }
-} 
+}

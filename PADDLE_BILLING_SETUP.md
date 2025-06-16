@@ -27,15 +27,18 @@ PADDLE_WEBHOOK_SECRET=your_paddle_webhook_secret_here
 ### How to Get Paddle Credentials:
 
 1. **NEXT_PUBLIC_PADDLE_CLIENT_TOKEN**:
+
    - Go to [Paddle Sandbox Dashboard](https://sandbox-vendors.paddle.com/)
    - Navigate to **Developer Tools > Authentication**
    - Copy your **Client-side token**
 
 2. **PADDLE_API_KEY**:
+
    - In the same **Authentication** section
    - Copy your **Server-side API key**
 
 3. **NEXT_PUBLIC_PADDLE_PRICE_ID**:
+
    - This will be generated when you create a price in your product catalog (see Part 2)
 
 4. **PADDLE_WEBHOOK_SECRET**:
@@ -44,11 +47,13 @@ PADDLE_WEBHOOK_SECRET=your_paddle_webhook_secret_here
 ## Part 2: Paddle Product Catalog Setup
 
 1. **Create a Product**:
+
    - Go to **Catalog > Products** in Paddle Dashboard
    - Click **New Product**
    - Fill in product details (e.g., "Professional Plan")
 
 2. **Create a Price**:
+
    - Within your product, click **Add Price**
    - Set billing cycle (e.g., Monthly - $30)
    - Note the **Price ID** (starts with `pri_`)
@@ -63,16 +68,18 @@ PADDLE_WEBHOOK_SECRET=your_paddle_webhook_secret_here
 ## Part 3: Webhook Configuration
 
 1. **Deploy Your Application**:
+
    - Deploy your app to Vercel, Netlify, or your hosting platform
    - Note your deployment URL (e.g., `https://your-app.vercel.app`)
 
 2. **Set Up Webhook in Paddle**:
+
    - Go to **Developer Tools > Notifications**
    - Click **New Destination**
    - Set URL: `https://your-app-url.com/api/webhooks/paddle`
    - Under "Listen for events," select:
      - `subscription.created`
-     - `subscription.updated`  
+     - `subscription.updated`
      - `subscription.canceled`
    - Save the destination
 
@@ -109,11 +116,13 @@ CREATE TABLE subscriptions (
 ## Part 5: Testing the Integration
 
 1. **Start Your Development Server**:
+
    ```bash
    pnpm dev
    ```
 
 2. **Test Paddle Checkout**:
+
    - Navigate to `/settings?tab=billing`
    - Click **Change Plan** button
    - Complete a test transaction using Paddle's test cards
@@ -125,6 +134,7 @@ CREATE TABLE subscriptions (
 ## Part 6: Production Deployment
 
 1. **Switch to Production**:
+
    - Change Paddle environment from `sandbox` to `production`
    - Update all environment variables with production Paddle credentials
 
@@ -146,11 +156,13 @@ CREATE TABLE subscriptions (
 ### Common Issues:
 
 1. **Checkout doesn't open**:
+
    - Check `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` is correct
    - Verify `NEXT_PUBLIC_PADDLE_PRICE_ID` is set and valid
    - Verify user is logged in and has email
 
 2. **Webhook not processing**:
+
    - Check `PADDLE_WEBHOOK_SECRET` matches Paddle dashboard
    - Verify webhook URL is publicly accessible
    - Check application logs for errors
@@ -173,4 +185,4 @@ CREATE TABLE subscriptions (
 - Add email notifications for billing events
 - Set up proper error handling and logging
 
-Your Paddle billing integration is now complete! Users can purchase subscriptions, and the data will automatically sync to your Supabase database. 
+Your Paddle billing integration is now complete! Users can purchase subscriptions, and the data will automatically sync to your Supabase database.
