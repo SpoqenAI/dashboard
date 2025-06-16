@@ -80,6 +80,21 @@ function SettingsContent() {
   // Get subscription data
   const { subscription, loading: subscriptionLoading } = useSubscription();
 
+  // Check for successful payment return
+  useEffect(() => {
+    const success = searchParams.get('success');
+    if (success === 'true') {
+      toast({
+        title: 'Payment successful!',
+        description: 'Your subscription has been updated successfully.',
+      });
+      // Clean up the URL by removing the success parameter
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('success');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+  }, [searchParams]);
+
   // Form data state - initialized from Supabase data
   const [formData, setFormData] = useState({
     firstName: '',
@@ -837,6 +852,8 @@ function SettingsContent() {
           email: formData.email,
           priceId,
           environment: process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
         },
         null,
         2
@@ -845,8 +862,8 @@ function SettingsContent() {
 
     if (paddle && userId && formData.email && priceId) {
       try {
-        // First try minimal checkout
-        const minimalCheckoutData = {
+        // Create a minimal, working checkout configuration
+        const checkoutData: any = {
           items: [
             {
               priceId: priceId,
@@ -858,33 +875,63 @@ function SettingsContent() {
           },
         };
 
+        // Only add customer info if we have complete name information
+        if (formData.firstName && formData.lastName && formData.email) {
+          checkoutData.customer = {
+            email: formData.email,
+            name: `${formData.firstName} ${formData.lastName}`.trim(),
+          };
+        }
+
         console.log(
-          '🚀 Trying minimal checkout first:',
-          JSON.stringify(minimalCheckoutData, null, 2)
+          '🚀 Opening checkout with configuration:',
+          JSON.stringify(checkoutData, null, 2)
         );
 
-        paddle.Checkout.open(minimalCheckoutData);
-        console.log('✅ Minimal checkout opened successfully');
+        // Add additional error logging for the checkout process
+        paddle.Checkout.open(checkoutData);
+        console.log('✅ Checkout opened successfully');
       } catch (error) {
         console.error('❌ Error opening checkout:', error);
+        const err = error as Error;
+        console.error('❌ Error details:', {
+          name: err.name,
+          message: err.message,
+          stack: err.stack,
+        });
+
         toast({
           title: 'Checkout Error',
-          description: 'Failed to open checkout. Please try again.',
+          description: `Failed to open checkout: ${err.message}`,
           variant: 'destructive',
         });
       }
     } else {
-      console.error('❌ Missing required data for checkout:', {
-        paddle: !!paddle,
-        userId: !!userId,
-        email: !!formData.email,
-        priceId: !!priceId,
-      });
+      const missingData = {
+        paddle: !paddle,
+        userId: !userId,
+        email: !formData.email,
+        priceId: !priceId,
+      };
+
+      console.error('❌ Missing required data for checkout:', missingData);
+
+      // Show more specific error messages
+      let errorDescription = 'Please ensure you are logged in and try again.';
+      if (!priceId) {
+        errorDescription =
+          'Payment configuration is missing. Please contact support.';
+      } else if (!formData.email) {
+        errorDescription =
+          'Please add your email address in your profile settings.';
+      } else if (!paddle) {
+        errorDescription =
+          'Payment system is loading. Please wait a moment and try again.';
+      }
+
       toast({
         title: 'Unable to process payment',
-        description: !priceId
-          ? 'Payment configuration is missing. Please contact support.'
-          : 'Please ensure you are logged in and try again.',
+        description: errorDescription,
         variant: 'destructive',
       });
     }
