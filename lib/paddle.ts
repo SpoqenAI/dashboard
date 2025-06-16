@@ -1,0 +1,78 @@
+// Utility functions and types for Paddle integration
+
+export interface PaddleSubscription {
+  id: string;
+  user_id: string;
+  status: string;
+  price_id: string;
+  quantity: number;
+  cancel_at_period_end: boolean;
+  current_period_start_at: string | null;
+  current_period_end_at: string | null;
+  ended_at: string | null;
+  cancel_at: string | null;
+  canceled_at: string | null;
+  trial_start_at: string | null;
+  trial_end_at: string | null;
+}
+
+export interface PaddleCheckoutConfig {
+  priceId: string;
+  userId: string;
+  email: string;
+  quantity?: number;
+}
+
+// Environment variable helper
+export const getPaddlePriceId = (): string | null => {
+  return process.env.NEXT_PUBLIC_PADDLE_PRICE_ID || null;
+};
+
+// Validation helper
+export const validatePaddleConfig = (): { isValid: boolean; missingVars: string[] } => {
+  const missingVars: string[] = [];
+  
+  if (!process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) {
+    missingVars.push('NEXT_PUBLIC_PADDLE_CLIENT_TOKEN');
+  }
+  
+  if (!process.env.NEXT_PUBLIC_PADDLE_PRICE_ID) {
+    missingVars.push('NEXT_PUBLIC_PADDLE_PRICE_ID');
+  }
+  
+  return {
+    isValid: missingVars.length === 0,
+    missingVars,
+  };
+};
+
+// Subscription status helpers
+export const isActiveSubscription = (subscription: PaddleSubscription): boolean => {
+  return subscription.status === 'active' || subscription.status === 'trialing';
+};
+
+export const isTrialSubscription = (subscription: PaddleSubscription): boolean => {
+  return subscription.status === 'trialing';
+};
+
+export const isCanceledSubscription = (subscription: PaddleSubscription): boolean => {
+  return subscription.status === 'canceled' || subscription.status === 'past_due';
+};
+
+// Date helpers
+export const formatSubscriptionDate = (dateString: string | null): string => {
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+export const getDaysUntilBilling = (currentPeriodEnd: string | null): number => {
+  if (!currentPeriodEnd) return 0;
+  const endDate = new Date(currentPeriodEnd);
+  const today = new Date();
+  const diffTime = endDate.getTime() - today.getTime();
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}; 

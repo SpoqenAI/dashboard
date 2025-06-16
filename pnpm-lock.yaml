@@ -17,6 +17,12 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.9.1(react-hook-form@7.54.1(react@19.0.0))
+      '@paddle/paddle-js':
+        specifier: ^1.4.1
+        version: 1.4.1
+      '@paddle/paddle-node-sdk':
+        specifier: ^2.7.3
+        version: 2.7.3
       '@radix-ui/react-accordion':
         specifier: 1.2.2
         version: 1.2.2(@types/react-dom@19.0.0)(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -813,6 +819,13 @@ packages:
     engines: {node: '>=14'}
     peerDependencies:
       '@opentelemetry/api': ^1.1.0
+
+  '@paddle/paddle-js@1.4.1':
+    resolution: {integrity: sha512-GKuXVnUAIGq4H1AxrPRRMZXl+pTSGiKMStpRlvF6+dv03BwhkqbyHJJZ39e6bMquVbYSa33/9cu6fuW8pie8aQ==}
+
+  '@paddle/paddle-node-sdk@2.7.3':
+    resolution: {integrity: sha512-xnT3+dHPbYUI9zfHxAniYNYg/GDUtSupB9HvxELUkfTXhRZrVEALoWmYJ8ZKjJCBdCPED9R6UrH6BUvMNeTsUQ==}
+    engines: {node: '>=18'}
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -4907,6 +4920,10 @@ snapshots:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
+
+  '@paddle/paddle-js@1.4.1': {}
+
+  '@paddle/paddle-node-sdk@2.7.3': {}
 
   '@pkgjs/parseargs@0.11.0':
     optional: true

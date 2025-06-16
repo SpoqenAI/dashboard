@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Filter } from 'bad-words';
 import { useMask } from '@react-input/mask';
 import { isEqual } from 'lodash-es';
+import { initializePaddle, Paddle } from '@paddle/paddle-js';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -44,6 +45,8 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { useUserSettings } from '@/hooks/use-user-settings';
+import { useSubscription } from '@/hooks/use-subscription';
+import { getPaddlePriceId, isActiveSubscription, formatSubscriptionDate } from '@/lib/paddle';
 import PasswordStrengthBar from 'react-password-strength-bar';
 
 // Initialize content filter outside component to prevent recreation on every render
@@ -55,6 +58,7 @@ function SettingsContent() {
   const tab = searchParams.get('tab') || 'profile';
 
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [paddle, setPaddle] = useState<Paddle | undefined>();
 
   // Get user settings and profile data
   const {
@@ -63,10 +67,14 @@ function SettingsContent() {
     error,
     dataLoaded,
     settings,
+    userId,
     updateProfile,
     updateUserSettings,
     getProfileFormData,
   } = useUserSettings();
+
+  // Get subscription data
+  const { subscription, loading: subscriptionLoading } = useSubscription();
 
   // Form data state - initialized from Supabase data
   const [formData, setFormData] = useState({
@@ -121,6 +129,46 @@ function SettingsContent() {
 
   // Password strength score state
   const [newPasswordScore, setNewPasswordScore] = useState(0);
+
+  // Initialize Paddle on component mount
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) {
+      console.log('🚀 Initializing Paddle with token:', process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN?.slice(0, 10) + '...');
+      initializePaddle({
+        environment: process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT as 'sandbox' | 'production' || 'sandbox',
+        token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN,
+        eventCallback: (data) => {
+          console.log('📦 Paddle event:', JSON.stringify(data, null, 2));
+          if (data.name === 'checkout.completed') {
+            console.log('✅ Checkout completed!');
+            toast({
+              title: 'Payment successful!',
+              description: 'Your subscription has been updated.',
+            });
+          }
+          if (data.name === 'checkout.error') {
+            console.error('❌ Checkout error details:', JSON.stringify(data, null, 2));
+            toast({
+              title: 'Payment failed',
+              description: data.error?.detail || 'There was an error processing your payment.',
+              variant: 'destructive',
+            });
+          }
+        },
+      }).then((paddleInstance: Paddle | undefined) => {
+        if (paddleInstance) {
+          console.log('✅ Paddle initialized successfully');
+          setPaddle(paddleInstance);
+        } else {
+          console.error('❌ Failed to initialize Paddle');
+        }
+      }).catch((error) => {
+        console.error('❌ Paddle initialization error:', error);
+      });
+    } else {
+      console.error('❌ NEXT_PUBLIC_PADDLE_CLIENT_TOKEN not found');
+    }
+  }, []);
 
   // Load profile data when available
   useEffect(() => {
@@ -758,6 +806,77 @@ function SettingsContent() {
     setNewPasswordScore(0);
   };
 
+  // Paddle checkout handler
+  const handlePlanChange = () => {
+    const formData = getProfileFormData(); // Get current profile data
+    const priceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
+    
+    console.log('🛒 Starting checkout with data:', JSON.stringify({
+      paddle: !!paddle,
+      userId,
+      email: formData.email,
+      priceId,
+      environment: process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT,
+    }, null, 2));
+    
+    if (paddle && userId && formData.email && priceId) {
+      try {
+        // First try minimal checkout
+        const minimalCheckoutData = {
+          items: [
+            {
+              priceId: priceId,
+              quantity: 1,
+            },
+          ],
+        };
+        
+        console.log('🚀 Trying minimal checkout first:', JSON.stringify(minimalCheckoutData, null, 2));
+        
+        paddle.Checkout.open(minimalCheckoutData);
+        console.log('✅ Minimal checkout opened successfully');
+      } catch (error) {
+        console.error('❌ Error opening checkout:', error);
+        toast({
+          title: 'Checkout Error',
+          description: 'Failed to open checkout. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    } else {
+      console.error('❌ Missing required data for checkout:', {
+        paddle: !!paddle,
+        userId: !!userId,
+        email: !!formData.email,
+        priceId: !!priceId,
+      });
+      toast({
+        title: 'Unable to process payment',
+        description: !priceId 
+          ? 'Payment configuration is missing. Please contact support.' 
+          : 'Please ensure you are logged in and try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle subscription management
+  const handleManageSubscription = () => {
+    if (!subscription) {
+      toast({
+        title: 'Error',
+        description: 'No active subscription found.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Open Paddle's hosted subscription management page
+    // Note: You may need to implement this endpoint or use Paddle's customer portal
+    const managementUrl = `https://checkout.paddle.com/subscription/update?subscription=${subscription.id}`;
+    window.open(managementUrl, '_blank');
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardHeader />
@@ -1337,111 +1456,72 @@ function SettingsContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="rounded-md border p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Professional Plan</h3>
-                      <p className="text-sm text-muted-foreground">$30/month</p>
+                {subscriptionLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <div className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-b-2 border-gray-900"></div>
+                      <p className="text-sm text-muted-foreground">
+                        Loading subscription...
+                      </p>
                     </div>
-                    <div className="rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                      Active
-                    </div>
                   </div>
-                  <div className="mt-4 text-sm text-muted-foreground">
-                    <ul className="space-y-1">
-                      <li>• Unlimited AI call answering</li>
-                      <li>• Customizable greeting and questions</li>
-                      <li>• Instant email summaries</li>
-                      <li>• Basic analytics</li>
-                    </ul>
-                  </div>
-                  <div className="mt-4 flex gap-2">
-                    <Button variant="outline" size="sm">
-                      Change Plan
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive"
-                    >
-                      Cancel Subscription
-                    </Button>
-                  </div>
-                </div>
-                <Separator className="my-4" />
-                <div>
-                  <h3 className="mb-4 text-lg font-medium">Payment Method</h3>
-                  <div className="flex items-center justify-between rounded-md border p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="rounded-md bg-muted p-2">
-                        <svg
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <rect width="24" height="24" rx="4" fill="#0A2540" />
-                          <path
-                            d="M14 9.5V11.5H16V9.5H14ZM14 13.5V15.5H16V13.5H14ZM10 9.5V11.5H12V9.5H10ZM10 13.5V15.5H12V13.5H10ZM6 9.5V11.5H8V9.5H6ZM6 13.5V15.5H8V13.5H6Z"
-                            fill="white"
-                          />
-                        </svg>
-                      </div>
+                ) : subscription && isActiveSubscription(subscription) ? (
+                  // Active subscription
+                  <div className="rounded-md border p-4">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-medium">•••• •••• •••• 4242</div>
-                        <div className="text-xs text-muted-foreground">
-                          Expires 12/2025
-                        </div>
+                        <h3 className="font-medium">Professional Plan</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Active subscription
+                        </p>
+                      </div>
+                      <div className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                        {subscription.status === 'trialing' ? 'Trial' : 'Active'}
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm">
-                      Edit
-                    </Button>
-                  </div>
-                </div>
-                <Separator className="my-4" />
-                <div>
-                  <h3 className="mb-4 text-lg font-medium">Billing History</h3>
-                  <div className="rounded-md border">
-                    <div className="flex items-center justify-between border-b p-4">
-                      <div>
-                        <div className="font-medium">May 01, 2025</div>
-                        <div className="text-xs text-muted-foreground">
-                          Professional Plan - Monthly
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">$30.00</div>
-                        <div className="text-xs text-green-600">Paid</div>
-                      </div>
+                    <div className="mt-4 text-sm text-muted-foreground">
+                      <p>
+                        Current period ends:{' '}
+                        {formatSubscriptionDate(subscription.current_period_end_at)}
+                      </p>
+                      {subscription.cancel_at_period_end && (
+                        <p className="text-amber-600">
+                          Subscription will cancel at end of period
+                        </p>
+                      )}
                     </div>
-                    <div className="flex items-center justify-between border-b p-4">
-                      <div>
-                        <div className="font-medium">Apr 01, 2025</div>
-                        <div className="text-xs text-muted-foreground">
-                          Professional Plan - Monthly
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">$30.00</div>
-                        <div className="text-xs text-green-600">Paid</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-4">
-                      <div>
-                        <div className="font-medium">Mar 01, 2025</div>
-                        <div className="text-xs text-muted-foreground">
-                          Professional Plan - Monthly
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">$30.00</div>
-                        <div className="text-xs text-green-600">Paid</div>
-                      </div>
+                    <div className="mt-4 flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleManageSubscription}
+                      >
+                        Manage Subscription
+                      </Button>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  // No active subscription
+                  <div className="rounded-md border p-4">
+                    <div className="text-center py-6">
+                      <h3 className="font-medium mb-2">No Active Subscription</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Subscribe to access premium features
+                      </p>
+                      <div className="mb-4 text-sm text-muted-foreground">
+                        <ul className="space-y-1">
+                          <li>• Unlimited AI call answering</li>
+                          <li>• Customizable greeting and questions</li>
+                          <li>• Instant email summaries</li>
+                          <li>• Basic analytics</li>
+                        </ul>
+                      </div>
+                      <Button onClick={handlePlanChange} disabled={!paddle}>
+                        {!paddle ? 'Loading...' : 'Subscribe Now'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
