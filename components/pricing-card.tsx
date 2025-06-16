@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -9,15 +10,24 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
+interface PricingCardProps {
+  title?: string;
+  description?: string;
+  price?: string;
+  features?: string[];
+}
+
 export function PricingCard({
   title = 'Simple Pricing',
   description = 'No hidden fees',
   price = '$30',
-}: {
-  title?: string;
-  description?: string;
-  price?: string;
-}) {
+  features = [
+    'Call summaries in email & CRM',
+    'Unlimited receptionist minutes',
+    'Custom call greeting & script',
+    'Lead qualification questions',
+  ],
+}: PricingCardProps) {
   return (
     <Card className="mx-auto w-full max-w-lg text-center">
       <CardHeader>
@@ -29,6 +39,18 @@ export function PricingCard({
           <span className="text-5xl font-bold">{price}</span>
           <span className="text-sm text-muted-foreground">per month</span>
         </div>
+        {/* Feature list */}
+        <ul className="mt-6 space-y-2 text-center">
+          {features.map(feature => (
+            <li
+              key={feature}
+              className="flex items-center justify-center gap-2"
+            >
+              <CheckCircle className="h-4 w-4 shrink-0 text-green-600" />
+              <span className="text-sm">{feature}</span>
+            </li>
+          ))}
+        </ul>
       </CardContent>
       <CardFooter className="justify-center">
         <Button asChild>
