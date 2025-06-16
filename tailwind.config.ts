@@ -53,6 +53,14 @@ const config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        spoqen: {
+          pink: '#eb39ff',
+          purple: '#7537ff',
+          blue: '#00b4d8',
+        },
+      },
+      backgroundImage: {
+        'spoqen-gradient': 'linear-gradient(135deg, #eb39ff 0%, #7537ff 50%, #00b4d8 100%)',
       },
       borderRadius: {
         lg: 'var(--radius)',
