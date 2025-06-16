@@ -59,6 +59,10 @@ export const validatePaddleConfig = (): {
     missingVars.push('PADDLE_API_KEY');
   }
 
+  if (!process.env.PADDLE_WEBHOOK_SECRET) {
+    missingVars.push('PADDLE_WEBHOOK_SECRET');
+  }
+
   return {
     isValid: missingVars.length === 0,
     missingVars,

@@ -15,11 +15,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const webhookSecret = process.env.PADDLE_WEBHOOK_SECRET;
+  if (!webhookSecret || webhookSecret.trim() === '') {
+    console.error('PADDLE_WEBHOOK_SECRET environment variable is missing or empty');
+    return NextResponse.json(
+      {
+        error:
+          'PADDLE_WEBHOOK_SECRET environment variable is required for Paddle webhook processing',
+      },
+      { status: 500 }
+    );
+  }
+
   const paddle = new Paddle(paddleApiKey);
   const supabase = await createClient();
   const signature = req.headers.get('paddle-signature') || '';
   const rawBody = await req.text();
-  const webhookSecret = process.env.PADDLE_WEBHOOK_SECRET!;
 
   try {
     // Verify and parse the webhook to ensure it's authentic
