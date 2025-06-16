@@ -37,7 +37,7 @@ export const getPaddlePriceId = (): string => {
   if (!priceId || priceId.trim() === '') {
     throw new Error(
       'NEXT_PUBLIC_PADDLE_PRICE_ID environment variable is required but not set. ' +
-      'Please configure this environment variable with your Paddle price ID.'
+        'Please configure this environment variable with your Paddle price ID.'
     );
   }
   return priceId;
@@ -60,8 +60,11 @@ export const validatePaddleConfig = (): {
   }
 
   // Only check server-only environment variables when running in Node.js environment
-  const isServerSide = typeof window === 'undefined' && typeof process !== 'undefined' && process.versions?.node;
-  
+  const isServerSide =
+    typeof window === 'undefined' &&
+    typeof process !== 'undefined' &&
+    process.versions?.node;
+
   if (isServerSide) {
     if (!process.env.PADDLE_VENDOR_ID) {
       missingVars.push('PADDLE_VENDOR_ID');

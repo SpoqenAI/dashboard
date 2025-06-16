@@ -17,7 +17,9 @@ export async function POST(req: NextRequest) {
 
   const webhookSecret = process.env.PADDLE_WEBHOOK_SECRET;
   if (!webhookSecret || webhookSecret.trim() === '') {
-    console.error('PADDLE_WEBHOOK_SECRET environment variable is missing or empty');
+    console.error(
+      'PADDLE_WEBHOOK_SECRET environment variable is missing or empty'
+    );
     return NextResponse.json(
       {
         error:
