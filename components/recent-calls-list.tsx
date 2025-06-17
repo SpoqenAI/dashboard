@@ -1,34 +1,17 @@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Calendar, Clock, PhoneCall } from 'lucide-react';
+import { useRecentCalls } from '@/hooks/use-recent-calls';
 
-export function RecentCallsList() {
-  const recentCalls = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      phone: '(555) 123-4567',
-      date: 'May 24, 2025',
-      time: '10:30 AM',
-      summary:
-        'Interested in the 3-bedroom property on Oak Street. First-time homebuyer.',
-    },
-    {
-      id: 2,
-      name: 'Michael Rodriguez',
-      phone: '(555) 987-6543',
-      date: 'May 23, 2025',
-      time: '2:15 PM',
-      summary: 'Looking to sell condo in downtown. Relocating for work.',
-    },
-    {
-      id: 3,
-      name: 'Emily Chen',
-      phone: '(555) 456-7890',
-      date: 'May 22, 2025',
-      time: '4:45 PM',
-      summary: 'Wants information about listings in Westside neighborhood.',
-    },
-  ];
+export function RecentCallsList({ limit = 5 }: { limit?: number } = {}) {
+  const { calls: recentCalls, loading, error } = useRecentCalls(limit);
+
+  if (loading) {
+    return <p>Loading recent calls...</p>;
+  }
+
+  if (error) {
+    return <p className="text-destructive">{error}</p>;
+  }
 
   return (
     <div className="space-y-4">
