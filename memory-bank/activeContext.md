@@ -6,7 +6,7 @@
 
 - Complete rebranding implemented with Spoqen logo and gradient color scheme
 - Updated all pages (home, login, signup, dashboard, onboarding, forgot-password, reset-password) to use new Logo component
-- Created reusable Logo component that uses the provided "spoqen transparent logo.png"
+- Created reusable Logo component that uses the provided "spoqen-transparent-logo.png"
 - Updated color scheme in `globals.css` and `tailwind.config.ts` to match Spoqen brand colors (purple/pink/blue gradient)
 - Added custom Spoqen gradient utilities to Tailwind config
 - All memory bank files populated with detailed project context

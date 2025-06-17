@@ -55,7 +55,7 @@ export default function Home() {
               <div className="flex items-center justify-center">
                 <div className="relative aspect-video w-full max-w-[500px] overflow-hidden rounded-xl border bg-background shadow-xl">
                   <img
-                    src="/spoqen transparent logo.png"
+                    src="/spoqen-transparent-logo.png"
                     alt="Spoqen Logo"
                     className="h-full w-full object-contain"
                   />

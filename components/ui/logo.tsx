@@ -30,7 +30,7 @@ export function Logo({ className = '', width = 200, height = 60 }: LogoProps) {
 
   return (
     <Image
-      src="/spoqen transparent logo.png"
+      src="/spoqen-transparent-logo.png"
       alt="Spoqen"
       width={width}
       height={height}
