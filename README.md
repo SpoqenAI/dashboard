@@ -26,7 +26,7 @@ _AI Receptionist for Real Estate Agents_
 
 ## Overview
 
-Spoqen Dashboard is an AI-powered receptionist system designed specifically for real estate agents. This Next.js application provides intelligent customer interaction capabilities with seamless integration to Supabase for data management.
+Spoqen Dashboard is an AI-powered receptionist system designed specifically for real estate agents. This Next.js application provides intelligent customer interaction capabilities with seamless integration to Supabase for data management. The dashboard also displays your recent Vapi call logs with summaries and analytics for quick review.
 
 ## Getting Started
 
@@ -66,6 +66,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 NEXT_PUBLIC_SITE_URL=http://localhost:3000 # Or your production URL for production builds
 NEXT_PUBLIC_GEOAPIFY_API_KEY=your_geoapify_api_key # Get free API key at https://www.geoapify.com/
 VAPI_API_KEY=your_vapi_api_key
+VAPI_PRIVATE_KEY=your_vapi_private_key
 VAPI_API_URL=https://api.vapi.ai
 
 # For GitHub Actions deployment, these are set as secrets in the repository:
@@ -79,6 +80,7 @@ VAPI_API_URL=https://api.vapi.ai
 - `NEXT_PUBLIC_SITE_URL`: The canonical URL for your site. Use `http://localhost:3000` for local development.
 - `NEXT_PUBLIC_GEOAPIFY_API_KEY`: Your Geoapify API key for address autocomplete functionality. Sign up for a free account at [geoapify.com](https://www.geoapify.com/).
 - `VAPI_API_KEY`: API key for accessing your Vapi assistant data.
+- `VAPI_PRIVATE_KEY`: Private API key used for server-side Vapi requests.
 - `VAPI_API_URL`: Base URL for the Vapi API (defaults to `https://api.vapi.ai`).
 
 The Vercel specific secrets (`VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`) are used by the GitHub Actions workflow for deployment and should be configured as secrets in your GitHub repository settings, not in `.env.local`.
