@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Paddle } from '@paddle/paddle-node-sdk';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
+
+// Admin Supabase client using service role key for RLS bypass
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+);
 
 export async function POST(req: NextRequest) {
+  // Minimal request receipt log (headers omitted to reduce noise)
+  console.log('🎣 Webhook received:', {
+    method: req.method,
+    url: req.url,
+    timestamp: new Date().toISOString(),
+  });
+
   const paddleApiKey = process.env.PADDLE_API_KEY;
   if (!paddleApiKey || paddleApiKey.trim() === '') {
     console.error('PADDLE_API_KEY environment variable is missing or empty');
@@ -30,44 +43,128 @@ export async function POST(req: NextRequest) {
   }
 
   const paddle = new Paddle(paddleApiKey);
-  const supabase = await createClient();
+  const supabase = supabaseAdmin;
   const signature = req.headers.get('paddle-signature') || '';
-  const rawBody = await req.text();
+
+  // Use arrayBuffer to avoid issues where req.text() returns empty
+  const rawArrayBuffer = await req.arrayBuffer();
+  const rawBody = Buffer.from(rawArrayBuffer).toString();
 
   try {
-    // Verify and parse the webhook to ensure it's authentic
-    const event = await paddle.webhooks.unmarshal(
-      rawBody,
-      webhookSecret,
-      signature
-    );
-    if (!event) {
+    console.log('🔍 Processing webhook (sig prefix):', signature.slice(0, 20) + '...');
+    
+    let event;
+    try {
+      event = await paddle.webhooks.unmarshal(rawBody, webhookSecret, signature);
+    } catch (verifyErr: any) {
+      console.error('❌ Signature verification threw:', verifyErr?.message || verifyErr);
+
+      /*
+       * HMAC mismatch diagnostics – keep for future debugging.
+       * Uncomment if you ever need to compare Paddle-signed payloads again.
+       *
+       * try {
+       *   const match = signature.match(/^ts=(\d+);h1=([a-f0-9]+)$/);
+       *   if (match) {
+       *     const [, ts, sigH1] = match;
+       *     const crypto = await import('crypto');
+       *     const expected = crypto
+       *       .createHmac('sha256', webhookSecret)
+       *       .update(`${ts}:${rawBody}`)
+       *       .digest('hex');
+       *     console.error('🔎 Expected HMAC (first 16):', expected.slice(0, 16));
+       *     console.error('🔎 Received HMAC (first 16):', sigH1.slice(0, 16));
+       *     console.error('🔎 Timestamp diff (s):', Date.now() / 1000 - Number(ts));
+       *   }
+       * } catch (diagErr) {
+       *   console.error('⚠️ Failed to run diagnostic HMAC comparison:', diagErr);
+       * }
+       */
+
       return NextResponse.json(
         { error: 'Signature verification failed.' },
         { status: 400 }
       );
     }
 
-    // Extract the Supabase user ID from the custom data you passed earlier
-    const userId = (event.data as any).custom_data?.user_id;
-    if (!userId) {
-      const errorMessage = `Critical: Webhook event ${event.eventType} received without a user_id. Event ID: ${(event.data as any).id || 'unknown'}`;
-      console.error(errorMessage, {
-        eventType: event.eventType,
-        eventId: (event.data as any).id,
-        customData: (event.data as any).custom_data,
-        timestamp: new Date().toISOString(),
-      });
-
-      // Return 400 Bad Request so Paddle retries the webhook
+    if (!event) {
+      console.error('❌ Signature verification returned falsy event');
       return NextResponse.json(
-        {
-          error: 'Missing required user_id in custom_data',
-          eventType: event.eventType,
-          eventId: (event.data as any).id,
-        },
+        { error: 'Signature verification failed.' },
         { status: 400 }
       );
+    }
+
+    console.log('✅ Webhook verified. Event type:', event.eventType);
+
+    // Extract the Supabase user ID from the custom data you passed earlier
+    // Try multiple locations where Paddle might store custom data
+    let userId = null;
+    const eventData = event.data as any;
+    
+    // Try different locations for user_id
+    if (eventData.custom_data?.user_id) {
+      userId = eventData.custom_data.user_id;
+      console.log('👤 Found user_id in custom_data:', userId);
+    } else if (eventData.customData?.user_id) {
+      userId = eventData.customData.user_id;
+      console.log('👤 Found user_id in customData:', userId);
+    } else if (eventData.checkout?.custom_data?.user_id) {
+      userId = eventData.checkout.custom_data.user_id;
+      console.log('👤 Found user_id in checkout.custom_data:', userId);
+    } else if (eventData.checkout?.customData?.user_id) {
+      userId = eventData.checkout.customData.user_id;
+      console.log('👤 Found user_id in checkout.customData:', userId);
+    } else {
+      // Log all possible locations for debugging
+      console.log('🔍 Searching for user_id in all possible locations:', {
+        'eventData.custom_data': eventData.custom_data,
+        'eventData.customData': eventData.customData,
+        'eventData.checkout': eventData.checkout,
+        'eventData.customer': eventData.customer,
+        'eventData.transaction': eventData.transaction,
+      });
+
+      console.warn('⚠️ user_id not found in custom data. Attempting to resolve by customer email...');
+
+      const customerEmail = eventData.customer?.email || eventData.customer_email;
+      if (customerEmail) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .ilike('email', customerEmail)
+          .maybeSingle();
+
+        if (profileError) {
+          console.error('❌ Error searching profile by email:', profileError);
+        }
+
+        if (profile?.id) {
+          userId = profile.id;
+          console.log('✅ Resolved user_id from email:', userId);
+        }
+      }
+
+      if (!userId) {
+        const errorMessage = `Critical: Webhook event ${event.eventType} received without a user_id and could not resolve by email.`;
+        console.error(errorMessage, {
+          eventType: event.eventType,
+          eventId: eventData.id,
+          customerEmail: eventData.customer?.email,
+          timestamp: new Date().toISOString(),
+        });
+
+        // Return 400 Bad Request so Paddle retries the webhook
+        return NextResponse.json(
+          {
+            error: 'Missing required user_id in custom_data and unable to resolve via email',
+            eventType: event.eventType,
+            eventId: eventData.id,
+            debug: 'Ensure checkout passes user_id in customData or customer email matches a profile',
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Handle different event types from Paddle

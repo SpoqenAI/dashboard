@@ -78,7 +78,7 @@ function SettingsContent() {
   } = useUserSettings();
 
   // Get subscription data
-  const { subscription, loading: subscriptionLoading } = useSubscription();
+  const { subscription, loading: subscriptionLoading, refetch: refetchSubscription } = useSubscription();
 
   // Check for successful payment return
   useEffect(() => {
@@ -88,12 +88,24 @@ function SettingsContent() {
         title: 'Payment successful!',
         description: 'Your subscription has been updated successfully.',
       });
+      
+      // Trigger subscription refresh when returning from successful payment
+      console.log('🔄 Triggering subscription refresh from success URL...');
+      setTimeout(async () => {
+        try {
+          await refetchSubscription();
+          console.log('✅ Subscription refreshed after success URL return');
+        } catch (error) {
+          console.error('❌ Failed to refresh subscription after success URL:', error);
+        }
+      }, 1000); // Give the page a moment to load
+      
       // Clean up the URL by removing the success parameter
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete('success');
       window.history.replaceState({}, '', newUrl.toString());
     }
-  }, [searchParams]);
+  }, [searchParams, refetchSubscription]);
 
   // Form data state - initialized from Supabase data
   const [formData, setFormData] = useState({
@@ -170,6 +182,66 @@ function SettingsContent() {
               title: 'Payment successful!',
               description: 'Your subscription has been updated.',
             });
+            // Enhanced subscription refresh with polling
+            // Start with longer initial delay to allow webhook processing
+            setTimeout(async () => {
+              console.log('🔄 Starting subscription data refresh sequence...');
+              let refreshAttempts = 0;
+              const maxAttempts = 3; // Webhook now reliable – keep polling lightweight
+              
+              const tryRefresh = async (): Promise<boolean> => {
+                refreshAttempts++;
+                console.log(`🔄 Refresh attempt ${refreshAttempts}/${maxAttempts}...`);
+                
+                try {
+                  await refetchSubscription();
+                  
+                  // Check if subscription was actually found after refetch
+                  // Note: This is a bit hacky, but we need to check the actual state
+                  // Since refetchSubscription doesn't return the result directly
+                  return new Promise(resolve => {
+                    setTimeout(() => {
+                      // Give the state time to update
+                      if (subscription !== null) {
+                        console.log('✅ Subscription data refreshed successfully');
+                        resolve(true);
+                      } else {
+                        console.log('⏳ Subscription not yet available, will retry...');
+                        resolve(false);
+                      }
+                    }, 500);
+                  });
+                } catch (error) {
+                  console.error(`❌ Refresh attempt ${refreshAttempts} failed:`, error);
+                  return false;
+                }
+              };
+              
+              // Try refreshing with increasing delays
+              for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                const success = await tryRefresh();
+                if (success) {
+                  break;
+                }
+                
+                if (attempt < maxAttempts) {
+                  // Wait 1.5s, then 3s between attempts
+                  const delay = attempt * 1500;
+                  console.log(`⏱️ Waiting ${delay}ms before next attempt...`);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                }
+              }
+              
+              // If all attempts failed, show a helpful message
+              if (refreshAttempts >= maxAttempts) {
+                console.log('⚠️ Subscription refresh attempts completed, may need manual refresh');
+                toast({
+                  title: 'Payment processed',
+                  description: 'Your payment was successful. If your subscription status doesn\'t update shortly, please refresh the page.',
+                  duration: 8000,
+                });
+              }
+            }, 2000); // Shorter initial delay – webhook should be in place
           }
           if (data.name === 'checkout.error') {
             console.error(
@@ -872,6 +944,10 @@ function SettingsContent() {
           ],
           customData: {
             user_id: userId,
+          },
+          settings: {
+            successUrl: `${window.location.origin}/settings?tab=billing&success=true`,
+            allowLogout: false,
           },
         };
 
