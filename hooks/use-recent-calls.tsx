@@ -24,19 +24,30 @@ export function useRecentCalls(options: UseRecentCallsOptions = {}) {
     const controller = new AbortController();
     const fetchCalls = async () => {
       try {
+        setLoading(true);
+        setError(null);
+        
         const params = new URLSearchParams();
         if (options.limit) params.set('limit', String(options.limit));
+        
         const res = await fetch(`/api/vapi/recent-calls?${params.toString()}`, {
           signal: controller.signal,
         });
+        
         if (!res.ok) {
-          throw new Error(`Request failed with ${res.status}`);
+          throw new Error(`Request failed with ${res.status}: ${res.statusText}`);
         }
+        
         const data = await res.json();
-        setCalls(data.calls ?? data);
+        
+        // The API now returns an array directly, not an object with a calls property
+        const callsArray = Array.isArray(data) ? data : [];
+        setCalls(callsArray);
       } catch (err) {
         if (!controller.signal.aborted) {
-          setError((err as Error).message);
+          const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+          setError(errorMessage);
+          console.error('Failed to fetch recent calls:', err);
         }
       } finally {
         if (!controller.signal.aborted) {

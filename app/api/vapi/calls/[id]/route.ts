@@ -17,7 +17,13 @@ export async function GET(
   }
 
   try {
-    const callUrl = new URL(`/v1/calls/${params.id}`, baseUrl);
+    const callUrl = new URL(`/call/${params.id}`, baseUrl);
+    
+    logger.debug('VAPI', 'Fetching call details', {
+      callId: params.id,
+      url: callUrl.toString()
+    });
+    
     const callRes = await fetch(callUrl.toString(), {
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -30,6 +36,9 @@ export async function GET(
     if (!callRes.ok) {
       logger.error('VAPI', 'Failed to fetch call', undefined, {
         status: callRes.status,
+        statusText: callRes.statusText,
+        callId: params.id,
+        url: callUrl.toString()
       });
       return NextResponse.json(
         { error: 'Failed to fetch call' },
@@ -39,31 +48,12 @@ export async function GET(
 
     const callData = await callRes.json();
 
-    const analyticsUrl = new URL(`/v1/analytics`, baseUrl);
-    analyticsUrl.searchParams.set('callId', params.id);
-
-    const analyticsRes = await fetch(analyticsUrl.toString(), {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        Accept: 'application/json',
-        'User-Agent': 'spoqen-dashboard/1.0',
-      },
-      signal: AbortSignal.timeout(10000),
+    logger.debug('VAPI', 'Successfully fetched call details', {
+      callId: params.id,
+      hasData: !!callData
     });
 
-    if (!analyticsRes.ok) {
-      logger.error('VAPI', 'Failed to fetch analytics', undefined, {
-        status: analyticsRes.status,
-      });
-      return NextResponse.json(
-        { error: 'Failed to fetch analytics' },
-        { status: analyticsRes.status }
-      );
-    }
-
-    const analyticsData = await analyticsRes.json();
-
-    return NextResponse.json({ call: callData, analytics: analyticsData });
+    return NextResponse.json({ call: callData });
   } catch (error) {
     logger.error('VAPI', 'API request failed', error as Error);
     return NextResponse.json(

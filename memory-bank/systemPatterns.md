@@ -26,3 +26,11 @@ This section outlines the anticipated system architecture and key design pattern
 - **Authentication Flow Pattern:** Standard patterns for user registration, login, and session management.
 - **Webhook Handling:** Implementation of robust webhook processing for external services like Paddle.
 - **Database Migrations:** Using Supabase Migrations (`supabase/migrations/`) for schema management.
+
+**env vars** this is our .env file config with the actuall key values for security.
+NEXT_PUBLIC_SUPABASE_URL
+VAPI_PRIVATE_KEY
+VAPI_PUBLIC_KEY
+VAPI_ASSISTANT_ID
+VAPI_PHONE_NUMBER_ID
+NEXT_PUBLIC_SUPABASE_ANON_KEY
