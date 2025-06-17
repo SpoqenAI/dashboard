@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
-  const apiKey = process.env.VAPI_PUBLIC_KEY;
+  const apiKey = process.env.VAPI_PRIVATE_KEY;
   const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
 
   if (!apiKey) {
