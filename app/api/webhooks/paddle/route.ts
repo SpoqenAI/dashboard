@@ -51,13 +51,23 @@ export async function POST(req: NextRequest) {
   const rawBody = Buffer.from(rawArrayBuffer).toString();
 
   try {
-    console.log('🔍 Processing webhook (sig prefix):', signature.slice(0, 20) + '...');
-    
+    console.log(
+      '🔍 Processing webhook (sig prefix):',
+      signature.slice(0, 20) + '...'
+    );
+
     let event;
     try {
-      event = await paddle.webhooks.unmarshal(rawBody, webhookSecret, signature);
+      event = await paddle.webhooks.unmarshal(
+        rawBody,
+        webhookSecret,
+        signature
+      );
     } catch (verifyErr: any) {
-      console.error('❌ Signature verification threw:', verifyErr?.message || verifyErr);
+      console.error(
+        '❌ Signature verification threw:',
+        verifyErr?.message || verifyErr
+      );
 
       /*
        * HMAC mismatch diagnostics – keep for future debugging.
@@ -101,7 +111,7 @@ export async function POST(req: NextRequest) {
     // Try multiple locations where Paddle might store custom data
     let userId = null;
     const eventData = event.data as any;
-    
+
     // Try different locations for user_id
     if (eventData.custom_data?.user_id) {
       userId = eventData.custom_data.user_id;
@@ -125,9 +135,12 @@ export async function POST(req: NextRequest) {
         'eventData.transaction': eventData.transaction,
       });
 
-      console.warn('⚠️ user_id not found in custom data. Attempting to resolve by customer email...');
+      console.warn(
+        '⚠️ user_id not found in custom data. Attempting to resolve by customer email...'
+      );
 
-      const customerEmail = eventData.customer?.email || eventData.customer_email;
+      const customerEmail =
+        eventData.customer?.email || eventData.customer_email;
       if (customerEmail) {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -157,10 +170,12 @@ export async function POST(req: NextRequest) {
         // Return 400 Bad Request so Paddle retries the webhook
         return NextResponse.json(
           {
-            error: 'Missing required user_id in custom_data and unable to resolve via email',
+            error:
+              'Missing required user_id in custom_data and unable to resolve via email',
             eventType: event.eventType,
             eventId: eventData.id,
-            debug: 'Ensure checkout passes user_id in customData or customer email matches a profile',
+            debug:
+              'Ensure checkout passes user_id in customData or customer email matches a profile',
           },
           { status: 400 }
         );
@@ -178,11 +193,8 @@ export async function POST(req: NextRequest) {
           eventData.current_billing_period ||
           {};
 
-        const trialDates =
-          eventData.trialDates ||
-          eventData.trial_dates ||
-          {};
-        const scheduledChange = eventData.scheduled_change    || {};
+        const trialDates = eventData.trialDates || eventData.trial_dates || {};
+        const scheduledChange = eventData.scheduled_change || {};
 
         // 1️⃣ Derive reliable period boundaries ---------------------------------
         // Prefer current_billing_period, then trial dates (for trialing subs),
@@ -219,13 +231,17 @@ export async function POST(req: NextRequest) {
           quantity: eventData.items?.[0]?.quantity ?? null,
 
           // Will be TRUE if Paddle will cancel at the end of term (there is a scheduled_change action "cancel")
-          cancel_at_period_end: scheduledChange.action === 'cancel' ? true : false,
+          cancel_at_period_end:
+            scheduledChange.action === 'cancel' ? true : false,
 
           // When the subscription actually ended (only set for canceled/expired subs)
           ended_at: eventData.endedAt ?? eventData.ended_at ?? null,
 
           // Timestamp the user clicked cancel (if already canceled)
-          cancel_at: scheduledChange.action === 'cancel' ? scheduledChange.effective_at ?? null : null,
+          cancel_at:
+            scheduledChange.action === 'cancel'
+              ? (scheduledChange.effective_at ?? null)
+              : null,
 
           // When the cancel became effective (status switched to "canceled")
           canceled_at: eventData.canceledAt ?? eventData.canceled_at ?? null,
@@ -238,7 +254,7 @@ export async function POST(req: NextRequest) {
         // Only set period dates if we actually have values – avoids overwriting
         // existing non-null data with null on subsequent webhook events.
         if (periodStart) subData.current_period_start_at = periodStart;
-        if (periodEnd)   subData.current_period_end_at   = periodEnd;
+        if (periodEnd) subData.current_period_end_at = periodEnd;
 
         // Upsert subscription details into your database
         const { error: subError } = await supabase
