@@ -1,5 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Paddle, Environment } from '@paddle/paddle-node-sdk';
+import type { 
+  Subscription,
+  CustomerPortalSession,
+  SubscriptionManagement
+} from '@paddle/paddle-node-sdk';
+
+// Type for subscription that might have management URLs available
+type SubscriptionWithManagement = Subscription & {
+  managementUrls?: SubscriptionManagement | null;
+};
+
+// Type for customer portal session that might have a direct URL
+type CustomerPortalSessionWithUrl = CustomerPortalSession & {
+  url?: string;
+};
 
 // This endpoint returns a secure, short-lived management URL for a subscription.
 // It requires the client to POST `{ subscriptionId: "sub_..." }`.
@@ -48,13 +63,10 @@ export async function POST(req: NextRequest) {
 
     // Fetch subscription, including management URLs.
     try {
-      const sub = await paddle.subscriptions.get(subscriptionId, {
-        include: ['management_urls'],
-      } as any);
+      const sub = await paddle.subscriptions.get(subscriptionId) as SubscriptionWithManagement;
 
-      const url =
-        (sub as any)?.managementUrls?.update ??
-        (sub as any)?.management_urls?.update;
+      // Try to get the update payment method URL from management URLs
+      const url = sub?.managementUrls?.updatePaymentMethod;
 
       if (url) {
         return NextResponse.json({ url });
@@ -69,12 +81,9 @@ export async function POST(req: NextRequest) {
     // Fallback: generate a customer-portal session which always returns a URL
     try {
       // Fetch subscription minimal to get customerId
-      const subSlim = await paddle.subscriptions.get(subscriptionId, {
-        include: ['customer_id'],
-      } as any);
+      const subSlim = await paddle.subscriptions.get(subscriptionId) as Subscription;
 
-      const customerId =
-        (subSlim as any)?.customerId ?? (subSlim as any)?.customer_id;
+      const customerId = subSlim.customerId;
       if (!customerId) {
         return NextResponse.json(
           { error: 'Customer information not found for subscription.' },
@@ -82,12 +91,16 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const session: any = await paddle.customerPortalSessions.create(
+      const session = await paddle.customerPortalSessions.create(
         customerId,
         [subscriptionId]
-      );
-      if (session?.url) {
-        return NextResponse.json({ url: session.url });
+      ) as CustomerPortalSessionWithUrl;
+      
+      // Try to get URL from session directly or from the overview URL
+      const sessionUrl = session?.url || session?.urls?.general?.overview;
+      
+      if (sessionUrl) {
+        return NextResponse.json({ url: sessionUrl });
       }
     } catch (err: any) {
       console.error('Customer portal fallback failed:', err);
