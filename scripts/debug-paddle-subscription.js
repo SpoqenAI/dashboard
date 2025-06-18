@@ -146,7 +146,10 @@ const command = process.argv[2];
 const userId = process.argv[3];
 
 if (command === 'list') {
-  listAllSubscriptions();
+  (async () => {
+    await listAllSubscriptions();
+    process.exit(0);
+  })();
 } else if (userId) {
   debugSubscription(userId);
 } else {
