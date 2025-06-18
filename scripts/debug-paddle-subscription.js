@@ -10,6 +10,21 @@ import 'dotenv/config';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Safety check: Prevent running against production environment
+if (process.env.NODE_ENV === 'production' || 
+    (supabaseUrl && supabaseUrl.includes('supabase.co'))) {
+  console.error('🚨 PRODUCTION SAFETY CHECK FAILED');
+  console.error('❌ This debug script cannot be run against production environment');
+  console.error('   - NODE_ENV:', process.env.NODE_ENV);
+  console.error('   - Supabase URL:', supabaseUrl);
+  console.error('');
+  console.error('💡 To run this script safely:');
+  console.error('   - Use a local development environment');
+  console.error('   - Or set NODE_ENV=development explicitly');
+  console.error('   - Ensure you are not using production Supabase credentials');
+  process.exit(1);
+}
+
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Missing Supabase environment variables');
   console.error(
