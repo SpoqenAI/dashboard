@@ -198,31 +198,36 @@ function SettingsContent() {
               };
 
               console.log('🔄 Starting subscription data refresh sequence...');
-              
+
               // Initial delay to allow webhook processing
-              await new Promise(resolve => setTimeout(resolve, config.initialDelay));
+              await new Promise(resolve =>
+                setTimeout(resolve, config.initialDelay)
+              );
 
               for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
-                console.log(`🔄 Refresh attempt ${attempt}/${config.maxAttempts}...`);
-                
+                console.log(
+                  `🔄 Refresh attempt ${attempt}/${config.maxAttempts}...`
+                );
+
                 try {
                   await refetchSubscription();
                   console.log('✅ Subscription refresh completed successfully');
                   return; // Success - exit the function
                 } catch (error) {
                   console.error(`❌ Refresh attempt ${attempt} failed:`, error);
-                  
+
                   // If this was the last attempt, show error message
                   if (attempt === config.maxAttempts) {
                     console.log('⚠️ All subscription refresh attempts failed');
                     toast({
                       title: 'Payment processed',
-                      description: "Your payment was successful. If your subscription status doesn't update shortly, please refresh the page.",
+                      description:
+                        "Your payment was successful. If your subscription status doesn't update shortly, please refresh the page.",
                       duration: 8000,
                     });
                     return;
                   }
-                  
+
                   // Wait before next attempt
                   const delay = config.retryDelays[attempt - 1] || 2000;
                   console.log(`⏱️ Waiting ${delay}ms before next attempt...`);

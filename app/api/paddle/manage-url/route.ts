@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Paddle, Environment } from '@paddle/paddle-node-sdk';
-import type { 
+import type {
   Subscription,
   CustomerPortalSession,
-  SubscriptionManagement
+  SubscriptionManagement,
 } from '@paddle/paddle-node-sdk';
 
 // Type for subscription that might have management URLs available
@@ -63,7 +63,9 @@ export async function POST(req: NextRequest) {
 
     // Fetch subscription, including management URLs.
     try {
-      const sub = await paddle.subscriptions.get(subscriptionId) as SubscriptionWithManagement;
+      const sub = (await paddle.subscriptions.get(
+        subscriptionId
+      )) as SubscriptionWithManagement;
 
       // Try to get the update payment method URL from management URLs
       const url = sub?.managementUrls?.updatePaymentMethod;
@@ -81,7 +83,9 @@ export async function POST(req: NextRequest) {
     // Fallback: generate a customer-portal session which always returns a URL
     try {
       // Fetch subscription minimal to get customerId
-      const subSlim = await paddle.subscriptions.get(subscriptionId) as Subscription;
+      const subSlim = (await paddle.subscriptions.get(
+        subscriptionId
+      )) as Subscription;
 
       const customerId = subSlim.customerId;
       if (!customerId) {
@@ -91,14 +95,13 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const session = await paddle.customerPortalSessions.create(
-        customerId,
-        [subscriptionId]
-      ) as CustomerPortalSessionWithUrl;
-      
+      const session = (await paddle.customerPortalSessions.create(customerId, [
+        subscriptionId,
+      ])) as CustomerPortalSessionWithUrl;
+
       // Try to get URL from session directly or from the overview URL
       const sessionUrl = session?.url || session?.urls?.general?.overview;
-      
+
       if (sessionUrl) {
         return NextResponse.json({ url: sessionUrl });
       }
