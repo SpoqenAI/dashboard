@@ -78,7 +78,11 @@ function SettingsContent() {
   } = useUserSettings();
 
   // Get subscription data
-  const { subscription, loading: subscriptionLoading } = useSubscription();
+  const {
+    subscription,
+    loading: subscriptionLoading,
+    refetch: refetchSubscription,
+  } = useSubscription();
 
   // Check for successful payment return
   useEffect(() => {
@@ -88,12 +92,27 @@ function SettingsContent() {
         title: 'Payment successful!',
         description: 'Your subscription has been updated successfully.',
       });
+
+      // Trigger subscription refresh when returning from successful payment
+      console.log('🔄 Triggering subscription refresh from success URL...');
+      setTimeout(async () => {
+        try {
+          await refetchSubscription();
+          console.log('✅ Subscription refreshed after success URL return');
+        } catch (error) {
+          console.error(
+            '❌ Failed to refresh subscription after success URL:',
+            error
+          );
+        }
+      }, 1000); // Give the page a moment to load
+
       // Clean up the URL by removing the success parameter
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete('success');
       window.history.replaceState({}, '', newUrl.toString());
     }
-  }, [searchParams]);
+  }, [searchParams, refetchSubscription]);
 
   // Form data state - initialized from Supabase data
   const [formData, setFormData] = useState({
@@ -169,6 +188,57 @@ function SettingsContent() {
             toast({
               title: 'Payment successful!',
               description: 'Your subscription has been updated.',
+            });
+            // Simplified subscription refresh with configurable polling
+            const refreshSubscriptionWithRetry = async () => {
+              const config = {
+                initialDelay: 2000,
+                maxAttempts: 3,
+                retryDelays: [1500, 3000], // delays between attempts
+              };
+
+              console.log('🔄 Starting subscription data refresh sequence...');
+
+              // Initial delay to allow webhook processing
+              await new Promise(resolve =>
+                setTimeout(resolve, config.initialDelay)
+              );
+
+              for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
+                console.log(
+                  `🔄 Refresh attempt ${attempt}/${config.maxAttempts}...`
+                );
+
+                try {
+                  await refetchSubscription();
+                  console.log('✅ Subscription refresh completed successfully');
+                  return; // Success - exit the function
+                } catch (error) {
+                  console.error(`❌ Refresh attempt ${attempt} failed:`, error);
+
+                  // If this was the last attempt, show error message
+                  if (attempt === config.maxAttempts) {
+                    console.log('⚠️ All subscription refresh attempts failed');
+                    toast({
+                      title: 'Payment processed',
+                      description:
+                        "Your payment was successful. If your subscription status doesn't update shortly, please refresh the page.",
+                      duration: 8000,
+                    });
+                    return;
+                  }
+
+                  // Wait before next attempt
+                  const delay = config.retryDelays[attempt - 1] || 2000;
+                  console.log(`⏱️ Waiting ${delay}ms before next attempt...`);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                }
+              }
+            };
+
+            // Execute the simplified refresh logic
+            refreshSubscriptionWithRetry().catch(error => {
+              console.error('❌ Subscription refresh sequence failed:', error);
             });
           }
           if (data.name === 'checkout.error') {
@@ -873,6 +943,10 @@ function SettingsContent() {
           customData: {
             user_id: userId,
           },
+          settings: {
+            successUrl: `${window.location.origin}/settings?tab=billing&success=true`,
+            allowLogout: false,
+          },
         };
 
         // Only add customer info if we have complete name information
@@ -938,7 +1012,7 @@ function SettingsContent() {
   };
 
   // Handle subscription management
-  const handleManageSubscription = () => {
+  const handleManageSubscription = async () => {
     if (!subscription) {
       toast({
         title: 'Error',
@@ -948,10 +1022,28 @@ function SettingsContent() {
       return;
     }
 
-    // Open Paddle's hosted subscription management page
-    // Note: You may need to implement this endpoint or use Paddle's customer portal
-    const managementUrl = `https://checkout.paddle.com/subscription/update?subscription=${subscription.id}`;
-    window.open(managementUrl, '_blank');
+    try {
+      const res = await fetch('/api/paddle/manage-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId: subscription.id }),
+      });
+
+      if (!res.ok) throw new Error('Failed to fetch management URL');
+
+      const { url } = await res.json();
+      if (!url) throw new Error('Management URL missing in response');
+
+      window.open(url as string, '_blank');
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: 'Unable to open management page',
+        description:
+          'Please try again later or contact support if the problem persists.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
