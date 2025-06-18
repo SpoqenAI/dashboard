@@ -172,20 +172,73 @@ export async function POST(req: NextRequest) {
       case 'subscription.created':
       case 'subscription.updated': {
         const eventData = event.data as any;
-        const subData = {
+        // Map Paddle Billing fields → local column names
+        const currentPeriod =
+          eventData.currentBillingPeriod ||
+          eventData.current_billing_period ||
+          {};
+
+        const trialDates =
+          eventData.trialDates ||
+          eventData.trial_dates ||
+          {};
+        const scheduledChange = eventData.scheduled_change    || {};
+
+        // 1️⃣ Derive reliable period boundaries ---------------------------------
+        // Prefer current_billing_period, then trial dates (for trialing subs),
+        // then top-level timestamps.
+        const periodStart =
+          // current period
+          currentPeriod.startsAt ??
+          currentPeriod.starts_at ??
+          // trial period (some events send trial window when subscription is still trialing)
+          trialDates.startsAt ??
+          trialDates.starts_at ??
+          // top-level fall-backs
+          eventData.startedAt ??
+          eventData.started_at ??
+          eventData.firstBilledAt ??
+          eventData.first_billed_at ??
+          null;
+
+        const periodEnd =
+          currentPeriod.endsAt ??
+          currentPeriod.ends_at ??
+          trialDates.endsAt ??
+          trialDates.ends_at ??
+          eventData.nextBilledAt ??
+          eventData.next_billed_at ??
+          null;
+
+        const subData: Record<string, any> = {
           id: eventData.id,
           user_id: userId,
-          status: eventData.status,
-          price_id: eventData.items?.[0]?.price?.id,
-          quantity: eventData.items?.[0]?.quantity,
-          cancel_at_period_end: eventData.cancel_at_period_end,
-          current_period_start_at: eventData.current_period_start,
-          current_period_end_at: eventData.current_period_end,
-          ended_at: eventData.ended_at,
-          canceled_at: eventData.canceled_at,
-          trial_start_at: eventData.trial_dates?.starts_at,
-          trial_end_at: eventData.trial_dates?.ends_at,
+          status: eventData.status, // active, trialing, paused, canceled, etc.
+
+          price_id: eventData.items?.[0]?.price?.id ?? null,
+          quantity: eventData.items?.[0]?.quantity ?? null,
+
+          // Will be TRUE if Paddle will cancel at the end of term (there is a scheduled_change action "cancel")
+          cancel_at_period_end: scheduledChange.action === 'cancel' ? true : false,
+
+          // When the subscription actually ended (only set for canceled/expired subs)
+          ended_at: eventData.endedAt ?? eventData.ended_at ?? null,
+
+          // Timestamp the user clicked cancel (if already canceled)
+          cancel_at: scheduledChange.action === 'cancel' ? scheduledChange.effective_at ?? null : null,
+
+          // When the cancel became effective (status switched to "canceled")
+          canceled_at: eventData.canceledAt ?? eventData.canceled_at ?? null,
+
+          // Trial information (if any)
+          trial_start_at: trialDates.startsAt ?? trialDates.starts_at ?? null,
+          trial_end_at: trialDates.endsAt ?? trialDates.ends_at ?? null,
         };
+
+        // Only set period dates if we actually have values – avoids overwriting
+        // existing non-null data with null on subsequent webhook events.
+        if (periodStart) subData.current_period_start_at = periodStart;
+        if (periodEnd)   subData.current_period_end_at   = periodEnd;
 
         // Upsert subscription details into your database
         const { error: subError } = await supabase
@@ -208,7 +261,8 @@ export async function POST(req: NextRequest) {
             status: eventData.status,
             priceId: eventData.items?.[0]?.price?.id,
             customerId: eventData.customer_id,
-            currentPeriodEnd: eventData.current_period_end,
+            currentPeriodStart: periodStart,
+            currentPeriodEnd: periodEnd,
           }
         );
         break;

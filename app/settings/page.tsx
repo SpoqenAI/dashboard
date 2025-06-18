@@ -1014,7 +1014,7 @@ function SettingsContent() {
   };
 
   // Handle subscription management
-  const handleManageSubscription = () => {
+  const handleManageSubscription = async () => {
     if (!subscription) {
       toast({
         title: 'Error',
@@ -1024,10 +1024,28 @@ function SettingsContent() {
       return;
     }
 
-    // Open Paddle's hosted subscription management page
-    // Note: You may need to implement this endpoint or use Paddle's customer portal
-    const managementUrl = `https://checkout.paddle.com/subscription/update?subscription=${subscription.id}`;
-    window.open(managementUrl, '_blank');
+    try {
+      const res = await fetch('/api/paddle/manage-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId: subscription.id }),
+      });
+
+      if (!res.ok) throw new Error('Failed to fetch management URL');
+
+      const { url } = await res.json();
+      if (!url) throw new Error('Management URL missing in response');
+
+      window.open(url as string, '_blank');
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: 'Unable to open management page',
+        description:
+          'Please try again later or contact support if the problem persists.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
