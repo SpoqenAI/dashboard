@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Paddle } from '@paddle/paddle-node-sdk';
 import { createClient } from '@supabase/supabase-js';
 
-// Admin Supabase client using service role key for RLS bypass
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+// Function to create admin Supabase client using service role key for RLS bypass
+function createSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('Missing required Supabase environment variables for admin client');
+  }
+  
+  return createClient(supabaseUrl, serviceRoleKey);
+}
 
 export async function POST(req: NextRequest) {
   // Minimal request receipt log (headers omitted to reduce noise)
@@ -43,7 +49,7 @@ export async function POST(req: NextRequest) {
   }
 
   const paddle = new Paddle(paddleApiKey);
-  const supabase = supabaseAdmin;
+  const supabase = createSupabaseAdmin();
   const signature = req.headers.get('paddle-signature') || '';
 
   // Use arrayBuffer to avoid issues where req.text() returns empty
