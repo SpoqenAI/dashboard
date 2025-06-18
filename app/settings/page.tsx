@@ -189,78 +189,52 @@ function SettingsContent() {
               title: 'Payment successful!',
               description: 'Your subscription has been updated.',
             });
-            // Enhanced subscription refresh with polling
-            // Start with longer initial delay to allow webhook processing
-            setTimeout(async () => {
-              console.log('🔄 Starting subscription data refresh sequence...');
-              let refreshAttempts = 0;
-              const maxAttempts = 3; // Webhook now reliable – keep polling lightweight
-
-              const tryRefresh = async (): Promise<boolean> => {
-                refreshAttempts++;
-                console.log(
-                  `🔄 Refresh attempt ${refreshAttempts}/${maxAttempts}...`
-                );
-
-                try {
-                  await refetchSubscription();
-
-                  // Check if subscription was actually found after refetch
-                  // Note: This is a bit hacky, but we need to check the actual state
-                  // Since refetchSubscription doesn't return the result directly
-                  return new Promise(resolve => {
-                    setTimeout(() => {
-                      // Give the state time to update
-                      if (subscription !== null) {
-                        console.log(
-                          '✅ Subscription data refreshed successfully'
-                        );
-                        resolve(true);
-                      } else {
-                        console.log(
-                          '⏳ Subscription not yet available, will retry...'
-                        );
-                        resolve(false);
-                      }
-                    }, 500);
-                  });
-                } catch (error) {
-                  console.error(
-                    `❌ Refresh attempt ${refreshAttempts} failed:`,
-                    error
-                  );
-                  return false;
-                }
+            // Simplified subscription refresh with configurable polling
+            const refreshSubscriptionWithRetry = async () => {
+              const config = {
+                initialDelay: 2000,
+                maxAttempts: 3,
+                retryDelays: [1500, 3000], // delays between attempts
               };
 
-              // Try refreshing with increasing delays
-              for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                const success = await tryRefresh();
-                if (success) {
-                  break;
-                }
+              console.log('🔄 Starting subscription data refresh sequence...');
+              
+              // Initial delay to allow webhook processing
+              await new Promise(resolve => setTimeout(resolve, config.initialDelay));
 
-                if (attempt < maxAttempts) {
-                  // Wait 1.5s, then 3s between attempts
-                  const delay = attempt * 1500;
+              for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
+                console.log(`🔄 Refresh attempt ${attempt}/${config.maxAttempts}...`);
+                
+                try {
+                  await refetchSubscription();
+                  console.log('✅ Subscription refresh completed successfully');
+                  return; // Success - exit the function
+                } catch (error) {
+                  console.error(`❌ Refresh attempt ${attempt} failed:`, error);
+                  
+                  // If this was the last attempt, show error message
+                  if (attempt === config.maxAttempts) {
+                    console.log('⚠️ All subscription refresh attempts failed');
+                    toast({
+                      title: 'Payment processed',
+                      description: "Your payment was successful. If your subscription status doesn't update shortly, please refresh the page.",
+                      duration: 8000,
+                    });
+                    return;
+                  }
+                  
+                  // Wait before next attempt
+                  const delay = config.retryDelays[attempt - 1] || 2000;
                   console.log(`⏱️ Waiting ${delay}ms before next attempt...`);
                   await new Promise(resolve => setTimeout(resolve, delay));
                 }
               }
+            };
 
-              // If all attempts failed, show a helpful message
-              if (refreshAttempts >= maxAttempts) {
-                console.log(
-                  '⚠️ Subscription refresh attempts completed, may need manual refresh'
-                );
-                toast({
-                  title: 'Payment processed',
-                  description:
-                    "Your payment was successful. If your subscription status doesn't update shortly, please refresh the page.",
-                  duration: 8000,
-                });
-              }
-            }, 2000); // Shorter initial delay – webhook should be in place
+            // Execute the simplified refresh logic
+            refreshSubscriptionWithRetry().catch(error => {
+              console.error('❌ Subscription refresh sequence failed:', error);
+            });
           }
           if (data.name === 'checkout.error') {
             console.error(
