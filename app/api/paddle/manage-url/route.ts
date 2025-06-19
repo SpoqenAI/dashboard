@@ -5,6 +5,7 @@ import type {
   CustomerPortalSession,
   SubscriptionManagement,
 } from '@paddle/paddle-node-sdk';
+import { logger } from '@/lib/logger';
 
 // Type for subscription that might have management URLs available
 type SubscriptionWithManagement = Subscription & {
@@ -35,7 +36,10 @@ export async function POST(req: NextRequest) {
 
     const apiKey = process.env.PADDLE_API_KEY;
     if (!apiKey) {
-      console.error('PADDLE_API_KEY env var missing');
+      logger.error(
+        'PADDLE_MANAGE_URL',
+        'PADDLE_API_KEY environment variable missing'
+      );
       return NextResponse.json(
         { error: 'Server mis-configured.' },
         { status: 500 }
@@ -106,7 +110,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ url: sessionUrl });
       }
     } catch (err: any) {
-      console.error('Customer portal fallback failed:', err);
+      logger.error(
+        'PADDLE_MANAGE_URL',
+        'Customer portal fallback failed',
+        err instanceof Error ? err : new Error(String(err))
+      );
       return NextResponse.json(
         { error: 'Unable to create management session.' },
         { status: 500 }
@@ -118,7 +126,11 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   } catch (err: any) {
-    console.error('Error creating management URL:', err);
+    logger.error(
+      'PADDLE_MANAGE_URL',
+      'Error creating management URL',
+      err instanceof Error ? err : new Error(String(err))
+    );
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

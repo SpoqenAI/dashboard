@@ -49,8 +49,12 @@ function ProfilePageContent() {
     licenseNumber: string;
     brokerage: string;
     website: string;
+    streetAddress: string;
     city: string;
     state: string;
+    postalCode: string;
+    country: string;
+    formattedAddress: string;
     assistantName: string;
   };
 
@@ -65,8 +69,12 @@ function ProfilePageContent() {
     licenseNumber: '',
     brokerage: '',
     website: '',
+    streetAddress: '',
     city: '',
     state: '',
+    postalCode: '',
+    country: '',
+    formattedAddress: '',
     assistantName: '',
   });
 

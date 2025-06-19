@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useAuth } from './use-auth';
 import { PaddleSubscription } from '@/lib/paddle';
+import { logger } from '@/lib/logger';
 
 export interface UseSubscriptionReturn {
   subscription: PaddleSubscription | null;
@@ -60,7 +61,16 @@ export function useSubscription(): UseSubscriptionReturn {
         }
 
         if (fetchError) {
-          console.error('🚨 Subscription fetch error:', fetchError);
+          logger.error(
+            'SUBSCRIPTION',
+            'Subscription fetch error',
+            fetchError instanceof Error
+              ? fetchError
+              : new Error(String(fetchError)),
+            {
+              userId: logger.maskUserId(user?.id),
+            }
+          );
           throw fetchError;
         }
 
@@ -69,17 +79,12 @@ export function useSubscription(): UseSubscriptionReturn {
           return;
         }
 
-        console.log('📊 Subscription data fetched:', {
-          userId: user.id,
+        logger.debug('SUBSCRIPTION', 'Subscription data fetched successfully', {
+          userId: logger.maskUserId(user?.id),
           subscriptionFound: !!data,
-          subscriptionData: data
-            ? {
-                id: data.id,
-                status: data.status,
-                price_id: data.price_id,
-                current_period_end: data.current_period_end_at,
-              }
-            : null,
+          subscriptionStatus: data?.status,
+          hasPriceId: !!data?.price_id,
+          hasCurrentPeriodEnd: !!data?.current_period_end_at,
         });
 
         setSubscription(data);
@@ -89,7 +94,14 @@ export function useSubscription(): UseSubscriptionReturn {
           return;
         }
 
-        console.error('Error fetching subscription:', err);
+        logger.error(
+          'SUBSCRIPTION',
+          'Error fetching subscription',
+          err instanceof Error ? err : new Error(String(err)),
+          {
+            userId: logger.maskUserId(user?.id),
+          }
+        );
         setError(err.message);
       } finally {
         // Don't update loading state if request was aborted

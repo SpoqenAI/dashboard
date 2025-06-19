@@ -5,6 +5,7 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 import { useAuth } from './use-auth';
 import { updateUserEmail } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
+import { logger } from '@/lib/logger';
 
 export interface UserSettings {
   id: string;
@@ -33,8 +34,12 @@ export interface UserProfile {
   website: string | null;
   license_number: string | null;
   brokerage: string | null;
+  street_address: string | null;
   city: string | null;
   state: string | null;
+  postal_code: string | null;
+  country: string | null;
+  formatted_address: string | null;
   avatar_url: string | null;
 }
 
@@ -55,8 +60,12 @@ export interface ProfileFormData {
   licenseNumber: string;
   brokerage: string;
   website: string;
+  streetAddress: string;
   city: string;
   state: string;
+  postalCode: string;
+  country: string;
+  formattedAddress: string;
   assistantName: string;
 }
 
@@ -70,8 +79,12 @@ export interface ProfileUpdateData {
   licenseNumber: string;
   brokerage: string;
   website: string;
+  streetAddress: string;
   city: string;
   state: string;
+  postalCode: string;
+  country: string;
+  formattedAddress: string;
 }
 
 export function useUserSettings() {
@@ -115,7 +128,7 @@ export function useUserSettings() {
           supabase
             .from('profiles')
             .select(
-              'id, first_name, last_name, full_name, business_name, email, phone, bio, website, license_number, brokerage, city, state, avatar_url'
+              'id, first_name, last_name, full_name, business_name, email, phone, bio, website, license_number, brokerage, street_address, city, state, postal_code, country, formatted_address, avatar_url'
             )
             .eq('id', user.id)
             .single(),
@@ -189,7 +202,14 @@ export function useUserSettings() {
           return;
         }
 
-        console.error('Error fetching user data:', err);
+        logger.error(
+          'USER_SETTINGS',
+          'Error fetching user data',
+          err instanceof Error ? err : new Error(String(err)),
+          {
+            userId: logger.maskUserId(user?.id),
+          }
+        );
         setError(err.message);
         setDataLoaded(false);
         toast({
@@ -280,7 +300,15 @@ export function useUserSettings() {
         description: 'Your AI Receptionist settings have been updated.',
       });
     } catch (err: any) {
-      console.error('Error updating settings:', err);
+      logger.error(
+        'USER_SETTINGS',
+        'Error updating AI settings',
+        err instanceof Error ? err : new Error(String(err)),
+        {
+          userId: logger.maskUserId(user?.id),
+          hasProfile: !!profile,
+        }
+      );
       setError(err.message);
       toast({
         title: 'Error saving settings',
@@ -330,7 +358,15 @@ export function useUserSettings() {
         description: 'Your notification preferences have been saved.',
       });
     } catch (err: any) {
-      console.error('Error updating user settings:', err);
+      logger.error(
+        'USER_SETTINGS',
+        'Error updating user settings',
+        err instanceof Error ? err : new Error(String(err)),
+        {
+          userId: logger.maskUserId(user?.id),
+          settingsKeys: Object.keys(settingsData),
+        }
+      );
       setError(err.message);
       toast({
         title: 'Error saving settings',
@@ -406,8 +442,13 @@ export function useUserSettings() {
           website: profileDataWithoutEmail.website.trim() || null,
           license_number: profileDataWithoutEmail.licenseNumber.trim() || null,
           brokerage: profileDataWithoutEmail.brokerage.trim() || null,
+          street_address: profileDataWithoutEmail.streetAddress.trim() || null,
           city: profileDataWithoutEmail.city.trim() || null,
           state: profileDataWithoutEmail.state.trim() || null,
+          postal_code: profileDataWithoutEmail.postalCode.trim() || null,
+          country: profileDataWithoutEmail.country.trim() || null,
+          formatted_address:
+            profileDataWithoutEmail.formattedAddress.trim() || null,
         };
 
         // Update or insert profile without email
@@ -448,8 +489,12 @@ export function useUserSettings() {
           website: profileData.website.trim() || null,
           license_number: profileData.licenseNumber.trim() || null,
           brokerage: profileData.brokerage.trim() || null,
+          street_address: profileData.streetAddress.trim() || null,
           city: profileData.city.trim() || null,
           state: profileData.state.trim() || null,
+          postal_code: profileData.postalCode.trim() || null,
+          country: profileData.country.trim() || null,
+          formatted_address: profileData.formattedAddress.trim() || null,
         };
 
         // Update or insert profile
@@ -487,12 +532,95 @@ export function useUserSettings() {
         });
       }
     } catch (err: any) {
-      console.error('Error updating profile:', err);
+      logger.error(
+        'USER_SETTINGS',
+        'Error updating profile',
+        err instanceof Error ? err : new Error(String(err)),
+        {
+          userId: logger.maskUserId(user?.id),
+        }
+      );
       setError(err.message);
       toast({
         title: 'Error saving profile',
         description:
           err.message || 'Failed to save your profile. Please try again.',
+        variant: 'destructive',
+      });
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Update address information specifically
+  const updateAddress = async (addressData: {
+    street_address?: string;
+    city?: string;
+    state?: string;
+    postal_code?: string;
+    country?: string;
+    formatted_address?: string;
+  }) => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+
+      const addressUpdates = {
+        street_address: addressData.street_address?.trim() || null,
+        city: addressData.city?.trim() || null,
+        state: addressData.state?.trim() || null,
+        postal_code: addressData.postal_code?.trim() || null,
+        country: addressData.country?.trim() || null,
+        formatted_address: addressData.formatted_address?.trim() || null,
+      };
+
+      const { data: updatedProfile, error: profileError } = await supabase
+        .from('profiles')
+        .upsert(
+          {
+            id: user.id,
+            ...addressUpdates,
+          },
+          {
+            onConflict: 'id',
+          }
+        )
+        .select()
+        .single();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      if (updatedProfile) {
+        setProfile(updatedProfile as UserProfile);
+      }
+
+      toast({
+        title: 'Address updated!',
+        description: 'Your address information has been saved.',
+      });
+
+      return updatedProfile;
+    } catch (err: any) {
+      logger.error(
+        'USER_SETTINGS',
+        'Error updating address',
+        err instanceof Error ? err : new Error(String(err)),
+        {
+          userId: logger.maskUserId(user?.id),
+        }
+      );
+      setError(err.message);
+      toast({
+        title: 'Error saving address',
+        description:
+          err.message || 'Failed to save your address. Please try again.',
         variant: 'destructive',
       });
       throw err;
@@ -515,8 +643,12 @@ export function useUserSettings() {
         licenseNumber: '',
         brokerage: '',
         website: '',
+        streetAddress: '',
         city: '',
         state: '',
+        postalCode: '',
+        country: '',
+        formattedAddress: '',
         assistantName: '',
       };
     }
@@ -531,8 +663,12 @@ export function useUserSettings() {
       licenseNumber: profile?.license_number || '',
       brokerage: profile?.brokerage || '',
       website: profile?.website || '',
+      streetAddress: (profile as any)?.street_address || '',
       city: profile?.city || '',
       state: profile?.state || '',
+      postalCode: (profile as any)?.postal_code || '',
+      country: (profile as any)?.country || 'United States',
+      formattedAddress: (profile as any)?.formatted_address || '',
       assistantName: settings?.assistant_name || 'Ava',
     };
   }, [dataLoaded, profile, settings]);
@@ -597,5 +733,6 @@ export function useUserSettings() {
     updateUserSettings,
     getProfileFormData,
     refetch,
+    updateAddress,
   };
 }

@@ -2,6 +2,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getSiteUrl } from '@/lib/site-url';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -35,7 +36,11 @@ export async function GET() {
       siteUrl,
     });
   } catch (error) {
-    console.error('Error updating site URL:', error);
+    logger.error(
+      'UPDATE_SITE_URL',
+      'Error updating site URL',
+      error instanceof Error ? error : new Error(String(error))
+    );
     return NextResponse.json(
       { error: 'Failed to update site URL' },
       { status: 500 }
