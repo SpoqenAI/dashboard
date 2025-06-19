@@ -5,6 +5,7 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 import { useAuth } from './use-auth';
 import { updateUserEmail } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
+import { logger } from '@/lib/logger';
 
 export interface UserSettings {
   id: string;
@@ -201,7 +202,14 @@ export function useUserSettings() {
           return;
         }
 
-        console.error('Error fetching user data:', err);
+        logger.error(
+          'USER_SETTINGS',
+          'Error fetching user data',
+          err instanceof Error ? err : new Error(String(err)),
+          {
+            userId: logger.maskUserId(user?.id),
+          }
+        );
         setError(err.message);
         setDataLoaded(false);
         toast({
@@ -292,7 +300,15 @@ export function useUserSettings() {
         description: 'Your AI Receptionist settings have been updated.',
       });
     } catch (err: any) {
-      console.error('Error updating settings:', err);
+      logger.error(
+        'USER_SETTINGS',
+        'Error updating AI settings',
+        err instanceof Error ? err : new Error(String(err)),
+        {
+          userId: logger.maskUserId(user?.id),
+          hasProfile: !!profile,
+        }
+      );
       setError(err.message);
       toast({
         title: 'Error saving settings',
@@ -342,7 +358,15 @@ export function useUserSettings() {
         description: 'Your notification preferences have been saved.',
       });
     } catch (err: any) {
-      console.error('Error updating user settings:', err);
+      logger.error(
+        'USER_SETTINGS',
+        'Error updating user settings',
+        err instanceof Error ? err : new Error(String(err)),
+        {
+          userId: logger.maskUserId(user?.id),
+          settingsKeys: Object.keys(settingsData),
+        }
+      );
       setError(err.message);
       toast({
         title: 'Error saving settings',
@@ -508,7 +532,14 @@ export function useUserSettings() {
         });
       }
     } catch (err: any) {
-      console.error('Error updating profile:', err);
+      logger.error(
+        'USER_SETTINGS',
+        'Error updating profile',
+        err instanceof Error ? err : new Error(String(err)),
+        {
+          userId: logger.maskUserId(user?.id),
+        }
+      );
       setError(err.message);
       toast({
         title: 'Error saving profile',
@@ -577,7 +608,14 @@ export function useUserSettings() {
 
       return updatedProfile;
     } catch (err: any) {
-      console.error('Error updating address:', err);
+      logger.error(
+        'USER_SETTINGS',
+        'Error updating address',
+        err instanceof Error ? err : new Error(String(err)),
+        {
+          userId: logger.maskUserId(user?.id),
+        }
+      );
       setError(err.message);
       toast({
         title: 'Error saving address',

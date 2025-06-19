@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Paddle } from '@paddle/paddle-node-sdk';
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
 
 // Function to create admin Supabase client using service role key for RLS bypass
 function createSupabaseAdmin() {
@@ -17,16 +18,16 @@ function createSupabaseAdmin() {
 }
 
 export async function POST(req: NextRequest) {
-  // Minimal request receipt log (headers omitted to reduce noise)
-  console.log('🎣 Webhook received:', {
+  // Log webhook receipt without exposing sensitive headers
+  logger.info('WEBHOOK', 'Paddle webhook received', {
     method: req.method,
-    url: req.url,
     timestamp: new Date().toISOString(),
+    hasSignature: !!req.headers.get('paddle-signature'),
   });
 
   const paddleApiKey = process.env.PADDLE_API_KEY;
   if (!paddleApiKey || paddleApiKey.trim() === '') {
-    console.error('PADDLE_API_KEY environment variable is missing or empty');
+    logger.error('WEBHOOK', 'PADDLE_API_KEY environment variable missing');
     return NextResponse.json(
       {
         error:
@@ -38,8 +39,9 @@ export async function POST(req: NextRequest) {
 
   const webhookSecret = process.env.PADDLE_WEBHOOK_SECRET;
   if (!webhookSecret || webhookSecret.trim() === '') {
-    console.error(
-      'PADDLE_WEBHOOK_SECRET environment variable is missing or empty'
+    logger.error(
+      'WEBHOOK',
+      'PADDLE_WEBHOOK_SECRET environment variable missing'
     );
     return NextResponse.json(
       {
@@ -59,10 +61,10 @@ export async function POST(req: NextRequest) {
   const rawBody = Buffer.from(rawArrayBuffer).toString();
 
   try {
-    console.log(
-      '🔍 Processing webhook (sig prefix):',
-      signature.slice(0, 20) + '...'
-    );
+    logger.debug('WEBHOOK', 'Processing webhook signature verification', {
+      hasSignature: !!signature,
+      bodyLength: rawBody.length,
+    });
 
     let event;
     try {
@@ -72,10 +74,9 @@ export async function POST(req: NextRequest) {
         signature
       );
     } catch (verifyErr: any) {
-      console.error(
-        '❌ Signature verification threw:',
-        verifyErr?.message || verifyErr
-      );
+      logger.error('WEBHOOK', 'Signature verification failed', verifyErr, {
+        errorMessage: verifyErr?.message,
+      });
 
       /*
        * HMAC mismatch diagnostics – keep for future debugging.
@@ -90,12 +91,14 @@ export async function POST(req: NextRequest) {
        *       .createHmac('sha256', webhookSecret)
        *       .update(`${ts}:${rawBody}`)
        *       .digest('hex');
-       *     console.error('🔎 Expected HMAC (first 16):', expected.slice(0, 16));
-       *     console.error('🔎 Received HMAC (first 16):', sigH1.slice(0, 16));
-       *     console.error('🔎 Timestamp diff (s):', Date.now() / 1000 - Number(ts));
+       *     logger.debug('WEBHOOK', 'HMAC diagnostic', {
+       *       expectedPrefix: expected.slice(0, 16),
+       *       receivedPrefix: sigH1.slice(0, 16),
+       *       timestampDiff: Date.now() / 1000 - Number(ts),
+       *     });
        *   }
        * } catch (diagErr) {
-       *   console.error('⚠️ Failed to run diagnostic HMAC comparison:', diagErr);
+       *   logger.error('WEBHOOK', 'Failed to run diagnostic HMAC comparison', diagErr);
        * }
        */
 
@@ -106,14 +109,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (!event) {
-      console.error('❌ Signature verification returned falsy event');
+      logger.error('WEBHOOK', 'Signature verification returned falsy event');
       return NextResponse.json(
         { error: 'Signature verification failed.' },
         { status: 400 }
       );
     }
 
-    console.log('✅ Webhook verified. Event type:', event.eventType);
+    logger.info('WEBHOOK', 'Webhook verified successfully', {
+      eventType: event.eventType,
+    });
 
     // Extract the Supabase user ID from the custom data you passed earlier
     // Try multiple locations where Paddle might store custom data
@@ -123,28 +128,37 @@ export async function POST(req: NextRequest) {
     // Try different locations for user_id
     if (eventData.custom_data?.user_id) {
       userId = eventData.custom_data.user_id;
-      console.log('👤 Found user_id in custom_data:', userId);
+      logger.debug('WEBHOOK', 'Found user_id in custom_data', {
+        userId: logger.maskUserId(userId),
+      });
     } else if (eventData.customData?.user_id) {
       userId = eventData.customData.user_id;
-      console.log('👤 Found user_id in customData:', userId);
+      logger.debug('WEBHOOK', 'Found user_id in customData', {
+        userId: logger.maskUserId(userId),
+      });
     } else if (eventData.checkout?.custom_data?.user_id) {
       userId = eventData.checkout.custom_data.user_id;
-      console.log('👤 Found user_id in checkout.custom_data:', userId);
+      logger.debug('WEBHOOK', 'Found user_id in checkout.custom_data', {
+        userId: logger.maskUserId(userId),
+      });
     } else if (eventData.checkout?.customData?.user_id) {
       userId = eventData.checkout.customData.user_id;
-      console.log('👤 Found user_id in checkout.customData:', userId);
+      logger.debug('WEBHOOK', 'Found user_id in checkout.customData', {
+        userId: logger.maskUserId(userId),
+      });
     } else {
-      // Log all possible locations for debugging
-      console.log('🔍 Searching for user_id in all possible locations:', {
-        'eventData.custom_data': eventData.custom_data,
-        'eventData.customData': eventData.customData,
-        'eventData.checkout': eventData.checkout,
-        'eventData.customer': eventData.customer,
-        'eventData.transaction': eventData.transaction,
+      // Log structure analysis without exposing sensitive data
+      logger.debug('WEBHOOK', 'Searching for user_id in event structure', {
+        hasCustomData: !!eventData.custom_data,
+        hasCustomDataAlt: !!eventData.customData,
+        hasCheckout: !!eventData.checkout,
+        hasCustomer: !!eventData.customer,
+        hasTransaction: !!eventData.transaction,
       });
 
-      console.warn(
-        '⚠️ user_id not found in custom data. Attempting to resolve by customer email...'
+      logger.warn(
+        'WEBHOOK',
+        'user_id not found in custom data, attempting email resolution'
       );
 
       const customerEmail =
@@ -157,21 +171,31 @@ export async function POST(req: NextRequest) {
           .maybeSingle();
 
         if (profileError) {
-          console.error('❌ Error searching profile by email:', profileError);
+          logger.error(
+            'WEBHOOK',
+            'Error searching profile by email',
+            profileError,
+            {
+              email: logger.maskEmail(customerEmail),
+            }
+          );
         }
 
         if (profile?.id) {
           userId = profile.id;
-          console.log('✅ Resolved user_id from email:', userId);
+          logger.info('WEBHOOK', 'Resolved user_id from email', {
+            userId: logger.maskUserId(userId),
+            email: logger.maskEmail(customerEmail),
+          });
         }
       }
 
       if (!userId) {
         const errorMessage = `Critical: Webhook event ${event.eventType} received without a user_id and could not resolve by email.`;
-        console.error(errorMessage, {
+        logger.error('WEBHOOK', errorMessage, undefined, {
           eventType: event.eventType,
           eventId: eventData.id,
-          customerEmail: eventData.customer?.email,
+          hasCustomerEmail: !!eventData.customer?.email,
           timestamp: new Date().toISOString(),
         });
 
@@ -277,8 +301,9 @@ export async function POST(req: NextRequest) {
           .eq('id', userId);
         if (profError) throw profError;
 
-        console.log(
-          `✅ Processed subscription ${eventData.id} for user ${userId}.`,
+        logger.info(
+          'WEBHOOK',
+          `Processed subscription ${eventData.id} for user ${userId}.`,
           {
             subscriptionId: eventData.id,
             userId: userId,
@@ -303,21 +328,27 @@ export async function POST(req: NextRequest) {
           })
           .eq('id', cancelEventData.id);
         if (cancelError) throw cancelError;
-        console.log(
+        logger.info(
+          'WEBHOOK',
           `Canceled subscription ${cancelEventData.id} for user ${userId}.`
         );
         break;
       }
 
       default: {
-        console.log(`Unhandled webhook event type: ${event.eventType}`);
+        logger.info(
+          `WEBHOOK`,
+          `Unhandled webhook event type: ${event.eventType}`
+        );
         break;
       }
     }
 
     return NextResponse.json({ received: true });
   } catch (err: any) {
-    console.error('Error processing webhook:', err.message);
+    logger.error('WEBHOOK', 'Error processing webhook', err, {
+      errorMessage: err.message,
+    });
     return NextResponse.json(
       { error: 'Webhook handler failed.' },
       { status: 500 }

@@ -67,10 +67,13 @@ class AutocompleteErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error(
-      'AddressAutocomplete Error Boundary caught an error:',
+    logger.error(
+      'ADDRESS_AUTOCOMPLETE',
+      'Error Boundary caught an error',
       error,
-      errorInfo
+      {
+        componentStack: errorInfo?.componentStack,
+      }
     );
 
     let errorMessage = `Geocoding service error: ${error.message}`;
@@ -136,7 +139,8 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
 
   useEffect(() => {
     if (!apiKey) {
-      console.warn(
+      logger.warn(
+        'ADDRESS_AUTOCOMPLETE',
         'NEXT_PUBLIC_GEOAPIFY_API_KEY is not set in environment variables'
       );
     }
@@ -147,7 +151,11 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   };
 
   const handleError = (errorMessage: string) => {
-    console.error('AddressAutocomplete error:', errorMessage);
+    logger.error(
+      'ADDRESS_AUTOCOMPLETE',
+      'Address autocomplete error',
+      new Error(errorMessage)
+    );
     setError(errorMessage);
     setIsLoading(false);
 
