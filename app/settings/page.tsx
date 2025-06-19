@@ -52,6 +52,7 @@ import {
   formatSubscriptionDate,
 } from '@/lib/paddle';
 import PasswordStrengthBar from 'react-password-strength-bar';
+import { logger } from '@/lib/logger';
 
 // Initialize content filter outside component to prevent recreation on every render
 const contentFilter = new Filter();
@@ -833,13 +834,15 @@ function SettingsContent() {
       country: '',
     }));
 
-    console.log('Address selected, storing complete address data:', {
-      street_address: addressData.street_address,
-      formatted_address: addressData.formatted_address,
-      city: addressData.city,
-      state: addressData.state,
-      postal_code: addressData.postal_code,
-      country: addressData.country,
+    // Log address selection event with privacy protection
+    logger.debug('SETTINGS', 'Address selected and form populated', {
+      hasStreetAddress: !!addressData.street_address,
+      hasFormattedAddress: !!addressData.formatted_address,
+      hasCity: !!addressData.city,
+      hasState: !!addressData.state,
+      hasPostalCode: !!addressData.postal_code,
+      hasCountry: !!addressData.country,
+      addressType: addressData.address_type,
     });
   };
 
