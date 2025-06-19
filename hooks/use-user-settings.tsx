@@ -423,7 +423,8 @@ export function useUserSettings() {
           state: profileDataWithoutEmail.state.trim() || null,
           postal_code: profileDataWithoutEmail.postalCode.trim() || null,
           country: profileDataWithoutEmail.country.trim() || null,
-          formatted_address: profileDataWithoutEmail.formattedAddress.trim() || null,
+          formatted_address:
+            profileDataWithoutEmail.formattedAddress.trim() || null,
         };
 
         // Update or insert profile without email
@@ -614,24 +615,24 @@ export function useUserSettings() {
       };
     }
 
-          return {
-        firstName: profile?.first_name || '',
-        lastName: profile?.last_name || '',
-        email: profile?.email || '',
-        phone: profile?.phone || '',
-        businessName: profile?.business_name || '',
-        bio: profile?.bio || '',
-        licenseNumber: profile?.license_number || '',
-        brokerage: profile?.brokerage || '',
-        website: profile?.website || '',
-        streetAddress: (profile as any)?.street_address || '',
-        city: profile?.city || '',
-        state: profile?.state || '',
-        postalCode: (profile as any)?.postal_code || '',
-        country: (profile as any)?.country || 'United States',
-        formattedAddress: (profile as any)?.formatted_address || '',
-        assistantName: settings?.assistant_name || 'Ava',
-      };
+    return {
+      firstName: profile?.first_name || '',
+      lastName: profile?.last_name || '',
+      email: profile?.email || '',
+      phone: profile?.phone || '',
+      businessName: profile?.business_name || '',
+      bio: profile?.bio || '',
+      licenseNumber: profile?.license_number || '',
+      brokerage: profile?.brokerage || '',
+      website: profile?.website || '',
+      streetAddress: (profile as any)?.street_address || '',
+      city: profile?.city || '',
+      state: profile?.state || '',
+      postalCode: (profile as any)?.postal_code || '',
+      country: (profile as any)?.country || 'United States',
+      formattedAddress: (profile as any)?.formatted_address || '',
+      assistantName: settings?.assistant_name || 'Ava',
+    };
   }, [dataLoaded, profile, settings]);
 
   // Get current AI Receptionist settings

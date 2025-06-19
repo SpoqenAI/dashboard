@@ -10,13 +10,13 @@ interface AddressData {
   state?: string;
   postal_code?: string;
   country?: string;
-  
+
   // Formatted address string
   formatted_address?: string;
-  
+
   // Additional metadata
   address_type?: 'business' | 'home' | 'other';
-  
+
   // Raw Geoapify data for reference
   geoapify_data?: any;
   geoapify_place_id?: string;
@@ -200,11 +200,12 @@ const AddressAutocompleteServerSide: React.FC<AddressAutocompleteProps> = ({
 
   const extractAddressData = (feature: GeoapifyFeature): AddressData => {
     const props = feature.properties;
-    
+
     return {
-      street_address: props.housenumber && props.street 
-        ? `${props.housenumber} ${props.street}` 
-        : props.street || props.name || '',
+      street_address:
+        props.housenumber && props.street
+          ? `${props.housenumber} ${props.street}`
+          : props.street || props.name || '',
       city: props.city || props.town || props.village || '',
       state: props.state || props.region || props.county || '',
       postal_code: props.postcode || '',

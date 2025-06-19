@@ -288,7 +288,8 @@ function SettingsContent() {
         licenseNumber: profileData.licenseNumber,
         brokerage: profileData.brokerage,
         website: profileData.website,
-        businessAddress: profileData.formattedAddress || profileData.streetAddress || '',
+        businessAddress:
+          profileData.formattedAddress || profileData.streetAddress || '',
         streetAddress: profileData.streetAddress || '',
         city: profileData.city,
         state: profileData.state,
