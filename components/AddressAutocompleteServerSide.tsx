@@ -4,10 +4,22 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { logger } from '@/lib/logger';
 
 interface AddressData {
+  // Basic address components
+  street_address?: string;
   city?: string;
   state?: string;
-  postcode?: string;
+  postal_code?: string;
   country?: string;
+  
+  // Formatted address string
+  formatted_address?: string;
+  
+  // Additional metadata
+  address_type?: 'business' | 'home' | 'other';
+  
+  // Raw Geoapify data for reference
+  geoapify_data?: any;
+  geoapify_place_id?: string;
 }
 
 interface AddressAutocompleteProps {
@@ -30,6 +42,13 @@ interface GeoapifyFeature {
     postcode?: string;
     country?: string;
     formatted?: string;
+    housenumber?: string;
+    street?: string;
+    name?: string;
+    place_id?: string;
+    lat?: number;
+    lon?: number;
+    [key: string]: any; // Allow additional properties from Geoapify
   };
   geometry: {
     coordinates: [number, number];
@@ -181,11 +200,19 @@ const AddressAutocompleteServerSide: React.FC<AddressAutocompleteProps> = ({
 
   const extractAddressData = (feature: GeoapifyFeature): AddressData => {
     const props = feature.properties;
+    
     return {
+      street_address: props.housenumber && props.street 
+        ? `${props.housenumber} ${props.street}` 
+        : props.street || props.name || '',
       city: props.city || props.town || props.village || '',
       state: props.state || props.region || props.county || '',
-      postcode: props.postcode || '',
+      postal_code: props.postcode || '',
       country: props.country || '',
+      formatted_address: props.formatted || '',
+      address_type: 'business', // Default to business for user profiles
+      geoapify_data: props,
+      geoapify_place_id: props.place_id,
     };
   };
 
@@ -217,10 +244,12 @@ const AddressAutocompleteServerSide: React.FC<AddressAutocompleteProps> = ({
       }
 
       logger.debug('AddressAutocomplete', 'Address selected successfully', {
+        hasStreetAddress: !!addressData.street_address,
         hasCity: !!addressData.city,
         hasState: !!addressData.state,
-        hasPostcode: !!addressData.postcode,
+        hasPostcode: !!addressData.postal_code,
         hasCountry: !!addressData.country,
+        hasFormattedAddress: !!addressData.formatted_address,
       });
     } catch (err) {
       handleError('Error processing selected address');

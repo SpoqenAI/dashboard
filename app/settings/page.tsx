@@ -126,6 +126,7 @@ function SettingsContent() {
     brokerage: '',
     website: '',
     businessAddress: '',
+    streetAddress: '',
     city: '',
     state: '',
     zipcode: '',
@@ -154,6 +155,7 @@ function SettingsContent() {
     brokerage: '',
     website: '',
     businessAddress: '',
+    streetAddress: '',
     city: '',
     state: '',
     zipcode: '',
@@ -286,11 +288,12 @@ function SettingsContent() {
         licenseNumber: profileData.licenseNumber,
         brokerage: profileData.brokerage,
         website: profileData.website,
-        businessAddress: '', // Not stored in profile table
+        businessAddress: profileData.formattedAddress || profileData.streetAddress || '',
+        streetAddress: profileData.streetAddress || '',
         city: profileData.city,
         state: profileData.state,
-        zipcode: '', // Not stored in profile table
-        country: 'United States',
+        zipcode: profileData.postalCode || '',
+        country: profileData.country || 'United States',
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
@@ -798,28 +801,45 @@ function SettingsContent() {
   };
 
   const handleAddressSelect = (addressData: {
+    street_address?: string;
     city?: string;
     state?: string;
-    postcode?: string;
+    postal_code?: string;
     country?: string;
+    formatted_address?: string;
+    address_type?: 'business' | 'home' | 'other';
+    geoapify_data?: any;
+    geoapify_place_id?: string;
   }) => {
     // Auto-fill the form fields when an address is selected
     setFormData(prev => ({
       ...prev,
+      businessAddress: addressData.formatted_address || prev.businessAddress,
+      streetAddress: addressData.street_address || prev.streetAddress,
       city: addressData.city || prev.city,
       state: addressData.state || prev.state,
-      zipcode: addressData.postcode || prev.zipcode,
+      zipcode: addressData.postal_code || prev.zipcode,
       country: addressData.country || prev.country,
     }));
 
     // Clear any existing validation errors for these fields
     setValidationErrors(prev => ({
       ...prev,
+      businessAddress: '',
       city: '',
       state: '',
       zipcode: '',
       country: '',
     }));
+
+    console.log('Address selected, storing complete address data:', {
+      street_address: addressData.street_address,
+      formatted_address: addressData.formatted_address,
+      city: addressData.city,
+      state: addressData.state,
+      postal_code: addressData.postal_code,
+      country: addressData.country,
+    });
   };
 
   const handleAddressInputChange = (value: string) => {
@@ -870,8 +890,12 @@ function SettingsContent() {
           licenseNumber: formData.licenseNumber,
           brokerage: formData.brokerage,
           website: formData.website,
+          streetAddress: formData.streetAddress || formData.businessAddress, // Use streetAddress if available, otherwise businessAddress
           city: formData.city,
           state: formData.state,
+          postalCode: formData.zipcode, // Map zipcode to postalCode
+          country: formData.country,
+          formattedAddress: formData.businessAddress, // Use businessAddress as formatted address for now
         })
       );
 

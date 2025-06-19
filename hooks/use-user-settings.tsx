@@ -33,8 +33,12 @@ export interface UserProfile {
   website: string | null;
   license_number: string | null;
   brokerage: string | null;
+  street_address: string | null;
   city: string | null;
   state: string | null;
+  postal_code: string | null;
+  country: string | null;
+  formatted_address: string | null;
   avatar_url: string | null;
 }
 
@@ -55,8 +59,12 @@ export interface ProfileFormData {
   licenseNumber: string;
   brokerage: string;
   website: string;
+  streetAddress: string;
   city: string;
   state: string;
+  postalCode: string;
+  country: string;
+  formattedAddress: string;
   assistantName: string;
 }
 
@@ -70,8 +78,12 @@ export interface ProfileUpdateData {
   licenseNumber: string;
   brokerage: string;
   website: string;
+  streetAddress: string;
   city: string;
   state: string;
+  postalCode: string;
+  country: string;
+  formattedAddress: string;
 }
 
 export function useUserSettings() {
@@ -115,7 +127,7 @@ export function useUserSettings() {
           supabase
             .from('profiles')
             .select(
-              'id, first_name, last_name, full_name, business_name, email, phone, bio, website, license_number, brokerage, city, state, avatar_url'
+              'id, first_name, last_name, full_name, business_name, email, phone, bio, website, license_number, brokerage, street_address, city, state, postal_code, country, formatted_address, avatar_url'
             )
             .eq('id', user.id)
             .single(),
@@ -406,8 +418,12 @@ export function useUserSettings() {
           website: profileDataWithoutEmail.website.trim() || null,
           license_number: profileDataWithoutEmail.licenseNumber.trim() || null,
           brokerage: profileDataWithoutEmail.brokerage.trim() || null,
+          street_address: profileDataWithoutEmail.streetAddress.trim() || null,
           city: profileDataWithoutEmail.city.trim() || null,
           state: profileDataWithoutEmail.state.trim() || null,
+          postal_code: profileDataWithoutEmail.postalCode.trim() || null,
+          country: profileDataWithoutEmail.country.trim() || null,
+          formatted_address: profileDataWithoutEmail.formattedAddress.trim() || null,
         };
 
         // Update or insert profile without email
@@ -448,8 +464,12 @@ export function useUserSettings() {
           website: profileData.website.trim() || null,
           license_number: profileData.licenseNumber.trim() || null,
           brokerage: profileData.brokerage.trim() || null,
+          street_address: profileData.streetAddress.trim() || null,
           city: profileData.city.trim() || null,
           state: profileData.state.trim() || null,
+          postal_code: profileData.postalCode.trim() || null,
+          country: profileData.country.trim() || null,
+          formatted_address: profileData.formattedAddress.trim() || null,
         };
 
         // Update or insert profile
@@ -501,6 +521,75 @@ export function useUserSettings() {
     }
   };
 
+  // Update address information specifically
+  const updateAddress = async (addressData: {
+    street_address?: string;
+    city?: string;
+    state?: string;
+    postal_code?: string;
+    country?: string;
+    formatted_address?: string;
+  }) => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+
+      const addressUpdates = {
+        street_address: addressData.street_address?.trim() || null,
+        city: addressData.city?.trim() || null,
+        state: addressData.state?.trim() || null,
+        postal_code: addressData.postal_code?.trim() || null,
+        country: addressData.country?.trim() || null,
+        formatted_address: addressData.formatted_address?.trim() || null,
+      };
+
+      const { data: updatedProfile, error: profileError } = await supabase
+        .from('profiles')
+        .upsert(
+          {
+            id: user.id,
+            ...addressUpdates,
+          },
+          {
+            onConflict: 'id',
+          }
+        )
+        .select()
+        .single();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      if (updatedProfile) {
+        setProfile(updatedProfile as UserProfile);
+      }
+
+      toast({
+        title: 'Address updated!',
+        description: 'Your address information has been saved.',
+      });
+
+      return updatedProfile;
+    } catch (err: any) {
+      console.error('Error updating address:', err);
+      setError(err.message);
+      toast({
+        title: 'Error saving address',
+        description:
+          err.message || 'Failed to save your address. Please try again.',
+        variant: 'destructive',
+      });
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Get current profile data for form
   const getProfileFormData = useCallback((): ProfileFormData => {
     // Only return data if profile has been loaded
@@ -515,26 +604,34 @@ export function useUserSettings() {
         licenseNumber: '',
         brokerage: '',
         website: '',
+        streetAddress: '',
         city: '',
         state: '',
+        postalCode: '',
+        country: '',
+        formattedAddress: '',
         assistantName: '',
       };
     }
 
-    return {
-      firstName: profile?.first_name || '',
-      lastName: profile?.last_name || '',
-      email: profile?.email || '',
-      phone: profile?.phone || '',
-      businessName: profile?.business_name || '',
-      bio: profile?.bio || '',
-      licenseNumber: profile?.license_number || '',
-      brokerage: profile?.brokerage || '',
-      website: profile?.website || '',
-      city: profile?.city || '',
-      state: profile?.state || '',
-      assistantName: settings?.assistant_name || 'Ava',
-    };
+          return {
+        firstName: profile?.first_name || '',
+        lastName: profile?.last_name || '',
+        email: profile?.email || '',
+        phone: profile?.phone || '',
+        businessName: profile?.business_name || '',
+        bio: profile?.bio || '',
+        licenseNumber: profile?.license_number || '',
+        brokerage: profile?.brokerage || '',
+        website: profile?.website || '',
+        streetAddress: (profile as any)?.street_address || '',
+        city: profile?.city || '',
+        state: profile?.state || '',
+        postalCode: (profile as any)?.postal_code || '',
+        country: (profile as any)?.country || 'United States',
+        formattedAddress: (profile as any)?.formatted_address || '',
+        assistantName: settings?.assistant_name || 'Ava',
+      };
   }, [dataLoaded, profile, settings]);
 
   // Get current AI Receptionist settings
@@ -597,5 +694,6 @@ export function useUserSettings() {
     updateUserSettings,
     getProfileFormData,
     refetch,
+    updateAddress,
   };
 }
