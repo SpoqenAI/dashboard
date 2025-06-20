@@ -1,5 +1,8 @@
 // Run with: npx tsx __tests__/vapi-assistant.test.ts
-import { updateAssistant, UpdateAssistantError } from '../src/lib/vapi/assistant';
+import {
+  updateAssistant,
+  UpdateAssistantError,
+} from '../src/lib/vapi/assistant';
 
 class TestRunner {
   private tests: Array<{ name: string; fn: () => Promise<void> | void }> = [];
@@ -108,7 +111,9 @@ runner.describe('updateAssistant', () => {
 
     runner.expect(caught).toBeInstanceOf(UpdateAssistantError);
     runner.expect((caught as UpdateAssistantError).status).toBe(400);
-    runner.expect((caught as UpdateAssistantError).body).toEqual({ error: 'bad' });
+    runner
+      .expect((caught as UpdateAssistantError).body)
+      .toEqual({ error: 'bad' });
 
     global.fetch = originalFetch;
   });
