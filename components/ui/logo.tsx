@@ -21,8 +21,8 @@ export function Logo({ className = '', width = 200, height = 60 }: LogoProps) {
   if (imageError) {
     return (
       <div
-        className={`bg-spoqen-gradient bg-clip-text text-2xl font-bold text-transparent ${className}`}
-        style={{ width, height: height * 0.6 }}
+        className={`flex items-center justify-start bg-spoqen-gradient bg-clip-text text-2xl font-bold text-transparent ${className}`}
+        style={{ width, height }}
       >
         Spoqen
       </div>
