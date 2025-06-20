@@ -29,6 +29,7 @@ import { DashboardHeader } from '@/components/dashboard-header';
 import { RecentCallsList } from '@/components/recent-calls-list';
 import { StatsCards } from '@/components/stats-cards';
 import { toast } from '@/components/ui/use-toast';
+import CallForwardingInstructions from '@/components/dashboard/CallForwardingInstructions';
 import { logger } from '@/lib/logger';
 import {
   AlertDialog,
@@ -233,6 +234,7 @@ export default function DashboardPage() {
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="calls">Calls</TabsTrigger>
+              <TabsTrigger value="phone">Phone Setup</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="space-y-4">
               <StatsCards />
@@ -603,6 +605,19 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="phone" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Phone Number & Call Forwarding</CardTitle>
+                  <CardDescription>
+                    Set up your dedicated phone number and configure call forwarding to your AI assistant.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <CallForwardingInstructions />
                 </CardContent>
               </Card>
             </TabsContent>

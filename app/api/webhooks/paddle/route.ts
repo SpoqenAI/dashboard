@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Paddle } from '@paddle/paddle-node-sdk';
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '@/lib/logger';
+import { provisionAssistant } from '@/lib/actions/assistant.actions';
 
 // Function to create admin Supabase client using service role key for RLS bypass
 function createSupabaseAdmin() {
@@ -288,10 +289,35 @@ export async function POST(req: NextRequest) {
         if (periodStart) subData.current_period_start_at = periodStart;
         if (periodEnd) subData.current_period_end_at = periodEnd;
 
-        // Upsert subscription details into your database
-        const { error: subError } = await supabase
+        // Check if user already has a subscription to avoid constraint violations
+        const { data: existingSubscription } = await supabase
           .from('subscriptions')
-          .upsert(subData, { onConflict: 'id' });
+          .select('id, user_id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        let subError = null;
+        if (existingSubscription) {
+          // User already has a subscription, update it with new Paddle subscription data
+          const { error } = await supabase
+            .from('subscriptions')
+            .update(subData)
+            .eq('user_id', userId);
+          subError = error;
+          
+          logger.info('WEBHOOK', 'Updated existing subscription for user', {
+            userId: logger.maskUserId(userId),
+            existingSubscriptionId: existingSubscription.id,
+            newSubscriptionId: eventData.id,
+          });
+        } else {
+          // No existing subscription, insert new one
+          const { error } = await supabase
+            .from('subscriptions')
+            .insert(subData);
+          subError = error;
+        }
+        
         if (subError) throw subError;
 
         // Also update the user's profile with their Paddle Customer ID
@@ -314,6 +340,47 @@ export async function POST(req: NextRequest) {
             currentPeriodEnd: periodEnd,
           }
         );
+
+        // Trigger assistant provisioning for active subscriptions
+        if (eventData.status === 'active') {
+          try {
+            // Check if user already has an active assistant to avoid duplicate provisioning
+            const { data: existingAssistant } = await supabase
+              .from('assistants')
+              .select('id, status')
+              .eq('user_id', userId)
+              .eq('status', 'active')
+              .maybeSingle();
+
+            if (existingAssistant) {
+              logger.info('WEBHOOK', 'User already has active assistant, skipping provisioning', {
+                userId: logger.maskUserId(userId),
+                assistantId: existingAssistant.id,
+                subscriptionId: eventData.id,
+              });
+            } else {
+              logger.info('WEBHOOK', 'Triggering assistant provisioning workflow', {
+                userId: logger.maskUserId(userId),
+                subscriptionId: eventData.id,
+              });
+              await provisionAssistant(userId);
+            }
+          } catch (provisioningError) {
+            // CRITICAL: Catch the error but do not re-throw it.
+            // This ensures Paddle receives a 200 OK and doesn't retry the webhook.
+            // The error is already logged and handled within provisionAssistant.
+            logger.error(
+              'WEBHOOK',
+              `Provisioning workflow failed for user ${logger.maskUserId(userId)}, but acknowledging webhook receipt`,
+              provisioningError instanceof Error ? provisioningError : new Error(String(provisioningError)),
+              {
+                userId: logger.maskUserId(userId),
+                subscriptionId: eventData.id,
+              }
+            );
+          }
+        }
+
         break;
       }
 
