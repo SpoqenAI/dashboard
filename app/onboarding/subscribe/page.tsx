@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import type { User } from '@supabase/supabase-js';
 import {
   Card,
   CardDescription,
@@ -13,14 +14,24 @@ import { SubscriptionForm } from '@/components/subscription-form';
 import { PaymentProcessing } from '@/components/payment-processing';
 import { createClient } from '@/lib/supabase/client';
 
+// Define specific interfaces for the profile data structure
+interface UserProfile {
+  business_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+}
+
+interface UserData {
+  user: User;
+  profile: UserProfile | null;
+  userEmail: string;
+}
+
 function SubscribePageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [showProcessing, setShowProcessing] = useState(false);
-  const [userData, setUserData] = useState<{
-    user: any;
-    profile: any;
-    userEmail: string;
-  } | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
     // Check if we're returning from a successful payment
@@ -31,6 +42,8 @@ function SubscribePageContent() {
   }, [searchParams]);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function getUserData() {
       const supabase = createClient();
       
@@ -39,8 +52,10 @@ function SubscribePageContent() {
         error: authError,
       } = await supabase.auth.getUser();
 
+      if (!isMounted) return; // Early return if component unmounted
+
       if (authError || !user) {
-        window.location.href = '/login';
+        router.push('/login');
         return;
       }
 
@@ -51,15 +66,23 @@ function SubscribePageContent() {
         .eq('id', user.id)
         .single();
 
-      setUserData({
-        user,
-        profile,
-        userEmail: user.email || '',
-      });
+      // Only update state if component is still mounted
+      if (isMounted) {
+        setUserData({
+          user,
+          profile,
+          userEmail: user.email || '',
+        });
+      }
     }
 
     getUserData();
-  }, []);
+
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
 
   // Show payment processing state if returning from successful payment
   if (showProcessing) {
