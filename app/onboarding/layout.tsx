@@ -21,4 +21,4 @@ export default function OnboardingLayout({ children }: OnboardingLayoutProps) {
       </main>
     </div>
   );
-} 
+}

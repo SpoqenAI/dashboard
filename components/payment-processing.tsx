@@ -8,8 +8,12 @@ import { logger } from '@/lib/logger';
 
 export function PaymentProcessing() {
   const router = useRouter();
-  const [stage, setStage] = useState<'icon' | 'text' | 'processing' | 'complete'>('icon');
-  const [statusMessage, setStatusMessage] = useState('Setting up your Spoqen account...');
+  const [stage, setStage] = useState<
+    'icon' | 'text' | 'processing' | 'complete'
+  >('icon');
+  const [statusMessage, setStatusMessage] = useState(
+    'Setting up your Spoqen account...'
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -19,14 +23,18 @@ export function PaymentProcessing() {
     async function handlePaymentSuccess() {
       // Initial animation sequence
       timeoutIds.push(setTimeout(() => mounted && setStage('text'), 500));
-      timeoutIds.push(setTimeout(() => mounted && setStage('processing'), 1500));
+      timeoutIds.push(
+        setTimeout(() => mounted && setStage('processing'), 1500)
+      );
 
       // Start polling for subscription after initial animations
-      timeoutIds.push(setTimeout(() => {
-        if (mounted) {
-          pollForSubscription();
-        }
-      }, 2000));
+      timeoutIds.push(
+        setTimeout(() => {
+          if (mounted) {
+            pollForSubscription();
+          }
+        }, 2000)
+      );
     }
 
     async function pollForSubscription() {
@@ -60,13 +68,15 @@ export function PaymentProcessing() {
             // Success! Subscription found
             setStage('complete');
             setStatusMessage('Account setup complete! Welcome to Spoqen!');
-            
+
             // Small delay to show success message, then redirect to dashboard
-            timeoutIds.push(setTimeout(() => {
-              if (mounted) {
-                router.push('/dashboard?welcome=true');
-              }
-            }, 1500));
+            timeoutIds.push(
+              setTimeout(() => {
+                if (mounted) {
+                  router.push('/dashboard?welcome=true');
+                }
+              }, 1500)
+            );
             return;
           }
 
@@ -74,12 +84,16 @@ export function PaymentProcessing() {
           attempts++;
           if (attempts >= maxAttempts) {
             // Timeout - redirect with helpful message
-            setStatusMessage('Setup is taking longer than expected. Redirecting...');
-            timeoutIds.push(setTimeout(() => {
-              if (mounted) {
-                router.push('/dashboard?setup=pending');
-              }
-            }, 2000));
+            setStatusMessage(
+              'Setup is taking longer than expected. Redirecting...'
+            );
+            timeoutIds.push(
+              setTimeout(() => {
+                if (mounted) {
+                  router.push('/dashboard?setup=pending');
+                }
+              }, 2000)
+            );
             return;
           }
 
@@ -92,7 +106,6 @@ export function PaymentProcessing() {
 
           // Poll again in 1 second
           timeoutIds.push(setTimeout(checkSubscription, 1000));
-
         } catch (error) {
           logger.error(
             'PAYMENT_PROCESSING',
@@ -101,7 +114,7 @@ export function PaymentProcessing() {
             { attempts, maxAttempts }
           );
           setStatusMessage('Connection issue. Please check your internet...');
-          
+
           // Retry after a longer delay
           timeoutIds.push(setTimeout(checkSubscription, 3000));
         }
@@ -120,28 +133,37 @@ export function PaymentProcessing() {
   }, [router]);
 
   return (
-    <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
-      <div className="text-center space-y-8 max-w-md mx-auto px-6">
-        
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white">
+      <div className="mx-auto max-w-md space-y-8 px-6 text-center">
         {/* Spoqen Logo */}
-        <div className="flex items-center justify-center gap-3 text-2xl font-bold text-primary mb-12">
+        <div className="mb-12 flex items-center justify-center gap-3 text-2xl font-bold text-primary">
           <PhoneCall className="h-8 w-8" />
           <span>Spoqen</span>
         </div>
 
         {/* Success Icon with Animation */}
-        <div className={`transition-all duration-500 ${stage === 'icon' ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}>
-          <CheckCircle className={`h-20 w-20 mx-auto mb-6 transition-colors duration-500 ${
-            stage === 'complete' ? 'text-green-500' : 'text-green-400'
-          }`} />
+        <div
+          className={`transition-all duration-500 ${stage === 'icon' ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
+        >
+          <CheckCircle
+            className={`mx-auto mb-6 h-20 w-20 transition-colors duration-500 ${
+              stage === 'complete' ? 'text-green-500' : 'text-green-400'
+            }`}
+          />
         </div>
 
         {/* Text Content */}
-        <div className={`space-y-4 transition-all duration-500 delay-300 ${stage === 'text' || stage === 'processing' || stage === 'complete' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <h1 className={`text-3xl font-bold transition-colors duration-500 ${
-            stage === 'complete' ? 'text-green-600' : 'text-gray-900'
-          }`}>
-            {stage === 'complete' ? 'Welcome to Spoqen!' : 'Payment Successful!'}
+        <div
+          className={`space-y-4 transition-all delay-300 duration-500 ${stage === 'text' || stage === 'processing' || stage === 'complete' ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
+        >
+          <h1
+            className={`text-3xl font-bold transition-colors duration-500 ${
+              stage === 'complete' ? 'text-green-600' : 'text-gray-900'
+            }`}
+          >
+            {stage === 'complete'
+              ? 'Welcome to Spoqen!'
+              : 'Payment Successful!'}
           </h1>
           <p className="text-lg text-gray-600 transition-all duration-500">
             {statusMessage}
@@ -154,7 +176,9 @@ export function PaymentProcessing() {
         </div>
 
         {/* Loading Animation */}
-        <div className={`transition-all duration-500 delay-500 ${stage === 'processing' ? 'opacity-100' : 'opacity-0'}`}>
+        <div
+          className={`transition-all delay-500 duration-500 ${stage === 'processing' ? 'opacity-100' : 'opacity-0'}`}
+        >
           <div className="flex items-center justify-center gap-2 text-primary">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span className="text-sm font-medium">Processing...</span>
@@ -173,4 +197,4 @@ export function PaymentProcessing() {
       </div>
     </div>
   );
-} 
+}

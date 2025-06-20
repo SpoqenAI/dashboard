@@ -4,10 +4,7 @@ import { useActionState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  CardContent,
-  CardFooter,
-} from '@/components/ui/card';
+import { CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -67,9 +64,13 @@ export function AssistantSetupForm({ initialData }: AssistantSetupFormProps) {
             required
             disabled={isPending}
           />
-          {state.errors && 'assistantName' in state.errors && state.errors.assistantName && (
-            <p className="text-sm text-red-600">{state.errors.assistantName[0]}</p>
-          )}
+          {state.errors &&
+            'assistantName' in state.errors &&
+            state.errors.assistantName && (
+              <p className="text-sm text-red-600">
+                {state.errors.assistantName[0]}
+              </p>
+            )}
           <p className="text-xs text-muted-foreground">
             Choose a friendly, professional name your callers will recognize.
           </p>
@@ -85,9 +86,13 @@ export function AssistantSetupForm({ initialData }: AssistantSetupFormProps) {
             required
             disabled={isPending}
           />
-          {state.errors && 'businessName' in state.errors && state.errors.businessName && (
-            <p className="text-sm text-red-600">{state.errors.businessName[0]}</p>
-          )}
+          {state.errors &&
+            'businessName' in state.errors &&
+            state.errors.businessName && (
+              <p className="text-sm text-red-600">
+                {state.errors.businessName[0]}
+              </p>
+            )}
           <p className="text-xs text-muted-foreground">
             This will be used in your assistant's greeting.
           </p>
@@ -104,24 +109,33 @@ export function AssistantSetupForm({ initialData }: AssistantSetupFormProps) {
             required
             disabled={isPending}
           />
-          {state.errors && 'greeting' in state.errors && state.errors.greeting && (
-            <p className="text-sm text-red-600">{state.errors.greeting[0]}</p>
-          )}
+          {state.errors &&
+            'greeting' in state.errors &&
+            state.errors.greeting && (
+              <p className="text-sm text-red-600">{state.errors.greeting[0]}</p>
+            )}
           <p className="text-xs text-muted-foreground">
-            Use [Business Name] and [Assistant Name] as placeholders - they'll be automatically replaced.
+            Use [Business Name] and [Assistant Name] as placeholders - they'll
+            be automatically replaced.
           </p>
         </div>
 
         <div className="rounded-md bg-blue-50 p-4">
-          <h4 className="font-medium text-blue-900 mb-2">Preview</h4>
+          <h4 className="mb-2 font-medium text-blue-900">Preview</h4>
           <p className="text-sm text-blue-800">
             {initialData.greeting
-              .replace(/\[Business Name\]/g, initialData.businessName || '[Business Name]')
-              .replace(/\[Assistant Name\]/g, initialData.assistantName || '[Assistant Name]')}
+              .replace(
+                /\[Business Name\]/g,
+                initialData.businessName || '[Business Name]'
+              )
+              .replace(
+                /\[Assistant Name\]/g,
+                initialData.assistantName || '[Assistant Name]'
+              )}
           </p>
         </div>
       </CardContent>
-      
+
       <CardFooter className="flex justify-between">
         <Button variant="outline" asChild disabled={isPending}>
           <Link href="/onboarding/profile">
@@ -129,10 +143,10 @@ export function AssistantSetupForm({ initialData }: AssistantSetupFormProps) {
           </Link>
         </Button>
         <Button type="submit" disabled={isPending}>
-          {isPending ? 'Saving...' : 'Continue'} 
+          {isPending ? 'Saving...' : 'Continue'}
           {!isPending && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
       </CardFooter>
     </form>
   );
-} 
+}

@@ -12,7 +12,7 @@ import { logger } from '@/lib/logger';
 
 async function getUserData() {
   const supabase = await createClient();
-  
+
   const {
     data: { user },
     error: authError,
@@ -33,7 +33,9 @@ async function getUserData() {
     logger.error(
       'ONBOARDING_ASSISTANT',
       'Error fetching profile data',
-      profileError instanceof Error ? profileError : new Error(String(profileError)),
+      profileError instanceof Error
+        ? profileError
+        : new Error(String(profileError)),
       { userId: logger.maskUserId(user.id) }
     );
   }
@@ -49,7 +51,9 @@ async function getUserData() {
     logger.error(
       'ONBOARDING_ASSISTANT',
       'Error fetching assistant data',
-      assistantError instanceof Error ? assistantError : new Error(String(assistantError)),
+      assistantError instanceof Error
+        ? assistantError
+        : new Error(String(assistantError)),
       { userId: logger.maskUserId(user.id) }
     );
   }
@@ -61,25 +65,29 @@ export default async function AssistantSetupPage() {
   const { profile, assistant } = await getUserData();
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="mx-auto w-full max-w-2xl">
       <OnboardingStepper currentStep="assistant" />
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Customize Your AI Assistant</CardTitle>
           <CardDescription>
-            Let's personalize how your AI receptionist interacts with callers. You can always change these settings later.
+            Let's personalize how your AI receptionist interacts with callers.
+            You can always change these settings later.
           </CardDescription>
         </CardHeader>
-        
-        <AssistantSetupForm 
+
+        <AssistantSetupForm
           initialData={{
-            businessName: assistant?.business_name || profile?.business_name || '',
+            businessName:
+              assistant?.business_name || profile?.business_name || '',
             assistantName: assistant?.assistant_name || 'Sarah',
-            greeting: assistant?.greeting || `Hi, thanks for calling [Business Name]! I'm [Assistant Name], the AI assistant. How can I help you today?`
-          }} 
+            greeting:
+              assistant?.greeting ||
+              `Hi, thanks for calling [Business Name]! I'm [Assistant Name], the AI assistant. How can I help you today?`,
+          }}
         />
       </Card>
     </div>
   );
-} 
+}

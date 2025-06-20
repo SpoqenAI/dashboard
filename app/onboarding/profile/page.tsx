@@ -14,7 +14,7 @@ import { logger } from '@/lib/logger';
 
 async function getProfile() {
   const supabase = await createClient();
-  
+
   const {
     data: { user },
     error: authError,
@@ -34,7 +34,9 @@ async function getProfile() {
     logger.error(
       'ONBOARDING_PROFILE',
       'Error fetching profile data',
-      profileError instanceof Error ? profileError : new Error(String(profileError)),
+      profileError instanceof Error
+        ? profileError
+        : new Error(String(profileError)),
       { userId: logger.maskUserId(user.id) }
     );
     // Return null/empty profile to allow form to render with empty fields
@@ -48,33 +50,37 @@ interface ProfileSetupPageProps {
   searchParams: { [key: string]: string | string[] | undefined };
 }
 
-export default async function ProfileSetupPage({ searchParams }: ProfileSetupPageProps) {
+export default async function ProfileSetupPage({
+  searchParams,
+}: ProfileSetupPageProps) {
   const profile = await getProfile();
   const error = searchParams.error;
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="mx-auto w-full max-w-2xl">
       <OnboardingStepper currentStep="profile" />
-      
+
       {error === 'subscription-timeout' && (
         <Alert className="mb-4 border-orange-200 bg-orange-50">
           <AlertCircle className="h-4 w-4 text-orange-600" />
           <AlertDescription className="text-orange-800">
-            Your payment is still being processed. Please check your email for confirmation, or contact support if you need assistance.
+            Your payment is still being processed. Please check your email for
+            confirmation, or contact support if you need assistance.
           </AlertDescription>
         </Alert>
       )}
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Welcome to Spoqen!</CardTitle>
           <CardDescription>
-            Let's start by setting up your profile. This information will help us personalize your AI assistant.
+            Let's start by setting up your profile. This information will help
+            us personalize your AI assistant.
           </CardDescription>
         </CardHeader>
-        
+
         <ProfileSetupForm initialData={profile} />
       </Card>
     </div>
   );
-} 
+}

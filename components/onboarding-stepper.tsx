@@ -30,9 +30,12 @@ const steps: Step[] = [
   },
 ];
 
-export function OnboardingStepper({ currentStep, className }: OnboardingStepperProps) {
+export function OnboardingStepper({
+  currentStep,
+  className,
+}: OnboardingStepperProps) {
   const currentIndex = steps.findIndex(step => step.id === currentStep);
-  
+
   // Handle invalid currentStep by defaulting to first step
   const safeCurrentIndex = currentIndex === -1 ? 0 : currentIndex;
 
@@ -51,8 +54,10 @@ export function OnboardingStepper({ currentStep, className }: OnboardingStepperP
                   className={cn(
                     'flex h-10 w-10 items-center justify-center rounded-full border-2',
                     {
-                      'border-primary bg-primary text-primary-foreground': isCurrent || isCompleted,
-                      'border-muted-foreground bg-background text-muted-foreground': isUpcoming,
+                      'border-primary bg-primary text-primary-foreground':
+                        isCurrent || isCompleted,
+                      'border-muted-foreground bg-background text-muted-foreground':
+                        isUpcoming,
                     }
                   )}
                 >
@@ -71,12 +76,14 @@ export function OnboardingStepper({ currentStep, className }: OnboardingStepperP
                   >
                     {step.name}
                   </div>
-                  <div className="text-xs text-muted-foreground">{step.description}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {step.description}
+                  </div>
                 </div>
               </div>
               {index < steps.length - 1 && (
                 <div
-                  className={cn('h-0.5 w-16 mx-4', {
+                  className={cn('mx-4 h-0.5 w-16', {
                     'bg-primary': index < safeCurrentIndex,
                     'bg-muted': index >= safeCurrentIndex,
                   })}
@@ -88,4 +95,4 @@ export function OnboardingStepper({ currentStep, className }: OnboardingStepperP
       </ol>
     </nav>
   );
-} 
+}

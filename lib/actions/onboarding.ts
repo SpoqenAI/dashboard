@@ -11,7 +11,7 @@ const PADDLE_PRICE_ID = (() => {
   if (!priceId) {
     throw new Error(
       'NEXT_PUBLIC_PADDLE_PRICE_ID environment variable is required but not configured. ' +
-      'Please set this variable in your environment configuration.'
+        'Please set this variable in your environment configuration.'
     );
   }
   return priceId;
@@ -30,12 +30,15 @@ const profileSchema = z.object({
 const assistantSchema = z.object({
   assistantName: z.string().min(1, 'Assistant name is required').max(25),
   businessName: z.string().min(1, 'Business name is required').max(100),
-  greeting: z.string().min(10, 'Greeting must be at least 10 characters').max(500),
+  greeting: z
+    .string()
+    .min(10, 'Greeting must be at least 10 characters')
+    .max(500),
 });
 
 export async function updateProfileAction(prevState: any, formData: FormData) {
   const supabase = await createClient();
-  
+
   // Get current user
   const {
     data: { user },
@@ -65,7 +68,8 @@ export async function updateProfileAction(prevState: any, formData: FormData) {
     };
   }
 
-  const { firstName, lastName, businessName, phone, brokerage } = validatedFields.data;
+  const { firstName, lastName, businessName, phone, brokerage } =
+    validatedFields.data;
   const fullName = `${firstName} ${lastName}`.trim();
 
   try {
@@ -102,7 +106,10 @@ export async function updateProfileAction(prevState: any, formData: FormData) {
   }
 }
 
-export async function createAssistantAction(prevState: any, formData: FormData) {
+export async function createAssistantAction(
+  prevState: any,
+  formData: FormData
+) {
   const supabase = await createClient();
 
   // Get current user
@@ -136,15 +143,13 @@ export async function createAssistantAction(prevState: any, formData: FormData) 
 
   try {
     // Create the assistant record
-    const { error } = await supabase
-      .from('assistants')
-      .insert({
-        user_id: user.id,
-        business_name: businessName,
-        assistant_name: assistantName,
-        greeting: greeting,
-        status: 'draft',
-      });
+    const { error } = await supabase.from('assistants').insert({
+      user_id: user.id,
+      business_name: businessName,
+      assistant_name: assistantName,
+      greeting: greeting,
+      status: 'draft',
+    });
 
     if (error) {
       throw error;
@@ -219,7 +224,7 @@ export async function createCheckoutSessionAction(formData: FormData): Promise<
     // Here you would typically call the Paddle API to create a checkout session
     // For now, we'll create a checkout URL with the required parameters
     // Note: PADDLE_PRICE_ID is validated at module load time, so it's guaranteed to exist
-    
+
     // In a real implementation, you would create the checkout session server-side
     // and return the checkout URL. For now, we'll return the necessary data
     // for the client to handle the checkout.
@@ -240,4 +245,4 @@ export async function createCheckoutSessionAction(formData: FormData): Promise<
       },
     };
   }
-} 
+}

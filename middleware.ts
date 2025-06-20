@@ -5,18 +5,20 @@ import { logger } from '@/lib/logger';
 // Security configuration for subscription check failures
 interface SecurityConfig {
   failClosed: boolean; // If true, deny access on subscription check errors
-  logErrors: boolean;  // If true, log detailed error information
+  logErrors: boolean; // If true, log detailed error information
 }
 
 // Default to fail-closed for maximum security
 const getSecurityConfig = (): SecurityConfig => ({
   failClosed: process.env.MIDDLEWARE_FAIL_CLOSED !== 'false', // Default to true unless explicitly set to false
-  logErrors: process.env.NODE_ENV === 'development' || process.env.MIDDLEWARE_LOG_ERRORS === 'true',
+  logErrors:
+    process.env.NODE_ENV === 'development' ||
+    process.env.MIDDLEWARE_LOG_ERRORS === 'true',
 });
 
 export async function middleware(request: NextRequest) {
   const securityConfig = getSecurityConfig();
-  
+
   // Validate required environment variables
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -25,26 +27,26 @@ export async function middleware(request: NextRequest) {
     const missingVars = [];
     if (!supabaseUrl) missingVars.push('NEXT_PUBLIC_SUPABASE_URL');
     if (!supabaseAnonKey) missingVars.push('NEXT_PUBLIC_SUPABASE_ANON_KEY');
-    
+
     const errorMessage = `Missing required environment variables: ${missingVars.join(', ')}`;
-    
+
     if (securityConfig.logErrors) {
       logger.error(
         'MIDDLEWARE',
         'Middleware configuration error',
         new Error(errorMessage),
-        { 
+        {
           missingVars,
-          requestPath: request.nextUrl.pathname 
+          requestPath: request.nextUrl.pathname,
         }
       );
     }
-    
+
     return new NextResponse(
       JSON.stringify({
         error: 'Service configuration error',
         message: 'Authentication service is not properly configured.',
-        code: 'MISSING_ENV_VARS'
+        code: 'MISSING_ENV_VARS',
       }),
       {
         status: 503, // Service Unavailable
@@ -55,40 +57,42 @@ export async function middleware(request: NextRequest) {
       }
     );
   }
-  
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
 
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value);
-            response.cookies.set(name, value, options);
-          });
-        },
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
       },
-    }
-  );
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          request.cookies.set(name, value);
+          response.cookies.set(name, value, options);
+        });
+      },
+    },
+  });
 
   // Get the current user session
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isAuthPage = ['/login', '/signup', '/auth', '/forgot-password', '/reset-password'].some(
-    (path) => request.nextUrl.pathname.startsWith(path)
+  const isAuthPage = [
+    '/login',
+    '/signup',
+    '/auth',
+    '/forgot-password',
+    '/reset-password',
+  ].some(path => request.nextUrl.pathname.startsWith(path));
+  const isPublicPage = ['/privacy', '/terms', '/contact'].includes(
+    request.nextUrl.pathname
   );
-  const isPublicPage = ['/privacy', '/terms', '/contact'].includes(request.nextUrl.pathname);
   const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
   const isOnboardingPage = request.nextUrl.pathname.startsWith('/onboarding');
 
@@ -120,7 +124,7 @@ export async function middleware(request: NextRequest) {
 
       if (error) {
         const errorMessage = `Subscription check failed: ${error.message}`;
-        
+
         if (securityConfig.logErrors) {
           logger.error(
             'MIDDLEWARE',
@@ -129,7 +133,9 @@ export async function middleware(request: NextRequest) {
             {
               userId: logger.maskUserId(user.id),
               requestPath: request.nextUrl.pathname,
-              securityMode: securityConfig.failClosed ? 'fail-closed' : 'fail-open'
+              securityMode: securityConfig.failClosed
+                ? 'fail-closed'
+                : 'fail-open',
             }
           );
         }
@@ -142,16 +148,17 @@ export async function middleware(request: NextRequest) {
               'Access denied due to subscription check failure (fail-closed mode)',
               {
                 userId: logger.maskUserId(user.id),
-                requestPath: request.nextUrl.pathname
+                requestPath: request.nextUrl.pathname,
               }
             );
           }
-          
+
           return new NextResponse(
             JSON.stringify({
               error: 'Access temporarily unavailable',
-              message: 'Unable to verify subscription status. Please try again later.',
-              code: 'SUBSCRIPTION_CHECK_FAILED'
+              message:
+                'Unable to verify subscription status. Please try again later.',
+              code: 'SUBSCRIPTION_CHECK_FAILED',
             }),
             {
               status: 503, // Service Unavailable
@@ -169,7 +176,7 @@ export async function middleware(request: NextRequest) {
               'Allowing access despite subscription check failure (fail-open mode)',
               {
                 userId: logger.maskUserId(user.id),
-                requestPath: request.nextUrl.pathname
+                requestPath: request.nextUrl.pathname,
               }
             );
           }
@@ -196,11 +203,13 @@ export async function middleware(request: NextRequest) {
           return response;
         }
         // Redirect to onboarding for all other protected routes
-        return NextResponse.redirect(new URL('/onboarding/profile', request.url));
+        return NextResponse.redirect(
+          new URL('/onboarding/profile', request.url)
+        );
       }
     } catch (error) {
       const errorMessage = `Middleware error: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      
+
       if (securityConfig.logErrors) {
         logger.error(
           'MIDDLEWARE',
@@ -209,7 +218,9 @@ export async function middleware(request: NextRequest) {
           {
             userId: logger.maskUserId(user.id),
             requestPath: request.nextUrl.pathname,
-            securityMode: securityConfig.failClosed ? 'fail-closed' : 'fail-open'
+            securityMode: securityConfig.failClosed
+              ? 'fail-closed'
+              : 'fail-open',
           }
         );
       }
@@ -222,16 +233,16 @@ export async function middleware(request: NextRequest) {
             'Access denied due to unexpected middleware error (fail-closed mode)',
             {
               userId: logger.maskUserId(user.id),
-              requestPath: request.nextUrl.pathname
+              requestPath: request.nextUrl.pathname,
             }
           );
         }
-        
+
         return new NextResponse(
           JSON.stringify({
             error: 'Access temporarily unavailable',
             message: 'System temporarily unavailable. Please try again later.',
-            code: 'MIDDLEWARE_ERROR'
+            code: 'MIDDLEWARE_ERROR',
           }),
           {
             status: 503, // Service Unavailable
@@ -249,7 +260,7 @@ export async function middleware(request: NextRequest) {
             'Allowing access despite unexpected middleware error (fail-open mode)',
             {
               userId: logger.maskUserId(user.id),
-              requestPath: request.nextUrl.pathname
+              requestPath: request.nextUrl.pathname,
             }
           );
         }
@@ -272,4 +283,4 @@ export const config = {
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-}; 
+};

@@ -4,10 +4,7 @@ import { useActionState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  CardContent,
-  CardFooter,
-} from '@/components/ui/card';
+import { CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowRight } from 'lucide-react';
@@ -70,9 +67,13 @@ export function ProfileSetupForm({ initialData }: ProfileSetupFormProps) {
               required
               disabled={isPending}
             />
-            {state.errors && 'firstName' in state.errors && state.errors.firstName && (
-              <p className="text-sm text-red-600">{state.errors.firstName[0]}</p>
-            )}
+            {state.errors &&
+              'firstName' in state.errors &&
+              state.errors.firstName && (
+                <p className="text-sm text-red-600">
+                  {state.errors.firstName[0]}
+                </p>
+              )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="lastName">Last Name *</Label>
@@ -84,9 +85,13 @@ export function ProfileSetupForm({ initialData }: ProfileSetupFormProps) {
               required
               disabled={isPending}
             />
-            {state.errors && 'lastName' in state.errors && state.errors.lastName && (
-              <p className="text-sm text-red-600">{state.errors.lastName[0]}</p>
-            )}
+            {state.errors &&
+              'lastName' in state.errors &&
+              state.errors.lastName && (
+                <p className="text-sm text-red-600">
+                  {state.errors.lastName[0]}
+                </p>
+              )}
           </div>
         </div>
 
@@ -100,9 +105,13 @@ export function ProfileSetupForm({ initialData }: ProfileSetupFormProps) {
             required
             disabled={isPending}
           />
-          {state.errors && 'businessName' in state.errors && state.errors.businessName && (
-            <p className="text-sm text-red-600">{state.errors.businessName[0]}</p>
-          )}
+          {state.errors &&
+            'businessName' in state.errors &&
+            state.errors.businessName && (
+              <p className="text-sm text-red-600">
+                {state.errors.businessName[0]}
+              </p>
+            )}
         </div>
 
         <div className="space-y-2">
@@ -130,19 +139,23 @@ export function ProfileSetupForm({ initialData }: ProfileSetupFormProps) {
             defaultValue={initialData?.brokerage || ''}
             disabled={isPending}
           />
-          {state.errors && 'brokerage' in state.errors && state.errors.brokerage && (
-            <p className="text-sm text-red-600">{state.errors.brokerage[0]}</p>
-          )}
+          {state.errors &&
+            'brokerage' in state.errors &&
+            state.errors.brokerage && (
+              <p className="text-sm text-red-600">
+                {state.errors.brokerage[0]}
+              </p>
+            )}
         </div>
       </CardContent>
-      
+
       <CardFooter className="flex justify-between">
         <div></div>
         <Button type="submit" disabled={isPending}>
-          {isPending ? 'Saving...' : 'Continue'} 
+          {isPending ? 'Saving...' : 'Continue'}
           {!isPending && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
       </CardFooter>
     </form>
   );
-} 
+}

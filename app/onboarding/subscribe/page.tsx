@@ -46,7 +46,7 @@ function SubscribePageContent() {
 
     async function getUserData() {
       const supabase = createClient();
-      
+
       const {
         data: { user },
         error: authError,
@@ -92,7 +92,7 @@ function SubscribePageContent() {
   // Show loading while fetching user data
   if (!userData) {
     return (
-      <div className="w-full max-w-2xl mx-auto">
+      <div className="mx-auto w-full max-w-2xl">
         <OnboardingStepper currentStep="subscribe" />
         <Card>
           <CardHeader>
@@ -105,22 +105,27 @@ function SubscribePageContent() {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="mx-auto w-full max-w-2xl">
       <OnboardingStepper currentStep="subscribe" />
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Complete Your Setup</CardTitle>
           <CardDescription>
-            You're almost ready! Subscribe to start receiving calls through your AI assistant.
+            You're almost ready! Subscribe to start receiving calls through your
+            AI assistant.
           </CardDescription>
         </CardHeader>
-        
+
         <SubscriptionForm
           userEmail={userData.userEmail}
           userId={userData.user.id}
           businessName={userData.profile?.business_name || ''}
-          userName={userData.profile ? `${userData.profile.first_name} ${userData.profile.last_name}`.trim() : ''}
+          userName={
+            userData.profile
+              ? `${userData.profile.first_name} ${userData.profile.last_name}`.trim()
+              : ''
+          }
         />
       </Card>
     </div>
@@ -129,18 +134,20 @@ function SubscribePageContent() {
 
 export default function SubscribePage() {
   return (
-    <Suspense fallback={
-      <div className="w-full max-w-2xl mx-auto">
-        <OnboardingStepper currentStep="subscribe" />
-        <Card>
-          <CardHeader>
-            <CardTitle>Complete Your Setup</CardTitle>
-            <CardDescription>Loading...</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="mx-auto w-full max-w-2xl">
+          <OnboardingStepper currentStep="subscribe" />
+          <Card>
+            <CardHeader>
+              <CardTitle>Complete Your Setup</CardTitle>
+              <CardDescription>Loading...</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      }
+    >
       <SubscribePageContent />
     </Suspense>
   );
-} 
+}
