@@ -32,14 +32,17 @@ const steps: Step[] = [
 
 export function OnboardingStepper({ currentStep, className }: OnboardingStepperProps) {
   const currentIndex = steps.findIndex(step => step.id === currentStep);
+  
+  // Handle invalid currentStep by defaulting to first step
+  const safeCurrentIndex = currentIndex === -1 ? 0 : currentIndex;
 
   return (
     <nav aria-label="Progress" className={cn('mb-8', className)}>
       <ol role="list" className="flex items-center justify-center space-x-5">
         {steps.map((step, index) => {
-          const isCompleted = index < currentIndex;
+          const isCompleted = index < safeCurrentIndex;
           const isCurrent = step.id === currentStep;
-          const isUpcoming = index > currentIndex;
+          const isUpcoming = index > safeCurrentIndex;
 
           return (
             <li key={step.id} className="flex items-center">
@@ -74,8 +77,8 @@ export function OnboardingStepper({ currentStep, className }: OnboardingStepperP
               {index < steps.length - 1 && (
                 <div
                   className={cn('h-0.5 w-16 mx-4', {
-                    'bg-primary': index < currentIndex,
-                    'bg-muted': index >= currentIndex,
+                    'bg-primary': index < safeCurrentIndex,
+                    'bg-muted': index >= safeCurrentIndex,
                   })}
                 />
               )}

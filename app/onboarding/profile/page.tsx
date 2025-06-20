@@ -23,11 +23,17 @@ async function getProfile() {
     redirect('/login');
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('first_name, last_name, business_name, phone, brokerage')
     .eq('id', user.id)
     .single();
+
+  if (profileError) {
+    console.error('Error fetching profile:', profileError);
+    // Return null/empty profile to allow form to render with empty fields
+    return null;
+  }
 
   return profile;
 }
