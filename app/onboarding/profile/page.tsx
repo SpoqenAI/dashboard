@@ -39,10 +39,10 @@ async function getProfile() {
         profileError instanceof Error
           ? profileError
           : new Error(JSON.stringify(profileError)),
-        { 
+        {
           userId: logger.maskUserId(user.id),
           errorCode: profileError.code,
-          errorMessage: profileError.message
+          errorMessage: profileError.message,
         }
       );
     }
