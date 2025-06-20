@@ -14,8 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowRight, ArrowLeft, Check } from 'lucide-react';
-import { Logo } from '@/components/ui/logo';
+import { PhoneCall, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
@@ -37,10 +36,9 @@ export default function OnboardingPage() {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center">
-            <Link href="/">
-              <Logo width={120} height={36} />
-            </Link>
+          <div className="flex items-center gap-2 text-xl font-bold">
+            <PhoneCall className="h-5 w-5 text-primary" />
+            <Link href="/">Spoqen</Link>
           </div>
           <div className="text-sm text-muted-foreground">
             Step {step} of {totalSteps}

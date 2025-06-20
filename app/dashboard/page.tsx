@@ -16,10 +16,17 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Edit } from 'lucide-react';
+import {
+  Bell,
+  Calendar,
+  Clock,
+  Edit,
+  MessageSquare,
+  PhoneCall,
+  Settings,
+} from 'lucide-react';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { RecentCallsList } from '@/components/recent-calls-list';
-import { CallHistoryList } from '@/components/call-history-list';
 import { StatsCards } from '@/components/stats-cards';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
@@ -510,7 +517,92 @@ export default function DashboardPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <CallHistoryList />
+                  <div className="space-y-4">
+                    <div className="rounded-md border">
+                      <div className="p-4">
+                        <div className="grid gap-1">
+                          <div className="font-medium">Sarah Johnson</div>
+                          <div className="text-sm text-muted-foreground">
+                            <div className="flex items-center">
+                              <PhoneCall className="mr-1 h-3 w-3" />
+                              (555) 123-4567
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-2 text-sm">
+                          <div className="flex items-center text-muted-foreground">
+                            <Calendar className="mr-1 h-3 w-3" />
+                            May 24, 2025
+                          </div>
+                          <div className="flex items-center text-muted-foreground">
+                            <Clock className="mr-1 h-3 w-3" />
+                            10:30 AM
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <div className="text-sm font-medium">Summary:</div>
+                          <div className="text-sm text-muted-foreground">
+                            Sarah is interested in the 3-bedroom property on Oak
+                            Street. She's a first-time homebuyer and would like
+                            to schedule a viewing this weekend. Best time to
+                            call back is after 5 PM.
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-center gap-2">
+                          <Button size="sm" variant="outline">
+                            <MessageSquare className="mr-1 h-3 w-3" />
+                            Call Back
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Bell className="mr-1 h-3 w-3" />
+                            Remind
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="rounded-md border">
+                      <div className="p-4">
+                        <div className="grid gap-1">
+                          <div className="font-medium">Michael Rodriguez</div>
+                          <div className="text-sm text-muted-foreground">
+                            <div className="flex items-center">
+                              <PhoneCall className="mr-1 h-3 w-3" />
+                              (555) 987-6543
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-2 text-sm">
+                          <div className="flex items-center text-muted-foreground">
+                            <Calendar className="mr-1 h-3 w-3" />
+                            May 23, 2025
+                          </div>
+                          <div className="flex items-center text-muted-foreground">
+                            <Clock className="mr-1 h-3 w-3" />
+                            2:15 PM
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <div className="text-sm font-medium">Summary:</div>
+                          <div className="text-sm text-muted-foreground">
+                            Michael is looking to sell his condo in downtown.
+                            He's relocating for work and needs to sell within
+                            the next 2 months. He'd like to discuss valuation
+                            and listing strategy. Available anytime tomorrow.
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-center gap-2">
+                          <Button size="sm" variant="outline">
+                            <MessageSquare className="mr-1 h-3 w-3" />
+                            Call Back
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Bell className="mr-1 h-3 w-3" />
+                            Remind
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
