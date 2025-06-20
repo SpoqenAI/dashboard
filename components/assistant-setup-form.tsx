@@ -34,7 +34,8 @@ export function AssistantSetupForm({ initialData }: AssistantSetupFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(createAssistantAction, {
     errors: {},
-  } as FormState);
+    success: false,
+  });
 
   // Handle successful form submission
   useEffect(() => {

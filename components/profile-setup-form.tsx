@@ -36,7 +36,8 @@ export function ProfileSetupForm({ initialData }: ProfileSetupFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(updateProfileAction, {
     errors: {},
-  } as FormState);
+    success: false,
+  });
 
   // Handle successful form submission
   useEffect(() => {
