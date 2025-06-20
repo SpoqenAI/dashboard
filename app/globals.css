@@ -13,6 +13,11 @@ body {
 }
 
 @layer base {
+  /* 
+   * Dark-first approach: All CSS variables are defined under :root with dark theme values.
+   * When light mode support is added, create a .light selector with light theme values
+   * and toggle the theme class on the document element.
+   */
   :root {
     --background: 225 39% 7%; /* Very dark navy blue matching the logo background */
     --foreground: 0 0% 98%; /* Pure white text for maximum contrast */
@@ -39,40 +44,6 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
-    --sidebar-background: 225 39% 7%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 267 100% 61%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 225 39% 15%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 225 39% 20%;
-    --sidebar-ring: 267 100% 61%;
-  }
-  .dark {
-    --background: 225 39% 7%; /* Very dark navy blue matching the logo background */
-    --foreground: 0 0% 98%; /* Pure white text for maximum contrast */
-    --card: 225 39% 10%; /* Slightly lighter navy for cards */
-    --card-foreground: 0 0% 98%;
-    --popover: 225 39% 10%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 267 100% 61%; /* Spoqen purple */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 225 39% 15%; /* Lighter navy for secondary elements */
-    --secondary-foreground: 0 0% 95%;
-    --muted: 225 39% 15%;
-    --muted-foreground: 0 0% 75%; /* Light gray for muted text */
-    --accent: 195 100% 50%; /* Brighter Spoqen blue for better visibility */
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 225 39% 20%; /* Lighter border for visibility */
-    --input: 225 39% 12%; /* Dark input background with slight contrast */
-    --ring: 267 100% 61%; /* Primary color for focus rings */
-    --chart-1: 267 100% 61%;
-    --chart-2: 195 100% 50%;
-    --chart-3: 300 100% 58%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
     --sidebar-background: 225 39% 7%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 267 100% 61%;
