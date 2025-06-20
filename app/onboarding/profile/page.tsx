@@ -31,14 +31,21 @@ async function getProfile() {
     .single();
 
   if (profileError) {
-    logger.error(
-      'ONBOARDING_PROFILE',
-      'Error fetching profile data',
-      profileError instanceof Error
-        ? profileError
-        : new Error(String(profileError)),
-      { userId: logger.maskUserId(user.id) }
-    );
+    // Only log actual errors, not "no rows found" type responses
+    if (profileError.code !== 'PGRST116') {
+      logger.error(
+        'ONBOARDING_PROFILE',
+        'Error fetching profile data',
+        profileError instanceof Error
+          ? profileError
+          : new Error(JSON.stringify(profileError)),
+        { 
+          userId: logger.maskUserId(user.id),
+          errorCode: profileError.code,
+          errorMessage: profileError.message
+        }
+      );
+    }
     // Return null/empty profile to allow form to render with empty fields
     return null;
   }
@@ -54,7 +61,8 @@ export default async function ProfileSetupPage({
   searchParams,
 }: ProfileSetupPageProps) {
   const profile = await getProfile();
-  const error = searchParams.error;
+  const resolvedSearchParams = await searchParams;
+  const error = resolvedSearchParams.error;
 
   return (
     <div className="mx-auto w-full max-w-2xl">

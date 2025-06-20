@@ -30,14 +30,21 @@ async function getUserData() {
     .single();
 
   if (profileError) {
-    logger.error(
-      'ONBOARDING_ASSISTANT',
-      'Error fetching profile data',
-      profileError instanceof Error
-        ? profileError
-        : new Error(String(profileError)),
-      { userId: logger.maskUserId(user.id) }
-    );
+    // Only log actual errors, not "no rows found" type responses
+    if (profileError.code !== 'PGRST116') {
+      logger.error(
+        'ONBOARDING_ASSISTANT',
+        'Error fetching profile data',
+        profileError instanceof Error
+          ? profileError
+          : new Error(JSON.stringify(profileError)),
+        { 
+          userId: logger.maskUserId(user.id),
+          errorCode: profileError.code,
+          errorMessage: profileError.message
+        }
+      );
+    }
   }
 
   // Check if assistant already exists
@@ -48,14 +55,21 @@ async function getUserData() {
     .single();
 
   if (assistantError) {
-    logger.error(
-      'ONBOARDING_ASSISTANT',
-      'Error fetching assistant data',
-      assistantError instanceof Error
-        ? assistantError
-        : new Error(String(assistantError)),
-      { userId: logger.maskUserId(user.id) }
-    );
+    // Only log actual errors, not "no rows found" type responses
+    if (assistantError.code !== 'PGRST116') {
+      logger.error(
+        'ONBOARDING_ASSISTANT',
+        'Error fetching assistant data',
+        assistantError instanceof Error
+          ? assistantError
+          : new Error(JSON.stringify(assistantError)),
+        { 
+          userId: logger.maskUserId(user.id),
+          errorCode: assistantError.code,
+          errorMessage: assistantError.message
+        }
+      );
+    }
   }
 
   return { profile, assistant };
