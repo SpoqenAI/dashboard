@@ -5,6 +5,18 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
+// Validate critical environment variables at module load time
+const PADDLE_PRICE_ID = (() => {
+  const priceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
+  if (!priceId) {
+    throw new Error(
+      'NEXT_PUBLIC_PADDLE_PRICE_ID environment variable is required but not configured. ' +
+      'Please set this variable in your environment configuration.'
+    );
+  }
+  return priceId;
+})();
+
 // Profile setup schema
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(50),
@@ -153,7 +165,25 @@ export async function createAssistantAction(prevState: any, formData: FormData) 
   }
 }
 
-export async function createCheckoutSessionAction(formData: FormData) {
+export async function createCheckoutSessionAction(formData: FormData): Promise<
+  | {
+      success: true;
+      checkoutData: {
+        priceId: string;
+        customerEmail: string;
+        customerName: string;
+        userId: string;
+      };
+      errors?: undefined;
+    }
+  | {
+      errors: {
+        _form: string[];
+      };
+      success?: undefined;
+      checkoutData?: undefined;
+    }
+> {
   const supabase = await createClient();
 
   // Get current user
@@ -163,7 +193,11 @@ export async function createCheckoutSessionAction(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    throw new Error('Not authenticated');
+    return {
+      errors: {
+        _form: ['Not authenticated'],
+      },
+    };
   }
 
   try {
@@ -175,23 +209,24 @@ export async function createCheckoutSessionAction(formData: FormData) {
       .single();
 
     if (profileError || !profile) {
-      throw new Error('Profile not found');
+      return {
+        errors: {
+          _form: ['Profile not found'],
+        },
+      };
     }
 
     // Here you would typically call the Paddle API to create a checkout session
     // For now, we'll create a checkout URL with the required parameters
-    const priceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
-    if (!priceId) {
-      throw new Error('Paddle price ID not configured');
-    }
-
+    // Note: PADDLE_PRICE_ID is validated at module load time, so it's guaranteed to exist
+    
     // In a real implementation, you would create the checkout session server-side
     // and return the checkout URL. For now, we'll return the necessary data
     // for the client to handle the checkout.
     return {
       success: true,
       checkoutData: {
-        priceId,
+        priceId: PADDLE_PRICE_ID,
         customerEmail: profile.email,
         customerName: `${profile.first_name} ${profile.last_name}`.trim(),
         userId: user.id,
