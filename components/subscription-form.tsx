@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/card';
 import { ArrowLeft, Check, CreditCard } from 'lucide-react';
 import Link from 'next/link';
-import { initializePaddle, Paddle } from '@paddle/paddle-js';
+import { initializePaddle, Paddle, CheckoutOpenOptions } from '@paddle/paddle-js';
 
 interface SubscriptionFormProps {
   userEmail: string;
@@ -20,19 +20,30 @@ interface SubscriptionFormProps {
 export function SubscriptionForm({ userEmail, userName, businessName, userId }: SubscriptionFormProps) {
   const [paddle, setPaddle] = useState<Paddle | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
     const initPaddle = async () => {
       try {
+        setInitError(null); // Clear any previous errors
+        
+        // Safely validate environment variable
+        const envValue = process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
+        const environment: 'sandbox' | 'production' = envValue === 'production' ? 'production' : 'sandbox';
+        
         const paddleInstance = await initializePaddle({
-          environment: process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT as 'sandbox' | 'production' || 'sandbox',
+          environment,
           token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
         });
         if (paddleInstance) {
           setPaddle(paddleInstance);
+        } else {
+          throw new Error('Paddle initialization returned undefined');
         }
       } catch (error) {
         console.error('Failed to initialize Paddle:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        setInitError(`Payment system initialization failed: ${errorMessage}`);
       }
     };
 
@@ -54,7 +65,7 @@ export function SubscriptionForm({ userEmail, userName, businessName, userId }: 
         throw new Error('Paddle price ID not configured');
       }
 
-      const checkoutData: any = {
+      const checkoutData: CheckoutOpenOptions = {
         items: [
           {
             priceId: priceId,
@@ -71,10 +82,9 @@ export function SubscriptionForm({ userEmail, userName, businessName, userId }: 
       };
 
       // Add customer info if available
-      if (userEmail && userName) {
+      if (userEmail) {
         checkoutData.customer = {
           email: userEmail,
-          name: userName,
         };
       }
 
@@ -141,6 +151,30 @@ export function SubscriptionForm({ userEmail, userName, businessName, userId }: 
           </ol>
         </div>
 
+        {/* Error Message */}
+        {initError && (
+          <div className="rounded-md bg-red-50 border border-red-200 p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h4 className="text-sm font-medium text-red-800">
+                  Subscription Unavailable
+                </h4>
+                <p className="text-sm text-red-700 mt-1">
+                  {initError}
+                </p>
+                <p className="text-sm text-red-600 mt-2">
+                  Please refresh the page to try again. If the problem persists, contact support.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Customer Info */}
         {userEmail && (
           <div className="text-sm text-muted-foreground">
@@ -160,10 +194,13 @@ export function SubscriptionForm({ userEmail, userName, businessName, userId }: 
         
         <Button 
           onClick={handleSubscribe} 
-          disabled={!paddle || isLoading}
-          className="bg-green-600 hover:bg-green-700"
+          disabled={!paddle || isLoading || !!initError}
+          className={initError ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}
+          title={initError ? "Payment system unavailable" : undefined}
         >
-          {isLoading ? (
+          {initError ? (
+            'Payment System Unavailable'
+          ) : isLoading ? (
             'Opening Checkout...'
           ) : (
             <>

@@ -1,7 +1,53 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// Security configuration for subscription check failures
+interface SecurityConfig {
+  failClosed: boolean; // If true, deny access on subscription check errors
+  logErrors: boolean;  // If true, log detailed error information
+}
+
+// Default to fail-closed for maximum security
+const getSecurityConfig = (): SecurityConfig => ({
+  failClosed: process.env.MIDDLEWARE_FAIL_CLOSED !== 'false', // Default to true unless explicitly set to false
+  logErrors: process.env.NODE_ENV === 'development' || process.env.MIDDLEWARE_LOG_ERRORS === 'true',
+});
+
 export async function middleware(request: NextRequest) {
+  const securityConfig = getSecurityConfig();
+  
+  // Validate required environment variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    const missingVars = [];
+    if (!supabaseUrl) missingVars.push('NEXT_PUBLIC_SUPABASE_URL');
+    if (!supabaseAnonKey) missingVars.push('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    
+    const errorMessage = `Missing required environment variables: ${missingVars.join(', ')}`;
+    
+    if (securityConfig.logErrors) {
+      console.error('Middleware configuration error:', errorMessage);
+      console.error('Request path:', request.nextUrl.pathname);
+    }
+    
+    return new NextResponse(
+      JSON.stringify({
+        error: 'Service configuration error',
+        message: 'Authentication service is not properly configured.',
+        code: 'MISSING_ENV_VARS'
+      }),
+      {
+        status: 503, // Service Unavailable
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': '300', // Suggest retry after 5 minutes for config issues
+        },
+      }
+    );
+  }
+  
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -9,8 +55,8 @@ export async function middleware(request: NextRequest) {
   });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -65,9 +111,42 @@ export async function middleware(request: NextRequest) {
         .maybeSingle();
 
       if (error) {
-        console.error('Error checking subscription status:', error);
-        // On error, allow access but log the issue
-        return response;
+        const errorMessage = `Subscription check failed: ${error.message}`;
+        
+        if (securityConfig.logErrors) {
+          console.error('Error checking subscription status:', error);
+          console.error('User ID:', user.id?.substring(0, 8) + '...');
+          console.error('Request path:', request.nextUrl.pathname);
+          console.error('Security mode:', securityConfig.failClosed ? 'fail-closed' : 'fail-open');
+        }
+
+        if (securityConfig.failClosed) {
+          // Fail-closed: Deny access and return error response
+          if (securityConfig.logErrors) {
+            console.warn('Access denied due to subscription check failure (fail-closed mode)');
+          }
+          
+          return new NextResponse(
+            JSON.stringify({
+              error: 'Access temporarily unavailable',
+              message: 'Unable to verify subscription status. Please try again later.',
+              code: 'SUBSCRIPTION_CHECK_FAILED'
+            }),
+            {
+              status: 503, // Service Unavailable
+              headers: {
+                'Content-Type': 'application/json',
+                'Retry-After': '60', // Suggest retry after 60 seconds
+              },
+            }
+          );
+        } else {
+          // Fail-open: Allow access but log the issue (legacy behavior)
+          if (securityConfig.logErrors) {
+            console.warn('Allowing access despite subscription check failure (fail-open mode)');
+          }
+          return response;
+        }
       }
 
       const hasActiveSubscription = !!subscription;
@@ -92,9 +171,42 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/onboarding/profile', request.url));
       }
     } catch (error) {
-      console.error('Middleware error:', error);
-      // On unexpected errors, allow access but log
-      return response;
+      const errorMessage = `Middleware error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      
+      if (securityConfig.logErrors) {
+        console.error('Middleware error:', error);
+        console.error('User ID:', user.id?.substring(0, 8) + '...');
+        console.error('Request path:', request.nextUrl.pathname);
+        console.error('Security mode:', securityConfig.failClosed ? 'fail-closed' : 'fail-open');
+      }
+
+      if (securityConfig.failClosed) {
+        // Fail-closed: Deny access on unexpected errors
+        if (securityConfig.logErrors) {
+          console.warn('Access denied due to unexpected middleware error (fail-closed mode)');
+        }
+        
+        return new NextResponse(
+          JSON.stringify({
+            error: 'Access temporarily unavailable',
+            message: 'System temporarily unavailable. Please try again later.',
+            code: 'MIDDLEWARE_ERROR'
+          }),
+          {
+            status: 503, // Service Unavailable
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': '120', // Suggest retry after 2 minutes for unexpected errors
+            },
+          }
+        );
+      } else {
+        // Fail-open: Allow access but log (legacy behavior)
+        if (securityConfig.logErrors) {
+          console.warn('Allowing access despite unexpected middleware error (fail-open mode)');
+        }
+        return response;
+      }
     }
   }
 
