@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 async function getProfile() {
   const supabase = await createClient();
@@ -30,7 +31,12 @@ async function getProfile() {
     .single();
 
   if (profileError) {
-    console.error('Error fetching profile:', profileError);
+    logger.error(
+      'ONBOARDING_PROFILE',
+      'Error fetching profile data',
+      profileError instanceof Error ? profileError : new Error(String(profileError)),
+      { userId: logger.maskUserId(user.id) }
+    );
     // Return null/empty profile to allow form to render with empty fields
     return null;
   }

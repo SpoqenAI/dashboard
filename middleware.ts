@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { logger } from '@/lib/logger';
 
 // Security configuration for subscription check failures
 interface SecurityConfig {
@@ -28,8 +29,15 @@ export async function middleware(request: NextRequest) {
     const errorMessage = `Missing required environment variables: ${missingVars.join(', ')}`;
     
     if (securityConfig.logErrors) {
-      console.error('Middleware configuration error:', errorMessage);
-      console.error('Request path:', request.nextUrl.pathname);
+      logger.error(
+        'MIDDLEWARE',
+        'Middleware configuration error',
+        new Error(errorMessage),
+        { 
+          missingVars,
+          requestPath: request.nextUrl.pathname 
+        }
+      );
     }
     
     return new NextResponse(
@@ -114,16 +122,29 @@ export async function middleware(request: NextRequest) {
         const errorMessage = `Subscription check failed: ${error.message}`;
         
         if (securityConfig.logErrors) {
-          console.error('Error checking subscription status:', error);
-          console.error('User ID:', user.id?.substring(0, 8) + '...');
-          console.error('Request path:', request.nextUrl.pathname);
-          console.error('Security mode:', securityConfig.failClosed ? 'fail-closed' : 'fail-open');
+          logger.error(
+            'MIDDLEWARE',
+            'Error checking subscription status',
+            error instanceof Error ? error : new Error(String(error)),
+            {
+              userId: logger.maskUserId(user.id),
+              requestPath: request.nextUrl.pathname,
+              securityMode: securityConfig.failClosed ? 'fail-closed' : 'fail-open'
+            }
+          );
         }
 
         if (securityConfig.failClosed) {
           // Fail-closed: Deny access and return error response
           if (securityConfig.logErrors) {
-            console.warn('Access denied due to subscription check failure (fail-closed mode)');
+            logger.warn(
+              'MIDDLEWARE',
+              'Access denied due to subscription check failure (fail-closed mode)',
+              {
+                userId: logger.maskUserId(user.id),
+                requestPath: request.nextUrl.pathname
+              }
+            );
           }
           
           return new NextResponse(
@@ -143,7 +164,14 @@ export async function middleware(request: NextRequest) {
         } else {
           // Fail-open: Allow access but log the issue (legacy behavior)
           if (securityConfig.logErrors) {
-            console.warn('Allowing access despite subscription check failure (fail-open mode)');
+            logger.warn(
+              'MIDDLEWARE',
+              'Allowing access despite subscription check failure (fail-open mode)',
+              {
+                userId: logger.maskUserId(user.id),
+                requestPath: request.nextUrl.pathname
+              }
+            );
           }
           return response;
         }
@@ -174,16 +202,29 @@ export async function middleware(request: NextRequest) {
       const errorMessage = `Middleware error: ${error instanceof Error ? error.message : 'Unknown error'}`;
       
       if (securityConfig.logErrors) {
-        console.error('Middleware error:', error);
-        console.error('User ID:', user.id?.substring(0, 8) + '...');
-        console.error('Request path:', request.nextUrl.pathname);
-        console.error('Security mode:', securityConfig.failClosed ? 'fail-closed' : 'fail-open');
+        logger.error(
+          'MIDDLEWARE',
+          'Unexpected middleware error',
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            userId: logger.maskUserId(user.id),
+            requestPath: request.nextUrl.pathname,
+            securityMode: securityConfig.failClosed ? 'fail-closed' : 'fail-open'
+          }
+        );
       }
 
       if (securityConfig.failClosed) {
         // Fail-closed: Deny access on unexpected errors
         if (securityConfig.logErrors) {
-          console.warn('Access denied due to unexpected middleware error (fail-closed mode)');
+          logger.warn(
+            'MIDDLEWARE',
+            'Access denied due to unexpected middleware error (fail-closed mode)',
+            {
+              userId: logger.maskUserId(user.id),
+              requestPath: request.nextUrl.pathname
+            }
+          );
         }
         
         return new NextResponse(
@@ -203,7 +244,14 @@ export async function middleware(request: NextRequest) {
       } else {
         // Fail-open: Allow access but log (legacy behavior)
         if (securityConfig.logErrors) {
-          console.warn('Allowing access despite unexpected middleware error (fail-open mode)');
+          logger.warn(
+            'MIDDLEWARE',
+            'Allowing access despite unexpected middleware error (fail-open mode)',
+            {
+              userId: logger.maskUserId(user.id),
+              requestPath: request.nextUrl.pathname
+            }
+          );
         }
         return response;
       }

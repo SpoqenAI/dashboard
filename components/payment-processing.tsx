@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PhoneCall, CheckCircle, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { logger } from '@/lib/logger';
 
 export function PaymentProcessing() {
   const router = useRouter();
@@ -93,7 +94,12 @@ export function PaymentProcessing() {
           timeoutIds.push(setTimeout(checkSubscription, 1000));
 
         } catch (error) {
-          console.error('Error checking subscription:', error);
+          logger.error(
+            'PAYMENT_PROCESSING',
+            'Error checking subscription during payment processing',
+            error instanceof Error ? error : new Error(String(error)),
+            { attempts, maxAttempts }
+          );
           setStatusMessage('Connection issue. Please check your internet...');
           
           // Retry after a longer delay

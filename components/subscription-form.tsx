@@ -9,6 +9,7 @@ import {
 import { ArrowLeft, Check, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { initializePaddle, Paddle, CheckoutOpenOptions } from '@paddle/paddle-js';
+import { logger } from '@/lib/logger';
 
 interface SubscriptionFormProps {
   userEmail: string;
@@ -24,12 +25,12 @@ export function SubscriptionForm({ userEmail, userName, businessName, userId }: 
 
   useEffect(() => {
     const initPaddle = async () => {
+      // Safely validate environment variable (outside try block for error logging)
+      const envValue = process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
+      const environment: 'sandbox' | 'production' = envValue === 'production' ? 'production' : 'sandbox';
+      
       try {
         setInitError(null); // Clear any previous errors
-        
-        // Safely validate environment variable
-        const envValue = process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
-        const environment: 'sandbox' | 'production' = envValue === 'production' ? 'production' : 'sandbox';
         
         const paddleInstance = await initializePaddle({
           environment,
@@ -41,7 +42,12 @@ export function SubscriptionForm({ userEmail, userName, businessName, userId }: 
           throw new Error('Paddle initialization returned undefined');
         }
       } catch (error) {
-        console.error('Failed to initialize Paddle:', error);
+        logger.error(
+          'SUBSCRIPTION_FORM',
+          'Failed to initialize Paddle payment system',
+          error instanceof Error ? error : new Error(String(error)),
+          { environment }
+        );
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         setInitError(`Payment system initialization failed: ${errorMessage}`);
       }
@@ -52,7 +58,12 @@ export function SubscriptionForm({ userEmail, userName, businessName, userId }: 
 
   const handleSubscribe = async () => {
     if (!paddle) {
-      console.error('Paddle not initialized');
+      logger.error(
+        'SUBSCRIPTION_FORM',
+        'Attempted to subscribe but Paddle is not initialized',
+        new Error('Paddle not initialized'),
+        { userId: logger.maskUserId(userId) }
+      );
       return;
     }
 
@@ -90,7 +101,15 @@ export function SubscriptionForm({ userEmail, userName, businessName, userId }: 
 
       paddle.Checkout.open(checkoutData);
     } catch (error) {
-      console.error('Error opening checkout:', error);
+      logger.error(
+        'SUBSCRIPTION_FORM',
+        'Error opening Paddle checkout',
+        error instanceof Error ? error : new Error(String(error)),
+        { 
+          userId: logger.maskUserId(userId),
+          priceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_ID 
+        }
+      );
     } finally {
       setIsLoading(false);
     }

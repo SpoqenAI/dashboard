@@ -8,6 +8,7 @@ import { OnboardingStepper } from '@/components/onboarding-stepper';
 import { AssistantSetupForm } from '@/components/assistant-setup-form';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 async function getUserData() {
   const supabase = await createClient();
@@ -29,7 +30,12 @@ async function getUserData() {
     .single();
 
   if (profileError) {
-    console.error('Error fetching profile:', profileError);
+    logger.error(
+      'ONBOARDING_ASSISTANT',
+      'Error fetching profile data',
+      profileError instanceof Error ? profileError : new Error(String(profileError)),
+      { userId: logger.maskUserId(user.id) }
+    );
   }
 
   // Check if assistant already exists
@@ -40,7 +46,12 @@ async function getUserData() {
     .single();
 
   if (assistantError) {
-    console.error('Error fetching assistant:', assistantError);
+    logger.error(
+      'ONBOARDING_ASSISTANT',
+      'Error fetching assistant data',
+      assistantError instanceof Error ? assistantError : new Error(String(assistantError)),
+      { userId: logger.maskUserId(user.id) }
+    );
   }
 
   return { profile, assistant };
