@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 // Validate critical environment variables at module load time
 const PADDLE_PRICE_ID = (() => {
@@ -97,7 +98,12 @@ export async function updateProfileAction(prevState: any, formData: FormData) {
       errors: {},
     };
   } catch (error) {
-    console.error('Error updating profile:', error);
+    logger.error(
+      'ONBOARDING_ACTIONS',
+      'Error updating user profile',
+      error instanceof Error ? error : new Error(String(error)),
+      { userId: logger.maskUserId(user.id) }
+    );
     return {
       errors: {
         _form: ['Failed to update profile. Please try again.'],
@@ -161,7 +167,12 @@ export async function createAssistantAction(
       errors: {},
     };
   } catch (error) {
-    console.error('Error creating assistant:', error);
+    logger.error(
+      'ONBOARDING_ACTIONS',
+      'Error creating AI assistant',
+      error instanceof Error ? error : new Error(String(error)),
+      { userId: logger.maskUserId(user.id) }
+    );
     return {
       errors: {
         _form: ['Failed to create assistant. Please try again.'],
@@ -238,7 +249,12 @@ export async function createCheckoutSessionAction(formData: FormData): Promise<
       },
     };
   } catch (error) {
-    console.error('Error creating checkout session:', error);
+    logger.error(
+      'ONBOARDING_ACTIONS',
+      'Error creating checkout session',
+      error instanceof Error ? error : new Error(String(error)),
+      { userId: logger.maskUserId(user.id) }
+    );
     return {
       errors: {
         _form: ['Failed to create checkout session. Please try again.'],
