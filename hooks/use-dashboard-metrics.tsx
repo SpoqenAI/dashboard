@@ -8,16 +8,19 @@ function isValidISODate(dateString: string): boolean {
   if (!dateString || typeof dateString !== 'string') {
     return false;
   }
-  
+
   // Check if the string matches the ISO date format pattern
   const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
   if (!isoDateRegex.test(dateString)) {
     return false;
   }
-  
+
   // Check if the date is actually valid
   const date = new Date(dateString);
-  return !isNaN(date.getTime()) && date.toISOString() === dateString.replace(/Z?$/, 'Z');
+  return (
+    !isNaN(date.getTime()) &&
+    date.toISOString() === dateString.replace(/Z?$/, 'Z')
+  );
 }
 
 export function useDashboardMetrics(fromISO: string, toISO: string) {
@@ -30,16 +33,20 @@ export function useDashboardMetrics(fromISO: string, toISO: string) {
     const fetchMetrics = async () => {
       // Reset error state at the beginning of each fetch
       setError(null);
-      
+
       try {
         // Validate ISO date strings before making the fetch
         if (!isValidISODate(fromISO)) {
-          throw new Error('Invalid fromISO date format. Expected ISO date string.');
+          throw new Error(
+            'Invalid fromISO date format. Expected ISO date string.'
+          );
         }
         if (!isValidISODate(toISO)) {
-          throw new Error('Invalid toISO date format. Expected ISO date string.');
+          throw new Error(
+            'Invalid toISO date format. Expected ISO date string.'
+          );
         }
-        
+
         const params = new URLSearchParams({ from: fromISO, to: toISO });
         const res = await fetch(`/api/vapi/dashboard-metrics?${params}`, {
           signal: controller.signal,
