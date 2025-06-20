@@ -12,22 +12,23 @@ export function PaymentProcessing() {
 
   useEffect(() => {
     let mounted = true;
+    const timeoutIds: NodeJS.Timeout[] = [];
+    const supabase = createClient(); // Create client once and reuse
 
     async function handlePaymentSuccess() {
       // Initial animation sequence
-      setTimeout(() => mounted && setStage('text'), 500);
-      setTimeout(() => mounted && setStage('processing'), 1500);
+      timeoutIds.push(setTimeout(() => mounted && setStage('text'), 500));
+      timeoutIds.push(setTimeout(() => mounted && setStage('processing'), 1500));
 
       // Start polling for subscription after initial animations
-      setTimeout(() => {
+      timeoutIds.push(setTimeout(() => {
         if (mounted) {
           pollForSubscription();
         }
-      }, 2000);
+      }, 2000));
     }
 
     async function pollForSubscription() {
-      const supabase = createClient();
       let attempts = 0;
       const maxAttempts = 30; // 30 seconds max wait
 
@@ -42,7 +43,7 @@ export function PaymentProcessing() {
 
           if (authError || !user) {
             setStatusMessage('Authentication error. Redirecting to login...');
-            setTimeout(() => router.push('/login'), 2000);
+            timeoutIds.push(setTimeout(() => router.push('/login'), 2000));
             return;
           }
 
@@ -60,11 +61,11 @@ export function PaymentProcessing() {
             setStatusMessage('Account setup complete! Welcome to Spoqen!');
             
             // Small delay to show success message, then redirect to dashboard
-            setTimeout(() => {
+            timeoutIds.push(setTimeout(() => {
               if (mounted) {
                 router.push('/dashboard?welcome=true');
               }
-            }, 1500);
+            }, 1500));
             return;
           }
 
@@ -73,11 +74,11 @@ export function PaymentProcessing() {
           if (attempts >= maxAttempts) {
             // Timeout - redirect with helpful message
             setStatusMessage('Setup is taking longer than expected. Redirecting...');
-            setTimeout(() => {
+            timeoutIds.push(setTimeout(() => {
               if (mounted) {
                 router.push('/dashboard?setup=pending');
               }
-            }, 2000);
+            }, 2000));
             return;
           }
 
@@ -89,14 +90,14 @@ export function PaymentProcessing() {
           }
 
           // Poll again in 1 second
-          setTimeout(checkSubscription, 1000);
+          timeoutIds.push(setTimeout(checkSubscription, 1000));
 
         } catch (error) {
           console.error('Error checking subscription:', error);
           setStatusMessage('Connection issue. Please check your internet...');
           
           // Retry after a longer delay
-          setTimeout(checkSubscription, 3000);
+          timeoutIds.push(setTimeout(checkSubscription, 3000));
         }
       };
 
@@ -107,6 +108,8 @@ export function PaymentProcessing() {
 
     return () => {
       mounted = false;
+      // Clear all timeouts to prevent memory leaks
+      timeoutIds.forEach(clearTimeout);
     };
   }, [router]);
 
