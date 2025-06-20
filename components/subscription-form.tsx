@@ -35,7 +35,7 @@ export function SubscriptionForm({
       const envValue = process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
       const environment: 'sandbox' | 'production' =
         envValue === 'production' ? 'production' : 'sandbox';
-      
+
       const paddleToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
 
       try {
@@ -62,9 +62,9 @@ export function SubscriptionForm({
           'SUBSCRIPTION_FORM',
           'Failed to initialize Paddle payment system',
           error instanceof Error ? error : new Error(String(error)),
-          { 
+          {
             environment,
-            hasToken: !!paddleToken
+            hasToken: !!paddleToken,
           }
         );
         const errorMessage =
