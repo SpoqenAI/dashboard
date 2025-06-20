@@ -31,17 +31,26 @@ export function SubscriptionForm({
 
   useEffect(() => {
     const initPaddle = async () => {
-      // Safely validate environment variable (outside try block for error logging)
+      // Safely validate environment variables (outside try block for error logging)
       const envValue = process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
       const environment: 'sandbox' | 'production' =
         envValue === 'production' ? 'production' : 'sandbox';
+      
+      const paddleToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
 
       try {
         setInitError(null); // Clear any previous errors
 
+        // Validate required environment variable
+        if (!paddleToken) {
+          throw new Error(
+            'Paddle client token is not configured. Please check your environment variables.'
+          );
+        }
+
         const paddleInstance = await initializePaddle({
           environment,
-          token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
+          token: paddleToken,
         });
         if (paddleInstance) {
           setPaddle(paddleInstance);
@@ -53,7 +62,10 @@ export function SubscriptionForm({
           'SUBSCRIPTION_FORM',
           'Failed to initialize Paddle payment system',
           error instanceof Error ? error : new Error(String(error)),
-          { environment }
+          { 
+            environment,
+            hasToken: !!paddleToken
+          }
         );
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error occurred';
