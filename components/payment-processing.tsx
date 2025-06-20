@@ -15,10 +15,12 @@ export function PaymentProcessing() {
     'Setting up your Spoqen account...'
   );
 
+  // Create Supabase client once at component level to avoid recreation
+  const supabase = createClient();
+
   useEffect(() => {
     let mounted = true;
     const timeoutIds: NodeJS.Timeout[] = [];
-    const supabase = createClient(); // Create client once and reuse
 
     async function handlePaymentSuccess() {
       // Initial animation sequence
