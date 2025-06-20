@@ -15,7 +15,8 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PhoneCall, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { Logo } from '@/components/ui/logo';
 import { resetPassword } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
 
@@ -66,9 +67,10 @@ export default function ForgotPasswordPage() {
       <div className="flex min-h-screen flex-col">
         <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center justify-between">
-            <div className="flex items-center gap-2 text-xl font-bold">
-              <PhoneCall className="h-5 w-5 text-primary" />
-              <Link href="/">Spoqen</Link>
+            <div className="flex items-center">
+              <Link href="/">
+                <Logo width={120} height={36} />
+              </Link>
             </div>
             <nav className="flex items-center gap-4">
               <Link href="/login" className="text-sm font-medium">
@@ -113,9 +115,10 @@ export default function ForgotPasswordPage() {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2 text-xl font-bold">
-            <PhoneCall className="h-5 w-5 text-primary" />
-            <Link href="/">Spoqen</Link>
+          <div className="flex items-center">
+            <Link href="/">
+              <Logo width={120} height={36} />
+            </Link>
           </div>
           <nav className="flex items-center gap-4">
             <Link href="/login" className="text-sm font-medium">

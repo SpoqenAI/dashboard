@@ -1,0 +1,140 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
+
+// Type definitions for Vapi API response
+interface VapiCallResponse {
+  id: string;
+  createdAt?: string;
+  updatedAt?: string;
+  startedAt?: string;
+  endedAt?: string;
+  type?: string;
+  status?: string;
+  cost?: number;
+  messages?: Array<{
+    role: string;
+    message: string;
+    time?: number;
+    endTime?: number;
+  }>;
+  analysis?: {
+    summary?: string;
+  };
+  destination?: {
+    number?: string;
+  };
+  customer?: {
+    name?: string;
+    number?: string;
+  };
+  phoneNumber?: {
+    number?: string;
+  };
+  // Add other fields as needed
+  [key: string]: any;
+}
+
+// Frontend expected format
+interface FrontendCall {
+  id: string;
+  callerName?: string;
+  phoneNumber?: string;
+  startedAt?: string;
+  summary?: string;
+  transcript?: string;
+}
+
+function mapVapiCallToFrontend(vapiCall: VapiCallResponse): FrontendCall {
+  // Extract caller information from various possible sources
+  const callerName =
+    vapiCall.customer?.name ||
+    (vapiCall.destination?.number ? `Caller` : undefined);
+
+  const phoneNumber =
+    vapiCall.customer?.number ||
+    vapiCall.destination?.number ||
+    vapiCall.phoneNumber?.number;
+
+  // Extract transcript from messages
+  const transcript =
+    vapiCall.messages?.map(msg => `${msg.role}: ${msg.message}`).join('\n') ||
+    undefined;
+
+  return {
+    id: vapiCall.id,
+    callerName,
+    phoneNumber,
+    startedAt: vapiCall.startedAt,
+    summary: vapiCall.analysis?.summary,
+    transcript,
+  };
+}
+
+export async function GET(request: NextRequest) {
+  const apiKey = process.env.VAPI_PRIVATE_KEY;
+  const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
+
+  if (!apiKey) {
+    logger.error('VAPI', 'API key not configured');
+    return NextResponse.json(
+      { error: 'VAPI API key not configured' },
+      { status: 500 }
+    );
+  }
+
+  // Fix: Use correct endpoint path - should be /call not /v1/calls
+  const url = new URL('/call', baseUrl);
+  const { searchParams } = new URL(request.url);
+  const limit = searchParams.get('limit');
+  if (limit) {
+    url.searchParams.set('limit', limit);
+  }
+
+  logger.debug('VAPI', 'Making request to Vapi API', {
+    url: url.toString(),
+    limit,
+  });
+
+  try {
+    const res = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        Accept: 'application/json',
+        'User-Agent': 'spoqen-dashboard/1.0',
+      },
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!res.ok) {
+      logger.error('VAPI', 'API error', undefined, {
+        status: res.status,
+        statusText: res.statusText,
+        url: url.toString(),
+      });
+      return NextResponse.json(
+        { error: 'Failed to fetch calls from VAPI' },
+        { status: res.status }
+      );
+    }
+
+    const data: VapiCallResponse[] = await res.json();
+
+    // Transform the data to match frontend expectations
+    const mappedCalls = Array.isArray(data)
+      ? data.map(mapVapiCallToFrontend)
+      : [];
+
+    logger.debug('VAPI', 'Successfully fetched and mapped calls', {
+      originalCount: Array.isArray(data) ? data.length : 0,
+      mappedCount: mappedCalls.length,
+    });
+
+    return NextResponse.json(mappedCalls);
+  } catch (error) {
+    logger.error('VAPI', 'API request failed', error as Error);
+    return NextResponse.json(
+      { error: 'Error fetching calls from VAPI' },
+      { status: 500 }
+    );
+  }
+}

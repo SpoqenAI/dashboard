@@ -2,15 +2,15 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle, PhoneCall, User } from 'lucide-react';
 import { PricingCard } from '@/components/pricing-card';
+import { Logo } from '@/components/ui/logo';
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2 text-xl font-bold">
-            <PhoneCall className="h-5 w-5 text-primary" />
-            <span>Spoqen</span>
+          <div className="flex items-center">
+            <Logo width={120} height={36} />
           </div>
           <nav className="flex items-center gap-4">
             <Link href="/login" className="text-sm font-medium">
@@ -23,7 +23,7 @@ export default function Home() {
         </div>
       </header>
       <main className="flex-1">
-        <section className="w-full bg-gradient-to-b from-white to-gray-50 py-12 dark:from-gray-950 dark:to-gray-900 md:py-24 lg:py-32">
+        <section className="w-full bg-gradient-to-br from-background via-purple-950/10 to-blue-950/10 py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
               <div className="flex flex-col justify-center space-y-4">
@@ -38,7 +38,11 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Button size="lg" asChild>
+                  <Button
+                    size="lg"
+                    asChild
+                    className="border-0 bg-spoqen-gradient hover:opacity-90"
+                  >
                     <Link href="/signup">
                       Get Started <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
@@ -51,9 +55,9 @@ export default function Home() {
               <div className="flex items-center justify-center">
                 <div className="relative aspect-video w-full max-w-[500px] overflow-hidden rounded-xl border bg-background shadow-xl">
                   <img
-                    src="/placeholder.svg?height=500&width=800&query=real estate agent on phone with modern dashboard interface"
-                    alt="Spoqen AI Receptionist Dashboard Preview"
-                    className="h-full w-full object-cover"
+                    src="/spoqen-transparent-logo.png"
+                    alt="Spoqen Logo"
+                    className="h-full w-full object-contain"
                   />
                 </div>
               </div>
@@ -107,7 +111,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <section className="w-full bg-gray-50 py-12 dark:bg-gray-900 md:py-24 lg:py-32">
+        <section className="w-full bg-muted/30 py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
@@ -122,9 +126,8 @@ export default function Home() {
       </main>
       <footer className="w-full border-t py-6">
         <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
-          <div className="flex items-center gap-2 font-semibold">
-            <PhoneCall className="h-5 w-5 text-primary" />
-            <span>Spoqen</span>
+          <div className="flex items-center">
+            <Logo width={100} height={30} />
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             © 2025 Spoqen. All rights reserved.
