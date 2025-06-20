@@ -24,7 +24,6 @@ export function useRecentCalls(options: UseRecentCallsOptions = {}) {
     const controller = new AbortController();
     const fetchCalls = async () => {
       try {
-        setLoading(true);
         setError(null);
 
         const params = new URLSearchParams();
