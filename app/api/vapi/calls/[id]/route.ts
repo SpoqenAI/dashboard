@@ -18,12 +18,12 @@ export async function GET(
 
   try {
     const callUrl = new URL(`/call/${params.id}`, baseUrl);
-    
+
     logger.debug('VAPI', 'Fetching call details', {
       callId: params.id,
-      url: callUrl.toString()
+      url: callUrl.toString(),
     });
-    
+
     const callRes = await fetch(callUrl.toString(), {
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -38,7 +38,7 @@ export async function GET(
         status: callRes.status,
         statusText: callRes.statusText,
         callId: params.id,
-        url: callUrl.toString()
+        url: callUrl.toString(),
       });
       return NextResponse.json(
         { error: 'Failed to fetch call' },
@@ -50,7 +50,7 @@ export async function GET(
 
     logger.debug('VAPI', 'Successfully fetched call details', {
       callId: params.id,
-      hasData: !!callData
+      hasData: !!callData,
     });
 
     return NextResponse.json({ call: callData });

@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 interface LogoProps {
   className?: string;
@@ -10,18 +10,19 @@ interface LogoProps {
 }
 
 export function Logo({ className = '', width = 200, height = 60 }: LogoProps) {
-  const [mounted, setMounted] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const handleImageError = () => {
+    console.warn('Logo image failed to load, falling back to text logo');
+    setImageError(true);
+  };
 
-  if (!mounted) {
-    // Return a placeholder during hydration to avoid mismatch
+  // If image failed to load, show text fallback
+  if (imageError) {
     return (
       <div
-        className={`bg-spoqen-gradient bg-clip-text text-2xl font-bold text-transparent ${className}`}
-        style={{ width, height: height * 0.6 }}
+        className={`flex items-center justify-start bg-spoqen-gradient bg-clip-text text-2xl font-bold text-transparent ${className}`}
+        style={{ width, height }}
       >
         Spoqen
       </div>
@@ -36,6 +37,7 @@ export function Logo({ className = '', width = 200, height = 60 }: LogoProps) {
       height={height}
       className={className}
       priority
+      onError={handleImageError}
     />
   );
 }

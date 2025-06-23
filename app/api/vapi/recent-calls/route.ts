@@ -46,17 +46,19 @@ interface FrontendCall {
 
 function mapVapiCallToFrontend(vapiCall: VapiCallResponse): FrontendCall {
   // Extract caller information from various possible sources
-  const callerName = vapiCall.customer?.name || 
-                    (vapiCall.destination?.number ? `Caller` : undefined);
-  
-  const phoneNumber = vapiCall.customer?.number || 
-                     vapiCall.destination?.number ||
-                     vapiCall.phoneNumber?.number;
-  
+  const callerName =
+    vapiCall.customer?.name ||
+    (vapiCall.destination?.number ? `Caller` : undefined);
+
+  const phoneNumber =
+    vapiCall.customer?.number ||
+    vapiCall.destination?.number ||
+    vapiCall.phoneNumber?.number;
+
   // Extract transcript from messages
-  const transcript = vapiCall.messages
-    ?.map(msg => `${msg.role}: ${msg.message}`)
-    .join('\n') || undefined;
+  const transcript =
+    vapiCall.messages?.map(msg => `${msg.role}: ${msg.message}`).join('\n') ||
+    undefined;
 
   return {
     id: vapiCall.id,
@@ -64,7 +66,7 @@ function mapVapiCallToFrontend(vapiCall: VapiCallResponse): FrontendCall {
     phoneNumber,
     startedAt: vapiCall.startedAt,
     summary: vapiCall.analysis?.summary,
-    transcript
+    transcript,
   };
 }
 
@@ -90,7 +92,7 @@ export async function GET(request: NextRequest) {
 
   logger.debug('VAPI', 'Making request to Vapi API', {
     url: url.toString(),
-    limit
+    limit,
   });
 
   try {
@@ -107,7 +109,7 @@ export async function GET(request: NextRequest) {
       logger.error('VAPI', 'API error', undefined, {
         status: res.status,
         statusText: res.statusText,
-        url: url.toString()
+        url: url.toString(),
       });
       return NextResponse.json(
         { error: 'Failed to fetch calls from VAPI' },
@@ -116,15 +118,15 @@ export async function GET(request: NextRequest) {
     }
 
     const data: VapiCallResponse[] = await res.json();
-    
+
     // Transform the data to match frontend expectations
-    const mappedCalls = Array.isArray(data) 
+    const mappedCalls = Array.isArray(data)
       ? data.map(mapVapiCallToFrontend)
       : [];
 
     logger.debug('VAPI', 'Successfully fetched and mapped calls', {
       originalCount: Array.isArray(data) ? data.length : 0,
-      mappedCount: mappedCalls.length
+      mappedCount: mappedCalls.length,
     });
 
     return NextResponse.json(mappedCalls);

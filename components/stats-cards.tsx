@@ -20,7 +20,8 @@ export function StatsCards() {
   const conversionRate = metrics ? Math.round(metrics.conversionRate * 100) : 0;
 
   const renderContent = (value: React.ReactNode, extra?: string) => {
-    if (loading) return <div className="text-sm text-muted-foreground">Loading...</div>;
+    if (loading)
+      return <div className="text-sm text-muted-foreground">Loading...</div>;
     if (error) return <div className="text-sm text-red-600">Error</div>;
     return (
       <>
