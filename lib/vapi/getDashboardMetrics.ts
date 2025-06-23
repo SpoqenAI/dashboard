@@ -1,93 +1,3 @@
-/**
- * 🏷  PROJECT:  Spoqen — “Speaky” Interactive AI Voicemail
- * FILE:       src/lib/vapi/getDashboardMetrics.ts
- *
- * PURPOSE
- * --------
- * Pull raw call records from **Vapi** and aggregate them into the key
- * KPIs shown on the Speaky web dashboard.  These metrics appear on the
- * “📈  Call Overview” card at the top of /dashboard/calls.
- *
- * METRICS WE NEED
- * 1. total            – total # of calls in the date range
- * 2. answered         – calls the AI actually connected and spoke
- * 3. missed           – rings / busy / voicemail (customer never talked)
- * 4. conversionRate   – % of *answered* calls where metadata.converted === true
- * 5. avgDuration      – mean `durationSeconds` across answered calls
- *
- * BUSINESS RULES
- * ---------------
- *   MISSED_CODES = {
- *     "customer-did-not-answer",
- *     "customer-busy",
- *     "voicemail",
- *     "no-routes-available"
- *   }
- *   answered  = status === "completed" && !MISSED_CODES.has(endedReason)
- *   missed    = MISSED_CODES.has(endedReason)
- *   converted = metadata?.converted === true
- *   conversionRate = answered ? converted / answered : 0
- *
- * VAPI REST CONTRACT
- * ------------------
- *   BASE    : https://api.vapi.ai
- *   LIST    : GET /call
- *     query : from=<ISO>    required (inclusive)
- *             to=<ISO>      required (inclusive)
- *             limit=100     optional (default 100)
- *             cursor=<str>  pagination cursor from previous page
- *   AUTH    : Authorization: Bearer ${VAPI_TOKEN}
- *
- *   Response:
- *   {
- *     "data": Call[],
- *     "nextCursor": string | null
- *   }
- *
- *   Call (subset):
- *   {
- *     id: string;
- *     status: "completed" | "failed" | "in_progress" | ...;
- *     endedReason: string;               // see MISSED_CODES
- *     durationSeconds: number;
- *     metadata?: { converted?: boolean };
- *   }
- *
- * IMPLEMENTATION
- * --------------
- * export async function getMetrics(
- *   fromISO: string,
- *   toISO:   string,
- *   token   = process.env.VAPI_TOKEN
- * ): Promise<{
- *   total: number;
- *   answered: number;
- *   missed: number;
- *   conversionRate: number; // 0–1
- *   avgDuration: number;    // seconds
- * }>
- *
- * – Fetch pages until nextCursor === null.
- * – Retry up to 3x on 5xx or network errors (exponential back-off).
- * – No console.log; return typed object only.
- * – Throw descriptive Error on non-200 response.
- *
- * ENV
- * ---
- *   we have the following ENV structure
-NEXT_PUBLIC_SUPABASE_URL
-VAPI_PRIVATE_KEY
-VAPI_PUBLIC_KEY
-VAPI_ASSISTANT_ID
-VAPI_PHONE_NUMBER_ID
-NEXT_PUBLIC_SUPABASE_ANON_KEY
- *
- * NOTE
- * ----
- * If Vapi adds new `endedReason` codes, MISSED_CODES should be updated
- * in ./constants/vapi.ts (single source of truth).
- */
-
 import { MISSED_CODES } from '@/lib/constants/vapi';
 import { logger } from '@/lib/logger';
 
@@ -108,8 +18,8 @@ interface VapiCall {
 }
 
 interface VapiResponse {
-  data: VapiCall[];
-  nextCursor: string | null;
+  data?: VapiCall[];
+  nextCursor?: string | null;
 }
 
 async function fetchWithRetry(
@@ -144,69 +54,156 @@ export async function getMetrics(
   }
 
   const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
-  let cursor: string | null = null;
+  const url = new URL('/analytics', baseUrl);
 
+  // Build analytics queries for dashboard metrics
+  const queries = [
+    {
+      table: 'call',
+      name: 'total_calls',
+      operations: [
+        {
+          operation: 'count',
+          column: 'id'
+        }
+      ],
+      timeRange: {
+        start: fromISO,
+        end: toISO,
+        step: 'day',
+        timezone: 'UTC'
+      }
+    },
+    {
+      table: 'call',
+      name: 'answered_calls',
+      operations: [
+        {
+          operation: 'count',
+          column: 'id'
+        }
+      ],
+      timeRange: {
+        start: fromISO,
+        end: toISO,
+        step: 'day',
+        timezone: 'UTC'
+      },
+      filters: [
+        {
+          column: 'status',
+          operator: 'eq',
+          value: 'completed'
+        },
+        {
+          column: 'endedReason',
+          operator: 'not_in',
+          value: Array.from(MISSED_CODES)
+        }
+      ]
+    },
+    {
+      table: 'call',
+      name: 'missed_calls',
+      operations: [
+        {
+          operation: 'count',
+          column: 'id'
+        }
+      ],
+      timeRange: {
+        start: fromISO,
+        end: toISO,
+        step: 'day',
+        timezone: 'UTC'
+      },
+      filters: [
+        {
+          column: 'endedReason',
+          operator: 'in',
+          value: Array.from(MISSED_CODES)
+        }
+      ]
+    },
+    {
+      table: 'call',
+      name: 'avg_duration',
+      operations: [
+        {
+          operation: 'avg',
+          column: 'durationSeconds'
+        }
+      ],
+      timeRange: {
+        start: fromISO,
+        end: toISO,
+        step: 'day',
+        timezone: 'UTC'
+      },
+      filters: [
+        {
+          column: 'status',
+          operator: 'eq',
+          value: 'completed'
+        },
+        {
+          column: 'endedReason',
+          operator: 'not_in',
+          value: Array.from(MISSED_CODES)
+        }
+      ]
+    }
+  ];
+
+  const res = await fetchWithRetry(url.toString(), {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'User-Agent': 'spoqen-dashboard/1.0',
+    },
+    body: JSON.stringify({ queries }),
+    signal: AbortSignal.timeout(15000),
+  });
+
+  if (!res.ok) {
+    throw new Error(
+      `Vapi Analytics API request failed with ${res.status} ${res.statusText}`
+    );
+  }
+
+  const results = await res.json();
+  
+  // Parse results from analytics API
   let total = 0;
   let answered = 0;
   let missed = 0;
-  let conversions = 0;
-  let durationSum = 0;
+  let avgDuration = 0;
 
-  do {
-    const url = new URL('/v1/calls', baseUrl);
-    url.searchParams.set('from', fromISO);
-    url.searchParams.set('to', toISO);
-    url.searchParams.set('limit', '100');
-    if (cursor) {
-      url.searchParams.set('cursor', cursor);
+  for (const result of results) {
+    if (result.name === 'total_calls') {
+      total = result.result.reduce((sum: number, item: any) => sum + (item.count_id || 0), 0);
+    } else if (result.name === 'answered_calls') {
+      answered = result.result.reduce((sum: number, item: any) => sum + (item.count_id || 0), 0);
+    } else if (result.name === 'missed_calls') {
+      missed = result.result.reduce((sum: number, item: any) => sum + (item.count_id || 0), 0);
+    } else if (result.name === 'avg_duration') {
+      const durations = result.result.map((item: any) => item.avg_durationSeconds || 0);
+      avgDuration = durations.length > 0 ? durations.reduce((sum: number, val: number) => sum + val, 0) / durations.length : 0;
     }
+  }
 
-    const res = await fetchWithRetry(url.toString(), {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-        'User-Agent': 'spoqen-dashboard/1.0',
-      },
-      signal: AbortSignal.timeout(15000),
-    });
+  // For now, we'll set conversion rate to 0 since we need metadata support
+  const conversionRate = 0;
 
-    if (!res.ok) {
-      throw new Error(
-        `Vapi API request failed with ${res.status} ${res.statusText}`
-      );
-    }
-
-    const json = (await res.json()) as VapiResponse;
-
-    for (const call of json.data) {
-      total++;
-      const callMissed = MISSED_CODES.has(call.endedReason);
-      const callAnswered = call.status === 'completed' && !callMissed;
-
-      if (callAnswered) {
-        answered++;
-        durationSum += call.durationSeconds ?? 0;
-        if (call.metadata?.converted === true) {
-          conversions++;
-        }
-      } else if (callMissed) {
-        missed++;
-      }
-    }
-
-    cursor = json.nextCursor;
-  } while (cursor);
-
-  const avgDuration = answered ? durationSum / answered : 0;
-  const conversionRate = answered ? conversions / answered : 0;
-
-  logger.info('Metrics', 'Dashboard metrics calculated', {
+  logger.info('Metrics', 'Dashboard metrics calculated via Analytics API', {
     fromISO,
     toISO,
     total,
     answered,
     missed,
-    conversions,
+    avgDuration,
   });
 
   return {

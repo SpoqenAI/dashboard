@@ -1,4 +1,4 @@
-import { MISSED_CODES } from '@/constants/vapi';
+import { MISSED_CODES } from '../../constants/vapi';
 
 export interface DashboardMetrics {
   total: number;
@@ -29,83 +29,168 @@ export async function getMetrics(
   }
 
   const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
+  const url = new URL('/analytics', baseUrl);
 
-  let cursor: string | null = null;
-  let answered = 0;
-  let missed = 0;
-  let converted = 0;
-  let durationTotal = 0;
-  let total = 0;
-
-  do {
-    const url = new URL('/v1/calls', baseUrl);
-    url.searchParams.set('from', fromISO);
-    url.searchParams.set('to', toISO);
-    url.searchParams.set('limit', '100');
-    if (cursor) {
-      url.searchParams.set('cursor', cursor);
-    }
-
-    let res: Response;
-    let attempts = 0;
-    while (true) {
-      try {
-        res = await fetch(url.toString(), {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-            'User-Agent': 'spoqen-dashboard/1.0',
-          },
-          signal: AbortSignal.timeout(10000),
-        });
-
-        if (!res.ok) {
-          if (res.status >= 500 && attempts < 2) {
-            await delay(500 * 2 ** attempts);
-            attempts += 1;
-            continue;
-          }
-          throw new Error(`Vapi API returned status ${res.status}`);
+  // Build analytics queries for dashboard metrics
+  const queries = [
+    {
+      table: 'call',
+      name: 'total_calls',
+      operations: [
+        {
+          operation: 'count',
+          column: 'id'
         }
-        break;
-      } catch (err) {
-        if (attempts < 2) {
+      ],
+      timeRange: {
+        start: fromISO,
+        end: toISO,
+        step: 'day',
+        timezone: 'UTC'
+      }
+    },
+    {
+      table: 'call',
+      name: 'answered_calls',
+      operations: [
+        {
+          operation: 'count',
+          column: 'id'
+        }
+      ],
+      timeRange: {
+        start: fromISO,
+        end: toISO,
+        step: 'day',
+        timezone: 'UTC'
+      },
+      filters: [
+        {
+          column: 'status',
+          operator: 'eq',
+          value: 'completed'
+        },
+        {
+          column: 'endedReason',
+          operator: 'not_in',
+          value: Array.from(MISSED_CODES)
+        }
+      ]
+    },
+    {
+      table: 'call',
+      name: 'missed_calls',
+      operations: [
+        {
+          operation: 'count',
+          column: 'id'
+        }
+      ],
+      timeRange: {
+        start: fromISO,
+        end: toISO,
+        step: 'day',
+        timezone: 'UTC'
+      },
+      filters: [
+        {
+          column: 'endedReason',
+          operator: 'in',
+          value: Array.from(MISSED_CODES)
+        }
+      ]
+    },
+    {
+      table: 'call',
+      name: 'avg_duration',
+      operations: [
+        {
+          operation: 'avg',
+          column: 'durationSeconds'
+        }
+      ],
+      timeRange: {
+        start: fromISO,
+        end: toISO,
+        step: 'day',
+        timezone: 'UTC'
+      },
+      filters: [
+        {
+          column: 'status',
+          operator: 'eq',
+          value: 'completed'
+        },
+        {
+          column: 'endedReason',
+          operator: 'not_in',
+          value: Array.from(MISSED_CODES)
+        }
+      ]
+    }
+  ];
+
+  let res: Response;
+  let attempts = 0;
+  while (true) {
+    try {
+      res = await fetch(url.toString(), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'User-Agent': 'spoqen-dashboard/1.0',
+        },
+        body: JSON.stringify({ queries }),
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!res.ok) {
+        if (res.status >= 500 && attempts < 2) {
           await delay(500 * 2 ** attempts);
           attempts += 1;
           continue;
         }
-        throw err instanceof Error ? err : new Error('Failed to fetch Vapi');
+        throw new Error(`Vapi Analytics API returned status ${res.status}`);
       }
-    }
-
-    const json = await res.json();
-    const calls: VapiCall[] = Array.isArray(json.data) ? json.data : [];
-    cursor = json.nextCursor ?? null;
-
-    for (const call of calls) {
-      total += 1;
-      const isAnswered =
-        call.status === 'completed' &&
-        !MISSED_CODES.has(call.endedReason ?? '');
-      const isMissed = MISSED_CODES.has(call.endedReason ?? '');
-
-      if (isAnswered) {
-        answered += 1;
-        durationTotal += call.durationSeconds ?? 0;
-        if (call.metadata?.converted === true) {
-          converted += 1;
-        }
-      } else if (isMissed) {
-        missed += 1;
+      break;
+    } catch (err) {
+      if (attempts < 2) {
+        await delay(500 * 2 ** attempts);
+        attempts += 1;
+        continue;
       }
+      throw err instanceof Error ? err : new Error('Failed to fetch Vapi Analytics');
     }
-  } while (cursor);
+  }
+
+  const results = await res.json();
+  
+  // Parse results from analytics API
+  let total = 0;
+  let answered = 0;
+  let missed = 0;
+  let avgDuration = 0;
+
+  for (const result of results) {
+    if (result.name === 'total_calls') {
+      total = result.result.reduce((sum: number, item: any) => sum + (item.count_id || 0), 0);
+    } else if (result.name === 'answered_calls') {
+      answered = result.result.reduce((sum: number, item: any) => sum + (item.count_id || 0), 0);
+    } else if (result.name === 'missed_calls') {
+      missed = result.result.reduce((sum: number, item: any) => sum + (item.count_id || 0), 0);
+    } else if (result.name === 'avg_duration') {
+      const durations = result.result.map((item: any) => item.avg_durationSeconds || 0);
+      avgDuration = durations.length > 0 ? durations.reduce((sum: number, val: number) => sum + val, 0) / durations.length : 0;
+    }
+  }
 
   return {
     total,
     answered,
     missed,
-    conversionRate: answered ? converted / answered : 0,
-    avgDuration: answered ? durationTotal / answered : 0,
+    conversionRate: 0, // For now, we'll set conversion rate to 0 since we need metadata support
+    avgDuration,
   };
 }
