@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@geoapify/geocoder-autocomplete": "^2.1.0",
+    "openai": "^4.67.3",
     "@geoapify/react-geocoder-autocomplete": "^2.0.1",
     "@hookform/resolvers": "^3.9.1",
     "@paddle/paddle-js": "^1.4.1",
@@ -53,6 +54,7 @@
     "@supabase/auth-helpers-nextjs": "latest",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "latest",
+    "@tanstack/react-query": "^5.81.2",
     "autoprefixer": "^10.4.20",
     "bad-words": "^4.0.0",
     "class-variance-authority": "^0.7.1",

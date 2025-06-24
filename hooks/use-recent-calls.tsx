@@ -9,6 +9,11 @@ export interface VapiCall {
   startedAt?: string;
   summary?: string;
   transcript?: string;
+  keyPoints?: string[];
+  followUpItems?: string[];
+  urgentConcerns?: string[];
+  sentiment?: 'positive' | 'neutral' | 'negative';
+  callPurpose?: string;
 }
 
 interface UseRecentCallsOptions {
@@ -41,8 +46,8 @@ export function useRecentCalls(options: UseRecentCallsOptions = {}) {
 
         const data = await res.json();
 
-        // The API now returns an array directly, not an object with a calls property
-        const callsArray = Array.isArray(data) ? data : [];
+        // The API returns an object with a calls property
+        const callsArray = data.calls || [];
         setCalls(callsArray);
       } catch (err) {
         if (!controller.signal.aborted) {

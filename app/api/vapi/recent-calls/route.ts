@@ -37,23 +37,35 @@ interface VapiCallResponse {
 // Frontend expected format
 interface FrontendCall {
   id: string;
-  callerName?: string;
   phoneNumber?: string;
+  callerName?: string;
+  status: string;
+  endedReason: string;
+  durationSeconds: number;
+  createdAt: string;
   startedAt?: string;
-  summary?: string;
+  endedAt?: string;
+  cost?: number;
   transcript?: string;
+  summary?: string;
 }
 
 function mapVapiCallToFrontend(vapiCall: VapiCallResponse): FrontendCall {
-  // Extract caller information from various possible sources
-  const callerName =
-    vapiCall.customer?.name ||
-    (vapiCall.destination?.number ? `Caller` : undefined);
-
+  // Extract phone number from various possible sources
   const phoneNumber =
     vapiCall.customer?.number ||
     vapiCall.destination?.number ||
     vapiCall.phoneNumber?.number;
+
+  // Calculate duration in seconds (if available)
+  const durationSeconds = vapiCall.endedAt && vapiCall.startedAt
+    ? Math.round((new Date(vapiCall.endedAt).getTime() - new Date(vapiCall.startedAt).getTime()) / 1000)
+    : 0;
+
+  // Determine status and ended reason
+  const status = vapiCall.status || 'unknown';
+  const endedReason = vapiCall.endedReason || 
+    (durationSeconds > 0 ? 'customer-ended-call' : 'no-answer');
 
   // Extract transcript from messages
   const transcript =
@@ -62,11 +74,17 @@ function mapVapiCallToFrontend(vapiCall: VapiCallResponse): FrontendCall {
 
   return {
     id: vapiCall.id,
-    callerName,
     phoneNumber,
+    callerName: vapiCall.customer?.name,
+    status,
+    endedReason,
+    durationSeconds,
+    createdAt: vapiCall.createdAt || vapiCall.startedAt || new Date().toISOString(),
     startedAt: vapiCall.startedAt,
-    summary: vapiCall.analysis?.summary,
+    endedAt: vapiCall.endedAt,
+    cost: vapiCall.cost,
     transcript,
+    summary: vapiCall.analysis?.summary,
   };
 }
 
@@ -129,7 +147,8 @@ export async function GET(request: NextRequest) {
       mappedCount: mappedCalls.length,
     });
 
-    return NextResponse.json(mappedCalls);
+    // Return in the format expected by the dashboard
+    return NextResponse.json({ calls: mappedCalls });
   } catch (error) {
     logger.error('VAPI', 'API request failed', error as Error);
     return NextResponse.json(

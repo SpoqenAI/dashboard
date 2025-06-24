@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react';
 
 export interface CallAnalysis {
   summary?: string;
+  keyPoints?: string[];
+  followUpItems?: string[];
+  urgentConcerns?: string[];
+  sentiment?: 'positive' | 'neutral' | 'negative';
+  callPurpose?: string;
 }
 
 export interface CallData {
