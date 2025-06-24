@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { logger } from '@/lib/logger';
+import { createSupabaseAdmin } from '@/lib/supabase/admin';
+import { sendCallSummaryEmail } from '@/lib/email/send-call-summary';
 
 export async function POST(req: NextRequest) {
   logger.debug('VAPI_WEBHOOK', 'Vapi webhook received', {
@@ -14,15 +16,23 @@ export async function POST(req: NextRequest) {
   const secret = process.env.VAPI_WEBHOOK_SECRET;
 
   if (!secret || !signature) {
-    logger.error('VAPI_WEBHOOK', 'Vapi webhook secret or signature is missing', undefined, {
-      hasSecret: !!secret,
-      hasSignature: !!signature,
-    });
+    logger.error(
+      'VAPI_WEBHOOK',
+      'Vapi webhook secret or signature is missing',
+      undefined,
+      {
+        hasSecret: !!secret,
+        hasSignature: !!signature,
+      }
+    );
     return new NextResponse('Configuration error.', { status: 500 });
   }
 
   // Validate the signature
-  const hash = crypto.createHmac('sha256', secret).update(requestBody).digest('hex');
+  const hash = crypto
+    .createHmac('sha256', secret)
+    .update(requestBody)
+    .digest('hex');
 
   if (hash !== signature) {
     logger.warn('VAPI_WEBHOOK', 'Invalid Vapi webhook signature', {
@@ -35,7 +45,7 @@ export async function POST(req: NextRequest) {
   // 2. Process the message
   try {
     const message = JSON.parse(requestBody);
-    
+
     logger.info('VAPI_WEBHOOK', 'Received Vapi webhook', {
       type: message.type,
       callId: message.call?.id,
@@ -71,8 +81,90 @@ export async function POST(req: NextRequest) {
           transcript: message.transcript ? 'Present' : 'Not available',
         });
 
-        // TODO: Store call data in database for analytics
-        // You can add database storage logic here to track calls, transcripts, etc.
+        // 2a. Attempt to email the call summary to the assistant owner.
+        try {
+          const assistantId: string | undefined =
+            message.assistant?.id ?? message.call?.assistantId;
+
+          if (!assistantId) {
+            logger.warn('EMAIL', 'No assistantId found in end-of-call-report');
+            break;
+          }
+
+          const supabase = createSupabaseAdmin();
+
+          // a. Find the assistant row → get user_id (auth id)
+          const { data: assistantRow, error: assistantError } = await supabase
+            .from('assistants')
+            .select('user_id')
+            .eq('vapi_assistant_id', assistantId)
+            .maybeSingle();
+
+          if (assistantError) {
+            logger.error(
+              'EMAIL',
+              'Failed to fetch assistant row',
+              assistantError as Error,
+              {
+                assistantId,
+              }
+            );
+            break;
+          }
+
+          if (!assistantRow) {
+            logger.warn('EMAIL', 'No assistant row found for assistantId', {
+              assistantId,
+            });
+            break;
+          }
+
+          const userId: string = assistantRow.user_id;
+
+          // b. Fetch profile email & settings in parallel
+          const [profileRes, settingsRes] = await Promise.all([
+            supabase.from('profiles').select('email').eq('id', userId).single(),
+            supabase
+              .from('user_settings')
+              .select('email_notifications')
+              .eq('id', userId)
+              .maybeSingle(),
+          ]);
+
+          const email: string | undefined = profileRes.data?.email;
+          const emailNotifications: boolean =
+            settingsRes.data?.email_notifications ?? true; // default to ON if missing
+
+          if (!email) {
+            logger.warn('EMAIL', 'User has no email on file; skipping send', {
+              userId,
+            });
+            break;
+          }
+
+          if (!emailNotifications) {
+            logger.info(
+              'EMAIL',
+              'User has email notifications disabled; skipping send',
+              {
+                userId,
+              }
+            );
+            break;
+          }
+
+          const summary: string =
+            message.summary ?? message.analysis?.summary ?? '';
+
+          await sendCallSummaryEmail({ to: email, summary });
+        } catch (emailError) {
+          logger.error(
+            'EMAIL',
+            'Unexpected failure in email flow',
+            emailError as Error
+          );
+        }
+
         break;
 
       case 'function-call':
@@ -113,7 +205,6 @@ export async function POST(req: NextRequest) {
         // Add any function-specific response data here
       });
     }
-
   } catch (error) {
     logger.error(
       'VAPI_WEBHOOK',
@@ -128,4 +219,4 @@ export async function POST(req: NextRequest) {
 
   // 3. Acknowledge receipt
   return new NextResponse(null, { status: 200 });
-} 
+}
