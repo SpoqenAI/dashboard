@@ -39,7 +39,14 @@ export interface VapiCall {
   };
   analysis?: {
     summary?: string;
-    structuredData?: any;
+    structuredData?: {
+      callPurpose?: string;
+      sentiment?: 'positive' | 'neutral' | 'negative';
+      keyPoints?: string[];
+      followUpItems?: string[];
+      urgentConcerns?: string[];
+    };
+    successEvaluation?: boolean | number | string;
   };
   transcript?: string;
   summary?: string;

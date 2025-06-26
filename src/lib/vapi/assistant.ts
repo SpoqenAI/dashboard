@@ -4,6 +4,13 @@ export interface AssistantDTO {
   firstMessage?: string;
   systemPrompt?: string;
   voice?: { provider: string; voiceId: string };
+  analysisPlan?: {
+    summaryPrompt?: string;
+    structuredDataPrompt?: string;
+    structuredDataSchema?: object;
+    successEvaluationPrompt?: string;
+    successEvaluationRubric?: string;
+  };
 }
 
 export class UpdateAssistantError extends Error {
@@ -72,6 +79,9 @@ export async function updateAssistant(
       model: 'gpt-4o',
       messages: [{ role: 'system', content: dto.systemPrompt }],
     };
+  }
+  if (dto.analysisPlan !== undefined) {
+    body.analysisPlan = dto.analysisPlan;
   }
 
   const res = await retry(() =>

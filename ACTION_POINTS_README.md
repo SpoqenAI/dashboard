@@ -1,6 +1,6 @@
 # AI-Generated Action Points Feature
 
-This feature adds intelligent action point extraction to your VAPI dashboard, providing key insights from call transcripts and summaries.
+This feature adds intelligent action point extraction to your VAPI dashboard, providing key insights from call transcripts and summaries using Vapi's built-in call analysis.
 
 ## Features
 
@@ -13,9 +13,9 @@ This feature adds intelligent action point extraction to your VAPI dashboard, pr
 
 ### 🚀 How It Works
 
-1. **Automatic Generation**: When you view call details, action points are automatically generated from the transcript or summary
-2. **AI-Powered Analysis**: Uses OpenAI GPT-4o-mini to analyze call content and extract meaningful insights
-3. **Real-time Processing**: Action points are generated on-demand for each call
+1. **Automatic Analysis**: Vapi automatically analyzes calls using Anthropic Claude Sonnet (with OpenAI GPT-4o fallback)
+2. **Built-in Processing**: Analysis happens automatically after each call completes, no additional API costs
+3. **Structured Data Extraction**: Uses custom prompts and JSON schema to extract action points
 4. **Smart Categorization**: Automatically categorizes insights into different types of action items
 
 ### 📱 User Interface
@@ -33,26 +33,28 @@ This feature adds intelligent action point extraction to your VAPI dashboard, pr
 ### 🔧 Technical Implementation
 
 #### Files Added/Modified
-- `lib/ai-service.ts` - Core AI service for action point extraction
+- `lib/vapi/analysis-config.ts` - Vapi analysis plan configuration for action points
+- `lib/vapi/configure-action-points.ts` - Utilities to configure assistant analysis
 - `hooks/use-action-points.tsx` - React hook for action points functionality
-- `app/api/vapi/calls/[id]/action-points/route.ts` - API endpoint for generation
+- `app/api/vapi/calls/[id]/action-points/route.ts` - API endpoint to extract from Vapi analysis
+- `app/api/vapi/configure-action-points/route.ts` - API endpoint to configure assistant
 - `app/dashboard/page.tsx` - Updated dashboard with action points display
-- `components/call-history-list.tsx` - Enhanced call history with action points
-- `hooks/use-recent-calls.tsx` - Updated interfaces for action points data
-- `hooks/use-call-details.tsx` - Extended call analysis interface
+- `lib/types.ts` - Updated type definitions for Vapi analysis structure
 
-#### Dependencies Added
-- `openai: ^4.67.3` - OpenAI API client for AI analysis
+#### Dependencies Used
+- Uses Vapi's built-in analysis feature - no additional AI API costs!
 
 ### ⚙️ Configuration
 
 #### Environment Variables Required
 ```bash
-OPENAI_API_KEY=your_openai_api_key_here
+VAPI_PRIVATE_KEY=your_vapi_api_key_here
 ```
 
 #### API Endpoints
-- `POST /api/vapi/calls/[id]/action-points` - Generate action points for a specific call
+- `POST /api/vapi/calls/[id]/action-points` - Extract action points from Vapi analysis
+- `POST /api/vapi/configure-action-points` - Configure assistant for action points analysis
+- `GET /api/vapi/configure-action-points?assistantId=xxx` - Check if assistant is configured
 
 ### 🎨 UI Components
 
@@ -71,19 +73,21 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 ### 🔄 Data Flow
 
-1. User clicks "View Details" on a call
-2. Dashboard fetches call data from VAPI
-3. If transcript/summary exists, action points are generated
-4. AI analyzes content and returns structured insights
-5. UI displays categorized action points with appropriate styling
+1. **Call Completion**: Vapi automatically analyzes the call using configured analysis plan
+2. **Structured Data Storage**: Action points are extracted and stored in `call.analysis.structuredData`
+3. **User Views Call**: User clicks "View Details" on a call in the dashboard
+4. **Data Extraction**: Dashboard fetches call data and extracts action points from Vapi's analysis
+5. **UI Display**: Action points are displayed with appropriate styling and categorization
 
 ### 📊 Benefits
 
+- **Cost Effective**: Uses Vapi's included analysis feature - no additional API costs
 - **Faster Decision Making**: Quickly identify what needs attention
 - **Better Follow-up**: Clear action items prevent things from falling through cracks
 - **Improved Customer Service**: Understand call sentiment and urgency
 - **Time Savings**: No need to manually review entire transcripts
 - **Consistent Analysis**: AI provides standardized insight extraction
+- **Automatic Processing**: Analysis happens immediately after each call completes
 
 ### 🛠️ Customization
 

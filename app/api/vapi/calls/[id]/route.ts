@@ -3,8 +3,9 @@ import { logger } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
   const apiKey = process.env.VAPI_PRIVATE_KEY;
   const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
 
@@ -17,10 +18,10 @@ export async function GET(
   }
 
   try {
-    const callUrl = new URL(`/call/${params.id}`, baseUrl);
+    const callUrl = new URL(`/call/${resolvedParams.id}`, baseUrl);
 
     logger.debug('VAPI', 'Fetching call details', {
-      callId: params.id,
+      callId: resolvedParams.id,
       url: callUrl.toString(),
     });
 
@@ -37,7 +38,7 @@ export async function GET(
       logger.error('VAPI', 'Failed to fetch call', undefined, {
         status: callRes.status,
         statusText: callRes.statusText,
-        callId: params.id,
+        callId: resolvedParams.id,
         url: callUrl.toString(),
       });
       return NextResponse.json(
@@ -49,7 +50,7 @@ export async function GET(
     const callData = await callRes.json();
 
     logger.debug('VAPI', 'Successfully fetched call details', {
-      callId: params.id,
+      callId: resolvedParams.id,
       hasData: !!callData,
     });
 
