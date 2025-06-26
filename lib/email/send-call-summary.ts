@@ -58,7 +58,7 @@ export async function sendCallSummaryEmail({
   const msg = {
     to,
     from,
-    subject: 'Your AI Receptionist – Call Summary',
+    subject: '[Spoqen] Call Summary',
     text: summary,
     html,
   };

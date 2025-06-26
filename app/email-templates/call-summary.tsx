@@ -32,14 +32,26 @@ export default function CallSummaryEmail({
     >
       {/* Header row with small logo */}
       <tr>
-        <td style={{ padding: '24px 20px 0' }}>
-          <img
-            src={logoUrl}
-            alt="Spoqen logo"
-            width={32}
-            height={32}
-            style={{ display: 'block' }}
-          />
+        <td align="center" style={{ padding: '24px 0 0' }}>
+          <table
+            width="100%"
+            cellPadding={0}
+            cellSpacing={0}
+            role="presentation"
+            style={{ textAlign: 'left', maxWidth: '600px' }}
+          >
+            <tr>
+              <td style={{ padding: '0 20px' }}>
+                <img
+                  src={logoUrl}
+                  alt="Spoqen logo"
+                  width={32}
+                  height={32}
+                  style={{ display: 'block' }}
+                />
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
 
@@ -55,52 +67,64 @@ export default function CallSummaryEmail({
         </td>
       </tr>
 
-      {/* Main Content */}
+      {/* Main Content (centred) */}
       <tr>
-        <td style={{ padding: '24px 20px', maxWidth: '600px' }}>
-          <div
-            style={{
-              color: BRAND_COLOR,
-              fontSize: '20px',
-              fontWeight: 600,
-              marginBottom: '12px',
-            }}
+        <td align="center" style={{ padding: '24px 0' }}>
+          <table
+            width="100%"
+            cellPadding={0}
+            cellSpacing={0}
+            role="presentation"
+            style={{ textAlign: 'left', maxWidth: '600px' }}
           >
-            Call Summary
-          </div>
-          <div
-            style={{
-              fontSize: '14px',
-              lineHeight: 1.5,
-              whiteSpace: 'pre-line',
-              color: '#000',
-            }}
-          >
-            {summary}
-          </div>
-          {phoneNumber && (
-            <div
-              style={{
-                marginTop: '16px',
-                fontSize: '14px',
-                color: '#000',
-              }}
-            >
-              Caller phone: <strong>{phoneNumber}</strong>
-            </div>
-          )}
-          <div style={{ marginTop: '20px' }}>
-            <a
-              href={dashboardUrl}
-              style={{
-                color: BRAND_COLOR,
-                textDecoration: 'none',
-                fontSize: '14px',
-              }}
-            >
-              View all your recent calls →
-            </a>
-          </div>
+            <tr>
+              <td style={{ padding: '0 20px' }}>
+                <div
+                  style={{
+                    color: BRAND_COLOR,
+                    fontSize: '20px',
+                    fontWeight: 600,
+                    marginBottom: '12px',
+                  }}
+                >
+                  Call Summary
+                </div>
+                <div
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: 1.5,
+                    whiteSpace: 'pre-line',
+                    color: '#000',
+                  }}
+                >
+                  {summary}
+                </div>
+                {phoneNumber && (
+                  <div
+                    style={{
+                      marginTop: '16px',
+                      fontSize: '14px',
+                      color: '#000',
+                    }}
+                  >
+                    Caller phone: <strong>{phoneNumber}</strong>
+                  </div>
+                )}
+                <div style={{ marginTop: '20px' }}>
+                  <a
+                    href={dashboardUrl}
+                    style={{
+                      color: BRAND_COLOR,
+                      textDecoration: 'none',
+                      fontSize: '14px',
+                    }}
+                  >
+                    View all your recent calls →
+                  </a>
+                </div>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
 
