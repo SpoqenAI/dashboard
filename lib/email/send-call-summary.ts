@@ -3,6 +3,7 @@ import { logger } from '@/lib/logger';
 interface SendCallSummaryOptions {
   to: string;
   summary: string;
+  phoneNumber?: string;
 }
 
 /**
@@ -12,6 +13,7 @@ interface SendCallSummaryOptions {
 export async function sendCallSummaryEmail({
   to,
   summary,
+  phoneNumber,
 }: SendCallSummaryOptions) {
   const apiKey = process.env.SENDGRID_API_KEY;
   const from = process.env.SENDGRID_FROM_EMAIL;
@@ -29,24 +31,36 @@ export async function sendCallSummaryEmail({
   const sgMail = sgMailModule.default;
   sgMail.setApiKey(apiKey);
 
-  // Utility: escape HTML entities to prevent XSS when injecting user-generated text
-  function escapeHtml(text: string): string {
-    const map: Record<string, string> = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;',
-    };
-    return text.replace(/[&<>"']/g, m => map[m]);
-  }
+  const baseUrl = 'https://www.spoqen.com';
+
+  const smallLogoUrl = `${baseUrl}/Spoqen.png`;
+  const fullLogoUrl = `${baseUrl}/Spoqen-full.png`;
+  const dashboardUrl = `${baseUrl}/dashboard`;
+
+  // Dynamically import React, the SSR renderer, and the template – this keeps them out of
+  // the default webpack bundle for route handlers, satisfying Next.js' server-component rules.
+  const { default: React } = await import('react');
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const { default: CallSummaryEmail } = await import(
+    '@/app/email-templates/call-summary'
+  );
+
+  const html = renderToStaticMarkup(
+    React.createElement(CallSummaryEmail, {
+      summary,
+      phoneNumber,
+      logoUrl: smallLogoUrl,
+      fullLogoUrl,
+      dashboardUrl,
+    })
+  );
 
   const msg = {
     to,
     from,
     subject: 'Your AI Receptionist – Call Summary',
     text: summary,
-    html: `<p>${escapeHtml(summary).replace(/\n/g, '<br/>')}</p>`,
+    html,
   };
 
   try {
