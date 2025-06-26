@@ -7,7 +7,7 @@ export function DashboardHeader() {
     <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center">
-          <Link href="/dashboard">
+          <Link href="/">
             <Logo width={120} height={36} />
           </Link>
         </div>
