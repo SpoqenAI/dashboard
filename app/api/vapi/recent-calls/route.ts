@@ -58,9 +58,16 @@ function mapVapiCallToFrontend(vapiCall: VapiCallResponse): FrontendCall {
     vapiCall.phoneNumber?.number;
 
   // Calculate duration in seconds (if available)
-  const durationSeconds = vapiCall.endedAt && vapiCall.startedAt
-    ? Math.round((new Date(vapiCall.endedAt).getTime() - new Date(vapiCall.startedAt).getTime()) / 1000)
-    : 0;
+  let durationSeconds = 0;
+  if (vapiCall.endedAt && vapiCall.startedAt) {
+    const endedDate = new Date(vapiCall.endedAt);
+    const startedDate = new Date(vapiCall.startedAt);
+    
+    // Check if both dates are valid before calculating duration
+    if (!isNaN(endedDate.getTime()) && !isNaN(startedDate.getTime())) {
+      durationSeconds = Math.round((endedDate.getTime() - startedDate.getTime()) / 1000);
+    }
+  }
 
   // Determine status and ended reason
   const status = vapiCall.status || 'unknown';

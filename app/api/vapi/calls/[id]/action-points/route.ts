@@ -56,6 +56,12 @@ export async function POST(
     );
   }
 
+  // Log successful validation for security monitoring
+  logger.debug('VAPI', 'Call ID validation passed', {
+    callId,
+    length: callId.length
+  });
+
   const apiKey = process.env.VAPI_PRIVATE_KEY;
   const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
 
