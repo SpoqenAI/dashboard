@@ -171,6 +171,27 @@ export async function createAssistantAction(
       throw assistantError;
     }
 
+    // Sync assistant data to user_settings table for dashboard consistency
+    const { error: settingsError } = await supabase
+      .from('user_settings')
+      .upsert({
+        id: user.id,
+        assistant_name: assistantName,
+        ai_greeting: greeting,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'id'
+      });
+
+    if (settingsError) {
+      // Log but don't fail - assistant creation is more important
+      logger.warn(
+        'ONBOARDING_ACTIONS',
+        'Failed to sync assistant data to user_settings',
+        { userId: logger.maskUserId(user.id), error: settingsError }
+      );
+    }
+
     // Also update the business name in the profile if it has changed
     const { error: profileError } = await supabase
       .from('profiles')
