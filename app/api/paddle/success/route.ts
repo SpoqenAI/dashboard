@@ -148,13 +148,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Create immediate pending subscription record using atomic upsert function
+    // Create immediate active subscription record for faster user experience
     const secureSubscriptionId = subscriptionId || generateSecureSubscriptionId();
     
-    const pendingSubscriptionData = {
+    const subscriptionData = {
       id: secureSubscriptionId,
       user_id: userId,
-      status: 'pending_webhook',
+      status: 'active', // Create as active immediately for faster UX
       price_id: process.env.NEXT_PUBLIC_PADDLE_PRICE_ID || null,
       quantity: 1,
       cancel_at_period_end: false,
@@ -166,18 +166,18 @@ export async function GET(request: NextRequest) {
     // Use atomic upsert function to prevent race conditions
     const { data: upsertResult, error: upsertError } = await supabase
       .rpc('upsert_subscription', {
-        p_subscription_data: pendingSubscriptionData
+        p_subscription_data: subscriptionData
       });
 
     if (upsertError) {
-      logger.error('PADDLE_SUCCESS', 'Failed to upsert pending subscription', upsertError, {
+      logger.error('PADDLE_SUCCESS', 'Failed to upsert subscription', upsertError, {
         userId: logger.maskUserId(userId),
         subscriptionId: secureSubscriptionId,
       });
       
-      // Still redirect to processing page which will poll for webhook
+      // Still redirect to processing page for error handling
       return NextResponse.redirect(
-        new URL('/onboarding/processing?payment=success&error=subscription_pending', request.url)
+        new URL('/onboarding/processing?payment=success&error=subscription_failed', request.url)
       );
     }
 
@@ -190,7 +190,7 @@ export async function GET(request: NextRequest) {
       });
       
       return NextResponse.redirect(
-        new URL('/onboarding/processing?payment=success&error=subscription_pending', request.url)
+        new URL('/onboarding/processing?payment=success&error=subscription_failed', request.url)
       );
     }
 
@@ -216,7 +216,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    logger.info('PADDLE_SUCCESS', 'Pending subscription upserted successfully', {
+    logger.info('PADDLE_SUCCESS', 'Active subscription created successfully', {
       userId: logger.maskUserId(userId),
       subscriptionId: secureSubscriptionId,
       operation: result.operation,

@@ -219,7 +219,6 @@ export async function createAssistantAction(
       .from('user_settings')
       .upsert({
         id: user.id,
-        assistant_name: assistantName,
         ai_greeting: greeting,
         updated_at: new Date().toISOString(),
       }, {

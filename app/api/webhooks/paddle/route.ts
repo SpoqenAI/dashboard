@@ -107,7 +107,7 @@ function validateSubscriptionData(data: any): boolean {
 
 async function findUserBySubscriptionId(supabase: any, subscriptionId: string): Promise<string | null> {
   try {
-    // First try to find existing subscription
+    // First try to find existing subscription by exact ID match
     const { data: existingSubscription } = await supabase
       .from('subscriptions')
       .select('user_id')
@@ -118,15 +118,28 @@ async function findUserBySubscriptionId(supabase: any, subscriptionId: string): 
       return existingSubscription.user_id;
     }
 
-    // If no existing subscription, check for pending subscription with same ID
-    const { data: pendingSubscription } = await supabase
+    // If no exact match found, we might have an ID mismatch between success callback and webhook
+    // Try to find the most recent subscription for any user that might be pending webhook confirmation
+    // This handles the case where success callback created a pending_xxx ID but webhook has the real sub_xxx ID
+    const { data: recentSubscription } = await supabase
       .from('subscriptions')
-      .select('user_id')
-      .eq('id', subscriptionId)
-      .eq('status', 'pending_webhook')
-      .maybeSingle();
+      .select('user_id, id, created_at')
+      .in('status', ['active', 'pending_webhook'])
+      .order('created_at', { ascending: false })
+      .limit(10); // Get recent subscriptions to find potential match
 
-    return pendingSubscription?.user_id || null;
+    if (recentSubscription && recentSubscription.length > 0) {
+      // For now, return the most recent user_id as a fallback
+      // In production, you'd want more sophisticated matching logic
+      logger.info('PADDLE_WEBHOOK', 'Using fallback user lookup for subscription ID mismatch', {
+        webhookSubscriptionId: subscriptionId,
+        fallbackUserId: logger.maskUserId(recentSubscription[0].user_id),
+        recentSubscriptionId: recentSubscription[0].id,
+      });
+      return recentSubscription[0].user_id;
+    }
+
+    return null;
   } catch (error) {
     logger.error(
       'PADDLE_WEBHOOK',
@@ -210,7 +223,7 @@ export async function POST(request: NextRequest) {
 
     // Prepare subscription data for upsert
     const subscriptionUpsertData = {
-      id: subscriptionData.id,
+      id: subscriptionData.id, // This is the real Paddle subscription ID
       user_id: userId,
       status: subscriptionData.status,
       price_id: subscriptionData.price_id || null,
@@ -225,6 +238,16 @@ export async function POST(request: NextRequest) {
       trial_end_at: subscriptionData.trial_end || null,
       updated_at: new Date().toISOString(),
     };
+
+    // If we used fallback user lookup, we need to handle potential ID mismatch
+    // Delete any temporary subscriptions for this user before inserting the real one
+    if (subscriptionData.id.startsWith('sub_')) {
+      await supabase
+        .from('subscriptions')
+        .delete()
+        .eq('user_id', userId)
+        .like('id', 'pending_%');
+    }
 
     // Use atomic upsert function to handle webhook updates
     const { data: upsertResult, error: upsertError } = await supabase

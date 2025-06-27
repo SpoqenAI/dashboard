@@ -7,18 +7,18 @@ import { createClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/logger';
 import { OnboardingStepper } from '@/components/onboarding-stepper';
 
-// Configuration for processing behavior
+// Configuration for processing behavior - optimized for faster redirects
 const PROCESSING_CONFIG = {
-  maxAttempts: 60,
-  pollingIntervalMs: 1000,
-  timeoutMs: 60000,
-  instantPollingDelayMs: 1000,
-  standardPollingDelayMs: 2000,
-  successDelayMs: 1500,
+  maxAttempts: 30, // Reduced from 60 since we create active subscriptions immediately
+  pollingIntervalMs: 500, // Faster polling for better UX
+  timeoutMs: 30000, // Reduced timeout since subscriptions are created as active
+  instantPollingDelayMs: 200, // Much faster initial check
+  standardPollingDelayMs: 500, // Faster standard polling
+  successDelayMs: 800, // Shorter success delay
   errorDelayMs: 2000,
-  retryDelayMs: 3000,
-  timeoutWarningMs: 3000,
-  finalRedirectDelayMs: 5000,
+  retryDelayMs: 1500, // Faster retry
+  timeoutWarningMs: 2000,
+  finalRedirectDelayMs: 3000, // Shorter final delay
 } as const;
 
 export default function ProcessingPage() {
@@ -48,15 +48,30 @@ export default function ProcessingPage() {
       if (instant) {
         // Instant flow - payment was immediately processed
         setStatusMessage('Payment confirmed! Setting up your account...');
-        await delay(PROCESSING_CONFIG.instantPollingDelayMs / 3, signal); // 300ms
+        await delay(PROCESSING_CONFIG.instantPollingDelayMs, signal); // 200ms
         if (signal.aborted) return;
         setStage('text');
         
-        await delay(PROCESSING_CONFIG.instantPollingDelayMs * 0.8, signal); // 800ms  
+        await delay(PROCESSING_CONFIG.instantPollingDelayMs, signal); // 200ms  
         if (signal.aborted) return;
         setStage('processing');
         
-        // Start polling immediately since we expect faster results
+        // Check immediately for active subscription, then start polling
+        const immediateCheck = await checkSubscription(signal);
+        if (signal.aborted) return;
+        
+        if (immediateCheck?.status === 'active') {
+          // Immediate success - redirect right away
+          setStage('complete');
+          setStatusMessage('Account setup complete! Welcome to Spoqen!');
+          await delay(PROCESSING_CONFIG.successDelayMs / 2, signal); // 400ms
+          if (!signal.aborted) {
+            router.push('/dashboard?welcome=true');
+          }
+          return;
+        }
+        
+        // If not immediately active, start polling
         await delay(PROCESSING_CONFIG.instantPollingDelayMs, signal);
         if (signal.aborted) return;
         await pollForSubscription(signal);
@@ -167,12 +182,13 @@ export default function ProcessingPage() {
         return null;
       }
 
-      // Check for any subscription (active or pending)
+      // Check for any subscription (prioritize active status)
       const { data: subscription, error } = await supabase
         .from('subscriptions')
         .select('status')
         .eq('user_id', user.id)
         .in('status', ['active', 'pending_webhook'])
+        .order('created_at', { ascending: false }) // Get most recent first
         .maybeSingle();
 
       if (error) {
@@ -183,16 +199,16 @@ export default function ProcessingPage() {
     }
 
     function updateProgressMessage(attempts: number) {
-      if (attempts > 30) {
-        setStatusMessage('Still processing your payment... almost done');
-      } else if (attempts > 15) {
+      if (attempts > 20) {
+        setStatusMessage('Still setting up your account... almost ready');
+      } else if (attempts > 10) {
         setStatusMessage('Almost ready... finalizing your account setup');
       } else if (attempts > 5) {
         setStatusMessage('Configuring your AI assistant...');
-      } else if (attempts < 5) {
-        setStatusMessage('Payment confirmed! Finalizing your account setup...');
+      } else if (attempts > 2) {
+        setStatusMessage('Finalizing your account setup...');
       } else {
-        setStatusMessage('Setting up your AI assistant...');
+        setStatusMessage('Payment confirmed! Setting up your account...');
       }
     }
 
@@ -289,7 +305,7 @@ export default function ProcessingPage() {
               <p className="text-sm text-gray-500">
                 {isInstant 
                   ? 'Your payment was processed instantly!' 
-                  : 'This may take up to a minute'
+                  : 'This usually takes just a few seconds'
                 }
               </p>
             )}
