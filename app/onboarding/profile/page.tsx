@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Card,
@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { logger } from '@/lib/logger';
 
-export default function ProfileSetupPage() {
+function ProfileSetupContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
@@ -159,5 +159,27 @@ export default function ProfileSetupPage() {
         <ProfileSetupForm initialData={profile} />
       </Card>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="mx-auto w-full max-w-2xl">
+      <OnboardingStepper currentStep="profile" />
+      <Card>
+        <CardHeader>
+          <CardTitle>Welcome to Spoqen!</CardTitle>
+          <CardDescription>Loading...</CardDescription>
+        </CardHeader>
+      </Card>
+    </div>
+  );
+}
+
+export default function ProfileSetupPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <ProfileSetupContent />
+    </Suspense>
   );
 }
