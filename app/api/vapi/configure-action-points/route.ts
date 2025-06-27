@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { configureActionPointsAnalysis, isActionPointsAnalysisConfigured } from '@/lib/vapi/configure-action-points';
+import {
+  configureActionPointsAnalysis,
+  isActionPointsAnalysisConfigured,
+} from '@/lib/vapi/configure-action-points';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +28,11 @@ export async function POST(request: NextRequest) {
       assistantId,
     });
   } catch (error) {
-    logger.error('VAPI', 'Failed to configure action points analysis', error as Error);
+    logger.error(
+      'VAPI',
+      'Failed to configure action points analysis',
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to configure assistant' },
       { status: 500 }
@@ -56,10 +63,14 @@ export async function GET(request: NextRequest) {
       isConfigured,
     });
   } catch (error) {
-    logger.error('VAPI', 'Failed to check action points analysis configuration', error as Error);
+    logger.error(
+      'VAPI',
+      'Failed to check action points analysis configuration',
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to check configuration' },
       { status: 500 }
     );
   }
-} 
+}

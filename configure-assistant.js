@@ -16,16 +16,21 @@ if (!assistantId) {
   process.exit(1);
 }
 
-console.log(`🔧 Configuring assistant ${assistantId} for action points analysis...`);
+console.log(
+  `🔧 Configuring assistant ${assistantId} for action points analysis...`
+);
 
 const configureAssistant = async () => {
   try {
     // Get base URL from environment variable or use localhost as fallback
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.APP_URL ||
+      'http://localhost:3000';
     const apiUrl = `${baseUrl}/api/vapi/configure-action-points`;
-    
+
     console.log(`🌐 Using API URL: ${apiUrl}`);
-    
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -41,15 +46,21 @@ const configureAssistant = async () => {
       console.log('📋 Details:', result);
       console.log('');
       console.log('🎉 Your assistant is now ready to generate action points!');
-      console.log('New calls made with this assistant will automatically include:');
+      console.log(
+        'New calls made with this assistant will automatically include:'
+      );
       console.log('  • Call purpose analysis');
       console.log('  • Sentiment detection');
       console.log('  • Key discussion points');
       console.log('  • Follow-up action items');
       console.log('  • Urgent concerns identification');
       console.log('');
-      console.log('⚠️  Note: This only affects NEW calls. Existing calls will still show "Analysis not available"');
-      console.log('   because they were made before the assistant was configured.');
+      console.log(
+        '⚠️  Note: This only affects NEW calls. Existing calls will still show "Analysis not available"'
+      );
+      console.log(
+        '   because they were made before the assistant was configured.'
+      );
     } else {
       console.error('❌ Configuration failed:', result);
     }
@@ -61,4 +72,4 @@ const configureAssistant = async () => {
   }
 };
 
-configureAssistant(); 
+configureAssistant();

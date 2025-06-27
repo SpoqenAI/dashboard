@@ -7,22 +7,22 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const resolvedParams = await params;
-  
+
   // Validate call ID parameter
   const callId = resolvedParams.id;
-  
+
   // Check if call ID exists and is a string
   if (!callId || typeof callId !== 'string') {
-    logger.warn('VAPI', 'Invalid call ID: missing or not a string', { 
+    logger.warn('VAPI', 'Invalid call ID: missing or not a string', {
       providedId: callId,
-      type: typeof callId 
+      type: typeof callId,
     });
     return NextResponse.json(
       { error: 'Invalid call ID: must be a non-empty string' },
       { status: 400 }
     );
   }
-  
+
   // Check if call ID is not empty and has reasonable length
   if (callId.trim().length === 0) {
     logger.warn('VAPI', 'Invalid call ID: empty string');
@@ -31,27 +31,30 @@ export async function POST(
       { status: 400 }
     );
   }
-  
+
   if (callId.length < 8 || callId.length > 128) {
-    logger.warn('VAPI', 'Invalid call ID: length out of bounds', { 
+    logger.warn('VAPI', 'Invalid call ID: length out of bounds', {
       callId,
-      length: callId.length 
+      length: callId.length,
     });
     return NextResponse.json(
       { error: 'Invalid call ID: length must be between 8 and 128 characters' },
       { status: 400 }
     );
   }
-  
+
   // Check if call ID matches expected format (alphanumeric, hyphens, underscores)
   const validIdPattern = /^[a-zA-Z0-9_-]+$/;
   if (!validIdPattern.test(callId)) {
-    logger.warn('VAPI', 'Invalid call ID: contains invalid characters', { 
+    logger.warn('VAPI', 'Invalid call ID: contains invalid characters', {
       callId,
-      allowedPattern: 'alphanumeric characters, hyphens, and underscores only'
+      allowedPattern: 'alphanumeric characters, hyphens, and underscores only',
     });
     return NextResponse.json(
-      { error: 'Invalid call ID: must contain only alphanumeric characters, hyphens, and underscores' },
+      {
+        error:
+          'Invalid call ID: must contain only alphanumeric characters, hyphens, and underscores',
+      },
       { status: 400 }
     );
   }
@@ -59,7 +62,7 @@ export async function POST(
   // Log successful validation for security monitoring
   logger.debug('VAPI', 'Call ID validation passed', {
     callId,
-    length: callId.length
+    length: callId.length,
   });
 
   const apiKey = process.env.VAPI_PRIVATE_KEY;
@@ -92,11 +95,16 @@ export async function POST(
     });
 
     if (!callRes.ok) {
-      logger.error('VAPI', 'Failed to fetch call for action points', undefined, {
-        status: callRes.status,
-        statusText: callRes.statusText,
-        callId: callId,
-      });
+      logger.error(
+        'VAPI',
+        'Failed to fetch call for action points',
+        undefined,
+        {
+          status: callRes.status,
+          statusText: callRes.statusText,
+          callId: callId,
+        }
+      );
       return NextResponse.json(
         { error: 'Failed to fetch call details' },
         { status: callRes.status }
@@ -138,14 +146,18 @@ export async function POST(
       actionPoints.sentiment = 'neutral';
     }
 
-    logger.debug('VAPI', 'Successfully extracted action points from Vapi analysis', {
-      callId: callId,
-      keyPointsCount: actionPoints.keyPoints.length,
-      followUpItemsCount: actionPoints.followUpItems.length,
-      urgentConcernsCount: actionPoints.urgentConcerns.length,
-      sentiment: actionPoints.sentiment,
-      callPurpose: actionPoints.callPurpose,
-    });
+    logger.debug(
+      'VAPI',
+      'Successfully extracted action points from Vapi analysis',
+      {
+        callId: callId,
+        keyPointsCount: actionPoints.keyPoints.length,
+        followUpItemsCount: actionPoints.followUpItems.length,
+        urgentConcernsCount: actionPoints.urgentConcerns.length,
+        sentiment: actionPoints.sentiment,
+        callPurpose: actionPoints.callPurpose,
+      }
+    );
 
     return NextResponse.json({
       callId: callId,
@@ -154,7 +166,11 @@ export async function POST(
       source: 'vapi-analysis',
     });
   } catch (error) {
-    logger.error('VAPI', 'Failed to extract action points from Vapi analysis', error as Error);
+    logger.error(
+      'VAPI',
+      'Failed to extract action points from Vapi analysis',
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Error extracting action points' },
       { status: 500 }

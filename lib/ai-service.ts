@@ -14,7 +14,10 @@ export async function extractActionPoints(
   summary?: string
 ): Promise<ActionPoints> {
   if (!process.env.OPENAI_API_KEY) {
-    logger.warn('AI', 'OpenAI API key not configured, returning empty action points');
+    logger.warn(
+      'AI',
+      'OpenAI API key not configured, returning empty action points'
+    );
     return {
       keyPoints: [],
       followUpItems: [],
@@ -25,7 +28,10 @@ export async function extractActionPoints(
   }
 
   if (!transcript && !summary) {
-    logger.warn('AI', 'No transcript or summary provided for action point extraction');
+    logger.warn(
+      'AI',
+      'No transcript or summary provided for action point extraction'
+    );
     return {
       keyPoints: [],
       followUpItems: [],
@@ -37,7 +43,7 @@ export async function extractActionPoints(
 
   try {
     const content = transcript || summary || '';
-    
+
     const systemPrompt = `You are an AI assistant that analyzes call transcripts and summaries to extract key action points. 
     
 Your task is to analyze the provided call content and extract:
@@ -90,15 +96,21 @@ ${content}`;
     }
 
     const actionPoints = JSON.parse(result) as ActionPoints;
-    
+
     // Validate the response structure
     if (!actionPoints.keyPoints || !Array.isArray(actionPoints.keyPoints)) {
       actionPoints.keyPoints = [];
     }
-    if (!actionPoints.followUpItems || !Array.isArray(actionPoints.followUpItems)) {
+    if (
+      !actionPoints.followUpItems ||
+      !Array.isArray(actionPoints.followUpItems)
+    ) {
       actionPoints.followUpItems = [];
     }
-    if (!actionPoints.urgentConcerns || !Array.isArray(actionPoints.urgentConcerns)) {
+    if (
+      !actionPoints.urgentConcerns ||
+      !Array.isArray(actionPoints.urgentConcerns)
+    ) {
       actionPoints.urgentConcerns = [];
     }
     if (!actionPoints.sentiment) {
@@ -119,7 +131,7 @@ ${content}`;
     return actionPoints;
   } catch (error) {
     logger.error('AI', 'Failed to extract action points', error as Error);
-    
+
     // Return a fallback response
     return {
       keyPoints: summary ? [summary] : [],

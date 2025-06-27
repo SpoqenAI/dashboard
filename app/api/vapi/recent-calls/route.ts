@@ -62,16 +62,19 @@ function mapVapiCallToFrontend(vapiCall: VapiCallResponse): FrontendCall {
   if (vapiCall.endedAt && vapiCall.startedAt) {
     const endedDate = new Date(vapiCall.endedAt);
     const startedDate = new Date(vapiCall.startedAt);
-    
+
     // Check if both dates are valid before calculating duration
     if (!isNaN(endedDate.getTime()) && !isNaN(startedDate.getTime())) {
-      durationSeconds = Math.round((endedDate.getTime() - startedDate.getTime()) / 1000);
+      durationSeconds = Math.round(
+        (endedDate.getTime() - startedDate.getTime()) / 1000
+      );
     }
   }
 
   // Determine status and ended reason
   const status = vapiCall.status || 'unknown';
-  const endedReason = vapiCall.endedReason || 
+  const endedReason =
+    vapiCall.endedReason ||
     (durationSeconds > 0 ? 'customer-ended-call' : 'no-answer');
 
   // Extract transcript from messages
@@ -86,7 +89,8 @@ function mapVapiCallToFrontend(vapiCall: VapiCallResponse): FrontendCall {
     status,
     endedReason,
     durationSeconds,
-    createdAt: vapiCall.createdAt || vapiCall.startedAt || new Date().toISOString(),
+    createdAt:
+      vapiCall.createdAt || vapiCall.startedAt || new Date().toISOString(),
     startedAt: vapiCall.startedAt,
     endedAt: vapiCall.endedAt,
     cost: vapiCall.cost,

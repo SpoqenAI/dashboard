@@ -55,4 +55,4 @@ export interface VapiCall {
   urgentConcerns?: string[];
   sentiment?: 'positive' | 'neutral' | 'negative';
   callPurpose?: string;
-} 
+}

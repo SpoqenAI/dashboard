@@ -29,9 +29,14 @@ export async function configureActionPointsAnalysis(
       assistantId,
     });
   } catch (error) {
-    logger.error('VAPI', 'Failed to configure action points analysis', error as Error, {
-      assistantId,
-    });
+    logger.error(
+      'VAPI',
+      'Failed to configure action points analysis',
+      error as Error,
+      {
+        assistantId,
+      }
+    );
     throw error;
   }
 }
@@ -48,16 +53,21 @@ export async function isActionPointsAnalysisConfigured(
 ): Promise<boolean> {
   try {
     const assistant = await getAssistant(assistantId, token);
-    
+
     return !!(
       assistant.analysisPlan?.structuredDataSchema?.properties?.callPurpose &&
       assistant.analysisPlan?.structuredDataSchema?.properties?.sentiment &&
       assistant.analysisPlan?.structuredDataSchema?.properties?.keyPoints
     );
   } catch (error) {
-    logger.error('VAPI', 'Failed to check action points analysis configuration', error as Error, {
-      assistantId,
-    });
+    logger.error(
+      'VAPI',
+      'Failed to check action points analysis configuration',
+      error as Error,
+      {
+        assistantId,
+      }
+    );
     return false;
   }
-} 
+}

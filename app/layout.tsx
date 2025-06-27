@@ -20,9 +20,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AuthProvider>
-          <Providers>
-            {children}
-          </Providers>
+          <Providers>{children}</Providers>
           <Toaster />
         </AuthProvider>
       </body>

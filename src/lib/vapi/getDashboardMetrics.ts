@@ -39,15 +39,15 @@ export async function getMetrics(
       operations: [
         {
           operation: 'count',
-          column: 'id'
-        }
+          column: 'id',
+        },
       ],
       timeRange: {
         start: fromISO,
         end: toISO,
         step: 'day',
-        timezone: 'UTC'
-      }
+        timezone: 'UTC',
+      },
     },
     {
       table: 'call',
@@ -55,27 +55,27 @@ export async function getMetrics(
       operations: [
         {
           operation: 'count',
-          column: 'id'
-        }
+          column: 'id',
+        },
       ],
       timeRange: {
         start: fromISO,
         end: toISO,
         step: 'day',
-        timezone: 'UTC'
+        timezone: 'UTC',
       },
       filters: [
         {
           column: 'status',
           operator: 'eq',
-          value: 'completed'
+          value: 'completed',
         },
         {
           column: 'endedReason',
           operator: 'not_in',
-          value: Array.from(MISSED_CODES)
-        }
-      ]
+          value: Array.from(MISSED_CODES),
+        },
+      ],
     },
     {
       table: 'call',
@@ -83,22 +83,22 @@ export async function getMetrics(
       operations: [
         {
           operation: 'count',
-          column: 'id'
-        }
+          column: 'id',
+        },
       ],
       timeRange: {
         start: fromISO,
         end: toISO,
         step: 'day',
-        timezone: 'UTC'
+        timezone: 'UTC',
       },
       filters: [
         {
           column: 'endedReason',
           operator: 'in',
-          value: Array.from(MISSED_CODES)
-        }
-      ]
+          value: Array.from(MISSED_CODES),
+        },
+      ],
     },
     {
       table: 'call',
@@ -106,28 +106,28 @@ export async function getMetrics(
       operations: [
         {
           operation: 'sum',
-          column: 'durationSeconds'
-        }
+          column: 'durationSeconds',
+        },
       ],
       timeRange: {
         start: fromISO,
         end: toISO,
         step: 'day',
-        timezone: 'UTC'
+        timezone: 'UTC',
       },
       filters: [
         {
           column: 'status',
           operator: 'eq',
-          value: 'completed'
+          value: 'completed',
         },
         {
           column: 'endedReason',
           operator: 'not_in',
-          value: Array.from(MISSED_CODES)
-        }
-      ]
-    }
+          value: Array.from(MISSED_CODES),
+        },
+      ],
+    },
   ];
 
   let res: Response;
@@ -161,12 +161,14 @@ export async function getMetrics(
         attempts += 1;
         continue;
       }
-      throw err instanceof Error ? err : new Error('Failed to fetch Vapi Analytics');
+      throw err instanceof Error
+        ? err
+        : new Error('Failed to fetch Vapi Analytics');
     }
   }
 
   const results = await res.json();
-  
+
   // Parse results from analytics API
   let total = 0;
   let answered = 0;
@@ -175,13 +177,25 @@ export async function getMetrics(
 
   for (const result of results) {
     if (result.name === 'total_calls') {
-      total = result.result.reduce((sum: number, item: any) => sum + (item.count_id || 0), 0);
+      total = result.result.reduce(
+        (sum: number, item: any) => sum + (item.count_id || 0),
+        0
+      );
     } else if (result.name === 'answered_calls') {
-      answered = result.result.reduce((sum: number, item: any) => sum + (item.count_id || 0), 0);
+      answered = result.result.reduce(
+        (sum: number, item: any) => sum + (item.count_id || 0),
+        0
+      );
     } else if (result.name === 'missed_calls') {
-      missed = result.result.reduce((sum: number, item: any) => sum + (item.count_id || 0), 0);
+      missed = result.result.reduce(
+        (sum: number, item: any) => sum + (item.count_id || 0),
+        0
+      );
     } else if (result.name === 'total_duration') {
-      totalDuration = result.result.reduce((sum: number, item: any) => sum + (item.sum_durationSeconds || 0), 0);
+      totalDuration = result.result.reduce(
+        (sum: number, item: any) => sum + (item.sum_durationSeconds || 0),
+        0
+      );
     }
   }
 
