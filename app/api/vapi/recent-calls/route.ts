@@ -77,10 +77,18 @@ function mapVapiCallToFrontend(vapiCall: VapiCallResponse): FrontendCall {
     vapiCall.endedReason ||
     (durationSeconds > 0 ? 'customer-ended-call' : 'no-answer');
 
-  // Extract transcript from messages
-  const transcript =
-    vapiCall.messages?.map(msg => `${msg.role}: ${msg.message}`).join('\n') ||
-    undefined;
+  // Extract transcript from messages with validation
+  const transcript = vapiCall.messages
+    ?.filter(msg => 
+      msg && 
+      typeof msg === 'object' && 
+      typeof msg.role === 'string' && 
+      typeof msg.message === 'string' &&
+      msg.role.trim() !== '' &&
+      msg.message.trim() !== ''
+    )
+    ?.map(msg => `${msg.role}: ${msg.message}`)
+    .join('\n') || undefined;
 
   return {
     id: vapiCall.id,

@@ -2,18 +2,19 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-export interface VapiCall {
+export interface RecentCall {
   id: string;
   callerName?: string;
   phoneNumber?: string;
   startedAt?: string;
   summary?: string;
   transcript?: string;
-  keyPoints?: string[];
-  followUpItems?: string[];
-  urgentConcerns?: string[];
-  sentiment?: 'positive' | 'neutral' | 'negative';
-  callPurpose?: string;
+  status: string;
+  endedReason: string;
+  durationSeconds: number;
+  createdAt: string;
+  endedAt?: string;
+  cost?: number;
 }
 
 interface UseRecentCallsOptions {
@@ -45,7 +46,7 @@ export function useRecentCalls(options: UseRecentCallsOptions = {}) {
   });
 
   // Extract calls from the API response
-  const calls: VapiCall[] = data?.calls || [];
+  const calls: RecentCall[] = data?.calls || [];
 
   return {
     calls,

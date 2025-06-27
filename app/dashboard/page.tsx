@@ -51,11 +51,12 @@ import {
 } from '@/components/ui/select';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { useActionPoints } from '@/hooks/use-action-points';
-import { ActionPoints, VapiCall } from '@/lib/types';
+import { ActionPoints } from '@/lib/types';
+import { RecentCall } from '@/hooks/use-recent-calls';
 
 export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCall, setSelectedCall] = useState<VapiCall | null>(null);
+  const [selectedCall, setSelectedCall] = useState<RecentCall | null>(null);
   const [callDetailDialogOpen, setCallDetailDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('date');
@@ -84,7 +85,7 @@ export default function DashboardPage() {
     },
   });
 
-  const calls: VapiCall[] = callsData?.calls || [];
+  const calls: RecentCall[] = callsData?.calls || [];
 
   // Calculate metrics from calls
   const totalCalls = calls.length;
@@ -191,7 +192,7 @@ export default function DashboardPage() {
     }
   };
 
-  const openCallDetail = async (call: VapiCall) => {
+  const openCallDetail = async (call: RecentCall) => {
     setSelectedCall(call);
     setCallDetailDialogOpen(true);
     setActionPoints(null); // Reset previous action points

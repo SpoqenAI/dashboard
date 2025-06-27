@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { ActionPoints } from '@/lib/types';
+import { extractActionPoints } from '@/lib/ai-service';
 
 export async function POST(
   request: NextRequest,
@@ -113,24 +114,35 @@ export async function POST(
 
     const callData = await callRes.json();
 
-    // Extract action points from Vapi's analysis.structuredData
-    const structuredData = callData.analysis?.structuredData;
+    // Extract transcript and summary from call data
+    const transcript = callData.transcript;
     const summary = callData.analysis?.summary;
 
-    logger.debug('VAPI', 'Extracting action points from Vapi analysis', {
+    logger.debug('VAPI', 'Preparing to extract action points', {
       callId: callId,
-      hasStructuredData: !!structuredData,
+      hasTranscript: !!transcript,
       hasSummary: !!summary,
+      transcriptLength: transcript?.length || 0,
+      summaryLength: summary?.length || 0,
     });
 
-    // Create action points from Vapi's analysis or provide fallback
-    const actionPoints: ActionPoints = {
-      callPurpose: structuredData?.callPurpose || 'Analysis not available',
-      sentiment: structuredData?.sentiment || 'neutral',
-      keyPoints: structuredData?.keyPoints || (summary ? [summary] : []),
-      followUpItems: structuredData?.followUpItems || [],
-      urgentConcerns: structuredData?.urgentConcerns || [],
-    };
+    // Validate that both transcript and summary are not empty or undefined
+    if ((!transcript || transcript.trim().length === 0) && 
+        (!summary || summary.trim().length === 0)) {
+      logger.warn('VAPI', 'Both transcript and summary are empty or missing', {
+        callId: callId,
+        hasTranscript: !!transcript,
+        hasSummary: !!summary,
+      });
+      
+      return NextResponse.json({
+        error: 'Cannot extract action points: both transcript and summary are empty or missing',
+        callId: callId,
+      }, { status: 400 });
+    }
+
+    // Extract action points using AI service
+    const actionPoints = await extractActionPoints(transcript, summary);
 
     // Validate the response structure
     if (!Array.isArray(actionPoints.keyPoints)) {
@@ -148,7 +160,7 @@ export async function POST(
 
     logger.debug(
       'VAPI',
-      'Successfully extracted action points from Vapi analysis',
+      'Successfully extracted action points using AI service',
       {
         callId: callId,
         keyPointsCount: actionPoints.keyPoints.length,
@@ -163,12 +175,12 @@ export async function POST(
       callId: callId,
       actionPoints,
       generatedAt: new Date().toISOString(),
-      source: 'vapi-analysis',
+      source: 'ai-analysis',
     });
   } catch (error) {
     logger.error(
       'VAPI',
-      'Failed to extract action points from Vapi analysis',
+      'Failed to extract action points using AI service',
       error as Error
     );
     return NextResponse.json(

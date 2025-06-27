@@ -50,9 +50,5 @@ export interface VapiCall {
   };
   transcript?: string;
   summary?: string;
-  keyPoints?: string[];
-  followUpItems?: string[];
-  urgentConcerns?: string[];
-  sentiment?: 'positive' | 'neutral' | 'negative';
-  callPurpose?: string;
+  actionPoints?: ActionPoints;
 }
