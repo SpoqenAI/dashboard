@@ -1,4 +1,4 @@
-import { retry } from '@/src/lib/utils/retry';
+import { retry } from '@/lib/utils';
 
 export interface AssistantDTO {
   firstMessage?: string;
