@@ -6,6 +6,18 @@ export interface ActionPoints {
   callPurpose: string;
 }
 
+export interface CallAnalytics {
+  duration?: number;
+  cost?: number;
+  endedReason?: string;
+  recordingUrl?: string;
+}
+
+export interface CallDetailsData {
+  call?: VapiCall;
+  analytics?: CallAnalytics;
+}
+
 export interface VapiCall {
   id: string;
   type?: string;

@@ -1,49 +1,37 @@
 'use client';
 
-import { useState } from 'react';
 import { useActionPoints } from '@/hooks/use-action-points';
-import { ActionPoints } from '@/lib/types';
 
 export function useActionPointsManager() {
-  const [actionPoints, setActionPoints] = useState<ActionPoints | null>(null);
-  const [actionPointsError, setActionPointsError] = useState<string | null>(
-    null
-  );
-  const { generateActionPoints, loading: actionPointsLoading } =
-    useActionPoints();
+  const {
+    generateActionPoints,
+    loading: actionPointsLoading,
+    data: actionPoints,
+    error,
+    reset,
+  } = useActionPoints();
 
   const handleGenerateActionPoints = async (callId: string) => {
+    // Clear any previous state before generating new action points
+    reset();
+    
     try {
-      // Clear any previous errors
-      setActionPointsError(null);
-      setActionPoints(null);
-
-      const points = await generateActionPoints(callId);
-      if (points) {
-        setActionPoints(points);
-      } else {
-        setActionPointsError(
-          'No action points could be generated for this call.'
-        );
-      }
+      await generateActionPoints(callId);
+      // State is automatically managed by useActionPoints via React Query
     } catch (error) {
+      // Error handling is already managed by useActionPoints
       console.error('Failed to generate action points:', error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : 'Failed to generate action points. Please try again.';
-      setActionPointsError(errorMessage);
     }
   };
 
   const clearActionPoints = () => {
-    setActionPoints(null);
-    setActionPointsError(null);
+    // Reset the mutation state, clearing data and errors
+    reset();
   };
 
   return {
     actionPoints,
-    actionPointsError,
+    actionPointsError: error,
     actionPointsLoading,
     handleGenerateActionPoints,
     clearActionPoints,

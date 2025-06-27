@@ -1,14 +1,14 @@
 'use client';
 
 import { ActionPointsDisplay } from '@/components/action-points-display';
-import { ActionPoints } from '@/lib/types';
+import { ActionPoints, CallDetailsData } from '@/lib/types';
 
 interface CallDetailsProps {
   callId: string;
-  details: any;
+  details: CallDetailsData | null;
   detailsLoading: boolean;
   detailsError: string | null;
-  actionPoints: ActionPoints | null;
+  actionPoints: ActionPoints | null | undefined;
   actionPointsError: string | null;
   actionPointsLoading: boolean;
   onGenerateActionPoints: (callId: string) => void;
@@ -46,7 +46,7 @@ export function CallDetails({
 
           <ActionPointsDisplay
             callId={callId}
-            actionPoints={actionPoints}
+            actionPoints={actionPoints ?? null}
             actionPointsError={actionPointsError}
             actionPointsLoading={actionPointsLoading}
             onGenerateActionPoints={onGenerateActionPoints}
@@ -61,31 +61,31 @@ export function CallDetails({
             Call Analytics
           </h4>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            {(details.analytics as any)?.duration && (
+            {details.analytics.duration && (
               <div className="rounded-md bg-muted p-2">
                 <div className="font-medium">Duration</div>
                 <div className="text-muted-foreground">
-                  {Math.round((details.analytics as any).duration / 60)} min
+                  {Math.round(details.analytics.duration / 60)} min
                 </div>
               </div>
             )}
-            {(details.analytics as any)?.cost && (
+            {details.analytics.cost && (
               <div className="rounded-md bg-muted p-2">
                 <div className="font-medium">Cost</div>
                 <div className="text-muted-foreground">
-                  ${(details.analytics as any).cost?.toFixed(4) || '0.00'}
+                  ${details.analytics.cost.toFixed(4)}
                 </div>
               </div>
             )}
-            {(details.analytics as any)?.endedReason && (
+            {details.analytics.endedReason && (
               <div className="rounded-md bg-muted p-2">
                 <div className="font-medium">End Reason</div>
                 <div className="text-muted-foreground">
-                  {(details.analytics as any).endedReason}
+                  {details.analytics.endedReason}
                 </div>
               </div>
             )}
-            {(details.analytics as any)?.recordingUrl && (
+            {details.analytics.recordingUrl && (
               <div className="rounded-md bg-muted p-2">
                 <div className="font-medium">Recording</div>
                 <div className="text-muted-foreground">Available</div>

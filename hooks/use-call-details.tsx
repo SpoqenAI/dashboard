@@ -1,25 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-export interface CallAnalysis {
-  summary?: string;
-  keyPoints?: string[];
-  followUpItems?: string[];
-  urgentConcerns?: string[];
-  sentiment?: 'positive' | 'neutral' | 'negative';
-  callPurpose?: string;
-}
-
-export interface CallData {
-  analysis?: CallAnalysis;
-  [key: string]: unknown;
-}
-
-export interface CallDetailsData {
-  call?: CallData;
-  analytics?: unknown;
-}
+import { CallDetailsData } from '@/lib/types';
 
 export function useCallDetails(callId: string | null) {
   const [data, setData] = useState<CallDetailsData | null>(null);

@@ -3,7 +3,7 @@
 import { Calendar, Clock, PhoneCall } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CallDetails } from '@/components/call-details';
-import { ActionPoints } from '@/lib/types';
+import { ActionPoints, CallDetailsData } from '@/lib/types';
 
 interface Call {
   id: string;
@@ -15,10 +15,10 @@ interface Call {
 interface CallListItemProps {
   call: Call;
   isSelected: boolean;
-  details: any;
+  details: CallDetailsData | null;
   detailsLoading: boolean;
   detailsError: string | null;
-  actionPoints: ActionPoints | null;
+  actionPoints: ActionPoints | null | undefined;
   actionPointsError: string | null;
   actionPointsLoading: boolean;
   onToggleDetails: (callId: string) => void;
@@ -70,7 +70,7 @@ export function CallListItem({
             details={details}
             detailsLoading={detailsLoading}
             detailsError={detailsError}
-            actionPoints={actionPoints}
+            actionPoints={actionPoints ?? null}
             actionPointsError={actionPointsError}
             actionPointsLoading={actionPointsLoading}
             onGenerateActionPoints={onGenerateActionPoints}
