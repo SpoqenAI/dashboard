@@ -225,12 +225,12 @@ export async function provisionAssistant(userId: string): Promise<void> {
       .eq('id', assistant.id);
 
     // Validate Vapi credentials
-    const vapiApiKey = process.env.VAPI_API_KEY;
+    const vapiApiKey = process.env.VAPI_PRIVATE_KEY;
     const vapiWebhookSecret = process.env.VAPI_WEBHOOK_SECRET;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
     if (!vapiApiKey) {
-      throw new Error('Missing required VAPI_API_KEY environment variable');
+      throw new Error('Missing required VAPI_PRIVATE_KEY environment variable');
     }
 
     if (!vapiWebhookSecret) {
