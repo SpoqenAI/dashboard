@@ -1,7 +1,84 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { ActionPoints } from '@/lib/types';
-import { extractActionPoints } from '@/lib/ai-service';
+
+/**
+ * Extracts action points from VAPI's call analysis data
+ * Uses the existing summary and analysis from VAPI instead of external AI services
+ */
+function extractActionPointsFromVapi(callData: any): ActionPoints {
+  const analysis = callData.analysis;
+  const summary = analysis?.summary || '';
+  const transcript = callData.transcript || '';
+  
+  // Simple extraction based on VAPI's analysis
+  const keyPoints: string[] = [];
+  const followUpItems: string[] = [];
+  const urgentConcerns: string[] = [];
+  
+  // If there's a summary, use it as the primary key point
+  if (summary && summary.trim().length > 0) {
+    keyPoints.push(summary.trim());
+  }
+  
+  // Look for structured data in VAPI's analysis
+  if (analysis?.structuredData) {
+    const structured = analysis.structuredData;
+    
+    // Extract any action items or follow-ups from structured data
+    if (structured.actionItems) {
+      followUpItems.push(...(Array.isArray(structured.actionItems) ? structured.actionItems : [structured.actionItems]));
+    }
+    
+    if (structured.followUps) {
+      followUpItems.push(...(Array.isArray(structured.followUps) ? structured.followUps : [structured.followUps]));
+    }
+    
+    if (structured.urgentItems) {
+      urgentConcerns.push(...(Array.isArray(structured.urgentItems) ? structured.urgentItems : [structured.urgentItems]));
+    }
+    
+    if (structured.keyPoints) {
+      keyPoints.push(...(Array.isArray(structured.keyPoints) ? structured.keyPoints : [structured.keyPoints]));
+    }
+  }
+  
+  // Determine call purpose from VAPI data
+  let callPurpose = 'General inquiry';
+  if (analysis?.purpose) {
+    callPurpose = analysis.purpose;
+  } else if (callData.metadata?.purpose) {
+    callPurpose = callData.metadata.purpose;
+  } else if (summary && summary.length > 0) {
+    // Extract purpose from summary if available
+    const purposeMatch = summary.match(/(?:purpose|reason|regarding|about):\s*([^.]+)/i);
+    if (purposeMatch) {
+      callPurpose = purposeMatch[1].trim();
+    }
+  }
+  
+  // Determine sentiment from VAPI analysis
+  let sentiment: 'positive' | 'neutral' | 'negative' = 'neutral';
+  if (analysis?.sentiment) {
+    sentiment = analysis.sentiment.toLowerCase();
+  } else if (analysis?.successEvaluation) {
+    // If VAPI has success evaluation, use that to determine sentiment
+    const success = analysis.successEvaluation.toLowerCase();
+    if (success.includes('success') || success.includes('positive')) {
+      sentiment = 'positive';
+    } else if (success.includes('fail') || success.includes('negative')) {
+      sentiment = 'negative';
+    }
+  }
+  
+  return {
+    keyPoints: keyPoints.filter(point => point && point.trim().length > 0),
+    followUpItems: followUpItems.filter(item => item && item.trim().length > 0),
+    urgentConcerns: urgentConcerns.filter(concern => concern && concern.trim().length > 0),
+    sentiment,
+    callPurpose,
+  };
+}
 
 export async function POST(
   request: NextRequest,
@@ -114,41 +191,40 @@ export async function POST(
 
     const callData = await callRes.json();
 
-    // Extract transcript and summary from call data
-    const transcript = callData.transcript;
-    const summary = callData.analysis?.summary;
+    // Check if call has analysis data for action point extraction
+    const hasAnalysis = !!callData.analysis;
+    const hasSummary = !!callData.analysis?.summary;
+    const hasTranscript = !!callData.transcript;
 
-    logger.debug('VAPI', 'Preparing to extract action points', {
+    logger.debug('VAPI', 'Preparing to extract action points from VAPI analysis', {
       callId: callId,
-      hasTranscript: !!transcript,
-      hasSummary: !!summary,
-      transcriptLength: transcript?.length || 0,
-      summaryLength: summary?.length || 0,
+      hasAnalysis,
+      hasSummary,
+      hasTranscript,
+      summaryLength: callData.analysis?.summary?.length || 0,
+      transcriptLength: callData.transcript?.length || 0,
     });
 
-    // Validate that both transcript and summary are not empty or undefined
-    if (
-      (!transcript || transcript.trim().length === 0) &&
-      (!summary || summary.trim().length === 0)
-    ) {
-      logger.warn('VAPI', 'Both transcript and summary are empty or missing', {
+    // Validate that we have some analysis data to work with
+    if (!hasAnalysis && !hasTranscript) {
+      logger.warn('VAPI', 'No analysis or transcript data available', {
         callId: callId,
-        hasTranscript: !!transcript,
-        hasSummary: !!summary,
+        hasAnalysis,
+        hasTranscript,
       });
 
       return NextResponse.json(
         {
           error:
-            'Cannot extract action points: both transcript and summary are empty or missing',
+            'Cannot extract action points: no analysis or transcript data available',
           callId: callId,
         },
         { status: 400 }
       );
     }
 
-    // Extract action points using AI service
-    const actionPoints = await extractActionPoints(transcript, summary);
+    // Extract action points using VAPI's native analysis
+    const actionPoints = extractActionPointsFromVapi(callData);
 
     // Validate the response structure
     if (!Array.isArray(actionPoints.keyPoints)) {
@@ -166,7 +242,7 @@ export async function POST(
 
     logger.debug(
       'VAPI',
-      'Successfully extracted action points using AI service',
+      'Successfully extracted action points from VAPI analysis',
       {
         callId: callId,
         keyPointsCount: actionPoints.keyPoints.length,
@@ -181,16 +257,16 @@ export async function POST(
       callId: callId,
       actionPoints,
       generatedAt: new Date().toISOString(),
-      source: 'ai-analysis',
+      source: 'vapi-analysis',
     });
   } catch (error) {
     logger.error(
       'VAPI',
-      'Failed to extract action points using AI service',
+      'Failed to extract action points from VAPI analysis',
       error as Error
     );
     return NextResponse.json(
-      { error: 'Error extracting action points' },
+      { error: 'Error extracting action points from VAPI analysis' },
       { status: 500 }
     );
   }

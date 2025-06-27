@@ -26,7 +26,7 @@ export function CallHistoryList() {
     if (selected === callId) {
       setSelected(null);
       clearActionPoints(); // Clear action points when collapsing details
-    } else {
+      } else {
       setSelected(callId);
       clearActionPoints(); // Clear action points when switching to a new call
     }
