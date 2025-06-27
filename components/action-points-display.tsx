@@ -118,13 +118,18 @@ export function ActionPointsDisplay({
                   Urgent ({actionPoints.urgentConcerns.length})
                 </p>
                 <ul className="space-y-1 text-xs">
-                  {actionPoints.urgentConcerns.map(
-                    (concern: string, index: number) => (
+                  {actionPoints.urgentConcerns
+                    .slice(0, 3)
+                    .map((concern: string, index: number) => (
                       <li key={index} className="flex items-start gap-1">
                         <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0 text-red-500" />
                         <span className="text-red-700">{concern}</span>
                       </li>
-                    )
+                    ))}
+                  {actionPoints.urgentConcerns.length > 3 && (
+                    <li className="text-xs italic text-muted-foreground">
+                      +{actionPoints.urgentConcerns.length - 3} more...
+                    </li>
                   )}
                 </ul>
               </div>
