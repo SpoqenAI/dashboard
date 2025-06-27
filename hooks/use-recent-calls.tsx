@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 export interface VapiCall {
   id: string;
@@ -20,52 +20,40 @@ interface UseRecentCallsOptions {
   limit?: number;
 }
 
+// Function to fetch recent calls from the API
+const fetchRecentCalls = async (limit?: number) => {
+  const params = new URLSearchParams();
+  if (limit) params.set('limit', String(limit));
+
+  const res = await fetch(`/api/vapi/recent-calls?${params.toString()}`);
+
+  if (!res.ok) {
+    throw new Error(`Request failed with ${res.status}: ${res.statusText}`);
+  }
+
+  const data = await res.json();
+  return data;
+};
+
 export function useRecentCalls(options: UseRecentCallsOptions = {}) {
-  const [calls, setCalls] = useState<VapiCall[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['recent-calls', options.limit],
+    queryFn: () => fetchRecentCalls(options.limit),
+    staleTime: 30 * 1000, // 30 seconds
+    refetchOnWindowFocus: false,
+    retry: 2,
+  });
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const fetchCalls = async () => {
-      try {
-        setError(null);
+  // Extract calls from the API response
+  const calls: VapiCall[] = data?.calls || [];
 
-        const params = new URLSearchParams();
-        if (options.limit) params.set('limit', String(options.limit));
-
-        const res = await fetch(`/api/vapi/recent-calls?${params.toString()}`, {
-          signal: controller.signal,
-        });
-
-        if (!res.ok) {
-          throw new Error(
-            `Request failed with ${res.status}: ${res.statusText}`
-          );
-        }
-
-        const data = await res.json();
-
-        // The API returns an object with a calls property
-        const callsArray = data.calls || [];
-        setCalls(callsArray);
-      } catch (err) {
-        if (!controller.signal.aborted) {
-          const errorMessage =
-            err instanceof Error ? err.message : 'Unknown error occurred';
-          setError(errorMessage);
-          console.error('Failed to fetch recent calls:', err);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchCalls();
-    return () => controller.abort();
-  }, [options.limit]);
-
-  return { calls, loading, error };
+  return {
+    calls,
+    loading: isLoading, // Keep backward compatibility
+    isLoading,
+    error: error?.message || null,
+    refetch,
+    isSuccess: !!data,
+    isError: !!error,
+  };
 }
