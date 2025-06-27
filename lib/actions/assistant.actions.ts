@@ -68,16 +68,65 @@ export async function provisionAssistant(userId: string): Promise<void> {
       .select('*')
       .single();
 
-    if (createError || !newAssistant) {
-      const errorMessage = `Failed to create assistant for user ID: ${logger.maskUserId(userId)}`;
+    if (createError) {
+      // Handle unique constraint violation (race condition where another process created assistant)
+      if (createError.code === '23505' && createError.message?.includes('assistants_user_id_key')) {
+        logger.info(
+          'ASSISTANT_PROVISIONING',
+          'Assistant already exists (race condition detected), fetching existing assistant',
+          {
+            userId: logger.maskUserId(userId),
+          }
+        );
+        
+        // Fetch the existing assistant created by concurrent process
+        const { data: existingAssistant, error: refetchError } = await supabase
+          .from('assistants')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (refetchError || !existingAssistant) {
+          const errorMessage = `Failed to fetch existing assistant after constraint violation for user ID: ${logger.maskUserId(userId)}`;
+          logger.error(
+            'ASSISTANT_PROVISIONING',
+            errorMessage,
+            refetchError instanceof Error ? refetchError : new Error(String(refetchError))
+          );
+          throw new Error(errorMessage);
+        }
+
+        assistant = existingAssistant;
+        logger.info(
+          'ASSISTANT_PROVISIONING',
+          'Successfully retrieved existing assistant after race condition',
+          {
+            userId: logger.maskUserId(userId),
+            assistantId: assistant.id,
+          }
+        );
+      } else {
+        // Other database errors
+        const errorMessage = `Failed to create assistant for user ID: ${logger.maskUserId(userId)}`;
+        logger.error(
+          'ASSISTANT_PROVISIONING',
+          errorMessage,
+          createError instanceof Error ? createError : new Error(String(createError))
+        );
+        throw new Error(errorMessage);
+      }
+    } else if (!newAssistant) {
+      const errorMessage = `Assistant creation returned no data for user ID: ${logger.maskUserId(userId)}`;
       logger.error(
         'ASSISTANT_PROVISIONING',
         errorMessage,
-        createError instanceof Error
-          ? createError
-          : new Error(String(createError))
+        new Error('No data returned from insert')
       );
       throw new Error(errorMessage);
+    } else {
+      assistant = newAssistant;
     }
 
     assistant = newAssistant;

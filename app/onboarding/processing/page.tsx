@@ -7,6 +7,20 @@ import { createClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/logger';
 import { OnboardingStepper } from '@/components/onboarding-stepper';
 
+// Configuration for processing behavior
+const PROCESSING_CONFIG = {
+  maxAttempts: 60,
+  pollingIntervalMs: 1000,
+  timeoutMs: 60000,
+  instantPollingDelayMs: 1000,
+  standardPollingDelayMs: 2000,
+  successDelayMs: 1500,
+  errorDelayMs: 2000,
+  retryDelayMs: 3000,
+  timeoutWarningMs: 3000,
+  finalRedirectDelayMs: 5000,
+} as const;
+
 export default function ProcessingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -22,72 +36,55 @@ export default function ProcessingPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    let mounted = true;
-    const timeoutIds: NodeJS.Timeout[] = [];
+    const abortController = new AbortController();
+    const { signal } = abortController;
 
     async function handlePaymentSuccess() {
+      if (signal.aborted) return;
+
       const instant = searchParams.get('instant') === 'true';
       setIsInstant(instant);
 
       if (instant) {
         // Instant flow - payment was immediately processed
         setStatusMessage('Payment confirmed! Setting up your account...');
-        timeoutIds.push(setTimeout(() => mounted && setStage('text'), 300));
-        timeoutIds.push(
-          setTimeout(() => mounted && setStage('processing'), 800)
-        );
+        await delay(PROCESSING_CONFIG.instantPollingDelayMs / 3, signal); // 300ms
+        if (signal.aborted) return;
+        setStage('text');
+        
+        await delay(PROCESSING_CONFIG.instantPollingDelayMs * 0.8, signal); // 800ms  
+        if (signal.aborted) return;
+        setStage('processing');
+        
         // Start polling immediately since we expect faster results
-        timeoutIds.push(
-          setTimeout(() => {
-            if (mounted) {
-              pollForSubscription();
-            }
-          }, 1000)
-        );
+        await delay(PROCESSING_CONFIG.instantPollingDelayMs, signal);
+        if (signal.aborted) return;
+        await pollForSubscription(signal);
       } else {
         // Standard flow - waiting for webhook
-        timeoutIds.push(setTimeout(() => mounted && setStage('text'), 500));
-        timeoutIds.push(
-          setTimeout(() => mounted && setStage('processing'), 1500)
-        );
+        await delay(500, signal);
+        if (signal.aborted) return;
+        setStage('text');
+        
+        await delay(1500, signal);
+        if (signal.aborted) return;
+        setStage('processing');
+        
         // Start polling for subscription after initial animations
-        timeoutIds.push(
-          setTimeout(() => {
-            if (mounted) {
-              pollForSubscription();
-            }
-          }, 2000)
-        );
+        await delay(PROCESSING_CONFIG.standardPollingDelayMs, signal);
+        if (signal.aborted) return;
+        await pollForSubscription(signal);
       }
     }
 
-    async function pollForSubscription() {
+    async function pollForSubscription(signal: AbortSignal) {
       let attempts = 0;
-      const maxAttempts = 60; // Increased to 60 seconds to handle slower Paddle webhooks
-
-      const checkSubscription = async () => {
-        if (!mounted) return;
-
+      
+      while (attempts < PROCESSING_CONFIG.maxAttempts && !signal.aborted) {
         try {
-          const {
-            data: { user },
-            error: authError,
-          } = await supabase.auth.getUser();
-
-          if (authError || !user) {
-            setStatusMessage('Authentication error. Redirecting to login...');
-            timeoutIds.push(setTimeout(() => router.push('/login'), 2000));
-            return;
-          }
-
-          // Check for any subscription (active or pending)
-          const { data: subscription } = await supabase
-            .from('subscriptions')
-            .select('status')
-            .eq('user_id', user.id)
-            .in('status', ['active', 'pending_webhook'])
-            .maybeSingle();
-
+          const subscription = await checkSubscription(signal);
+          if (signal.aborted) return;
+          
           if (subscription) {
             if (subscription.status === 'active') {
               // Success! Active subscription found
@@ -95,98 +92,155 @@ export default function ProcessingPage() {
               setStatusMessage('Account setup complete! Welcome to Spoqen!');
 
               // Small delay to show success message, then redirect to dashboard
-              timeoutIds.push(
-                setTimeout(() => {
-                  if (mounted) {
-                    router.push('/dashboard?welcome=true');
-                  }
-                }, 1500)
-              );
+              await delay(PROCESSING_CONFIG.successDelayMs, signal);
+              if (signal.aborted) return;
+              
+              router.push('/dashboard?welcome=true');
               return;
             } else if (subscription.status === 'pending_webhook') {
               // Pending subscription found - show positive progress
-              if (attempts < 5) {
-                setStatusMessage('Payment confirmed! Finalizing your account setup...');
-              } else if (attempts < 15) {
-                setStatusMessage('Setting up your AI assistant...');
-              } else {
-                setStatusMessage('Almost ready... activating your subscription');
-              }
+              updateProgressMessage(attempts);
             }
           }
 
           // Continue polling if subscription not found yet
           attempts++;
-          if (attempts >= maxAttempts) {
+          if (attempts >= PROCESSING_CONFIG.maxAttempts) {
             // Timeout - show helpful message and provide retry option
             setStatusMessage(
               'Setup is taking longer than expected. This sometimes happens with payment processing.'
             );
             
-            // Instead of auto-redirecting, show a retry option
-            timeoutIds.push(
-              setTimeout(() => {
-                if (mounted) {
-                  setStage('complete');
-                  setStatusMessage(
-                    'Please check your dashboard or contact support if you continue to experience issues.'
-                  );
-                  // Give user more time before final redirect
-                  timeoutIds.push(
-                    setTimeout(() => {
-                      if (mounted) {
-                        router.push('/dashboard');
-                      }
-                    }, 5000)
-                  );
-                }
-              }, 3000)
+            await delay(PROCESSING_CONFIG.timeoutWarningMs, signal);
+            if (signal.aborted) return;
+            
+            setStage('complete');
+            setStatusMessage(
+              'Please check your dashboard or contact support if you continue to experience issues.'
             );
+            
+            // Give user more time before final redirect
+            await delay(PROCESSING_CONFIG.finalRedirectDelayMs, signal);
+            if (signal.aborted) return;
+            
+            router.push('/dashboard');
             return;
           }
 
           // Update message based on time elapsed
-          if (attempts > 30) {
-            setStatusMessage('Still processing your payment... almost done');
-          } else if (attempts > 15) {
-            setStatusMessage('Almost ready... finalizing your account setup');
-          } else if (attempts > 5) {
-            setStatusMessage('Configuring your AI assistant...');
-          }
+          updateProgressMessage(attempts);
 
-          // Poll again in 1 second
-          timeoutIds.push(setTimeout(checkSubscription, 1000));
+          // Poll again after interval
+          await delay(PROCESSING_CONFIG.pollingIntervalMs, signal);
         } catch (error) {
+          if (signal.aborted) return;
+          
           logger.error(
             'PAYMENT_PROCESSING',
             'Error checking subscription during payment processing',
             error instanceof Error ? error : new Error(String(error)),
-            { attempts, maxAttempts }
+            { attempts, maxAttempts: PROCESSING_CONFIG.maxAttempts }
           );
           setStatusMessage('Connection issue. Retrying...');
 
           // Retry after a longer delay
-          timeoutIds.push(setTimeout(checkSubscription, 3000));
+          await delay(PROCESSING_CONFIG.retryDelayMs, signal);
         }
-      };
+      }
+    }
 
-      checkSubscription();
+    async function checkSubscription(signal: AbortSignal) {
+      if (signal.aborted) return null;
+
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        if (signal.aborted) return null;
+        setStatusMessage('Authentication error. Redirecting to login...');
+        await delay(PROCESSING_CONFIG.errorDelayMs, signal);
+        if (!signal.aborted) {
+          router.push('/login');
+        }
+        return null;
+      }
+
+      // Check for any subscription (active or pending)
+      const { data: subscription, error } = await supabase
+        .from('subscriptions')
+        .select('status')
+        .eq('user_id', user.id)
+        .in('status', ['active', 'pending_webhook'])
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      return subscription;
+    }
+
+    function updateProgressMessage(attempts: number) {
+      if (attempts > 30) {
+        setStatusMessage('Still processing your payment... almost done');
+      } else if (attempts > 15) {
+        setStatusMessage('Almost ready... finalizing your account setup');
+      } else if (attempts > 5) {
+        setStatusMessage('Configuring your AI assistant...');
+      } else if (attempts < 5) {
+        setStatusMessage('Payment confirmed! Finalizing your account setup...');
+      } else {
+        setStatusMessage('Setting up your AI assistant...');
+      }
+    }
+
+    // Helper function for abortable delays
+    async function delay(ms: number, signal: AbortSignal): Promise<void> {
+      return new Promise((resolve) => {
+        if (signal.aborted) {
+          resolve();
+          return;
+        }
+        
+        const timeout = setTimeout(resolve, ms);
+        
+        const abortHandler = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+        
+        signal.addEventListener('abort', abortHandler, { once: true });
+      });
     }
 
     // Only start processing if we have the payment success indicator
     if (searchParams.get('payment') === 'success') {
-      handlePaymentSuccess();
+      handlePaymentSuccess().catch((error) => {
+        if (!abortController.signal.aborted) {
+          logger.error(
+            'PAYMENT_PROCESSING',
+            'Unexpected error in payment processing flow',
+            error instanceof Error ? error : new Error(String(error))
+          );
+          setStatusMessage('An unexpected error occurred. Redirecting...');
+          setTimeout(() => {
+            if (!abortController.signal.aborted) {
+              router.push('/onboarding/subscribe');
+            }
+          }, PROCESSING_CONFIG.errorDelayMs);
+        }
+      });
     } else {
       // If no payment success indicator, redirect back to subscribe
       router.push('/onboarding/subscribe');
     }
 
     return () => {
-      mounted = false;
-      // Clear all timeouts to prevent memory leaks
-      timeoutIds.forEach(clearTimeout);
+      abortController.abort();
     };
-  }, [router, searchParams]);
+  }, [router, searchParams, supabase]);
 
   return (
     <div className="min-h-screen bg-gray-50">
