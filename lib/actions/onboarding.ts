@@ -154,21 +154,64 @@ export async function createAssistantAction(
   const { assistantName, businessName, greeting } = validatedFields.data;
 
   try {
-    // Create or update the assistant record (upsert to prevent duplicates)
-    const { error: assistantError } = await supabase
+    // First, check if user already has an assistant to decide between insert or update
+    const { data: existingAssistant, error: checkError } = await supabase
       .from('assistants')
-      .upsert({
-        user_id: user.id,
-        business_name: businessName,
-        assistant_name: assistantName,
-        greeting: greeting,
-        status: 'draft',
-      }, {
-        onConflict: 'user_id'
-      });
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (checkError) {
+      logger.error(
+        'ONBOARDING_ACTIONS',
+        'Error checking existing assistant',
+        checkError,
+        { userId: logger.maskUserId(user.id) }
+      );
+      throw new Error('Failed to check existing assistant data');
+    }
+
+    let assistantError;
+    if (existingAssistant) {
+      // Update existing assistant
+      const { error } = await supabase
+        .from('assistants')
+        .update({
+          business_name: businessName,
+          assistant_name: assistantName,
+          greeting: greeting,
+          status: 'draft',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+      assistantError = error;
+    } else {
+      // Insert new assistant
+      const { error } = await supabase
+        .from('assistants')
+        .insert({
+          user_id: user.id,
+          business_name: businessName,
+          assistant_name: assistantName,
+          greeting: greeting,
+          status: 'draft',
+        });
+      assistantError = error;
+    }
 
     if (assistantError) {
-      throw assistantError;
+      logger.error(
+        'ONBOARDING_ACTIONS',
+        'Assistant database operation failed',
+        assistantError,
+        { 
+          userId: logger.maskUserId(user.id),
+          operation: existingAssistant ? 'update' : 'insert',
+          errorCode: assistantError.code,
+          errorMessage: assistantError.message
+        }
+      );
+      throw new Error(`Failed to ${existingAssistant ? 'update' : 'create'} assistant: ${assistantError.message}`);
     }
 
     // Sync assistant data to user_settings table for dashboard consistency
@@ -184,11 +227,16 @@ export async function createAssistantAction(
       });
 
     if (settingsError) {
-      // Log but don't fail - assistant creation is more important
+      // Log detailed error but don't fail - assistant creation is more important
       logger.warn(
         'ONBOARDING_ACTIONS',
         'Failed to sync assistant data to user_settings',
-        { userId: logger.maskUserId(user.id), error: settingsError }
+        { 
+          userId: logger.maskUserId(user.id), 
+          error: settingsError,
+          errorCode: settingsError.code,
+          errorMessage: settingsError.message
+        }
       );
     }
 
@@ -216,15 +264,32 @@ export async function createAssistantAction(
       errors: {},
     };
   } catch (error) {
+    // Enhanced error logging with more details
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorDetails = {
+      userId: logger.maskUserId(user.id),
+      assistantName,
+      businessName,
+      errorType: error?.constructor?.name,
+      errorCode: (error as any)?.code,
+      errorDetails: (error as any)?.details,
+    };
+
     logger.error(
       'ONBOARDING_ACTIONS',
       'Error creating AI assistant',
-      error instanceof Error ? error : new Error(String(error)),
-      { userId: logger.maskUserId(user.id) }
+      error instanceof Error ? error : new Error(errorMessage),
+      errorDetails
     );
+
+    // Return user-friendly error message
+    const userMessage = errorMessage.includes('Failed to')
+      ? errorMessage
+      : 'Failed to create assistant. Please try again.';
+
     return {
       errors: {
-        _form: ['Failed to create assistant. Please try again.'],
+        _form: [userMessage],
       },
     };
   }
