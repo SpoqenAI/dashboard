@@ -11,22 +11,10 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
-    // Add support for ngrok and other development origins
-    allowedDevOrigins: [
-      // Allow ngrok domains for development
-      'https://*.ngrok-free.app',
-      'https://*.ngrok.io', 
-      'https://*.ngrok.app',
-      // Allow localhost with common ports
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:8080',
-      'http://127.0.0.1:3000',
-      'http://127.0.0.1:3001',
-      // Allow other development domains if needed
-      'https://*.vercel.app',
-      'https://*.netlify.app',
-    ],
+    // Add support for ngrok and other development origins (validated strings only)
+    allowedDevOrigins: process.env.NEXT_PUBLIC_APP_URL
+      ? [process.env.NEXT_PUBLIC_APP_URL]
+      : ['http://localhost:3000'],
   },
   
   // Enhanced security headers with proper CORS for development

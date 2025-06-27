@@ -215,6 +215,17 @@ export function SubscriptionForm({
           successUrl: `${window.location.origin}/api/paddle/success?user_id=${userId}`,
           allowLogout: false,
         },
+      } as CheckoutOpenOptions;
+
+      // Add events via type-cast to avoid TS complain (SDK lacks typings)
+      (checkoutData as any).events = {
+        close: () => {
+          setCheckoutInProgress(false);
+        },
+        complete: () => {
+          router.push('/onboarding/processing?payment=success');
+          router.prefetch('/dashboard');
+        },
       };
 
       // Add customer info if available

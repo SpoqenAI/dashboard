@@ -389,16 +389,21 @@ export async function provisionAssistant(userId: string): Promise<void> {
       .update({ status_detail: 'Finalizing setup...' })
       .eq('id', assistant.id);
 
-    // Insert phone number record
+    // Insert phone number record (idempotent)
     const { error: phoneInsertError } = await supabase
       .from('phone_numbers')
-      .insert({
-        assistant_id: assistant.id,
-        provider: 'twilio',
-        e164_number: twilioNumber.phoneNumber,
-        provider_number_id: twilioNumber.sid,
-        status: 'active',
-      });
+      .upsert(
+        {
+          assistant_id: assistant.id,
+          provider: 'twilio',
+          e164_number: twilioNumber.phoneNumber,
+          provider_number_id: twilioNumber.sid,
+          status: 'active',
+        },
+        {
+          onConflict: 'e164_number', // ignore if number already exists
+        }
+      );
 
     if (phoneInsertError) {
       throw new Error(
