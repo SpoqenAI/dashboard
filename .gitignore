@@ -27,3 +27,6 @@ yarn-error.log*
 next-env.d.ts
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Webpack should ignore these large migration files to prevent serialization warnings
+# /supabase/migrations/*.sql
