@@ -20,7 +20,13 @@ console.log(`🔧 Configuring assistant ${assistantId} for action points analysi
 
 const configureAssistant = async () => {
   try {
-    const response = await fetch('http://localhost:3001/api/vapi/configure-action-points', {
+    // Get base URL from environment variable or use localhost as fallback
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
+    const apiUrl = `${baseUrl}/api/vapi/configure-action-points`;
+    
+    console.log(`🌐 Using API URL: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
