@@ -7,11 +7,13 @@ import { Badge } from '@/components/ui/badge';
 import { useRecentCalls } from '@/hooks/use-recent-calls';
 import { useCallDetails } from '@/hooks/use-call-details';
 import { useActionPoints } from '@/hooks/use-action-points';
+import { ActionPoints } from '@/lib/types';
 
 export function CallHistoryList() {
   const { calls, loading, error } = useRecentCalls();
   const [selected, setSelected] = useState<string | null>(null);
-  const [actionPoints, setActionPoints] = useState<any>(null);
+  const [actionPoints, setActionPoints] = useState<ActionPoints | null>(null);
+  const [actionPointsError, setActionPointsError] = useState<string | null>(null);
   const {
     data: details,
     loading: detailsLoading,
@@ -20,9 +22,23 @@ export function CallHistoryList() {
   const { generateActionPoints, loading: actionPointsLoading } = useActionPoints();
 
   const handleGenerateActionPoints = async (callId: string) => {
-    const points = await generateActionPoints(callId);
-    if (points) {
-      setActionPoints(points);
+    try {
+      // Clear any previous errors
+      setActionPointsError(null);
+      setActionPoints(null);
+      
+      const points = await generateActionPoints(callId);
+      if (points) {
+        setActionPoints(points);
+      } else {
+        setActionPointsError('No action points could be generated for this call.');
+      }
+    } catch (error) {
+      console.error('Failed to generate action points:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to generate action points. Please try again.';
+      setActionPointsError(errorMessage);
     }
   };
 
@@ -87,6 +103,16 @@ export function CallHistoryList() {
                           {actionPointsLoading ? 'Analyzing...' : 'Get Action Points'}
                         </Button>
                       </div>
+
+                      {/* Action Points Error Display */}
+                      {actionPointsError && (
+                        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
+                          <p className="text-xs text-red-700 flex items-start gap-1">
+                            <AlertTriangle className="w-3 h-3 text-red-500 mt-0.5 flex-shrink-0" />
+                            {actionPointsError}
+                          </p>
+                        </div>
+                      )}
 
                       {/* Action Points Display */}
                       {actionPoints && (
