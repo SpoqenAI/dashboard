@@ -17,6 +17,8 @@ interface ProfileSetupFormProps {
     business_name?: string | null;
     phone?: string | null;
     brokerage?: string | null;
+    city?: string | null;
+    state?: string | null;
   } | null;
 }
 
@@ -27,6 +29,8 @@ type FormState = {
     businessName?: string[];
     phone?: string[];
     brokerage?: string[];
+    city?: string[];
+    state?: string[];
     _form?: string[];
   };
   success?: boolean;
@@ -147,6 +151,35 @@ export function ProfileSetupForm({ initialData }: ProfileSetupFormProps) {
                 {state.errors.brokerage[0]}
               </p>
             )}
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="city">City (Optional)</Label>
+            <Input
+              id="city"
+              name="city"
+              placeholder="Enter your city"
+              defaultValue={initialData?.city || ''}
+              disabled={isPending}
+            />
+            {state.errors && 'city' in state.errors && state.errors.city && (
+              <p className="text-sm text-red-600">{state.errors.city[0]}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="state">State (Optional)</Label>
+            <Input
+              id="state"
+              name="state"
+              placeholder="Enter your state"
+              defaultValue={initialData?.state || ''}
+              disabled={isPending}
+            />
+            {state.errors && 'state' in state.errors && state.errors.state && (
+              <p className="text-sm text-red-600">{state.errors.state[0]}</p>
+            )}
+          </div>
         </div>
       </CardContent>
 

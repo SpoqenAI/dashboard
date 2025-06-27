@@ -25,6 +25,8 @@ const profileSchema = z.object({
   businessName: z.string().min(1, 'Business name is required').max(100),
   phone: z.string().min(10, 'Valid phone number is required'),
   brokerage: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
 });
 
 // Assistant setup schema
@@ -61,6 +63,8 @@ export async function updateProfileAction(prevState: any, formData: FormData) {
     businessName: formData.get('businessName'),
     phone: formData.get('phone'),
     brokerage: formData.get('brokerage'),
+    city: formData.get('city'),
+    state: formData.get('state'),
   });
 
   if (!validatedFields.success) {
@@ -69,7 +73,7 @@ export async function updateProfileAction(prevState: any, formData: FormData) {
     };
   }
 
-  const { firstName, lastName, businessName, phone, brokerage } =
+  const { firstName, lastName, businessName, phone, brokerage, city, state } =
     validatedFields.data;
   const fullName = `${firstName} ${lastName}`.trim();
 
@@ -84,6 +88,8 @@ export async function updateProfileAction(prevState: any, formData: FormData) {
         business_name: businessName,
         phone: phone,
         brokerage: brokerage || null,
+        city: city || null,
+        state: state || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', user.id);
@@ -148,17 +154,39 @@ export async function createAssistantAction(
   const { assistantName, businessName, greeting } = validatedFields.data;
 
   try {
-    // Create the assistant record
-    const { error } = await supabase.from('assistants').insert({
-      user_id: user.id,
-      business_name: businessName,
-      assistant_name: assistantName,
-      greeting: greeting,
-      status: 'draft',
-    });
+    // Create or update the assistant record (upsert to prevent duplicates)
+    const { error: assistantError } = await supabase
+      .from('assistants')
+      .upsert({
+        user_id: user.id,
+        business_name: businessName,
+        assistant_name: assistantName,
+        greeting: greeting,
+        status: 'draft',
+      }, {
+        onConflict: 'user_id'
+      });
 
-    if (error) {
-      throw error;
+    if (assistantError) {
+      throw assistantError;
+    }
+
+    // Also update the business name in the profile if it has changed
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        business_name: businessName,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id);
+
+    if (profileError) {
+      // Log but don't fail - assistant creation is more important
+      logger.warn(
+        'ONBOARDING_ACTIONS',
+        'Failed to sync business name to profile',
+        { userId: logger.maskUserId(user.id), error: profileError }
+      );
     }
 
     revalidatePath('/onboarding');
