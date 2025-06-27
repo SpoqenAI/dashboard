@@ -127,18 +127,24 @@ export async function POST(
     });
 
     // Validate that both transcript and summary are not empty or undefined
-    if ((!transcript || transcript.trim().length === 0) && 
-        (!summary || summary.trim().length === 0)) {
+    if (
+      (!transcript || transcript.trim().length === 0) &&
+      (!summary || summary.trim().length === 0)
+    ) {
       logger.warn('VAPI', 'Both transcript and summary are empty or missing', {
         callId: callId,
         hasTranscript: !!transcript,
         hasSummary: !!summary,
       });
-      
-      return NextResponse.json({
-        error: 'Cannot extract action points: both transcript and summary are empty or missing',
-        callId: callId,
-      }, { status: 400 });
+
+      return NextResponse.json(
+        {
+          error:
+            'Cannot extract action points: both transcript and summary are empty or missing',
+          callId: callId,
+        },
+        { status: 400 }
+      );
     }
 
     // Extract action points using AI service
