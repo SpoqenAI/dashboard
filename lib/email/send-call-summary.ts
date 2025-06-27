@@ -31,7 +31,7 @@ export async function sendCallSummaryEmail({
   const sgMail = sgMailModule.default;
   sgMail.setApiKey(apiKey);
 
-  const baseUrl = 'https://www.spoqen.com';
+  const baseUrl = process.env.BASE_URL ?? 'https://www.spoqen.com';
 
   const smallLogoUrl = `${baseUrl}/Spoqen.png`;
   const fullLogoUrl = `${baseUrl}/Spoqen-full.png`;
