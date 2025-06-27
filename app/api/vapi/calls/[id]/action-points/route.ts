@@ -7,6 +7,55 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const resolvedParams = await params;
+  
+  // Validate call ID parameter
+  const callId = resolvedParams.id;
+  
+  // Check if call ID exists and is a string
+  if (!callId || typeof callId !== 'string') {
+    logger.warn('VAPI', 'Invalid call ID: missing or not a string', { 
+      providedId: callId,
+      type: typeof callId 
+    });
+    return NextResponse.json(
+      { error: 'Invalid call ID: must be a non-empty string' },
+      { status: 400 }
+    );
+  }
+  
+  // Check if call ID is not empty and has reasonable length
+  if (callId.trim().length === 0) {
+    logger.warn('VAPI', 'Invalid call ID: empty string');
+    return NextResponse.json(
+      { error: 'Invalid call ID: cannot be empty' },
+      { status: 400 }
+    );
+  }
+  
+  if (callId.length < 8 || callId.length > 128) {
+    logger.warn('VAPI', 'Invalid call ID: length out of bounds', { 
+      callId,
+      length: callId.length 
+    });
+    return NextResponse.json(
+      { error: 'Invalid call ID: length must be between 8 and 128 characters' },
+      { status: 400 }
+    );
+  }
+  
+  // Check if call ID matches expected format (alphanumeric, hyphens, underscores)
+  const validIdPattern = /^[a-zA-Z0-9_-]+$/;
+  if (!validIdPattern.test(callId)) {
+    logger.warn('VAPI', 'Invalid call ID: contains invalid characters', { 
+      callId,
+      allowedPattern: 'alphanumeric characters, hyphens, and underscores only'
+    });
+    return NextResponse.json(
+      { error: 'Invalid call ID: must contain only alphanumeric characters, hyphens, and underscores' },
+      { status: 400 }
+    );
+  }
+
   const apiKey = process.env.VAPI_PRIVATE_KEY;
   const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
 
@@ -20,10 +69,10 @@ export async function POST(
 
   try {
     // Fetch the call details from VAPI
-    const callUrl = new URL(`/call/${resolvedParams.id}`, baseUrl);
+    const callUrl = new URL(`/call/${callId}`, baseUrl);
 
     logger.debug('VAPI', 'Fetching call for action points extraction', {
-      callId: resolvedParams.id,
+      callId: callId,
       url: callUrl.toString(),
     });
 
@@ -40,7 +89,7 @@ export async function POST(
       logger.error('VAPI', 'Failed to fetch call for action points', undefined, {
         status: callRes.status,
         statusText: callRes.statusText,
-        callId: resolvedParams.id,
+        callId: callId,
       });
       return NextResponse.json(
         { error: 'Failed to fetch call details' },
@@ -55,7 +104,7 @@ export async function POST(
     const summary = callData.analysis?.summary;
 
     logger.debug('VAPI', 'Extracting action points from Vapi analysis', {
-      callId: resolvedParams.id,
+      callId: callId,
       hasStructuredData: !!structuredData,
       hasSummary: !!summary,
     });
@@ -84,7 +133,7 @@ export async function POST(
     }
 
     logger.debug('VAPI', 'Successfully extracted action points from Vapi analysis', {
-      callId: resolvedParams.id,
+      callId: callId,
       keyPointsCount: actionPoints.keyPoints.length,
       followUpItemsCount: actionPoints.followUpItems.length,
       urgentConcernsCount: actionPoints.urgentConcerns.length,
@@ -93,7 +142,7 @@ export async function POST(
     });
 
     return NextResponse.json({
-      callId: resolvedParams.id,
+      callId: callId,
       actionPoints,
       generatedAt: new Date().toISOString(),
       source: 'vapi-analysis',
