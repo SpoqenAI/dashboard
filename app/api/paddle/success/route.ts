@@ -161,8 +161,6 @@ export async function GET(request: NextRequest) {
       current_period_start_at: new Date().toISOString(),
       // Set period end to 1 month from now as placeholder
       current_period_end_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     };
 
     // Use atomic upsert function to prevent race conditions

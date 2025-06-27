@@ -154,10 +154,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
     }
 
-    // Validate timestamp for replay attack protection
+    // Validate timestamp for replay attack protection (skip in development for testing)
     const timestampHeader = request.headers.get(WEBHOOK_CONFIG.timestampHeader);
-    if (!validateTimestamp(timestampHeader)) {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    if (!isDevelopment && !validateTimestamp(timestampHeader)) {
       return NextResponse.json({ error: 'Invalid or expired timestamp' }, { status: 400 });
+    }
+    
+    if (isDevelopment && !timestampHeader) {
+      logger.info('PADDLE_WEBHOOK', 'Skipping timestamp validation in development mode');
     }
 
     // Parse the webhook payload

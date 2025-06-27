@@ -210,11 +210,18 @@ export async function provisionAssistant(userId: string): Promise<void> {
     const isTestMode = process.env.NODE_ENV === 'development';
 
     // Dynamic import to avoid loading Twilio in environments where it's not needed
-    const twilioModule = await import('twilio');
-    const twilioClient = twilioModule.default(
-      twilioAccountSid,
-      twilioAuthToken
-    );
+    let twilioClient;
+    try {
+      const twilioModule = await import('twilio');
+      twilioClient = twilioModule.default(
+        twilioAccountSid,
+        twilioAuthToken
+      );
+    } catch (error) {
+      throw new Error(
+        'Twilio module not found. Please install twilio package: npm install twilio'
+      );
+    }
 
     let twilioNumber;
 
