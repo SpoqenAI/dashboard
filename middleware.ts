@@ -186,6 +186,28 @@ export async function middleware(request: NextRequest) {
 
       const hasActiveSubscription = !!subscription;
 
+      // Special handling for payment processing state - MUST come before subscription checks
+      // Don't redirect users who are in the middle of payment processing, regardless of subscription status
+      const isPaymentProcessing =
+        request.nextUrl.pathname === '/onboarding/subscribe' &&
+        request.nextUrl.searchParams.get('payment') === 'success';
+
+      if (isPaymentProcessing) {
+        if (securityConfig.logErrors) {
+          logger.info(
+            'MIDDLEWARE',
+            'Allowing payment processing to continue',
+            {
+              userId: logger.maskUserId(user.id),
+              requestPath: request.nextUrl.pathname,
+              searchParams: request.nextUrl.searchParams.toString(),
+              hasActiveSubscription,
+            }
+          );
+        }
+        return response;
+      }
+
       // If user has active subscription
       if (hasActiveSubscription) {
         // Redirect away from onboarding pages to main dashboard
@@ -200,26 +222,6 @@ export async function middleware(request: NextRequest) {
       if (!hasActiveSubscription) {
         // Allow access to onboarding pages
         if (isOnboardingPage) {
-          // Special handling for payment processing state
-          // Don't redirect users who are in the middle of payment processing
-          const isPaymentProcessing =
-            request.nextUrl.pathname === '/onboarding/subscribe' &&
-            request.nextUrl.searchParams.get('payment') === 'success';
-
-          if (isPaymentProcessing) {
-            if (securityConfig.logErrors) {
-              logger.info(
-                'MIDDLEWARE',
-                'Allowing payment processing to continue',
-                {
-                  userId: logger.maskUserId(user.id),
-                  requestPath: request.nextUrl.pathname,
-                  searchParams: request.nextUrl.searchParams.toString(),
-                }
-              );
-            }
-          }
-
           return response;
         }
         // Redirect to onboarding for all other protected routes

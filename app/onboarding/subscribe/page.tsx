@@ -36,7 +36,11 @@ function SubscribePageContent() {
   useEffect(() => {
     // Check if we're returning from a successful payment
     const paymentSuccess = searchParams.get('payment') === 'success';
-    if (paymentSuccess) {
+    
+    // Also check if payment processing was in progress (for page refreshes, etc.)
+    const wasProcessingPayment = sessionStorage.getItem('spoqen_payment_processing') === 'true';
+    
+    if (paymentSuccess || wasProcessingPayment) {
       setShowProcessing(true);
     }
   }, [searchParams]);

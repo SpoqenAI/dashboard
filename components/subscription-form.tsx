@@ -119,6 +119,9 @@ export function SubscriptionForm({
         };
       }
 
+      // Clear any existing payment processing state before starting new payment
+      sessionStorage.removeItem('spoqen_payment_processing');
+      
       paddle.Checkout.open(checkoutData);
     } catch (error) {
       logger.error(

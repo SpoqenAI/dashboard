@@ -22,7 +22,57 @@ export function PaymentProcessing() {
     let mounted = true;
     const timeoutIds: NodeJS.Timeout[] = [];
 
+    // Mark payment processing state in sessionStorage for persistence
+    sessionStorage.setItem('spoqen_payment_processing', 'true');
+
     async function handlePaymentSuccess() {
+      // Check immediately if subscription already exists (fast webhook processing)
+      try {
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+          setStatusMessage('Authentication error. Redirecting to login...');
+          timeoutIds.push(setTimeout(() => router.push('/login'), 2000));
+          return;
+        }
+
+        // Quick initial check for existing subscription
+        const { data: existingSubscription } = await supabase
+          .from('subscriptions')
+          .select('status')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (existingSubscription && mounted) {
+          // Subscription already exists - skip directly to completion
+          setStage('complete');
+          setStatusMessage('Account setup complete! Welcome to Spoqen!');
+          
+          // Clear payment processing state
+          sessionStorage.removeItem('spoqen_payment_processing');
+          
+          timeoutIds.push(
+            setTimeout(() => {
+              if (mounted) {
+                router.push('/dashboard?welcome=true');
+              }
+            }, 1500)
+          );
+          return;
+        }
+      } catch (error) {
+        logger.error(
+          'PAYMENT_PROCESSING',
+          'Error in initial subscription check',
+          error instanceof Error ? error : new Error(String(error))
+        );
+        // Continue with normal flow on error
+      }
+
       // Initial animation sequence
       timeoutIds.push(setTimeout(() => mounted && setStage('text'), 500));
       timeoutIds.push(
@@ -70,6 +120,9 @@ export function PaymentProcessing() {
             // Success! Subscription found
             setStage('complete');
             setStatusMessage('Account setup complete! Welcome to Spoqen!');
+
+            // Clear payment processing state
+            sessionStorage.removeItem('spoqen_payment_processing');
 
             // Small delay to show success message, then redirect to dashboard
             timeoutIds.push(
@@ -134,6 +187,8 @@ export function PaymentProcessing() {
       mounted = false;
       // Clear all timeouts to prevent memory leaks
       timeoutIds.forEach(clearTimeout);
+      // Clear payment processing state on component unmount (navigation away)
+      sessionStorage.removeItem('spoqen_payment_processing');
     };
   }, [router]);
 
@@ -203,16 +258,25 @@ export function PaymentProcessing() {
                         setStatusMessage(
                           'Account setup complete! Welcome to Spoqen!'
                         );
+                        
+                        // Clear payment processing state
+                        sessionStorage.removeItem('spoqen_payment_processing');
+                        
                         setTimeout(() => {
                           router.push('/dashboard?welcome=true');
                         }, 1500);
                       } else {
                         alert(
-                          'Setup is still in progress. Please wait a few more minutes.'
+                          'Setup is still in progress. Please wait a few more minutes or contact support if this persists.'
                         );
                       }
                     } catch (error) {
-                      alert('Unable to check status. Please try again later.');
+                      logger.error(
+                        'PAYMENT_PROCESSING',
+                        'Error in manual subscription check',
+                        error instanceof Error ? error : new Error(String(error))
+                      );
+                      alert('Unable to check status. Please try again later or contact support.');
                     }
                   }}
                   className="rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600"

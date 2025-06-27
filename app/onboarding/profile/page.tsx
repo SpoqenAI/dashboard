@@ -121,14 +121,21 @@ function ProfileSetupContent() {
                       const response = await fetch('/api/check-subscription');
                       const data = await response.json();
                       if (data.hasActiveSubscription) {
+                        // Clear any payment processing state before redirecting
+                        sessionStorage.removeItem('spoqen_payment_processing');
                         window.location.href = '/dashboard?welcome=true';
                       } else {
                         alert(
-                          'Subscription is still being processed. Please wait a few more minutes.'
+                          'Subscription is still being processed. Please wait a few more minutes or contact support if this persists.'
                         );
                       }
                     } catch (error) {
-                      alert('Unable to check status. Please try again later.');
+                      logger.error(
+                        'ONBOARDING_PROFILE',
+                        'Error checking subscription status',
+                        error instanceof Error ? error : new Error(String(error))
+                      );
+                      alert('Unable to check status. Please try again later or contact support.');
                     }
                   }}
                   className="rounded bg-orange-100 px-3 py-1 text-sm text-orange-800 transition-colors hover:bg-orange-200"
