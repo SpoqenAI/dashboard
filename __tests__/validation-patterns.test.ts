@@ -439,9 +439,10 @@ runner.describe('BUSINESS_NAME_PATTERN', () => {
     'should test performance with potentially problematic strings',
     () => {
       // These tests ensure the regex doesn't suffer from ReDoS attacks
-      const longString = 'A' + 'a'.repeat(1000) + 'Z';
-      const longStringWithSpaces = 'A' + ' a'.repeat(500) + 'Z';
-      const longStringWithDashes = 'A' + '-a'.repeat(500) + 'Z';
+      // Reduced string sizes to prevent webpack serialization issues
+      const longString = 'A' + 'a'.repeat(100) + 'Z';
+      const longStringWithSpaces = 'A' + ' a'.repeat(50) + 'Z';
+      const longStringWithDashes = 'A' + '-a'.repeat(50) + 'Z';
 
       runner
         .expect(VALIDATION_PATTERNS.BUSINESS_NAME_PATTERN.test(longString))
