@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 import { ActionPoints } from '@/lib/types';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '',
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 // Re-export the type for convenience

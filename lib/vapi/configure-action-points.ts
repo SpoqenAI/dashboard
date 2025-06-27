@@ -1,4 +1,4 @@
-import { updateAssistant } from '@/src/lib/vapi/assistant';
+import { updateAssistant, getAssistant } from '@/src/lib/vapi/assistant';
 import { ACTION_POINTS_ANALYSIS_PLAN } from './analysis-config';
 import { logger } from '@/lib/logger';
 
@@ -47,7 +47,6 @@ export async function isActionPointsAnalysisConfigured(
   token?: string
 ): Promise<boolean> {
   try {
-    const { getAssistant } = await import('@/src/lib/vapi/assistant');
     const assistant = await getAssistant(assistantId, token);
     
     return !!(
