@@ -613,7 +613,8 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle>Phone Number & Call Forwarding</CardTitle>
                   <CardDescription>
-                    Set up your dedicated phone number and configure call forwarding to your AI assistant.
+                    Set up your dedicated phone number and configure call
+                    forwarding to your AI assistant.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

@@ -11,7 +11,9 @@ interface AssistantData {
 }
 
 export default function CallForwardingInstructions() {
-  const [assistantData, setAssistantData] = useState<AssistantData | null>(null);
+  const [assistantData, setAssistantData] = useState<AssistantData | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,8 +21,18 @@ export default function CallForwardingInstructions() {
     const fetchAssistantData = async () => {
       try {
         const supabase = createClient();
-        
-        const { data: { user } } = await supabase.auth.getUser();
+
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
+
+        if (authError) {
+          setError(authError.message);
+          setLoading(false);
+          return;
+        }
+
         if (!user) {
           setLoading(false);
           return;
@@ -29,11 +41,13 @@ export default function CallForwardingInstructions() {
         // Fetch the user's most recent assistant and join with the phone number
         const { data: assistantData, error } = await supabase
           .from('assistants')
-          .select(`
+          .select(
+            `
             status,
             status_detail,
             phone_numbers ( e164_number )
-          `)
+          `
+          )
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(1)
@@ -61,7 +75,7 @@ export default function CallForwardingInstructions() {
 
   if (loading) {
     return (
-      <div className="my-6 p-6 border border-gray-200 bg-gray-50 rounded-lg">
+      <div className="my-6 rounded-lg border border-gray-200 bg-gray-50 p-6">
         <div className="flex items-center gap-3">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span className="text-gray-600">Loading assistant status...</span>
@@ -72,10 +86,12 @@ export default function CallForwardingInstructions() {
 
   if (error) {
     return (
-      <div className="my-6 p-6 border border-red-200 bg-red-50 rounded-lg">
+      <div className="my-6 rounded-lg border border-red-200 bg-red-50 p-6">
         <div className="flex items-center gap-3">
           <AlertCircle className="h-5 w-5 text-red-600" />
-          <span className="text-red-800">Error loading assistant data: {error}</span>
+          <span className="text-red-800">
+            Error loading assistant data: {error}
+          </span>
         </div>
       </div>
     );
@@ -86,28 +102,31 @@ export default function CallForwardingInstructions() {
   }
 
   const { status, status_detail } = assistantData;
-  const phoneNumber = Array.isArray(assistantData.phone_numbers) 
-    ? assistantData.phone_numbers[0]?.e164_number 
+  const phoneNumber = Array.isArray(assistantData.phone_numbers)
+    ? assistantData.phone_numbers[0]?.e164_number
     : null;
 
   const renderContent = () => {
     switch (status) {
       case 'provisioning':
         return (
-          <div className="p-6 border border-blue-200 bg-blue-50 rounded-lg">
-            <div className="flex items-center gap-3 mb-4">
-              <Loader2 className="h-6 w-6 text-blue-600 animate-spin" />
-              <h4 className="font-semibold text-blue-800 text-lg">Setup in Progress</h4>
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+              <h4 className="text-lg font-semibold text-blue-800">
+                Setup in Progress
+              </h4>
             </div>
-            <p className="text-blue-700 mb-2">
-              We are setting up your dedicated phone number and AI assistant. This may take a minute.
+            <p className="mb-2 text-blue-700">
+              We are setting up your dedicated phone number and AI assistant.
+              This may take a minute.
             </p>
             {status_detail && (
-              <p className="text-sm text-blue-600 bg-blue-100 px-3 py-2 rounded border">
+              <p className="rounded border bg-blue-100 px-3 py-2 text-sm text-blue-600">
                 <span className="font-medium">Status:</span> {status_detail}
               </p>
             )}
-            <p className="text-sm text-blue-600 mt-3">
+            <p className="mt-3 text-sm text-blue-600">
               Please refresh the page in a moment to see your phone number.
             </p>
           </div>
@@ -119,46 +138,64 @@ export default function CallForwardingInstructions() {
           return renderErrorState();
         }
         return (
-          <div className="p-6 border border-green-200 bg-green-50 rounded-lg">
-            <div className="flex items-center gap-3 mb-4">
+          <div className="rounded-lg border border-green-200 bg-green-50 p-6">
+            <div className="mb-4 flex items-center gap-3">
               <CheckCircle className="h-6 w-6 text-green-600" />
-              <h4 className="font-semibold text-green-800 text-lg">Your AI Assistant is Ready!</h4>
+              <h4 className="text-lg font-semibold text-green-800">
+                Your AI Assistant is Ready!
+              </h4>
             </div>
-            
-            <p className="text-green-700 mb-4">
-              Forward your calls to the number below to have your AI handle them:
+
+            <p className="mb-4 text-green-700">
+              Forward your calls to the number below to have your AI handle
+              them:
             </p>
-            
-            <div className="bg-white border-2 border-green-300 rounded-lg p-4 mb-4">
+
+            <div className="mb-4 rounded-lg border-2 border-green-300 bg-white p-4">
               <div className="flex items-center justify-center gap-2">
                 <Phone className="h-5 w-5 text-green-600" />
-                <span className="text-2xl font-bold text-gray-900 tracking-wider">
+                <span className="text-2xl font-bold tracking-wider text-gray-900">
                   {phoneNumber}
                 </span>
               </div>
             </div>
-            
+
             <div className="space-y-3">
-              <h5 className="font-medium text-green-800">How to set up call forwarding:</h5>
-              <div className="text-sm text-gray-700 space-y-2">
+              <h5 className="font-medium text-green-800">
+                How to set up call forwarding:
+              </h5>
+              <div className="space-y-2 text-sm text-gray-700">
                 <p className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[60px]">Option 1:</span>
-                  <span>Dial <code className="bg-gray-100 px-1 py-0.5 rounded">*72{phoneNumber.replace(/\D/g, '')}</code> from your phone</span>
+                  <span className="min-w-[60px] font-semibold">Option 1:</span>
+                  <span>
+                    Dial{' '}
+                    <code className="rounded bg-gray-100 px-1 py-0.5">
+                      *72{phoneNumber.replace(/\D/g, '')}
+                    </code>{' '}
+                    from your phone
+                  </span>
                 </p>
                 <p className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[60px]">Option 2:</span>
-                  <span>Contact your mobile carrier and request call forwarding to {phoneNumber}</span>
+                  <span className="min-w-[60px] font-semibold">Option 2:</span>
+                  <span>
+                    Contact your mobile carrier and request call forwarding to{' '}
+                    {phoneNumber}
+                  </span>
                 </p>
                 <p className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[60px]">Option 3:</span>
-                  <span>Check your phone's settings app for "Call Forwarding" options</span>
+                  <span className="min-w-[60px] font-semibold">Option 3:</span>
+                  <span>
+                    Check your phone's settings app for "Call Forwarding"
+                    options
+                  </span>
                 </p>
               </div>
-              
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
+
+              <div className="mt-4 rounded border border-blue-200 bg-blue-50 p-3 text-sm">
                 <p className="text-blue-800">
-                  <span className="font-medium">💡 Tip:</span> Test your setup by calling your original number. 
-                  You should hear your AI assistant answer!
+                  <span className="font-medium">💡 Tip:</span> Test your setup
+                  by calling your original number. You should hear your AI
+                  assistant answer!
                 </p>
               </div>
             </div>
@@ -175,30 +212,34 @@ export default function CallForwardingInstructions() {
   };
 
   const renderErrorState = () => (
-    <div className="p-6 border border-red-200 bg-red-50 rounded-lg">
-      <div className="flex items-center gap-3 mb-4">
+    <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+      <div className="mb-4 flex items-center gap-3">
         <AlertCircle className="h-6 w-6 text-red-600" />
-        <h4 className="font-semibold text-red-800 text-lg">Setup Error</h4>
+        <h4 className="text-lg font-semibold text-red-800">Setup Error</h4>
       </div>
-      
-      <p className="text-red-700 mb-3">
-        There was a problem setting up your phone number and AI assistant. Our team has been notified.
+
+      <p className="mb-3 text-red-700">
+        There was a problem setting up your phone number and AI assistant. Our
+        team has been notified.
       </p>
-      
+
       {status_detail && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-200 rounded text-sm">
+        <div className="mb-4 rounded border border-red-200 bg-red-100 p-3 text-sm">
           <p className="text-red-800">
             <span className="font-medium">Error details:</span> {status_detail}
           </p>
         </div>
       )}
-      
+
       <div className="space-y-2 text-sm">
         <p className="text-red-700">
           <span className="font-medium">What you can do:</span>
         </p>
-        <ul className="list-disc list-inside text-red-600 space-y-1 ml-4">
-          <li>Refresh this page in a few minutes to see if the issue resolved automatically</li>
+        <ul className="ml-4 list-inside list-disc space-y-1 text-red-600">
+          <li>
+            Refresh this page in a few minutes to see if the issue resolved
+            automatically
+          </li>
           <li>Contact our support team for immediate assistance</li>
           <li>Check that your subscription is active in the billing section</li>
         </ul>
@@ -206,9 +247,5 @@ export default function CallForwardingInstructions() {
     </div>
   );
 
-  return (
-    <div className="my-6">
-      {renderContent()}
-    </div>
-  );
-} 
+  return <div className="my-6">{renderContent()}</div>;
+}

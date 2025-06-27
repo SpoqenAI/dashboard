@@ -304,7 +304,7 @@ export async function POST(req: NextRequest) {
             .update(subData)
             .eq('user_id', userId);
           subError = error;
-          
+
           logger.info('WEBHOOK', 'Updated existing subscription for user', {
             userId: logger.maskUserId(userId),
             existingSubscriptionId: existingSubscription.id,
@@ -317,7 +317,7 @@ export async function POST(req: NextRequest) {
             .insert(subData);
           subError = error;
         }
-        
+
         if (subError) throw subError;
 
         // Also update the user's profile with their Paddle Customer ID
@@ -353,16 +353,24 @@ export async function POST(req: NextRequest) {
               .maybeSingle();
 
             if (existingAssistant) {
-              logger.info('WEBHOOK', 'User already has active assistant, skipping provisioning', {
-                userId: logger.maskUserId(userId),
-                assistantId: existingAssistant.id,
-                subscriptionId: eventData.id,
-              });
+              logger.info(
+                'WEBHOOK',
+                'User already has active assistant, skipping provisioning',
+                {
+                  userId: logger.maskUserId(userId),
+                  assistantId: existingAssistant.id,
+                  subscriptionId: eventData.id,
+                }
+              );
             } else {
-              logger.info('WEBHOOK', 'Triggering assistant provisioning workflow', {
-                userId: logger.maskUserId(userId),
-                subscriptionId: eventData.id,
-              });
+              logger.info(
+                'WEBHOOK',
+                'Triggering assistant provisioning workflow',
+                {
+                  userId: logger.maskUserId(userId),
+                  subscriptionId: eventData.id,
+                }
+              );
               await provisionAssistant(userId);
             }
           } catch (provisioningError) {
@@ -372,7 +380,9 @@ export async function POST(req: NextRequest) {
             logger.error(
               'WEBHOOK',
               `Provisioning workflow failed for user ${logger.maskUserId(userId)}, but acknowledging webhook receipt`,
-              provisioningError instanceof Error ? provisioningError : new Error(String(provisioningError)),
+              provisioningError instanceof Error
+                ? provisioningError
+                : new Error(String(provisioningError)),
               {
                 userId: logger.maskUserId(userId),
                 subscriptionId: eventData.id,
