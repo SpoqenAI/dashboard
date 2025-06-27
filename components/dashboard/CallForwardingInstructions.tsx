@@ -24,7 +24,15 @@ export default function CallForwardingInstructions() {
 
         const {
           data: { user },
+          error: authError,
         } = await supabase.auth.getUser();
+
+        if (authError) {
+          setError(authError.message);
+          setLoading(false);
+          return;
+        }
+
         if (!user) {
           setLoading(false);
           return;
