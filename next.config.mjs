@@ -10,6 +10,25 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  webpack: (config, { isServer, webpack }) => {
+    // Use memory cache instead of filesystem to avoid serialization issues
+    config.cache = {
+      type: 'memory',
+      maxGenerations: 1, // Keep memory usage low
+    };
+
+    // Suppress the warning if it still appears
+    config.stats = {
+      ...config.stats,
+      warningsFilter: [
+        ...(config.stats?.warningsFilter || []),
+        /Serializing big strings/,
+        'Serializing big strings',
+      ],
+    };
+
+    return config;
+  },
 };
 
 export default withSentryConfig(nextConfig, {

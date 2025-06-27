@@ -90,7 +90,7 @@ export async function middleware(request: NextRequest) {
     '/forgot-password',
     '/reset-password',
   ].some(path => request.nextUrl.pathname.startsWith(path));
-  const isPublicPage = ['/privacy', '/terms', '/contact'].includes(
+  const isPublicPage = ['/', '/privacy', '/terms', '/contact'].includes(
     request.nextUrl.pathname
   );
   const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
@@ -200,6 +200,26 @@ export async function middleware(request: NextRequest) {
       if (!hasActiveSubscription) {
         // Allow access to onboarding pages
         if (isOnboardingPage) {
+          // Special handling for payment processing state
+          // Don't redirect users who are in the middle of payment processing
+          const isPaymentProcessing =
+            request.nextUrl.pathname === '/onboarding/subscribe' &&
+            request.nextUrl.searchParams.get('payment') === 'success';
+
+          if (isPaymentProcessing) {
+            if (securityConfig.logErrors) {
+              logger.info(
+                'MIDDLEWARE',
+                'Allowing payment processing to continue',
+                {
+                  userId: logger.maskUserId(user.id),
+                  requestPath: request.nextUrl.pathname,
+                  searchParams: request.nextUrl.searchParams.toString(),
+                }
+              );
+            }
+          }
+
           return response;
         }
         // Redirect to onboarding for all other protected routes
