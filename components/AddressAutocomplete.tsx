@@ -15,10 +15,22 @@ import '@geoapify/geocoder-autocomplete/styles/minimal.css';
 import { logger } from '@/lib/logger';
 
 interface AddressData {
+  // Basic address components
+  street_address?: string;
   city?: string;
   state?: string;
-  postcode?: string;
+  postal_code?: string;
   country?: string;
+
+  // Formatted address string
+  formatted_address?: string;
+
+  // Additional metadata
+  address_type?: 'business' | 'home' | 'other';
+
+  // Raw Geoapify data for reference
+  geoapify_data?: any;
+  geoapify_place_id?: string;
 }
 
 interface AddressAutocompleteProps {
@@ -55,10 +67,13 @@ class AutocompleteErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error(
-      'AddressAutocomplete Error Boundary caught an error:',
+    logger.error(
+      'ADDRESS_AUTOCOMPLETE',
+      'Error Boundary caught an error',
       error,
-      errorInfo
+      {
+        componentStack: errorInfo?.componentStack,
+      }
     );
 
     let errorMessage = `Geocoding service error: ${error.message}`;
@@ -124,7 +139,8 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
 
   useEffect(() => {
     if (!apiKey) {
-      console.warn(
+      logger.warn(
+        'ADDRESS_AUTOCOMPLETE',
         'NEXT_PUBLIC_GEOAPIFY_API_KEY is not set in environment variables'
       );
     }
@@ -135,7 +151,11 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   };
 
   const handleError = (errorMessage: string) => {
-    console.error('AddressAutocomplete error:', errorMessage);
+    logger.error(
+      'ADDRESS_AUTOCOMPLETE',
+      'Address autocomplete error',
+      new Error(errorMessage)
+    );
     setError(errorMessage);
     setIsLoading(false);
 
@@ -171,6 +191,10 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
 
       // Extract address components from the Geoapify response
       const addressData: AddressData = {
+        street_address:
+          value.properties?.housenumber && value.properties?.street
+            ? `${value.properties.housenumber} ${value.properties.street}`
+            : value.properties?.street || value.properties?.name || '',
         city:
           value.properties?.city ||
           value.properties?.town ||
@@ -181,8 +205,12 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
           value.properties?.region ||
           value.properties?.county ||
           '',
-        postcode: value.properties?.postcode || '',
+        postal_code: value.properties?.postcode || '',
         country: value.properties?.country || '',
+        formatted_address: value.properties?.formatted,
+        address_type: 'business', // Default to business for user profiles
+        geoapify_data: value.properties,
+        geoapify_place_id: value.properties?.place_id,
       };
 
       // Validate that we got at least some address data
@@ -199,10 +227,15 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         'AddressAutocomplete',
         'Address data extracted successfully',
         {
+          hasStreetAddress: !!addressData.street_address,
           hasCity: !!addressData.city,
           hasState: !!addressData.state,
-          hasPostcode: !!addressData.postcode,
+          hasPostcode: !!addressData.postal_code,
           hasCountry: !!addressData.country,
+          hasFormattedAddress: !!addressData.formatted_address,
+          hasAddressType: !!addressData.address_type,
+          hasGeoapifyData: !!addressData.geoapify_data,
+          hasGeoapifyPlaceId: !!addressData.geoapify_place_id,
           // Note: We log presence of data rather than the actual values to protect privacy
         }
       );

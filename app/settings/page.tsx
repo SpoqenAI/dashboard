@@ -52,6 +52,7 @@ import {
   formatSubscriptionDate,
 } from '@/lib/paddle';
 import PasswordStrengthBar from 'react-password-strength-bar';
+import { logger } from '@/lib/logger';
 
 // Initialize content filter outside component to prevent recreation on every render
 const contentFilter = new Filter();
@@ -78,7 +79,48 @@ function SettingsContent() {
   } = useUserSettings();
 
   // Get subscription data
-  const { subscription, loading: subscriptionLoading } = useSubscription();
+  const {
+    subscription,
+    loading: subscriptionLoading,
+    refetch: refetchSubscription,
+  } = useSubscription();
+
+  // Check for successful payment return
+  useEffect(() => {
+    const success = searchParams.get('success');
+    if (success === 'true') {
+      toast({
+        title: 'Payment successful!',
+        description: 'Your subscription has been updated successfully.',
+      });
+
+      // Trigger subscription refresh when returning from successful payment
+      logger.info(
+        'SETTINGS',
+        'Triggering subscription refresh from success URL'
+      );
+      setTimeout(async () => {
+        try {
+          await refetchSubscription();
+          logger.info(
+            'SETTINGS',
+            'Subscription refreshed after success URL return'
+          );
+        } catch (error) {
+          logger.error(
+            'SETTINGS',
+            'Failed to refresh subscription after success URL',
+            error instanceof Error ? error : new Error(String(error))
+          );
+        }
+      }, 1000); // Give the page a moment to load
+
+      // Clean up the URL by removing the success parameter
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('success');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+  }, [searchParams, refetchSubscription]);
 
   // Form data state - initialized from Supabase data
   const [formData, setFormData] = useState({
@@ -92,6 +134,7 @@ function SettingsContent() {
     brokerage: '',
     website: '',
     businessAddress: '',
+    streetAddress: '',
     city: '',
     state: '',
     zipcode: '',
@@ -120,6 +163,7 @@ function SettingsContent() {
     brokerage: '',
     website: '',
     businessAddress: '',
+    streetAddress: '',
     city: '',
     state: '',
     zipcode: '',
@@ -137,10 +181,10 @@ function SettingsContent() {
   // Initialize Paddle on component mount
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) {
-      console.log(
-        '🚀 Initializing Paddle with token:',
-        process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN?.slice(0, 10) + '...'
-      );
+      logger.debug('SETTINGS', 'Initializing Paddle payment system', {
+        hasToken: !!process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN,
+        environment: process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT,
+      });
       initializePaddle({
         environment:
           (process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT as
@@ -148,18 +192,98 @@ function SettingsContent() {
             | 'production') || 'sandbox',
         token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN,
         eventCallback: data => {
-          console.log('📦 Paddle event:', JSON.stringify(data, null, 2));
+          logger.debug('SETTINGS', 'Paddle event received', {
+            eventName: data.name,
+            hasData: !!data,
+          });
           if (data.name === 'checkout.completed') {
-            console.log('✅ Checkout completed!');
+            logger.info('SETTINGS', 'Checkout completed successfully');
             toast({
               title: 'Payment successful!',
               description: 'Your subscription has been updated.',
             });
+            // Simplified subscription refresh with configurable polling
+            const refreshSubscriptionWithRetry = async () => {
+              const config = {
+                initialDelay: 2000,
+                maxAttempts: 3,
+                retryDelays: [1500, 3000], // delays between attempts
+              };
+
+              logger.debug(
+                'SETTINGS',
+                'Starting subscription data refresh sequence'
+              );
+
+              // Initial delay to allow webhook processing
+              await new Promise(resolve =>
+                setTimeout(resolve, config.initialDelay)
+              );
+
+              for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
+                logger.debug('SETTINGS', 'Subscription refresh attempt', {
+                  attempt,
+                  maxAttempts: config.maxAttempts,
+                });
+
+                try {
+                  await refetchSubscription();
+                  logger.info(
+                    'SETTINGS',
+                    'Subscription refresh completed successfully'
+                  );
+                  return; // Success - exit the function
+                } catch (error) {
+                  logger.warn('SETTINGS', `Refresh attempt ${attempt} failed`, {
+                    attempt,
+                    maxAttempts: config.maxAttempts,
+                    error:
+                      error instanceof Error ? error.message : String(error),
+                  });
+
+                  // If this was the last attempt, show error message
+                  if (attempt === config.maxAttempts) {
+                    logger.warn(
+                      'SETTINGS',
+                      'All subscription refresh attempts failed'
+                    );
+                    toast({
+                      title: 'Payment processed',
+                      description:
+                        "Your payment was successful. If your subscription status doesn't update shortly, please refresh the page.",
+                      duration: 8000,
+                    });
+                    return;
+                  }
+
+                  // Wait before next attempt
+                  const delay = config.retryDelays[attempt - 1] || 2000;
+                  logger.debug('SETTINGS', `Waiting before next attempt`, {
+                    delay,
+                  });
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                }
+              }
+            };
+
+            // Execute the simplified refresh logic
+            refreshSubscriptionWithRetry().catch(error => {
+              logger.error(
+                'SETTINGS',
+                'Subscription refresh sequence failed',
+                error instanceof Error ? error : new Error(String(error))
+              );
+            });
           }
           if (data.name === 'checkout.error') {
-            console.error(
-              '❌ Checkout error details:',
-              JSON.stringify(data, null, 2)
+            logger.error(
+              'SETTINGS',
+              'Checkout error occurred',
+              new Error(data.error?.detail || 'Checkout failed'),
+              {
+                errorDetail: data.error?.detail,
+                hasErrorData: !!data.error,
+              }
             );
             toast({
               title: 'Payment failed',
@@ -173,17 +297,24 @@ function SettingsContent() {
       })
         .then((paddleInstance: Paddle | undefined) => {
           if (paddleInstance) {
-            console.log('✅ Paddle initialized successfully');
+            logger.info('SETTINGS', 'Paddle initialized successfully');
             setPaddle(paddleInstance);
           } else {
-            console.error('❌ Failed to initialize Paddle');
+            logger.error(
+              'SETTINGS',
+              'Failed to initialize Paddle - instance is undefined'
+            );
           }
         })
         .catch(error => {
-          console.error('❌ Paddle initialization error:', error);
+          logger.error(
+            'SETTINGS',
+            'Paddle initialization error',
+            error instanceof Error ? error : new Error(String(error))
+          );
         });
     } else {
-      console.error('❌ NEXT_PUBLIC_PADDLE_CLIENT_TOKEN not found');
+      logger.error('SETTINGS', 'NEXT_PUBLIC_PADDLE_CLIENT_TOKEN not found');
     }
   }, []);
 
@@ -201,11 +332,13 @@ function SettingsContent() {
         licenseNumber: profileData.licenseNumber,
         brokerage: profileData.brokerage,
         website: profileData.website,
-        businessAddress: '', // Not stored in profile table
+        businessAddress:
+          profileData.formattedAddress || profileData.streetAddress || '',
+        streetAddress: profileData.streetAddress || '',
         city: profileData.city,
         state: profileData.state,
-        zipcode: '', // Not stored in profile table
-        country: 'United States',
+        zipcode: profileData.postalCode || '',
+        country: profileData.country || 'United States',
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
@@ -713,28 +846,47 @@ function SettingsContent() {
   };
 
   const handleAddressSelect = (addressData: {
+    street_address?: string;
     city?: string;
     state?: string;
-    postcode?: string;
+    postal_code?: string;
     country?: string;
+    formatted_address?: string;
+    address_type?: 'business' | 'home' | 'other';
+    geoapify_data?: any;
+    geoapify_place_id?: string;
   }) => {
     // Auto-fill the form fields when an address is selected
     setFormData(prev => ({
       ...prev,
+      businessAddress: addressData.formatted_address || prev.businessAddress,
+      streetAddress: addressData.street_address || prev.streetAddress,
       city: addressData.city || prev.city,
       state: addressData.state || prev.state,
-      zipcode: addressData.postcode || prev.zipcode,
+      zipcode: addressData.postal_code || prev.zipcode,
       country: addressData.country || prev.country,
     }));
 
     // Clear any existing validation errors for these fields
     setValidationErrors(prev => ({
       ...prev,
+      businessAddress: '',
       city: '',
       state: '',
       zipcode: '',
       country: '',
     }));
+
+    // Log address selection event with privacy protection
+    logger.debug('SETTINGS', 'Address selected and form populated', {
+      hasStreetAddress: !!addressData.street_address,
+      hasFormattedAddress: !!addressData.formatted_address,
+      hasCity: !!addressData.city,
+      hasState: !!addressData.state,
+      hasPostalCode: !!addressData.postal_code,
+      hasCountry: !!addressData.country,
+      addressType: addressData.address_type,
+    });
   };
 
   const handleAddressInputChange = (value: string) => {
@@ -785,8 +937,12 @@ function SettingsContent() {
           licenseNumber: formData.licenseNumber,
           brokerage: formData.brokerage,
           website: formData.website,
+          streetAddress: formData.streetAddress || formData.businessAddress, // Use streetAddress if available, otherwise businessAddress
           city: formData.city,
           state: formData.state,
+          postalCode: formData.zipcode, // Map zipcode to postalCode
+          country: formData.country,
+          formattedAddress: formData.businessAddress, // Use businessAddress as formatted address for now
         })
       );
 
@@ -811,7 +967,11 @@ function SettingsContent() {
 
       setSavedData({ ...formData });
     } catch (error) {
-      console.error('Error saving settings:', error);
+      logger.error(
+        'SETTINGS',
+        'Error saving settings',
+        error instanceof Error ? error : new Error(String(error))
+      );
       // Error toast is handled by the updateProfile and updateUserSettings functions
     }
   };
@@ -828,25 +988,20 @@ function SettingsContent() {
     const formData = getProfileFormData(); // Get current profile data
     const priceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
 
-    console.log(
-      '🛒 Starting checkout with data:',
-      JSON.stringify(
-        {
-          paddle: !!paddle,
-          userId,
-          email: formData.email,
-          priceId,
-          environment: process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT,
-        },
-        null,
-        2
-      )
-    );
+    logger.debug('SETTINGS', 'Starting checkout process', {
+      hasPaddle: !!paddle,
+      hasUserId: !!userId,
+      hasEmail: !!formData.email,
+      hasPriceId: !!priceId,
+      environment: process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT,
+      hasFirstName: !!formData.firstName,
+      hasLastName: !!formData.lastName,
+    });
 
     if (paddle && userId && formData.email && priceId) {
       try {
-        // First try minimal checkout
-        const minimalCheckoutData = {
+        // Create a minimal, working checkout configuration
+        const checkoutData: any = {
           items: [
             {
               priceId: priceId,
@@ -856,42 +1011,81 @@ function SettingsContent() {
           customData: {
             user_id: userId,
           },
+          settings: {
+            successUrl: `${window.location.origin}/settings?tab=billing&success=true`,
+            allowLogout: false,
+          },
         };
 
-        console.log(
-          '🚀 Trying minimal checkout first:',
-          JSON.stringify(minimalCheckoutData, null, 2)
-        );
+        // Only add customer info if we have complete name information
+        if (formData.firstName && formData.lastName && formData.email) {
+          checkoutData.customer = {
+            email: formData.email,
+            name: `${formData.firstName} ${formData.lastName}`.trim(),
+          };
+        }
 
-        paddle.Checkout.open(minimalCheckoutData);
-        console.log('✅ Minimal checkout opened successfully');
+        logger.debug('SETTINGS', 'Opening checkout with configuration', {
+          hasItems: !!checkoutData.items?.length,
+          hasCustomData: !!checkoutData.customData,
+          hasCustomer: !!checkoutData.customer,
+          hasSuccessUrl: !!checkoutData.settings?.successUrl,
+        });
+
+        // Add additional error logging for the checkout process
+        paddle.Checkout.open(checkoutData);
+        logger.info('SETTINGS', 'Checkout opened successfully');
       } catch (error) {
-        console.error('❌ Error opening checkout:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.error('SETTINGS', 'Error opening checkout', err, {
+          name: err.name,
+          message: err.message,
+        });
+
         toast({
           title: 'Checkout Error',
-          description: 'Failed to open checkout. Please try again.',
+          description: `Failed to open checkout: ${err.message}`,
           variant: 'destructive',
         });
       }
     } else {
-      console.error('❌ Missing required data for checkout:', {
-        paddle: !!paddle,
-        userId: !!userId,
-        email: !!formData.email,
-        priceId: !!priceId,
-      });
+      const missingData = {
+        paddle: !paddle,
+        userId: !userId,
+        email: !formData.email,
+        priceId: !priceId,
+      };
+
+      logger.error(
+        'SETTINGS',
+        'Missing required data for checkout',
+        new Error('Checkout prerequisites not met'),
+        missingData
+      );
+
+      // Show more specific error messages
+      let errorDescription = 'Please ensure you are logged in and try again.';
+      if (!priceId) {
+        errorDescription =
+          'Payment configuration is missing. Please contact support.';
+      } else if (!formData.email) {
+        errorDescription =
+          'Please add your email address in your profile settings.';
+      } else if (!paddle) {
+        errorDescription =
+          'Payment system is loading. Please wait a moment and try again.';
+      }
+
       toast({
         title: 'Unable to process payment',
-        description: !priceId
-          ? 'Payment configuration is missing. Please contact support.'
-          : 'Please ensure you are logged in and try again.',
+        description: errorDescription,
         variant: 'destructive',
       });
     }
   };
 
   // Handle subscription management
-  const handleManageSubscription = () => {
+  const handleManageSubscription = async () => {
     if (!subscription) {
       toast({
         title: 'Error',
@@ -901,10 +1095,32 @@ function SettingsContent() {
       return;
     }
 
-    // Open Paddle's hosted subscription management page
-    // Note: You may need to implement this endpoint or use Paddle's customer portal
-    const managementUrl = `https://checkout.paddle.com/subscription/update?subscription=${subscription.id}`;
-    window.open(managementUrl, '_blank');
+    try {
+      const res = await fetch('/api/paddle/manage-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId: subscription.id }),
+      });
+
+      if (!res.ok) throw new Error('Failed to fetch management URL');
+
+      const { url } = await res.json();
+      if (!url) throw new Error('Management URL missing in response');
+
+      window.open(url as string, '_blank');
+    } catch (err) {
+      logger.error(
+        'SETTINGS',
+        'Error opening subscription management page',
+        err instanceof Error ? err : new Error(String(err))
+      );
+      toast({
+        title: 'Unable to open management page',
+        description:
+          'Please try again later or contact support if the problem persists.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
