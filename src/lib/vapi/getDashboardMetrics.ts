@@ -1,4 +1,4 @@
-import { MISSED_CODES } from '../../constants/vapi';
+import { MISSED_CODES } from '../../../lib/constants/vapi';
 
 export interface DashboardMetrics {
   total: number;
@@ -102,10 +102,10 @@ export async function getMetrics(
     },
     {
       table: 'call',
-      name: 'avg_duration',
+      name: 'total_duration',
       operations: [
         {
-          operation: 'avg',
+          operation: 'sum',
           column: 'durationSeconds'
         }
       ],
@@ -171,7 +171,7 @@ export async function getMetrics(
   let total = 0;
   let answered = 0;
   let missed = 0;
-  let avgDuration = 0;
+  let totalDuration = 0;
 
   for (const result of results) {
     if (result.name === 'total_calls') {
@@ -180,11 +180,13 @@ export async function getMetrics(
       answered = result.result.reduce((sum: number, item: any) => sum + (item.count_id || 0), 0);
     } else if (result.name === 'missed_calls') {
       missed = result.result.reduce((sum: number, item: any) => sum + (item.count_id || 0), 0);
-    } else if (result.name === 'avg_duration') {
-      const durations = result.result.map((item: any) => item.avg_durationSeconds || 0);
-      avgDuration = durations.length > 0 ? durations.reduce((sum: number, val: number) => sum + val, 0) / durations.length : 0;
+    } else if (result.name === 'total_duration') {
+      totalDuration = result.result.reduce((sum: number, item: any) => sum + (item.sum_durationSeconds || 0), 0);
     }
   }
+
+  // Calculate weighted average duration
+  const avgDuration = answered > 0 ? totalDuration / answered : 0;
 
   return {
     total,
