@@ -177,7 +177,7 @@ export function SubscriptionForm({
           user_id: userId,
         },
         settings: {
-          successUrl: `${window.location.origin}/onboarding/processing?payment=success`,
+          successUrl: `${window.location.origin}/api/paddle/success?user_id=${userId}`,
           allowLogout: false,
         },
       };

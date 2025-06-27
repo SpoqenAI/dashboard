@@ -114,12 +114,12 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-      // Check if user has an active subscription
+      // Check if user has an active or pending subscription
       const { data: subscription, error } = await supabase
         .from('subscriptions')
         .select('status')
         .eq('user_id', user.id)
-        .eq('status', 'active')
+        .in('status', ['active', 'pending_webhook'])
         .maybeSingle();
 
       if (error) {
@@ -184,10 +184,10 @@ export async function middleware(request: NextRequest) {
         }
       }
 
-      const hasActiveSubscription = !!subscription;
+      const hasValidSubscription = !!subscription;
 
-      // If user has active subscription
-      if (hasActiveSubscription) {
+      // If user has valid subscription (active or pending webhook)
+      if (hasValidSubscription) {
         // Redirect away from onboarding pages to main dashboard
         if (isOnboardingPage) {
           return NextResponse.redirect(new URL('/dashboard', request.url));
@@ -196,8 +196,8 @@ export async function middleware(request: NextRequest) {
         return response;
       }
 
-      // If user doesn't have active subscription (new user)
-      if (!hasActiveSubscription) {
+      // If user doesn't have valid subscription (new user)
+      if (!hasValidSubscription) {
         // Allow access to onboarding pages
         if (isOnboardingPage) {
           return response;

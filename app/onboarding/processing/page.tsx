@@ -16,6 +16,7 @@ export default function ProcessingPage() {
   const [statusMessage, setStatusMessage] = useState(
     'Setting up your Spoqen account...'
   );
+  const [isInstant, setIsInstant] = useState(false);
 
   // Create Supabase client once at component level to avoid recreation
   const supabase = createClient();
@@ -25,20 +26,39 @@ export default function ProcessingPage() {
     const timeoutIds: NodeJS.Timeout[] = [];
 
     async function handlePaymentSuccess() {
-      // Initial animation sequence
-      timeoutIds.push(setTimeout(() => mounted && setStage('text'), 500));
-      timeoutIds.push(
-        setTimeout(() => mounted && setStage('processing'), 1500)
-      );
+      const instant = searchParams.get('instant') === 'true';
+      setIsInstant(instant);
 
-      // Start polling for subscription after initial animations
-      timeoutIds.push(
-        setTimeout(() => {
-          if (mounted) {
-            pollForSubscription();
-          }
-        }, 2000)
-      );
+      if (instant) {
+        // Instant flow - payment was immediately processed
+        setStatusMessage('Payment confirmed! Setting up your account...');
+        timeoutIds.push(setTimeout(() => mounted && setStage('text'), 300));
+        timeoutIds.push(
+          setTimeout(() => mounted && setStage('processing'), 800)
+        );
+        // Start polling immediately since we expect faster results
+        timeoutIds.push(
+          setTimeout(() => {
+            if (mounted) {
+              pollForSubscription();
+            }
+          }, 1000)
+        );
+      } else {
+        // Standard flow - waiting for webhook
+        timeoutIds.push(setTimeout(() => mounted && setStage('text'), 500));
+        timeoutIds.push(
+          setTimeout(() => mounted && setStage('processing'), 1500)
+        );
+        // Start polling for subscription after initial animations
+        timeoutIds.push(
+          setTimeout(() => {
+            if (mounted) {
+              pollForSubscription();
+            }
+          }, 2000)
+        );
+      }
     }
 
     async function pollForSubscription() {
@@ -60,28 +80,39 @@ export default function ProcessingPage() {
             return;
           }
 
-          // Check for active subscription
+          // Check for any subscription (active or pending)
           const { data: subscription } = await supabase
             .from('subscriptions')
             .select('status')
             .eq('user_id', user.id)
-            .eq('status', 'active')
+            .in('status', ['active', 'pending_webhook'])
             .maybeSingle();
 
           if (subscription) {
-            // Success! Subscription found
-            setStage('complete');
-            setStatusMessage('Account setup complete! Welcome to Spoqen!');
+            if (subscription.status === 'active') {
+              // Success! Active subscription found
+              setStage('complete');
+              setStatusMessage('Account setup complete! Welcome to Spoqen!');
 
-            // Small delay to show success message, then redirect to dashboard
-            timeoutIds.push(
-              setTimeout(() => {
-                if (mounted) {
-                  router.push('/dashboard?welcome=true');
-                }
-              }, 1500)
-            );
-            return;
+              // Small delay to show success message, then redirect to dashboard
+              timeoutIds.push(
+                setTimeout(() => {
+                  if (mounted) {
+                    router.push('/dashboard?welcome=true');
+                  }
+                }, 1500)
+              );
+              return;
+            } else if (subscription.status === 'pending_webhook') {
+              // Pending subscription found - show positive progress
+              if (attempts < 5) {
+                setStatusMessage('Payment confirmed! Finalizing your account setup...');
+              } else if (attempts < 15) {
+                setStatusMessage('Setting up your AI assistant...');
+              } else {
+                setStatusMessage('Almost ready... activating your subscription');
+              }
+            }
           }
 
           // Continue polling if subscription not found yet
@@ -202,7 +233,10 @@ export default function ProcessingPage() {
             </p>
             {stage !== 'complete' && (
               <p className="text-sm text-gray-500">
-                This may take up to a minute
+                {isInstant 
+                  ? 'Your payment was processed instantly!' 
+                  : 'This may take up to a minute'
+                }
               </p>
             )}
           </div>
