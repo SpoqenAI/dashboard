@@ -146,6 +146,41 @@ export function SubscriptionForm({
     };
   }, [checkoutInProgress, userId, router]);
 
+  // Interval polling while checkout is in progress to make flow fool-proof
+  useEffect(() => {
+    if (!checkoutInProgress) return;
+
+    const supabaseImportPromise = import('@/lib/supabase/client');
+
+    const poll = async () => {
+      try {
+        const { createClient } = await supabaseImportPromise;
+        const supabase = createClient();
+        const { data: subscription } = await supabase
+          .from('subscriptions')
+          .select('status')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (subscription) {
+          logger.info('SUBSCRIPTION_FORM', 'Subscription detected via polling', {
+            userId: logger.maskUserId(userId),
+          });
+          setCheckoutInProgress(false);
+          router.push('/onboarding/processing?payment=success');
+        }
+      } catch (error) {
+        logger.error('SUBSCRIPTION_FORM', 'Polling error', error as Error, {
+          userId: logger.maskUserId(userId),
+        });
+      }
+    };
+
+    const intervalId = setInterval(poll, 4000); // poll every 4s
+    return () => clearInterval(intervalId);
+  }, [checkoutInProgress, userId, router]);
+
   const handleSubscribe = async () => {
     if (!paddle) {
       logger.error(

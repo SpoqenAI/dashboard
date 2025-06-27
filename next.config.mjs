@@ -10,6 +10,86 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  experimental: {
+    // Add support for ngrok and other development origins
+    allowedDevOrigins: [
+      // Allow ngrok domains for development
+      'https://*.ngrok-free.app',
+      'https://*.ngrok.io', 
+      'https://*.ngrok.app',
+      // Allow localhost with common ports
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:8080',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001',
+      // Allow other development domains if needed
+      'https://*.vercel.app',
+      'https://*.netlify.app',
+    ],
+  },
+  
+  // Enhanced security headers with proper CORS for development
+  async headers() {
+    const headers = [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+        ],
+      },
+    ];
+
+    // Add development-specific CORS headers for ngrok
+    if (process.env.NODE_ENV === 'development') {
+      headers.push({
+        source: '/api/(.*)',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*', // In development, allow all origins for ngrok
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization, X-Requested-With',
+          },
+        ],
+      });
+    }
+
+    return headers;
+  },
+
+  // Webpack configuration for better development experience
+  webpack: (config, { dev, isServer }) => {
+    if (dev && !isServer) {
+      // Enable source maps for better debugging
+      config.devtool = 'eval-source-map';
+    }
+    return config;
+  },
+
+  // Environment variable validation
+  env: {
+    // Validate critical environment variables at build time
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  },
 };
 
 export default withSentryConfig(nextConfig, {

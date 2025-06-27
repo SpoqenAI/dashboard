@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { logger } from '@/lib/logger';
 import { analytics, performance } from '@/lib/analytics';
 import { randomUUID } from 'crypto';
+import { provisionAssistant } from '@/lib/actions/assistant.actions';
 
 // Input validation patterns
 const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -85,61 +86,84 @@ function generateSecureSubscriptionId(): string {
 }
 
 // Trigger assistant provisioning for new subscribers
-async function triggerAssistantProvisioning(userId: string, supabase: any): Promise<void> {
+async function triggerAssistantProvisioning(userId: string, subscriptionId: string): Promise<void> {
   try {
-    // Get user's assistant data from the assistants table
-    const { data: assistant } = await supabase
+    logger.info('ASSISTANT_PROVISIONING', 'Starting provisioning workflow', { userId: logger.maskUserId(userId) });
+    
+    // Check if assistant data exists before attempting provisioning
+    const supabase = createSupabaseAdmin();
+    const { data: assistantData, error: assistantError } = await supabase
       .from('assistants')
-      .select('assistant_name, phone_number, voice_settings')
+      .select('id, status, assistant_name, greeting')
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (!assistant) {
-      logger.warn('PADDLE_SUCCESS', 'No assistant data found for provisioning', {
-        userId: logger.maskUserId(userId),
-      });
-      return;
+    if (assistantError) {
+      throw new Error(`Failed to check assistant data: ${assistantError.message}`);
     }
 
-    // Create assistant provisioning record to track background sync
-    const { error: provisioningError } = await supabase
+    if (!assistantData) {
+      logger.warn('PADDLE_SUCCESS', 'No assistant data found for provisioning', { userId: logger.maskUserId(userId) });
+      return; // Don't fail the flow, just skip provisioning
+    }
+
+    // Update provisioning status to indicate start
+    await supabase
       .from('user_settings')
-      .upsert({
-        id: userId,
-        assistant_provisioning_status: 'pending',
+      .update({
+        assistant_provisioning_status: 'in_progress',
         assistant_provisioning_started_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'id'
-      });
+      })
+      .eq('user_id', userId);
 
-    if (provisioningError) {
-      logger.error('PADDLE_SUCCESS', 'Failed to create assistant provisioning record', provisioningError, {
-        userId: logger.maskUserId(userId),
-      });
-      return;
-    }
-
-    logger.info('PADDLE_SUCCESS', 'Assistant provisioning initiated', {
-      userId: logger.maskUserId(userId),
-      assistantName: assistant.assistant_name,
-      hasPhoneNumber: !!assistant.phone_number,
-    });
-
-    // Note: Actual VAPI/Twilio sync would happen via webhook or background job
-    // For now, we just mark it as initiated
+    // Trigger the actual provisioning
+    await provisionAssistant(userId);
     
-  } catch (error) {
-    logger.error('PADDLE_SUCCESS', 'Error during assistant provisioning', 
-      error instanceof Error ? error : new Error(String(error)), {
+    // Update provisioning status to completed
+    await supabase
+      .from('user_settings')
+      .update({
+        assistant_provisioning_status: 'completed',
+        assistant_provisioning_completed_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId);
+
+    logger.info('ASSISTANT_PROVISIONING', 'Provisioning completed successfully', { 
       userId: logger.maskUserId(userId),
+      subscriptionId,
     });
-    throw error;
+  } catch (error: any) {
+    const errorMessage = `Assistant provisioning failed: ${error.message}`;
+    logger.error('ASSISTANT_PROVISIONING', errorMessage, error instanceof Error ? error : new Error(String(error)), {
+      userId: logger.maskUserId(userId),
+      subscriptionId,
+    });
+    
+    // Update provisioning status to failed
+    try {
+      const supabase = createSupabaseAdmin();
+      await supabase
+        .from('user_settings')
+        .update({
+          assistant_provisioning_status: 'failed',
+          assistant_provisioning_error: error.message,
+        })
+        .eq('user_id', userId);
+    } catch (updateError) {
+      logger.error('ASSISTANT_PROVISIONING', 'Failed to update provisioning status', updateError as Error);
+    }
+    
+    throw error; // Re-throw to be handled by caller
   }
 }
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
+  
+  // Declare variables at function scope to avoid scoping issues in catch block
+  let userId: string | null = null;
+  let transactionId: string | null = null;
+  let subscriptionId: string | null = null;
   
   try {
     const { searchParams } = new URL(request.url);
@@ -149,9 +173,9 @@ export async function GET(request: NextRequest) {
     const rawTransactionId = searchParams.get('transaction_id');
     const rawSubscriptionId = searchParams.get('subscription_id');
     
-    const userId = validateUserId(rawUserId);
-    const transactionId = validateTransactionId(rawTransactionId);
-    const subscriptionId = validateSubscriptionId(rawSubscriptionId);
+    userId = validateUserId(rawUserId);
+    transactionId = validateTransactionId(rawTransactionId);
+    subscriptionId = validateSubscriptionId(rawSubscriptionId);
 
     // Track payment completion event
     if (userId) {
@@ -289,81 +313,185 @@ export async function GET(request: NextRequest) {
       operation: result.operation,
     });
 
-    // Trigger assistant provisioning in background (fire-and-forget)
+    // 4. Trigger assistant provisioning in background (with enhanced error handling)
     try {
-      await triggerAssistantProvisioning(userId, supabase);
-    } catch (provisioningError) {
-      // Log but don't block the user flow
-      logger.warn('PADDLE_SUCCESS', 'Assistant provisioning failed but user flow continues', {
+      await triggerAssistantProvisioning(userId, subscriptionId || generateSecureSubscriptionId());
+    } catch (provisioningError: any) {
+      // Don't fail the entire success flow if assistant provisioning fails
+      // This ensures users can still complete onboarding even if there are temporary issues
+      logger.warn('PADDLE_SUCCESS', 'Assistant provisioning failed, but continuing success flow', {
         userId: logger.maskUserId(userId),
-        error: provisioningError instanceof Error ? provisioningError.message : 'Unknown error',
+        subscriptionId: subscriptionId || generateSecureSubscriptionId(),
+        error: provisioningError.message,
       });
-    }
-
-    // Mark onboarding as complete
-    const { error: onboardingError } = await supabase
-      .from('profiles')
-      .update({ 
-        onboarding_completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', userId);
-
-    if (onboardingError) {
-      logger.warn('PADDLE_SUCCESS', 'Failed to mark onboarding as complete', {
-        userId: logger.maskUserId(userId),
-        error: onboardingError.message,
-      });
-    }
-
-    // Track subscription creation and performance
-    const processingTime = Date.now() - startTime;
-    
-    await Promise.all([
-      // Track subscription creation event
-      analytics.trackFunnelStage('subscription_created', {
-        userId,
-        subscriptionId: secureSubscriptionId,
-        processingTimeMs: processingTime,
-      }),
       
-      // Track performance metrics
-      performance.trackSubscriptionCreationTime(processingTime, userId),
-      performance.trackApiResponse('/api/paddle/success', processingTime, true, 200),
-    ]);
+      // Track the provisioning failure for monitoring
+      await analytics.trackError('assistant_provisioning_failed', {
+        userId,
+        subscriptionId: subscriptionId || generateSecureSubscriptionId(),
+        error: provisioningError.message,
+        timestamp: Date.now(),
+      });
+
+      // Update user settings to indicate manual provisioning may be needed
+      try {
+        await supabase
+          .from('user_settings')
+          .update({
+            assistant_provisioning_status: 'failed',
+            assistant_provisioning_error: provisioningError.message,
+          })
+          .eq('user_id', userId);
+      } catch (updateError) {
+        logger.error('PADDLE_SUCCESS', 'Failed to update user settings with provisioning error', updateError as Error);
+      }
+    }
+
+    // 5. Mark onboarding as completed
+    try {
+      await supabase
+        .from('profiles')
+        .update({ onboarding_completed_at: new Date().toISOString() })
+        .eq('id', userId);
+
+      logger.info('PADDLE_SUCCESS', 'Onboarding marked as completed', {
+        userId: logger.maskUserId(userId),
+      });
+    } catch (error) {
+      logger.error('PADDLE_SUCCESS', 'Failed to mark onboarding as completed', error as Error, {
+        userId: logger.maskUserId(userId),
+      });
+    }
+
+    // Track onboarding completion
+    try {
+      await analytics.trackOnboardingComplete(userId, Date.now() - startTime, {
+        subscriptionId: subscriptionId || generateSecureSubscriptionId(),
+        processingTimeMs: Date.now() - startTime,
+        funnelStage: 'subscription_created',
+      });
+    } catch (analyticsError) {
+      logger.error('PADDLE_SUCCESS', 'Analytics tracking (onboarding completion) failed', analyticsError as Error, {
+        userId: logger.maskUserId(userId),
+      });
+    }
+
+    // Log performance metrics
+    try {
+      await analytics.trackPerformance('subscription_creation_time', Date.now() - startTime, 'ms', {
+        userId,
+        critical: true,
+      });
+
+      await analytics.trackPerformance('api_response_time', Date.now() - startTime, 'ms', {
+        endpoint: '/api/paddle/success',
+        success: true,
+        statusCode: 200,
+      });
+    } catch (perfError) {
+      logger.error('PADDLE_SUCCESS', 'Analytics performance tracking failed', perfError as Error, {
+        userId: logger.maskUserId(userId),
+      });
+    }
 
     logger.info('PADDLE_SUCCESS', 'Success callback performance', {
       userId: logger.maskUserId(userId),
-      processingTimeMs: processingTime,
+      processingTimeMs: Date.now() - startTime,
       hasTransactionId: !!transactionId,
-      hasSubscriptionId: !!subscriptionId,
+      hasSubscriptionId: !!(subscriptionId || generateSecureSubscriptionId()),
     });
 
-    // Redirect to processing page with instant success
-    return NextResponse.redirect(
-      new URL('/onboarding/processing?payment=success&instant=true', request.url)
-    );
-
-  } catch (error) {
-    const processingTime = Date.now() - startTime;
+    // 6. Enhanced redirect logic with robust URL handling
+    const redirectUrl = determineRedirectUrl(request, '/onboarding/processing');
     
-    // Track error and performance for failed requests
-    await Promise.all([
-      analytics.trackError(error instanceof Error ? error : new Error(String(error)), {
-        context: 'paddle_success_callback',
-        processingTimeMs: processingTime,
-      }),
-      performance.trackApiResponse('/api/paddle/success', processingTime, false, 500),
-    ]);
+    logger.info('PADDLE_SUCCESS', 'Redirecting user after successful payment', {
+      userId: logger.maskUserId(userId),
+      redirectUrl,
+      processingTimeMs: Date.now() - startTime,
+    });
 
-    logger.error(
-      'PADDLE_SUCCESS',
-      'Unexpected error in success callback',
-      error instanceof Error ? error : new Error(String(error))
-    );
+    return NextResponse.redirect(redirectUrl);
+  } catch (error) {
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    
+    logger.error('PADDLE_SUCCESS', 'Unexpected error in success callback', errorObj, {
+      userId: userId ? logger.maskUserId(userId) : 'unknown',
+      transactionId: transactionId || 'unknown',
+      subscriptionId: subscriptionId || 'unknown',
+      processingTimeMs: Date.now() - startTime,
+    });
 
-    return NextResponse.redirect(
-      new URL('/onboarding/subscribe?error=callback_failed', request.url)
+    // Track the error for monitoring
+    if (userId) {
+      await analytics.trackError('payment_success_callback_failed', {
+        userId,
+        error: errorObj.message,
+        timestamp: Date.now(),
+      });
+    }
+
+    // Redirect to error page with recovery options
+    const errorRedirectUrl = determineRedirectUrl(
+      request, 
+      `/onboarding/subscribe?error=payment_processing_failed&message=${encodeURIComponent('Payment was successful but there was an issue completing your setup. Please contact support if this persists.')}`
     );
+    
+    return NextResponse.redirect(errorRedirectUrl);
+  }
+}
+
+/**
+ * Determines the appropriate redirect URL with robust fallback logic
+ * Prevents unexpected redirects to localhost in production environments
+ */
+function determineRedirectUrl(request: NextRequest, fallbackPath: string): string {
+  try {
+    // Get the base URL from the request
+    const requestUrl = new URL(request.url);
+    let baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
+
+    // If behind a proxy like ngrok/Vercel, prefer the forwarded host header
+    const forwardedHost = request.headers.get('x-forwarded-host');
+    if (forwardedHost) {
+      const forwardedProto = request.headers.get('x-forwarded-proto') || requestUrl.protocol.replace(':', '');
+      baseUrl = `${forwardedProto}://${forwardedHost}`;
+    }
+
+    const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
+
+    // If we detect localhost but we have a configured public URL (ngrok / prod), prefer it
+    if (baseUrl.includes('localhost') && configuredUrl) {
+      return new URL(fallbackPath, configuredUrl).toString();
+    }
+    
+    // Validate that we're not redirecting to localhost in production
+    if (process.env.NODE_ENV === 'production' && baseUrl.includes('localhost')) {
+      logger.error('PADDLE_SUCCESS', 'Production environment attempting localhost redirect', new Error('Invalid redirect URL'), {
+        requestUrl: request.url,
+        baseUrl,
+        fallbackPath,
+      });
+      if (!configuredUrl) {
+        throw new Error('No production URL configured for redirect');
+      }
+      return new URL(fallbackPath, configuredUrl).toString();
+    }
+    
+    // Create the redirect URL when baseUrl is acceptable
+    const redirectUrl = new URL(fallbackPath, baseUrl);
+    logger.debug('PADDLE_SUCCESS', 'Redirect URL determined', {
+      requestUrl: request.url,
+      baseUrl,
+      fallbackPath,
+      finalUrl: redirectUrl.toString(),
+    });
+    return redirectUrl.toString();
+  } catch (error) {
+    logger.error('PADDLE_SUCCESS', 'Error determining redirect URL', error as Error, {
+      requestUrl: request.url,
+      fallbackPath,
+    });
+    const emergencyUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    return new URL(fallbackPath, emergencyUrl).toString();
   }
 } 

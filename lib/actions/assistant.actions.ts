@@ -283,7 +283,34 @@ export async function provisionAssistant(userId: string): Promise<void> {
     // Validate Vapi credentials
     const vapiApiKey = process.env.VAPI_PRIVATE_KEY;
     const vapiWebhookSecret = process.env.VAPI_WEBHOOK_SECRET;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    
+    // Use enhanced URL detection with better fallbacks
+    let appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
+    
+    // For development, try to auto-detect ngrok or use localhost fallback
+    if (!appUrl && process.env.NODE_ENV === 'development') {
+      // Check if we have any ngrok-related environment variables
+      const ngrokUrl = Object.keys(process.env).find(key => 
+        key.includes('NGROK') && process.env[key]?.includes('ngrok')
+      );
+      
+      if (ngrokUrl) {
+        appUrl = process.env[ngrokUrl];
+        logger.info('ASSISTANT_PROVISIONING', 'Auto-detected ngrok URL from environment', {
+          assistantId: assistant.id,
+          source: ngrokUrl,
+          url: appUrl,
+        });
+      } else {
+        // Use localhost fallback for development
+        const devPort = process.env.PORT || '3000';
+        appUrl = `http://localhost:${devPort}`;
+        logger.warn('ASSISTANT_PROVISIONING', 'Using localhost fallback for development. For production or ngrok testing, set NEXT_PUBLIC_APP_URL', {
+          assistantId: assistant.id,
+          fallbackUrl: appUrl,
+        });
+      }
+    }
 
     if (!vapiApiKey) {
       throw new Error('Missing required VAPI_PRIVATE_KEY environment variable');
@@ -296,9 +323,18 @@ export async function provisionAssistant(userId: string): Promise<void> {
     }
 
     if (!appUrl) {
-      throw new Error(
-        'Missing required NEXT_PUBLIC_APP_URL environment variable'
-      );
+      const errorMessage = process.env.NODE_ENV === 'production' 
+        ? 'Missing required NEXT_PUBLIC_APP_URL environment variable. This is required for production deployment.'
+        : 'Missing required NEXT_PUBLIC_APP_URL environment variable. For ngrok testing, set NEXT_PUBLIC_APP_URL to your ngrok URL (e.g., https://abc123.ngrok-free.app)';
+      
+      throw new Error(errorMessage);
+    }
+
+    // Validate URL format
+    try {
+      new URL(appUrl);
+    } catch (urlError) {
+      throw new Error(`Invalid NEXT_PUBLIC_APP_URL format: ${appUrl}. Please provide a valid URL (e.g., https://yourdomain.com or https://abc123.ngrok-free.app)`);
     }
 
     // Create Vapi assistant using their API
