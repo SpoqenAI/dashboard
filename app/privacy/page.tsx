@@ -2,12 +2,12 @@ import React from 'react';
 
 export default function PrivacyPolicy() {
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-12 text-gray-800">
+    <div className="container mx-auto max-w-3xl px-4 py-12 text-foreground">
       <h1 className="mb-8 text-center text-4xl font-extrabold">
         Privacy Policy for Spoqen
       </h1>
 
-      <p className="mb-6 text-sm text-gray-600">
+      <p className="mb-6 text-sm text-foreground">
         Effective Date: {new Date().toLocaleDateString()}
         <br />
         Last Updated: {new Date().toLocaleDateString()}

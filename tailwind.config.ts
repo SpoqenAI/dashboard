@@ -54,6 +54,10 @@ const config = {
           foreground: 'hsl(var(--card-foreground))',
         },
       },
+      backgroundImage: {
+        'spoqen-gradient':
+          'linear-gradient(135deg, #eb39ff 0%, #7537ff 50%, #00b4d8 100%)',
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
