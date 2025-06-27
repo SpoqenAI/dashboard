@@ -6,6 +6,41 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const resolvedParams = await params;
+  
+  // Validate call ID parameter
+  if (!resolvedParams.id || typeof resolvedParams.id !== 'string') {
+    logger.warn('VAPI', 'Invalid call ID: missing or not a string', {
+      providedId: resolvedParams.id,
+    });
+    return NextResponse.json(
+      { error: 'Call ID is required and must be a string' },
+      { status: 400 }
+    );
+  }
+
+  const callId = resolvedParams.id.trim();
+  
+  if (callId.length === 0) {
+    logger.warn('VAPI', 'Invalid call ID: empty string');
+    return NextResponse.json(
+      { error: 'Call ID cannot be empty' },
+      { status: 400 }
+    );
+  }
+
+  // Validate call ID format (should be alphanumeric with hyphens, typical for UUIDs)
+  const callIdPattern = /^[a-zA-Z0-9\-_]+$/;
+  if (!callIdPattern.test(callId)) {
+    logger.warn('VAPI', 'Invalid call ID format', {
+      callId: callId,
+      pattern: callIdPattern.source,
+    });
+    return NextResponse.json(
+      { error: 'Call ID contains invalid characters' },
+      { status: 400 }
+    );
+  }
+
   const apiKey = process.env.VAPI_PRIVATE_KEY;
   const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
 
@@ -18,10 +53,10 @@ export async function GET(
   }
 
   try {
-    const callUrl = new URL(`/call/${resolvedParams.id}`, baseUrl);
+    const callUrl = new URL(`/call/${callId}`, baseUrl);
 
     logger.debug('VAPI', 'Fetching call details', {
-      callId: resolvedParams.id,
+      callId: callId,
       url: callUrl.toString(),
     });
 
@@ -38,7 +73,7 @@ export async function GET(
       logger.error('VAPI', 'Failed to fetch call', undefined, {
         status: callRes.status,
         statusText: callRes.statusText,
-        callId: resolvedParams.id,
+        callId: callId,
         url: callUrl.toString(),
       });
       return NextResponse.json(
@@ -50,13 +85,15 @@ export async function GET(
     const callData = await callRes.json();
 
     logger.debug('VAPI', 'Successfully fetched call details', {
-      callId: resolvedParams.id,
+      callId: callId,
       hasData: !!callData,
     });
 
     return NextResponse.json({ call: callData });
   } catch (error) {
-    logger.error('VAPI', 'API request failed', error as Error);
+    logger.error('VAPI', 'API request failed', error as Error, {
+      callId: callId,
+    });
     return NextResponse.json(
       { error: 'Error fetching call details' },
       { status: 500 }
