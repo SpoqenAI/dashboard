@@ -107,7 +107,7 @@ export function SubscriptionForm({
           user_id: userId,
         },
         settings: {
-          successUrl: `${window.location.origin}/onboarding/subscribe?payment=success`,
+          successUrl: `${window.location.origin}/onboarding/processing?payment=success`,
           allowLogout: false,
         },
       };

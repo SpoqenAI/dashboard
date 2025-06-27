@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { OnboardingStepper } from '@/components/onboarding-stepper';
 import { SubscriptionForm } from '@/components/subscription-form';
-import { PaymentProcessing } from '@/components/payment-processing';
+
 import { createClient } from '@/lib/supabase/client';
 
 // Define specific interfaces for the profile data structure
@@ -30,16 +30,17 @@ interface UserData {
 function SubscribePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [showProcessing, setShowProcessing] = useState(false);
+
   const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
     // Check if we're returning from a successful payment
     const paymentSuccess = searchParams.get('payment') === 'success';
     if (paymentSuccess) {
-      setShowProcessing(true);
+      // Redirect to dedicated processing page
+      router.push('/onboarding/processing?payment=success');
     }
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   useEffect(() => {
     let isMounted = true;
@@ -84,10 +85,7 @@ function SubscribePageContent() {
     };
   }, [router]);
 
-  // Show payment processing state if returning from successful payment
-  if (showProcessing) {
-    return <PaymentProcessing />;
-  }
+
 
   // Show loading while fetching user data
   if (!userData) {
