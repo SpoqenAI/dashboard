@@ -90,7 +90,7 @@ export async function middleware(request: NextRequest) {
     '/forgot-password',
     '/reset-password',
   ].some(path => request.nextUrl.pathname.startsWith(path));
-  const isPublicPage = ['/privacy', '/terms', '/contact'].includes(
+  const isPublicPage = ['/', '/privacy', '/terms', '/contact'].includes(
     request.nextUrl.pathname
   );
   const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
