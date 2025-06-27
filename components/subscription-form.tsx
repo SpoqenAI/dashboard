@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { ArrowLeft, Check, CreditCard } from 'lucide-react';
@@ -25,9 +26,11 @@ export function SubscriptionForm({
   businessName,
   userId,
 }: SubscriptionFormProps) {
+  const router = useRouter();
   const [paddle, setPaddle] = useState<Paddle | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
+  const [checkoutInProgress, setCheckoutInProgress] = useState(false);
 
   useEffect(() => {
     const initPaddle = async () => {
@@ -76,6 +79,73 @@ export function SubscriptionForm({
     initPaddle();
   }, []);
 
+  // Set up window focus listener to check subscription after Paddle overlay closes
+  useEffect(() => {
+    if (!checkoutInProgress) return;
+
+    const checkSubscriptionStatus = async () => {
+      try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        
+        const { data: subscription } = await supabase
+          .from('subscriptions')
+          .select('status')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (subscription) {
+          logger.info('SUBSCRIPTION_FORM', 'Subscription found after checkout', {
+            userId: logger.maskUserId(userId),
+          });
+          setCheckoutInProgress(false);
+          router.push('/onboarding/processing?payment=success');
+        }
+      } catch (error) {
+        logger.error(
+          'SUBSCRIPTION_FORM',
+          'Error checking subscription status',
+          error instanceof Error ? error : new Error(String(error)),
+          { userId: logger.maskUserId(userId) }
+        );
+      }
+    };
+
+    const handleFocus = () => {
+      if (checkoutInProgress) {
+        // Small delay to allow webhook processing
+        setTimeout(checkSubscriptionStatus, 1000);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden && checkoutInProgress) {
+        // Small delay to allow webhook processing
+        setTimeout(checkSubscriptionStatus, 1000);
+      }
+    };
+
+    // Set a timeout to stop checking after 2 minutes
+    const timeout = setTimeout(() => {
+      if (checkoutInProgress) {
+        logger.warn('SUBSCRIPTION_FORM', 'Checkout progress timeout', {
+          userId: logger.maskUserId(userId),
+        });
+        setCheckoutInProgress(false);
+      }
+    }, 120000); // 2 minutes
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [checkoutInProgress, userId, router]);
+
   const handleSubscribe = async () => {
     if (!paddle) {
       logger.error(
@@ -119,6 +189,7 @@ export function SubscriptionForm({
         };
       }
 
+      setCheckoutInProgress(true);
       paddle.Checkout.open(checkoutData);
     } catch (error) {
       logger.error(
@@ -252,7 +323,7 @@ export function SubscriptionForm({
 
         <Button
           onClick={handleSubscribe}
-          disabled={!paddle || isLoading || !!initError}
+          disabled={!paddle || isLoading || !!initError || checkoutInProgress}
           className={
             initError
               ? 'cursor-not-allowed bg-gray-400'
@@ -262,6 +333,8 @@ export function SubscriptionForm({
         >
           {initError ? (
             'Payment System Unavailable'
+          ) : checkoutInProgress ? (
+            'Processing Payment...'
           ) : isLoading ? (
             'Opening Checkout...'
           ) : (
@@ -271,6 +344,16 @@ export function SubscriptionForm({
             </>
           )}
         </Button>
+
+        {checkoutInProgress && (
+          <Button
+            variant="outline"
+            onClick={() => router.push('/onboarding/processing?payment=success')}
+            className="ml-2"
+          >
+            Payment Complete? Continue →
+          </Button>
+        )}
       </CardFooter>
     </>
   );
