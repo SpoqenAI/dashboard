@@ -102,14 +102,17 @@ export default function ProfileSetupPage() {
           <AlertCircle className="h-4 w-4 text-orange-600" />
           <AlertDescription className="text-orange-800">
             <div className="space-y-3">
-              <p className="font-medium">Payment Successful - Account Setup in Progress</p>
+              <p className="font-medium">
+                Payment Successful - Account Setup in Progress
+              </p>
               <p>
-                Your payment was processed successfully! We're finalizing your account setup, 
-                which can take a few minutes. You'll receive a confirmation email once complete.
+                Your payment was processed successfully! We're finalizing your
+                account setup, which can take a few minutes. You'll receive a
+                confirmation email once complete.
               </p>
               <p className="text-sm">
-                You can continue using the platform while we finish the setup, or contact support 
-                if you have any questions.
+                You can continue using the platform while we finish the setup,
+                or contact support if you have any questions.
               </p>
               <div className="flex gap-3 pt-2">
                 <button
@@ -120,19 +123,21 @@ export default function ProfileSetupPage() {
                       if (data.hasActiveSubscription) {
                         window.location.href = '/dashboard?welcome=true';
                       } else {
-                        alert('Subscription is still being processed. Please wait a few more minutes.');
+                        alert(
+                          'Subscription is still being processed. Please wait a few more minutes.'
+                        );
                       }
                     } catch (error) {
                       alert('Unable to check status. Please try again later.');
                     }
                   }}
-                  className="text-sm bg-orange-100 hover:bg-orange-200 text-orange-800 px-3 py-1 rounded transition-colors"
+                  className="rounded bg-orange-100 px-3 py-1 text-sm text-orange-800 transition-colors hover:bg-orange-200"
                 >
                   Check Status
                 </button>
-                <a 
-                  href="/contact" 
-                  className="text-sm bg-white hover:bg-gray-50 text-orange-800 border border-orange-300 px-3 py-1 rounded transition-colors"
+                <a
+                  href="/contact"
+                  className="rounded border border-orange-300 bg-white px-3 py-1 text-sm text-orange-800 transition-colors hover:bg-gray-50"
                 >
                   Contact Support
                 </a>

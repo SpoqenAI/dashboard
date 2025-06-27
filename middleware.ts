@@ -202,10 +202,10 @@ export async function middleware(request: NextRequest) {
         if (isOnboardingPage) {
           // Special handling for payment processing state
           // Don't redirect users who are in the middle of payment processing
-          const isPaymentProcessing = 
-            request.nextUrl.pathname === '/onboarding/subscribe' && 
+          const isPaymentProcessing =
+            request.nextUrl.pathname === '/onboarding/subscribe' &&
             request.nextUrl.searchParams.get('payment') === 'success';
-          
+
           if (isPaymentProcessing) {
             if (securityConfig.logErrors) {
               logger.info(
@@ -219,7 +219,7 @@ export async function middleware(request: NextRequest) {
               );
             }
           }
-          
+
           return response;
         }
         // Redirect to onboarding for all other protected routes

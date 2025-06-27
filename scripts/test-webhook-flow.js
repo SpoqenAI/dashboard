@@ -32,15 +32,22 @@ async function testWebhookFlow() {
       .limit(5);
 
     if (subsError) {
-      console.error('❌ Error accessing subscriptions table:', subsError.message);
+      console.error(
+        '❌ Error accessing subscriptions table:',
+        subsError.message
+      );
       return;
     }
 
-    console.log(`✅ Subscriptions table accessible. Found ${subs.length} subscription(s)`);
+    console.log(
+      `✅ Subscriptions table accessible. Found ${subs.length} subscription(s)`
+    );
     if (subs.length > 0) {
       console.log('   Recent subscriptions:');
       subs.forEach(sub => {
-        console.log(`   - ${sub.id}: ${sub.status} (${sub.user_id?.slice(0, 8)}...)`);
+        console.log(
+          `   - ${sub.id}: ${sub.status} (${sub.user_id?.slice(0, 8)}...)`
+        );
       });
     }
 
@@ -53,16 +60,21 @@ async function testWebhookFlow() {
       .limit(3);
 
     if (profilesError) {
-      console.error('❌ Error accessing profiles table:', profilesError.message);
+      console.error(
+        '❌ Error accessing profiles table:',
+        profilesError.message
+      );
       return;
     }
 
-    console.log(`✅ Profiles table accessible. Found ${profiles.length} profile(s) with Paddle customer ID`);
+    console.log(
+      `✅ Profiles table accessible. Found ${profiles.length} profile(s) with Paddle customer ID`
+    );
 
     // 3. Test subscription check API endpoint
     console.log('\n3️⃣ Testing subscription check API...');
     const testApiUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    
+
     try {
       const response = await fetch(`${testApiUrl}/api/check-subscription`, {
         method: 'GET',
@@ -72,19 +84,28 @@ async function testWebhookFlow() {
       });
 
       if (response.status === 401) {
-        console.log('✅ Subscription check API accessible (returns 401 for unauthenticated - expected)');
+        console.log(
+          '✅ Subscription check API accessible (returns 401 for unauthenticated - expected)'
+        );
       } else {
-        console.log(`⚠️  Subscription check API returned status: ${response.status}`);
+        console.log(
+          `⚠️  Subscription check API returned status: ${response.status}`
+        );
       }
     } catch (fetchError) {
-      console.log('⚠️  Could not reach subscription check API:', fetchError.message);
+      console.log(
+        '⚠️  Could not reach subscription check API:',
+        fetchError.message
+      );
       console.log('   (This might be normal if the dev server is not running)');
     }
 
     // 4. Check recent subscription activity
     console.log('\n4️⃣ Checking recent subscription activity...');
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    
+    const twentyFourHoursAgo = new Date(
+      Date.now() - 24 * 60 * 60 * 1000
+    ).toISOString();
+
     const { data: recentSubs, error: recentError } = await supabase
       .from('subscriptions')
       .select('id, user_id, status, created_at, updated_at')
@@ -92,30 +113,45 @@ async function testWebhookFlow() {
       .order('created_at', { ascending: false });
 
     if (recentError) {
-      console.error('❌ Error checking recent subscriptions:', recentError.message);
+      console.error(
+        '❌ Error checking recent subscriptions:',
+        recentError.message
+      );
       return;
     }
 
     if (recentSubs.length === 0) {
       console.log('ℹ️  No subscriptions created in the last 24 hours');
     } else {
-      console.log(`✅ Found ${recentSubs.length} subscription(s) created in the last 24 hours:`);
+      console.log(
+        `✅ Found ${recentSubs.length} subscription(s) created in the last 24 hours:`
+      );
       recentSubs.forEach(sub => {
-        console.log(`   - ${sub.id}: ${sub.status} (created: ${new Date(sub.created_at).toLocaleString()})`);
+        console.log(
+          `   - ${sub.id}: ${sub.status} (created: ${new Date(sub.created_at).toLocaleString()})`
+        );
       });
     }
 
     // 5. Check for users without subscriptions (potential onboarding issues)
     console.log('\n5️⃣ Checking for users without active subscriptions...');
-    const { data: usersWithoutSubs, error: noSubsError } = await supabase.rpc('get_users_without_subscriptions');
+    const { data: usersWithoutSubs, error: noSubsError } = await supabase.rpc(
+      'get_users_without_subscriptions'
+    );
 
-    if (noSubsError && noSubsError.code !== '42883') { // Function might not exist
-      console.error('❌ Error checking users without subscriptions:', noSubsError.message);
+    if (noSubsError && noSubsError.code !== '42883') {
+      // Function might not exist
+      console.error(
+        '❌ Error checking users without subscriptions:',
+        noSubsError.message
+      );
     } else if (noSubsError?.code === '42883') {
       // Function doesn't exist, that's okay
       console.log('ℹ️  Custom function not available (this is normal)');
     } else {
-      console.log(`ℹ️  Found ${usersWithoutSubs?.length || 0} user(s) without active subscriptions`);
+      console.log(
+        `ℹ️  Found ${usersWithoutSubs?.length || 0} user(s) without active subscriptions`
+      );
     }
 
     console.log('\n✅ Webhook flow test completed successfully!');
@@ -124,7 +160,6 @@ async function testWebhookFlow() {
     console.log('   - Profiles table has paddle_customer_id column');
     console.log('   - Subscription check API endpoint exists');
     console.log('   - Database structure looks correct for webhook processing');
-
   } catch (error) {
     console.error('❌ Unexpected error during testing:', error.message);
     console.error('Stack trace:', error.stack);
@@ -132,4 +167,4 @@ async function testWebhookFlow() {
 }
 
 // Run the test
-testWebhookFlow().catch(console.error); 
+testWebhookFlow().catch(console.error);

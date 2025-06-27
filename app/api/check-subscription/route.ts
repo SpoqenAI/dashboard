@@ -13,10 +13,7 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     // Check for active subscription
@@ -31,12 +28,12 @@ export async function GET(request: NextRequest) {
       logger.error(
         'SUBSCRIPTION_CHECK_API',
         'Error checking subscription status',
-        subscriptionError instanceof Error 
-          ? subscriptionError 
+        subscriptionError instanceof Error
+          ? subscriptionError
           : new Error(JSON.stringify(subscriptionError)),
         { userId: logger.maskUserId(user.id) }
       );
-      
+
       return NextResponse.json(
         { error: 'Failed to check subscription status' },
         { status: 500 }
@@ -81,4 +78,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

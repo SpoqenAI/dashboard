@@ -296,7 +296,7 @@ export async function POST(req: NextRequest) {
           hasUserId: !!userId,
           hasSubscriptionId: !!eventData.id,
         });
-        
+
         const { error: subError } = await supabase
           .from('subscriptions')
           .upsert(subData, { onConflict: 'id' });

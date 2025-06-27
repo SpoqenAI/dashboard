@@ -32,9 +32,20 @@ export class ActionPointsExtractor {
     this.extractKeyPoints(structured, summary, transcript, keyPoints);
     this.extractFollowUpItems(structured, summary, transcript, followUpItems);
     this.extractUrgentConcerns(structured, summary, transcript, urgentConcerns);
-    
-    const callPurpose = this.extractCallPurpose(structured, analysis, callData, summary, transcript);
-    const sentiment = this.extractSentiment(structured, analysis, summary, transcript);
+
+    const callPurpose = this.extractCallPurpose(
+      structured,
+      analysis,
+      callData,
+      summary,
+      transcript
+    );
+    const sentiment = this.extractSentiment(
+      structured,
+      analysis,
+      summary,
+      transcript
+    );
 
     // Clean and deduplicate results
     const cleanedKeyPoints = this.deduplicateAndClean(keyPoints);
@@ -370,7 +381,8 @@ export class ActionPointsExtractor {
       },
       { pattern: /(?:rent|rental|lease|tenant)/i, purpose: 'Rental inquiry' },
       {
-        pattern: /(?:investment|investor|investing)\s+(?:property|real estate)/i,
+        pattern:
+          /(?:investment|investor|investing)\s+(?:property|real estate)/i,
         purpose: 'Investment opportunity',
       },
       {
@@ -548,4 +560,4 @@ export class ActionPointsExtractor {
       return true;
     });
   }
-} 
+}

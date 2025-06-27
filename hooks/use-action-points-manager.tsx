@@ -14,7 +14,7 @@ export function useActionPointsManager() {
   const handleGenerateActionPoints = async (callId: string) => {
     // Clear any previous state before generating new action points
     reset();
-    
+
     try {
       await generateActionPoints(callId);
       // State is automatically managed by useActionPoints via React Query

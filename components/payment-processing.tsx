@@ -90,7 +90,7 @@ export function PaymentProcessing() {
             setStatusMessage(
               'Your payment was successful, but account setup is taking longer than expected.'
             );
-            
+
             // Redirect to profile with timeout error parameter for user guidance
             timeoutIds.push(
               setTimeout(() => {
@@ -163,18 +163,20 @@ export function PaymentProcessing() {
         >
           <h1
             className={`text-3xl font-bold transition-colors duration-500 ${
-              stage === 'complete' && statusMessage.includes('Welcome') 
-                ? 'text-green-600' 
-                : stage === 'complete' && statusMessage.includes('longer than expected')
-                ? 'text-orange-600'
-                : 'text-gray-900'
+              stage === 'complete' && statusMessage.includes('Welcome')
+                ? 'text-green-600'
+                : stage === 'complete' &&
+                    statusMessage.includes('longer than expected')
+                  ? 'text-orange-600'
+                  : 'text-gray-900'
             }`}
           >
             {stage === 'complete' && statusMessage.includes('Welcome')
               ? 'Welcome to Spoqen!'
-              : stage === 'complete' && statusMessage.includes('longer than expected')
-              ? 'Almost Ready!'
-              : 'Payment Successful!'}
+              : stage === 'complete' &&
+                  statusMessage.includes('longer than expected')
+                ? 'Almost Ready!'
+                : 'Payment Successful!'}
           </h1>
           <p className="text-lg text-gray-600 transition-all duration-500">
             {statusMessage}
@@ -184,35 +186,41 @@ export function PaymentProcessing() {
               This will only take a moment
             </p>
           )}
-          {stage === 'complete' && statusMessage.includes('longer than expected') && (
-            <div className="space-y-3">
-              <p className="text-sm text-orange-600">
-                We'll complete your setup and you'll receive a confirmation email shortly.
-              </p>
-              <button
-                onClick={async () => {
-                  try {
-                    const response = await fetch('/api/check-subscription');
-                    const data = await response.json();
-                    if (data.hasActiveSubscription) {
-                      setStage('complete');
-                      setStatusMessage('Account setup complete! Welcome to Spoqen!');
-                      setTimeout(() => {
-                        router.push('/dashboard?welcome=true');
-                      }, 1500);
-                    } else {
-                      alert('Setup is still in progress. Please wait a few more minutes.');
+          {stage === 'complete' &&
+            statusMessage.includes('longer than expected') && (
+              <div className="space-y-3">
+                <p className="text-sm text-orange-600">
+                  We'll complete your setup and you'll receive a confirmation
+                  email shortly.
+                </p>
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/check-subscription');
+                      const data = await response.json();
+                      if (data.hasActiveSubscription) {
+                        setStage('complete');
+                        setStatusMessage(
+                          'Account setup complete! Welcome to Spoqen!'
+                        );
+                        setTimeout(() => {
+                          router.push('/dashboard?welcome=true');
+                        }, 1500);
+                      } else {
+                        alert(
+                          'Setup is still in progress. Please wait a few more minutes.'
+                        );
+                      }
+                    } catch (error) {
+                      alert('Unable to check status. Please try again later.');
                     }
-                  } catch (error) {
-                    alert('Unable to check status. Please try again later.');
-                  }
-                }}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Check Status Again
-              </button>
-            </div>
-          )}
+                  }}
+                  className="rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600"
+                >
+                  Check Status Again
+                </button>
+              </div>
+            )}
         </div>
 
         {/* Loading Animation */}
@@ -228,15 +236,17 @@ export function PaymentProcessing() {
         {/* Success Checkmark for completion */}
         {stage === 'complete' && (
           <div className="animate-pulse">
-            <div className={`flex items-center justify-center gap-2 ${
-              statusMessage.includes('Welcome') 
-                ? 'text-green-600' 
-                : 'text-orange-600'
-            }`}>
+            <div
+              className={`flex items-center justify-center gap-2 ${
+                statusMessage.includes('Welcome')
+                  ? 'text-green-600'
+                  : 'text-orange-600'
+              }`}
+            >
               <CheckCircle className="h-5 w-5" />
               <span className="text-sm font-medium">
-                {statusMessage.includes('Welcome') 
-                  ? 'Ready to go!' 
+                {statusMessage.includes('Welcome')
+                  ? 'Ready to go!'
                   : 'Payment received!'}
               </span>
             </div>
