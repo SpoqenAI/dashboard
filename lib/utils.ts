@@ -18,18 +18,18 @@ export async function retry<T>(
   baseDelay: number = 500
 ): Promise<T> {
   let attempts = 0;
-  
+
   while (true) {
     try {
       const result = await operation();
       return result;
     } catch (error) {
       if (attempts >= maxRetries) {
-        throw error instanceof Error 
-          ? error 
+        throw error instanceof Error
+          ? error
           : new Error('Operation failed after retries');
       }
-      
+
       // Calculate exponential backoff delay
       const delayMs = baseDelay * Math.pow(2, attempts);
       await new Promise(resolve => setTimeout(resolve, delayMs));

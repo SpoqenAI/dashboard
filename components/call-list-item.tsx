@@ -55,7 +55,7 @@ export function CallListItem({
           {isSelected ? 'Hide Details' : 'View Details'}
         </Button>
       </div>
-      
+
       <div className="flex items-center text-xs text-muted-foreground">
         <Calendar className="mr-1 h-3 w-3" />
         {call.startedAt ? new Date(call.startedAt).toLocaleDateString() : ''}
@@ -79,4 +79,4 @@ export function CallListItem({
       )}
     </div>
   );
-} 
+}

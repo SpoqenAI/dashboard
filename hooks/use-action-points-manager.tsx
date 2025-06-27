@@ -6,8 +6,11 @@ import { ActionPoints } from '@/lib/types';
 
 export function useActionPointsManager() {
   const [actionPoints, setActionPoints] = useState<ActionPoints | null>(null);
-  const [actionPointsError, setActionPointsError] = useState<string | null>(null);
-  const { generateActionPoints, loading: actionPointsLoading } = useActionPoints();
+  const [actionPointsError, setActionPointsError] = useState<string | null>(
+    null
+  );
+  const { generateActionPoints, loading: actionPointsLoading } =
+    useActionPoints();
 
   const handleGenerateActionPoints = async (callId: string) => {
     try {
@@ -45,4 +48,4 @@ export function useActionPointsManager() {
     handleGenerateActionPoints,
     clearActionPoints,
   };
-} 
+}

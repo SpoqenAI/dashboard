@@ -32,18 +32,18 @@ async function withRetry<T>(
   baseDelay: number = 500
 ): Promise<T> {
   let attempts = 0;
-  
+
   while (true) {
     try {
       const result = await operation();
       return result;
     } catch (error) {
       if (attempts >= maxRetries) {
-        throw error instanceof Error 
-          ? error 
+        throw error instanceof Error
+          ? error
           : new Error('Operation failed after retries');
       }
-      
+
       // Calculate exponential backoff delay
       const delayMs = baseDelay * Math.pow(2, attempts);
       await delay(delayMs);
@@ -227,9 +227,13 @@ export async function getMetrics(
     if (!response.ok) {
       // For server errors (5xx), allow retries; for client errors (4xx), fail immediately
       if (response.status >= 500) {
-        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Server error: ${response.status} ${response.statusText}`
+        );
       } else {
-        throw new Error(`Vapi Analytics API returned status ${response.status}`);
+        throw new Error(
+          `Vapi Analytics API returned status ${response.status}`
+        );
       }
     }
 

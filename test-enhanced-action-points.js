@@ -28,7 +28,7 @@ async function testActionPointsExtraction() {
     {
       name: 'Mock Structured Data',
       description: 'Testing extraction logic with mock VAPI data',
-    }
+    },
   ];
 
   for (const scenario of testScenarios) {
@@ -51,8 +51,8 @@ async function testWithRecentCall() {
     console.log('🔍 Fetching recent calls...');
     const callsResponse = await fetch(`${baseUrl}/call`, {
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Accept': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        Accept: 'application/json',
       },
     });
 
@@ -61,13 +61,17 @@ async function testWithRecentCall() {
     }
 
     const callsData = await callsResponse.json();
-    const recentCalls = callsData.filter(call => 
-      call.status === 'completed' && 
-      (call.analysis || call.transcript)
-    ).slice(0, 3);
+    const recentCalls = callsData
+      .filter(
+        call =>
+          call.status === 'completed' && (call.analysis || call.transcript)
+      )
+      .slice(0, 3);
 
     if (recentCalls.length === 0) {
-      console.log('⚠️  No recent calls with analysis found. Skipping real call test.');
+      console.log(
+        '⚠️  No recent calls with analysis found. Skipping real call test.'
+      );
       return;
     }
 
@@ -79,35 +83,46 @@ async function testWithRecentCall() {
       console.log(`   Has Transcript: ${!!call.transcript}`);
 
       // Test action points extraction
-      const actionPointsResponse = await fetch(`http://localhost:3000/api/vapi/calls/${call.id}/action-points`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const actionPointsResponse = await fetch(
+        `http://localhost:3000/api/vapi/calls/${call.id}/action-points`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       if (actionPointsResponse.ok) {
         const result = await actionPointsResponse.json();
         console.log('\n✅ Action Points Extracted:');
         console.log('   📌 Key Points:', result.actionPoints.keyPoints.length);
-        result.actionPoints.keyPoints.forEach(point => 
+        result.actionPoints.keyPoints.forEach(point =>
           console.log(`      • ${point}`)
         );
-        
-        console.log('   📋 Follow-up Items:', result.actionPoints.followUpItems.length);
-        result.actionPoints.followUpItems.forEach(item => 
+
+        console.log(
+          '   📋 Follow-up Items:',
+          result.actionPoints.followUpItems.length
+        );
+        result.actionPoints.followUpItems.forEach(item =>
           console.log(`      • ${item}`)
         );
-        
-        console.log('   🚨 Urgent Concerns:', result.actionPoints.urgentConcerns.length);
-        result.actionPoints.urgentConcerns.forEach(concern => 
+
+        console.log(
+          '   🚨 Urgent Concerns:',
+          result.actionPoints.urgentConcerns.length
+        );
+        result.actionPoints.urgentConcerns.forEach(concern =>
           console.log(`      • ${concern}`)
         );
-        
+
         console.log(`   😊 Sentiment: ${result.actionPoints.sentiment}`);
         console.log(`   🎯 Call Purpose: ${result.actionPoints.callPurpose}`);
       } else {
-        console.log(`❌ Failed to extract action points: ${actionPointsResponse.status}`);
+        console.log(
+          `❌ Failed to extract action points: ${actionPointsResponse.status}`
+        );
         const error = await actionPointsResponse.text();
         console.log(`   Error: ${error}`);
       }
@@ -118,50 +133,54 @@ async function testWithRecentCall() {
 }
 
 async function testWithMockData() {
-  console.log('🧪 Testing extraction logic with various mock data scenarios...\n');
+  console.log(
+    '🧪 Testing extraction logic with various mock data scenarios...\n'
+  );
 
   const mockScenarios = [
     {
       name: 'Complete Structured Data',
       data: {
         analysis: {
-          summary: 'Client interested in 3-bedroom home in downtown area with $500k budget.',
+          summary:
+            'Client interested in 3-bedroom home in downtown area with $500k budget.',
           structuredData: {
             callPurpose: 'Home buying consultation',
             sentiment: 'positive',
             keyPoints: [
               'Looking for 3-bedroom home',
               'Prefers downtown location',
-              'Budget up to $500,000'
+              'Budget up to $500,000',
             ],
             followUpItems: [
               'Send listings matching criteria',
               'Schedule property viewings',
-              'Arrange pre-approval meeting'
+              'Arrange pre-approval meeting',
             ],
-            urgentConcerns: [
-              'Market moving fast, need to act quickly'
-            ]
+            urgentConcerns: ['Market moving fast, need to act quickly'],
           },
-          successEvaluation: true
+          successEvaluation: true,
         },
-        transcript: 'Hi, I am looking for a house...'
-      }
+        transcript: 'Hi, I am looking for a house...',
+      },
     },
     {
       name: 'Summary Only (No Structured Data)',
       data: {
         analysis: {
-          summary: 'Seller wants to list their property. Mentioned they need to sell urgently due to job relocation. Discussed pricing strategy and market conditions.',
+          summary:
+            'Seller wants to list their property. Mentioned they need to sell urgently due to job relocation. Discussed pricing strategy and market conditions.',
         },
-        transcript: 'I need to sell my house quickly because I got a new job in another state...'
-      }
+        transcript:
+          'I need to sell my house quickly because I got a new job in another state...',
+      },
     },
     {
       name: 'Transcript Only (No Analysis)',
       data: {
-        transcript: 'Hello, I am interested in buying an investment property. I have about $300,000 to invest and looking for rental properties that would give good returns. Can you help me find something?'
-      }
+        transcript:
+          'Hello, I am interested in buying an investment property. I have about $300,000 to invest and looking for rental properties that would give good returns. Can you help me find something?',
+      },
     },
     {
       name: 'Legacy Field Names',
@@ -169,13 +188,16 @@ async function testWithMockData() {
         analysis: {
           summary: 'Investment consultation call.',
           structuredData: {
-            actionItems: ['Research investment areas', 'Calculate ROI projections'],
+            actionItems: [
+              'Research investment areas',
+              'Calculate ROI projections',
+            ],
             urgentItems: ['Client traveling next week, needs info before then'],
-            keyPoints: ['Investment property focus', 'ROI is primary concern']
-          }
-        }
-      }
-    }
+            keyPoints: ['Investment property focus', 'ROI is primary concern'],
+          },
+        },
+      },
+    },
   ];
 
   for (const scenario of mockScenarios) {
@@ -185,30 +207,31 @@ async function testWithMockData() {
     try {
       // We'll simulate the extraction logic here
       const extractedPoints = simulateExtraction(scenario.data);
-      
+
       console.log('✅ Extracted Action Points:');
       console.log(`   📌 Key Points (${extractedPoints.keyPoints.length}):`);
-      extractedPoints.keyPoints.forEach(point => 
+      extractedPoints.keyPoints.forEach(point =>
         console.log(`      • ${point}`)
       );
-      
-      console.log(`   📋 Follow-ups (${extractedPoints.followUpItems.length}):`);
-      extractedPoints.followUpItems.forEach(item => 
+
+      console.log(
+        `   📋 Follow-ups (${extractedPoints.followUpItems.length}):`
+      );
+      extractedPoints.followUpItems.forEach(item =>
         console.log(`      • ${item}`)
       );
-      
+
       console.log(`   🚨 Urgent (${extractedPoints.urgentConcerns.length}):`);
-      extractedPoints.urgentConcerns.forEach(concern => 
+      extractedPoints.urgentConcerns.forEach(concern =>
         console.log(`      • ${concern}`)
       );
-      
+
       console.log(`   😊 Sentiment: ${extractedPoints.sentiment}`);
       console.log(`   🎯 Purpose: ${extractedPoints.callPurpose}`);
-      
     } catch (error) {
       console.log(`❌ Error: ${error.message}`);
     }
-    
+
     console.log('');
   }
 }
@@ -274,7 +297,7 @@ function simulateExtraction(callData) {
     followUpItems,
     urgentConcerns,
     sentiment,
-    callPurpose
+    callPurpose,
   };
 }
 
@@ -287,7 +310,11 @@ function extractPointsFromText(text) {
 function extractActionsFromText(text) {
   if (!text) return [];
   const actions = [];
-  if (text.includes('schedule') || text.includes('send') || text.includes('call')) {
+  if (
+    text.includes('schedule') ||
+    text.includes('send') ||
+    text.includes('call')
+  ) {
     actions.push('Follow up with client');
   }
   if (text.includes('meeting') || text.includes('appointment')) {
@@ -299,8 +326,10 @@ function extractActionsFromText(text) {
 function extractPurposeFromText(text) {
   if (!text) return 'General inquiry';
   const lower = text.toLowerCase();
-  if (lower.includes('buy') || lower.includes('purchase')) return 'Home buying inquiry';
-  if (lower.includes('sell') || lower.includes('list')) return 'Home selling consultation';
+  if (lower.includes('buy') || lower.includes('purchase'))
+    return 'Home buying inquiry';
+  if (lower.includes('sell') || lower.includes('list'))
+    return 'Home selling consultation';
   if (lower.includes('invest')) return 'Investment consultation';
   if (lower.includes('rent')) return 'Rental inquiry';
   return 'General real estate inquiry';
@@ -322,4 +351,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { testActionPointsExtraction }; 
+module.exports = { testActionPointsExtraction };

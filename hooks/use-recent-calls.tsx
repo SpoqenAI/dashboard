@@ -73,7 +73,9 @@ function validateRecentCallsResponse(data: any): RecentCallsApiResponse {
   for (let i = 0; i < data.calls.length; i++) {
     const call = data.calls[i];
     if (!isValidRecentCall(call)) {
-      throw new Error(`Invalid call data at index ${i}: missing required fields or invalid types`);
+      throw new Error(
+        `Invalid call data at index ${i}: missing required fields or invalid types`
+      );
     }
   }
 
@@ -89,7 +91,9 @@ function validateRecentCallsResponse(data: any): RecentCallsApiResponse {
 }
 
 // Function to fetch recent calls from the API
-const fetchRecentCalls = async (limit?: number): Promise<RecentCallsApiResponse> => {
+const fetchRecentCalls = async (
+  limit?: number
+): Promise<RecentCallsApiResponse> => {
   const params = new URLSearchParams();
   if (limit) params.set('limit', String(limit));
 
@@ -100,13 +104,15 @@ const fetchRecentCalls = async (limit?: number): Promise<RecentCallsApiResponse>
   }
 
   const rawData = await res.json();
-  
+
   // Validate the response data before returning
   try {
     const validatedData = validateRecentCallsResponse(rawData);
     return validatedData;
   } catch (validationError) {
-    throw new Error(`API response validation failed: ${validationError instanceof Error ? validationError.message : 'Unknown validation error'}`);
+    throw new Error(
+      `API response validation failed: ${validationError instanceof Error ? validationError.message : 'Unknown validation error'}`
+    );
   }
 };
 

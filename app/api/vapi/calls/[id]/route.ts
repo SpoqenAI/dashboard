@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const resolvedParams = await params;
-  
+
   // Validate call ID parameter
   if (!resolvedParams.id || typeof resolvedParams.id !== 'string') {
     logger.warn('VAPI', 'Invalid call ID: missing or not a string', {
@@ -19,7 +19,7 @@ export async function GET(
   }
 
   const callId = resolvedParams.id.trim();
-  
+
   if (callId.length === 0) {
     logger.warn('VAPI', 'Invalid call ID: empty string');
     return NextResponse.json(
