@@ -289,29 +289,65 @@ export async function POST(req: NextRequest) {
         if (periodEnd) subData.current_period_end_at = periodEnd;
 
         // Upsert subscription details into your database
+        logger.debug('WEBHOOK', 'Attempting to upsert subscription data', {
+          subscriptionId: eventData.id,
+          userId: logger.maskUserId(userId),
+          status: eventData.status,
+          hasUserId: !!userId,
+          hasSubscriptionId: !!eventData.id,
+        });
+        
         const { error: subError } = await supabase
           .from('subscriptions')
           .upsert(subData, { onConflict: 'id' });
-        if (subError) throw subError;
+        if (subError) {
+          logger.error(
+            'WEBHOOK',
+            'Failed to upsert subscription data',
+            subError,
+            {
+              subscriptionId: eventData.id,
+              userId: logger.maskUserId(userId),
+              errorCode: subError.code,
+              errorMessage: subError.message,
+            }
+          );
+          throw subError;
+        }
 
         // Also update the user's profile with their Paddle Customer ID
         const { error: profError } = await supabase
           .from('profiles')
           .update({ paddle_customer_id: eventData.customer_id })
           .eq('id', userId);
-        if (profError) throw profError;
+        if (profError) {
+          logger.error(
+            'WEBHOOK',
+            'Failed to update profile with Paddle customer ID',
+            profError,
+            {
+              subscriptionId: eventData.id,
+              userId: logger.maskUserId(userId),
+              customerId: eventData.customer_id,
+              errorCode: profError.code,
+              errorMessage: profError.message,
+            }
+          );
+          throw profError;
+        }
 
         logger.info(
           'WEBHOOK',
-          `Processed subscription ${eventData.id} for user ${userId}.`,
+          `Successfully processed subscription ${eventData.id} for user ${userId}`,
           {
             subscriptionId: eventData.id,
-            userId: userId,
+            userId: logger.maskUserId(userId),
             status: eventData.status,
             priceId: eventData.items?.[0]?.price?.id,
             customerId: eventData.customer_id,
             currentPeriodStart: periodStart,
             currentPeriodEnd: periodEnd,
+            eventType: event.eventType,
           }
         );
         break;
