@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '@/lib/logger';
+import { analytics, performance } from '@/lib/analytics';
 import { randomUUID } from 'crypto';
 
 // Input validation patterns
@@ -83,7 +84,63 @@ function generateSecureSubscriptionId(): string {
   return `pending_${randomUUID()}`;
 }
 
+// Trigger assistant provisioning for new subscribers
+async function triggerAssistantProvisioning(userId: string, supabase: any): Promise<void> {
+  try {
+    // Get user's assistant data from the assistants table
+    const { data: assistant } = await supabase
+      .from('assistants')
+      .select('assistant_name, phone_number, voice_settings')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!assistant) {
+      logger.warn('PADDLE_SUCCESS', 'No assistant data found for provisioning', {
+        userId: logger.maskUserId(userId),
+      });
+      return;
+    }
+
+    // Create assistant provisioning record to track background sync
+    const { error: provisioningError } = await supabase
+      .from('user_settings')
+      .upsert({
+        id: userId,
+        assistant_provisioning_status: 'pending',
+        assistant_provisioning_started_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'id'
+      });
+
+    if (provisioningError) {
+      logger.error('PADDLE_SUCCESS', 'Failed to create assistant provisioning record', provisioningError, {
+        userId: logger.maskUserId(userId),
+      });
+      return;
+    }
+
+    logger.info('PADDLE_SUCCESS', 'Assistant provisioning initiated', {
+      userId: logger.maskUserId(userId),
+      assistantName: assistant.assistant_name,
+      hasPhoneNumber: !!assistant.phone_number,
+    });
+
+    // Note: Actual VAPI/Twilio sync would happen via webhook or background job
+    // For now, we just mark it as initiated
+    
+  } catch (error) {
+    logger.error('PADDLE_SUCCESS', 'Error during assistant provisioning', 
+      error instanceof Error ? error : new Error(String(error)), {
+      userId: logger.maskUserId(userId),
+    });
+    throw error;
+  }
+}
+
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  
   try {
     const { searchParams } = new URL(request.url);
     
@@ -95,6 +152,16 @@ export async function GET(request: NextRequest) {
     const userId = validateUserId(rawUserId);
     const transactionId = validateTransactionId(rawTransactionId);
     const subscriptionId = validateSubscriptionId(rawSubscriptionId);
+
+    // Track payment completion event
+    if (userId) {
+      await analytics.trackPaymentEvent('payment_completed', {
+        userId,
+        transactionId: transactionId || undefined,
+        subscriptionId: subscriptionId || undefined,
+        timestamp: startTime,
+      });
+    }
 
     logger.info('PADDLE_SUCCESS', 'Payment success callback received', {
       userId: userId ? logger.maskUserId(userId) : 'invalid',
@@ -222,12 +289,73 @@ export async function GET(request: NextRequest) {
       operation: result.operation,
     });
 
+    // Trigger assistant provisioning in background (fire-and-forget)
+    try {
+      await triggerAssistantProvisioning(userId, supabase);
+    } catch (provisioningError) {
+      // Log but don't block the user flow
+      logger.warn('PADDLE_SUCCESS', 'Assistant provisioning failed but user flow continues', {
+        userId: logger.maskUserId(userId),
+        error: provisioningError instanceof Error ? provisioningError.message : 'Unknown error',
+      });
+    }
+
+    // Mark onboarding as complete
+    const { error: onboardingError } = await supabase
+      .from('profiles')
+      .update({ 
+        onboarding_completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    if (onboardingError) {
+      logger.warn('PADDLE_SUCCESS', 'Failed to mark onboarding as complete', {
+        userId: logger.maskUserId(userId),
+        error: onboardingError.message,
+      });
+    }
+
+    // Track subscription creation and performance
+    const processingTime = Date.now() - startTime;
+    
+    await Promise.all([
+      // Track subscription creation event
+      analytics.trackFunnelStage('subscription_created', {
+        userId,
+        subscriptionId: secureSubscriptionId,
+        processingTimeMs: processingTime,
+      }),
+      
+      // Track performance metrics
+      performance.trackSubscriptionCreationTime(processingTime, userId),
+      performance.trackApiResponse('/api/paddle/success', processingTime, true, 200),
+    ]);
+
+    logger.info('PADDLE_SUCCESS', 'Success callback performance', {
+      userId: logger.maskUserId(userId),
+      processingTimeMs: processingTime,
+      hasTransactionId: !!transactionId,
+      hasSubscriptionId: !!subscriptionId,
+    });
+
     // Redirect to processing page with instant success
     return NextResponse.redirect(
       new URL('/onboarding/processing?payment=success&instant=true', request.url)
     );
 
   } catch (error) {
+    const processingTime = Date.now() - startTime;
+    
+    // Track error and performance for failed requests
+    await Promise.all([
+      analytics.trackError(error instanceof Error ? error : new Error(String(error)), {
+        context: 'paddle_success_callback',
+        processingTimeMs: processingTime,
+      }),
+      performance.trackApiResponse('/api/paddle/success', processingTime, false, 500),
+    ]);
+
     logger.error(
       'PADDLE_SUCCESS',
       'Unexpected error in success callback',

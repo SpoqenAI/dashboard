@@ -8,6 +8,23 @@ interface SecurityConfig {
   logErrors: boolean; // If true, log detailed error information
 }
 
+// Cache configuration for performance optimization
+interface CacheConfig {
+  enabled: boolean;
+  ttlMs: number; // Time to live in milliseconds
+  maxSize: number; // Maximum cache entries
+}
+
+// Cache entry structure
+interface CacheEntry {
+  hasValidSubscription: boolean;
+  timestamp: number;
+  userId: string;
+}
+
+// In-memory cache for subscription status (reset on server restart)
+const subscriptionCache = new Map<string, CacheEntry>();
+
 // Default to fail-closed for maximum security
 const getSecurityConfig = (): SecurityConfig => ({
   failClosed: process.env.MIDDLEWARE_FAIL_CLOSED !== 'false', // Default to true unless explicitly set to false
@@ -16,8 +33,92 @@ const getSecurityConfig = (): SecurityConfig => ({
     process.env.MIDDLEWARE_LOG_ERRORS === 'true',
 });
 
+// Cache configuration
+const getCacheConfig = (): CacheConfig => ({
+  enabled: process.env.MIDDLEWARE_CACHE_ENABLED !== 'false', // Default to enabled
+  ttlMs: parseInt(process.env.MIDDLEWARE_CACHE_TTL_MS || '30000'), // 30 seconds default
+  maxSize: parseInt(process.env.MIDDLEWARE_CACHE_MAX_SIZE || '1000'), // 1000 entries max
+});
+
+// Performance monitoring
+let requestCount = 0;
+let cacheHits = 0;
+let cacheHitRate = 0;
+
+// Cache management functions
+function getCachedSubscriptionStatus(userId: string, cacheConfig: CacheConfig): boolean | null {
+  if (!cacheConfig.enabled) return null;
+
+  const entry = subscriptionCache.get(userId);
+  if (!entry) return null;
+
+  const isExpired = Date.now() - entry.timestamp > cacheConfig.ttlMs;
+  if (isExpired) {
+    subscriptionCache.delete(userId);
+    return null;
+  }
+
+  cacheHits++;
+  return entry.hasValidSubscription;
+}
+
+function setCachedSubscriptionStatus(userId: string, hasValidSubscription: boolean, cacheConfig: CacheConfig): void {
+  if (!cacheConfig.enabled) return;
+
+  // Implement LRU cache eviction if cache is full
+  if (subscriptionCache.size >= cacheConfig.maxSize) {
+    const oldestKey = subscriptionCache.keys().next().value;
+    if (oldestKey) {
+      subscriptionCache.delete(oldestKey);
+    }
+  }
+
+  subscriptionCache.set(userId, {
+    hasValidSubscription,
+    timestamp: Date.now(),
+    userId,
+  });
+}
+
+function clearExpiredCacheEntries(cacheConfig: CacheConfig): void {
+  if (!cacheConfig.enabled) return;
+
+  const now = Date.now();
+  for (const [userId, entry] of subscriptionCache.entries()) {
+    if (now - entry.timestamp > cacheConfig.ttlMs) {
+      subscriptionCache.delete(userId);
+    }
+  }
+}
+
+// Performance logging
+function logPerformanceMetrics(): void {
+  requestCount++;
+  
+  if (requestCount > 0) {
+    cacheHitRate = (cacheHits / requestCount) * 100;
+  }
+
+  // Log metrics every 100 requests in development
+  if (process.env.NODE_ENV === 'development' && requestCount % 100 === 0) {
+    logger.info('MIDDLEWARE_PERF', 'Performance metrics', {
+      requestCount,
+      cacheHits,
+      cacheHitRate: `${cacheHitRate.toFixed(2)}%`,
+      cacheSize: subscriptionCache.size,
+    });
+  }
+}
+
 export async function middleware(request: NextRequest) {
+  const startTime = Date.now();
   const securityConfig = getSecurityConfig();
+  const cacheConfig = getCacheConfig();
+
+  // Clean up expired cache entries periodically
+  if (requestCount % 50 === 0) {
+    clearExpiredCacheEntries(cacheConfig);
+  }
 
   // Validate required environment variables
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -98,11 +199,13 @@ export async function middleware(request: NextRequest) {
 
   // Allow public pages, API routes, and auth pages without authentication
   if (isPublicPage || isApiRoute || (isAuthPage && !user)) {
+    logPerformanceMetrics();
     return response;
   }
 
   // Redirect unauthenticated users to login (except for auth pages)
   if (!user && !isAuthPage) {
+    logPerformanceMetrics();
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -110,89 +213,114 @@ export async function middleware(request: NextRequest) {
   if (user) {
     // Allow auth pages for authenticated users (they'll be redirected by ProtectedRoute component)
     if (isAuthPage) {
+      logPerformanceMetrics();
       return response;
     }
 
     try {
-      // Check if user has an active or pending subscription
-      const { data: subscription, error } = await supabase
-        .from('subscriptions')
-        .select('status')
-        .eq('user_id', user.id)
-        .in('status', ['active', 'pending_webhook'])
-        .maybeSingle();
+      // Check cache first for performance optimization
+      let hasValidSubscription = getCachedSubscriptionStatus(user.id, cacheConfig);
+      let cacheHit = hasValidSubscription !== null;
 
-      if (error) {
-        const errorMessage = `Subscription check failed: ${error.message}`;
+      if (!cacheHit) {
+        // Check if user has an active or pending subscription
+        const { data: subscription, error } = await supabase
+          .from('subscriptions')
+          .select('status')
+          .eq('user_id', user.id)
+          .in('status', ['active', 'pending_webhook'])
+          .maybeSingle();
 
-        if (securityConfig.logErrors) {
-          logger.error(
-            'MIDDLEWARE',
-            'Error checking subscription status',
-            error instanceof Error ? error : new Error(String(error)),
-            {
-              userId: logger.maskUserId(user.id),
-              requestPath: request.nextUrl.pathname,
-              securityMode: securityConfig.failClosed
-                ? 'fail-closed'
-                : 'fail-open',
-            }
-          );
-        }
+        if (error) {
+          const errorMessage = `Subscription check failed: ${error.message}`;
 
-        if (securityConfig.failClosed) {
-          // Fail-closed: Deny access and return error response
           if (securityConfig.logErrors) {
-            logger.warn(
+            logger.error(
               'MIDDLEWARE',
-              'Access denied due to subscription check failure (fail-closed mode)',
+              'Error checking subscription status',
+              error instanceof Error ? error : new Error(String(error)),
               {
                 userId: logger.maskUserId(user.id),
                 requestPath: request.nextUrl.pathname,
+                securityMode: securityConfig.failClosed
+                  ? 'fail-closed'
+                  : 'fail-open',
               }
             );
           }
 
-          return new NextResponse(
-            JSON.stringify({
-              error: 'Access temporarily unavailable',
-              message:
-                'Unable to verify subscription status. Please try again later.',
-              code: 'SUBSCRIPTION_CHECK_FAILED',
-            }),
-            {
-              status: 503, // Service Unavailable
-              headers: {
-                'Content-Type': 'application/json',
-                'Retry-After': '60', // Suggest retry after 60 seconds
-              },
+          if (securityConfig.failClosed) {
+            // Fail-closed: Deny access and return error response
+            if (securityConfig.logErrors) {
+              logger.warn(
+                'MIDDLEWARE',
+                'Access denied due to subscription check failure (fail-closed mode)',
+                {
+                  userId: logger.maskUserId(user.id),
+                  requestPath: request.nextUrl.pathname,
+                }
+              );
             }
-          );
-        } else {
-          // Fail-open: Allow access but log the issue (legacy behavior)
-          if (securityConfig.logErrors) {
-            logger.warn(
-              'MIDDLEWARE',
-              'Allowing access despite subscription check failure (fail-open mode)',
+
+            logPerformanceMetrics();
+            return new NextResponse(
+              JSON.stringify({
+                error: 'Access temporarily unavailable',
+                message:
+                  'Unable to verify subscription status. Please try again later.',
+                code: 'SUBSCRIPTION_CHECK_FAILED',
+              }),
               {
-                userId: logger.maskUserId(user.id),
-                requestPath: request.nextUrl.pathname,
+                status: 503, // Service Unavailable
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Retry-After': '60', // Suggest retry after 60 seconds
+                },
               }
             );
+          } else {
+            // Fail-open: Allow access but log the issue (legacy behavior)
+            if (securityConfig.logErrors) {
+              logger.warn(
+                'MIDDLEWARE',
+                'Allowing access despite subscription check failure (fail-open mode)',
+                {
+                  userId: logger.maskUserId(user.id),
+                  requestPath: request.nextUrl.pathname,
+                }
+              );
+            }
+            logPerformanceMetrics();
+            return response;
           }
-          return response;
         }
+
+        hasValidSubscription = !!subscription;
+        
+        // Cache the result for future requests
+        setCachedSubscriptionStatus(user.id, hasValidSubscription, cacheConfig);
       }
 
-      const hasValidSubscription = !!subscription;
+      // Performance logging with cache metrics
+      const processingTime = Date.now() - startTime;
+      if (securityConfig.logErrors && processingTime > 100) {
+        logger.warn('MIDDLEWARE_PERF', 'Slow middleware response', {
+          userId: logger.maskUserId(user.id),
+          processingTimeMs: processingTime,
+          cacheHit,
+          requestPath: request.nextUrl.pathname,
+        });
+      }
 
       // If user has valid subscription (active or pending webhook)
       if (hasValidSubscription) {
         // Redirect away from onboarding pages to main dashboard
         if (isOnboardingPage) {
+          logPerformanceMetrics();
           return NextResponse.redirect(new URL('/dashboard', request.url));
         }
         // Allow access to all other pages
+        logPerformanceMetrics();
         return response;
       }
 
@@ -200,9 +328,11 @@ export async function middleware(request: NextRequest) {
       if (!hasValidSubscription) {
         // Allow access to onboarding pages
         if (isOnboardingPage) {
+          logPerformanceMetrics();
           return response;
         }
         // Redirect to onboarding for all other protected routes
+        logPerformanceMetrics();
         return NextResponse.redirect(
           new URL('/onboarding/profile', request.url)
         );
@@ -238,6 +368,7 @@ export async function middleware(request: NextRequest) {
           );
         }
 
+        logPerformanceMetrics();
         return new NextResponse(
           JSON.stringify({
             error: 'Access temporarily unavailable',
@@ -264,11 +395,13 @@ export async function middleware(request: NextRequest) {
             }
           );
         }
+        logPerformanceMetrics();
         return response;
       }
     }
   }
 
+  logPerformanceMetrics();
   return response;
 }
 
