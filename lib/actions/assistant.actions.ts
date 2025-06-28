@@ -465,3 +465,96 @@ export async function provisionAssistant(userId: string): Promise<void> {
     throw new Error(errorMessage);
   }
 }
+
+export async function syncVapiAssistant(
+  userId: string,
+  assistantName: string,
+  greeting: string
+): Promise<void> {
+  'use server';
+
+  // Log the start of the sync so we can trace if the function is invoked at all
+  logger.info('VAPI_SYNC', 'Starting assistant sync', {
+    userId: logger.maskUserId(userId),
+    assistantName,
+  });
+
+  try {
+    // Skip if values empty (defensive no-op)
+    if (!assistantName || !greeting) {
+      logger.warn('VAPI_SYNC', 'assistantName or greeting empty – skipping', {
+        assistantNameLength: assistantName?.length ?? 0,
+        greetingLength: greeting?.length ?? 0,
+      });
+      return;
+    }
+
+    // Create admin client – wrap in try so missing env vars are caught locally
+    let supabase;
+    try {
+      supabase = createSupabaseAdmin();
+    } catch (envErr) {
+      logger.error('VAPI_SYNC', 'Failed to create Supabase admin client', envErr as Error, {
+        userId: logger.maskUserId(userId),
+      });
+      return; // Early exit – nothing else to do without DB access
+    }
+
+    const { data: assistant } = await supabase
+      .from('assistants')
+      .select('vapi_assistant_id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!assistant || !assistant.vapi_assistant_id) {
+      logger.warn('VAPI_SYNC', 'No Vapi assistant ID found; skipping sync', {
+        userId: logger.maskUserId(userId),
+      });
+      return;
+    }
+
+    const apiKey = process.env.VAPI_PRIVATE_KEY;
+    if (!apiKey) {
+      logger.error('VAPI_SYNC', 'Missing VAPI_PRIVATE_KEY env var', undefined, {
+        userId: logger.maskUserId(userId),
+      });
+      return;
+    }
+
+    // Call Vapi API
+    const res = await fetch(`https://api.vapi.ai/assistant/${assistant.vapi_assistant_id}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          name: assistantName,
+          model: {
+            messages: [
+              {
+                role: 'system',
+                content: greeting,
+              },
+            ],
+          },
+        }),
+      });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Vapi update failed ${res.status}: ${txt}`);
+    }
+
+    logger.info('VAPI_SYNC', 'Assistant updated on Vapi', {
+      userId: logger.maskUserId(userId),
+      assistantName,
+    });
+  } catch (err) {
+    logger.error('VAPI_SYNC', 'Failed to sync assistant', err as Error, {
+      userId: logger.maskUserId(userId),
+    });
+    // Swallow error so caller does not fail
+  }
+}

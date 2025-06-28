@@ -42,6 +42,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
+import { syncVapiAssistant } from '@/lib/actions/assistant.actions';
 
 // Initialize content filter outside component to prevent recreation on every render
 const contentFilter = new Filter();
@@ -163,7 +164,10 @@ export default function DashboardPage() {
     }
 
     try {
+      // 1️⃣ Persist settings via RPC (throws on failure)
       await updateAIReceptionistSettings(formData);
+
+      // 2️⃣ Update UI/state after successful save
       setIsEditing(false);
       setValidationErrors({});
 
@@ -191,6 +195,26 @@ export default function DashboardPage() {
           'There was an error saving your settings. Please try again.',
         variant: 'destructive',
       });
+      return; // Early exit — don't attempt Vapi sync
+    }
+
+    // 3️⃣ Fire-and-forget Vapi sync (non-blocking)
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        await syncVapiAssistant(
+          user.id,
+          formData.aiAssistantName,
+          formData.greetingScript
+        );
+      }
+    } catch (syncErr) {
+      logger.error('DASHBOARD', 'Failed to sync Vapi assistant', syncErr as Error);
+      // No user-facing error – we don't want to block the user on a transient sync issue
     }
   };
 

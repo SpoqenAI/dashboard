@@ -91,6 +91,7 @@ export function useUserSettings() {
   const { user } = useAuth();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [assistant, setAssistant] = useState<{ assistant_name: string; greeting: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,8 +123,8 @@ export function useUserSettings() {
           return;
         }
 
-        // Fetch both settings and profile data in parallel
-        const [settingsResponse, profileResponse] = await Promise.all([
+        // Fetch settings, profile, and assistant data in parallel
+        const [settingsResponse, profileResponse, assistantResponse] = await Promise.all([
           supabase.from('user_settings').select('*').eq('id', user.id).single(),
           supabase
             .from('profiles')
@@ -132,6 +133,13 @@ export function useUserSettings() {
             )
             .eq('id', user.id)
             .single(),
+          supabase
+            .from('assistants')
+            .select('assistant_name, greeting')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
         ]);
 
         // Check abort signal after requests complete
@@ -141,6 +149,7 @@ export function useUserSettings() {
 
         const { data: settingsData, error: settingsError } = settingsResponse;
         const { data: profileData, error: profileError } = profileResponse;
+        const { data: assistantData } = assistantResponse;
 
         // Handle settings errors (ignore not found)
         if (settingsError && settingsError.code !== 'PGRST116') {
@@ -223,6 +232,9 @@ export function useUserSettings() {
         }
 
         setProfile(profileData);
+        if (assistantData) {
+          setAssistant(assistantData as { assistant_name: string; greeting: string });
+        }
         setDataLoaded(true);
       } catch (err: any) {
         // Don't update error state if request was aborted
@@ -267,7 +279,45 @@ export function useUserSettings() {
     setError(null);
 
     try {
-      // Prepare profile updates if name or business name changed
+      /* -----------------------------------------------------------------
+         1) Retrieve latest assistant (if multiple, pick most recent)
+      ----------------------------------------------------------------- */
+      const { data: assistantRows, error: fetchAssistErr } = await supabase
+        .from('assistants')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (fetchAssistErr) throw fetchAssistErr;
+
+      if (assistantRows && assistantRows.length > 0) {
+        const assistantId = assistantRows[0].id as string;
+        const { error: updateErr } = await supabase
+          .from('assistants')
+          .update({
+            assistant_name: newSettings.aiAssistantName.trim(),
+            greeting: newSettings.greetingScript.trim(),
+            business_name: newSettings.businessName.trim(),
+          })
+          .eq('id', assistantId);
+        if (updateErr) throw updateErr;
+      } else {
+        const { error: insertErr } = await supabase
+          .from('assistants')
+          .insert({
+            user_id: user.id,
+            assistant_name: newSettings.aiAssistantName.trim(),
+            greeting: newSettings.greetingScript.trim(),
+            business_name: newSettings.businessName.trim(),
+          });
+        if (insertErr) throw insertErr;
+      }
+
+      /* -----------------------------------------------------------------
+         2) Update profile (if needed) – reuse existing logic
+      ----------------------------------------------------------------- */
+
       const profileUpdates: Partial<UserProfile> = {};
 
       if (newSettings.yourName !== (profile?.full_name || '')) {
@@ -287,41 +337,48 @@ export function useUserSettings() {
         profileUpdates.business_name = newSettings.businessName;
       }
 
-      // Use stored procedure for atomic updates across both tables
-      const { data: result, error } = await supabase.rpc('update_ai_settings', {
-        p_user_id: user.id,
-        p_assistant_name: newSettings.aiAssistantName,
-        p_ai_greeting: newSettings.greetingScript,
-        p_first_name:
-          'first_name' in profileUpdates ? profileUpdates.first_name : null,
-        p_last_name:
-          'last_name' in profileUpdates ? profileUpdates.last_name : null,
-        p_business_name:
-          'business_name' in profileUpdates
-            ? profileUpdates.business_name
-            : null,
+      if (Object.keys(profileUpdates).length > 0) {
+        const { data: updatedProfile, error: profileError } = await supabase
+          .from('profiles')
+          .upsert(
+            {
+              id: user.id,
+              email: profile?.email || user.email!,
+              ...profileUpdates,
+            },
+            {
+              onConflict: 'id',
+              updateColumns: Object.keys(profileUpdates),
+            }
+          )
+          .select()
+          .single();
+
+        if (profileError) {
+          throw profileError;
+        }
+
+        if (updatedProfile) {
+          setProfile(updatedProfile as UserProfile);
+        }
+      }
+
+      // Update local settings cache so UI reflects new values without reload
+      setSettings(prev =>
+        prev
+          ? {
+              ...prev,
+              assistant_name: newSettings.aiAssistantName,
+              ai_greeting: newSettings.greetingScript,
+            }
+          : null
+      );
+
+      // Update local assistant cache
+      setAssistant({
+        assistant_name: newSettings.aiAssistantName,
+        greeting: newSettings.greetingScript,
       });
-
-      if (error) {
-        throw error;
-      }
-
-      // Verify that the update operation returned data
-      if (!result || !result.success) {
-        throw new Error(
-          'Settings update failed: No valid response from stored procedure'
-        );
-      }
-
-      // Update local state with the returned data from the stored procedure
-      if (result.settings) {
-        setSettings(result.settings as UserSettings);
-      }
-
-      // Update profile state if profile was updated
-      if (result.profile_updated && result.profile) {
-        setProfile(result.profile as UserProfile);
-      }
 
       toast({
         title: 'Settings saved!',
@@ -485,10 +542,12 @@ export function useUserSettings() {
           .upsert(
             {
               id: user.id,
+              email: profile?.email || user.email!,
               ...profileUpdates,
             },
             {
               onConflict: 'id',
+              updateColumns: Object.keys(profileUpdates),
             }
           )
           .select()
@@ -531,10 +590,12 @@ export function useUserSettings() {
           .upsert(
             {
               id: user.id,
+              email: profile?.email || user.email!,
               ...profileUpdates,
             },
             {
               onConflict: 'id',
+              updateColumns: Object.keys(profileUpdates),
             }
           )
           .select()
@@ -714,14 +775,15 @@ export function useUserSettings() {
     }
 
     return {
-      aiAssistantName: settings?.assistant_name || 'Ava',
+      aiAssistantName: assistant?.assistant_name || settings?.assistant_name || 'Ava',
       yourName: profile?.full_name || '',
       businessName: profile?.business_name || '',
       greetingScript:
+        assistant?.greeting ||
         settings?.ai_greeting ||
         'Hello! Thank you for calling. How can I assist you today?',
     };
-  }, [dataLoaded, settings, profile]);
+  }, [dataLoaded, settings, profile, assistant]);
 
   // Wrapper for manual refetch that doesn't use abort signal
   const refetch = useCallback(() => {
