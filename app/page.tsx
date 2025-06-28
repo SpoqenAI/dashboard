@@ -10,7 +10,7 @@ export default function Home() {
       <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2 text-xl font-bold">
-            <Logo width={102} height={36} />
+            <Logo width={140} height={48} />
           </div>
           <nav className="flex items-center gap-4">
             <Link href="/login" className="text-sm font-medium">
@@ -23,7 +23,7 @@ export default function Home() {
         </div>
       </header>
       <main className="flex-1">
-        <section className="via-purple-950\\/10 to-blue-950\\/10 w-full bg-gradient-to-b from-background py-12 md:py-24 lg:py-32">
+        <section className="w-full bg-gradient-to-br from-purple-900/30 via-background to-blue-900/30 py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
               <div className="flex flex-col justify-center space-y-4">
@@ -55,7 +55,7 @@ export default function Home() {
               <div className="flex items-center justify-center">
                 <div className="relative aspect-video w-full max-w-[500px] overflow-hidden rounded-xl border bg-background shadow-xl">
                   <img
-                    src="/Spoqen.png"
+                    src="/Spoqen-full.png"
                     alt="Spoqen Logo"
                     className="h-full w-full object-contain"
                   />

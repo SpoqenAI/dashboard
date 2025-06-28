@@ -46,7 +46,7 @@ export function PricingCard({
               key={feature}
               className="flex items-center justify-center gap-2"
             >
-              <CheckCircle className="h-4 w-4 shrink-0 text-green-600" />
+              <CheckCircle className="h-4 w-4 shrink-0 text-primary" />
               <span className="text-sm">{feature}</span>
             </li>
           ))}

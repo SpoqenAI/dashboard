@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
           <div className="container flex h-16 items-center justify-between">
             <div className="flex items-center gap-2 text-xl font-bold">
               <Link href="/">
-                <Logo width={102} height={36} />
+                <Logo width={140} height={48} />
               </Link>
             </div>
             <nav className="flex items-center gap-4">
@@ -117,7 +117,7 @@ export default function ForgotPasswordPage() {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2 text-xl font-bold">
             <Link href="/">
-              <Logo width={102} height={36} />
+              <Logo width={140} height={48} />
             </Link>
           </div>
           <nav className="flex items-center gap-4">

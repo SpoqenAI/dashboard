@@ -8,7 +8,7 @@ export function DashboardHeader() {
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center">
           <Link href="/dashboard">
-            <Logo width={102} height={36} />
+            <Logo width={140} height={48} />
           </Link>
         </div>
         <nav className="flex items-center gap-4">
