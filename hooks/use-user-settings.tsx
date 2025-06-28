@@ -154,6 +154,17 @@ export function useUserSettings() {
 
         // If no settings exist, create default settings
         if (!settingsData) {
+          // Try to fetch assistant name for a smarter default
+          const { data: assistantRecord } = await supabase
+            .from('assistants')
+            .select('assistant_name, greeting')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          const defaultAssistantName = assistantRecord?.assistant_name || 'Ava';
+          const defaultGreeting =
+            assistantRecord?.greeting ||
+            'Hello! Thank you for calling. How can I assist you today?';
           // Check abort signal before creating new settings
           if (signal?.aborted) {
             return;
@@ -163,9 +174,8 @@ export function useUserSettings() {
             .from('user_settings')
             .insert({
               id: user.id,
-              ai_greeting:
-                'Hello! Thank you for calling. How can I assist you today?',
-              assistant_name: 'Ava',
+              ai_greeting: defaultGreeting,
+              assistant_name: defaultAssistantName,
             })
             .select()
             .single();
@@ -181,6 +191,24 @@ export function useUserSettings() {
 
           setSettings(newSettings);
         } else {
+          // If assistant_name is default but assistant table has a real name, merge it
+          if (
+            (!settingsData.assistant_name || settingsData.assistant_name === 'Ava') &&
+            (await supabase
+              .from('assistants')
+              .select('assistant_name')
+              .eq('user_id', user.id)
+              .maybeSingle()).data?.assistant_name
+          ) {
+            settingsData.assistant_name = (
+              await supabase
+                .from('assistants')
+                .select('assistant_name')
+                .eq('user_id', user.id)
+                .maybeSingle()
+            ).data?.assistant_name as string;
+          }
+
           // Final abort check before updating state
           if (signal?.aborted) {
             return;
