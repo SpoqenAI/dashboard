@@ -2,12 +2,12 @@ import React from 'react';
 
 export default function TermsOfService() {
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-12 text-gray-800">
+    <div className="container mx-auto max-w-3xl px-4 py-12 text-foreground">
       <h1 className="mb-8 text-center text-4xl font-extrabold">
         Terms of Service for Spoqen
       </h1>
 
-      <p className="mb-6 text-sm text-gray-600">
+      <p className="mb-6 text-sm text-foreground">
         Effective Date: {new Date().toLocaleDateString()}
         <br />
         Last Updated: {new Date().toLocaleDateString()}
@@ -1378,7 +1378,7 @@ export default function TermsOfService() {
         <h2 className="mb-4 border-b pb-2 text-2xl font-bold">
           19. Final Disclaimer
         </h2>
-        <p className="italic text-gray-600">
+        <p className="italic text-foreground">
           Disclaimer: This Terms of Service document is provided as a general
           template for the users of the Spoqen service. The information
           contained herein is for informational purposes only and does not

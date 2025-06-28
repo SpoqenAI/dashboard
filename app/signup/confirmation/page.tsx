@@ -8,7 +8,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { PhoneCall, Mail, ArrowRight } from 'lucide-react';
+import { Mail, ArrowRight } from 'lucide-react';
+import Logo from '@/components/ui/logo';
 
 export default function SignupConfirmationPage() {
   return (
@@ -16,8 +17,9 @@ export default function SignupConfirmationPage() {
       <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2 text-xl font-bold">
-            <PhoneCall className="h-5 w-5 text-primary" />
-            <Link href="/">Spoqen</Link>
+            <Link href="/">
+              <Logo width={140} height={48} />
+            </Link>
           </div>
           <nav className="flex items-center gap-4">
             <Link href="/login" className="text-sm font-medium">
