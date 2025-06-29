@@ -4,6 +4,8 @@ import './globals.css';
 import { Toaster } from '@/components/toaster';
 import { AuthProvider } from '@/hooks/use-auth';
 import { Providers } from '@/lib/providers';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   title: 'Spoqen - AI Receptionist',
@@ -23,6 +25,9 @@ export default function RootLayout({
           <Providers>{children}</Providers>
           <Toaster />
         </AuthProvider>
+        {/* Vercel Analytics / Speed Insights */}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
