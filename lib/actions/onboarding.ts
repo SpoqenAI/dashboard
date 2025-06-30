@@ -187,15 +187,13 @@ export async function createAssistantAction(
       assistantError = error;
     } else {
       // Insert new assistant
-      const { error } = await supabase
-        .from('assistants')
-        .insert({
-          user_id: user.id,
-          business_name: businessName,
-          assistant_name: assistantName,
-          greeting: greeting,
-          status: 'draft',
-        });
+      const { error } = await supabase.from('assistants').insert({
+        user_id: user.id,
+        business_name: businessName,
+        assistant_name: assistantName,
+        greeting: greeting,
+        status: 'draft',
+      });
       assistantError = error;
     }
 
@@ -204,37 +202,42 @@ export async function createAssistantAction(
         'ONBOARDING_ACTIONS',
         'Assistant database operation failed',
         assistantError,
-        { 
+        {
           userId: logger.maskUserId(user.id),
           operation: existingAssistant ? 'update' : 'insert',
           errorCode: assistantError.code,
-          errorMessage: assistantError.message
+          errorMessage: assistantError.message,
         }
       );
-      throw new Error(`Failed to ${existingAssistant ? 'update' : 'create'} assistant: ${assistantError.message}`);
+      throw new Error(
+        `Failed to ${existingAssistant ? 'update' : 'create'} assistant: ${assistantError.message}`
+      );
     }
 
     // Sync assistant data to user_settings table for dashboard consistency
     const { error: settingsError } = await supabase
       .from('user_settings')
-      .upsert({
-        id: user.id,
-        ai_greeting: greeting,
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'id'
-      });
+      .upsert(
+        {
+          id: user.id,
+          ai_greeting: greeting,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'id',
+        }
+      );
 
     if (settingsError) {
       // Log detailed error but don't fail - assistant creation is more important
       logger.warn(
         'ONBOARDING_ACTIONS',
         'Failed to sync assistant data to user_settings',
-        { 
-          userId: logger.maskUserId(user.id), 
+        {
+          userId: logger.maskUserId(user.id),
           error: settingsError,
           errorCode: settingsError.code,
-          errorMessage: settingsError.message
+          errorMessage: settingsError.message,
         }
       );
     }

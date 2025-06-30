@@ -47,8 +47,8 @@ export function OnboardingStepper({
   const safeCurrentIndex = currentIndex === -1 ? 0 : currentIndex;
 
   return (
-    <nav 
-      aria-label="Onboarding progress" 
+    <nav
+      aria-label="Onboarding progress"
       className={cn('mb-8', className)}
       role="progressbar"
       aria-valuenow={safeCurrentIndex + 1}
@@ -61,7 +61,8 @@ export function OnboardingStepper({
           const isCompleted = index < safeCurrentIndex;
           const isCurrent = step.id === currentStep;
           const isUpcoming = index > safeCurrentIndex;
-          const isProcessingStep = step.id === 'processing' && isCurrent && isProcessing;
+          const isProcessingStep =
+            step.id === 'processing' && isCurrent && isProcessing;
 
           return (
             <li key={step.id} className="flex items-center">
@@ -74,9 +75,9 @@ export function OnboardingStepper({
                         isCurrent || isCompleted,
                       'border-muted-foreground bg-background text-muted-foreground':
                         isUpcoming,
-                      'border-green-500 bg-green-500 text-white': 
+                      'border-green-500 bg-green-500 text-white':
                         isCompleted && !isCurrent,
-                      'border-blue-500 bg-blue-500 text-white animate-pulse': 
+                      'animate-pulse border-blue-500 bg-blue-500 text-white':
                         isProcessingStep,
                     }
                   )}
@@ -86,20 +87,26 @@ export function OnboardingStepper({
                   {isCompleted && !isCurrent ? (
                     <Check className="h-5 w-5" aria-hidden="true" />
                   ) : isProcessingStep ? (
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    <Loader2
+                      className="h-4 w-4 animate-spin"
+                      aria-hidden="true"
+                    />
                   ) : (
                     <span className="text-sm font-medium" aria-hidden="true">
                       {index + 1}
                     </span>
                   )}
                 </div>
-                <div className="mt-2 text-center max-w-20">
+                <div className="mt-2 max-w-20 text-center">
                   <div
-                    className={cn('text-sm font-medium transition-colors duration-300', {
-                      'text-primary': isCurrent,
-                      'text-green-600': isCompleted && !isCurrent,
-                      'text-muted-foreground': isUpcoming,
-                    })}
+                    className={cn(
+                      'text-sm font-medium transition-colors duration-300',
+                      {
+                        'text-primary': isCurrent,
+                        'text-green-600': isCompleted && !isCurrent,
+                        'text-muted-foreground': isUpcoming,
+                      }
+                    )}
                   >
                     {step.name}
                   </div>
@@ -110,11 +117,14 @@ export function OnboardingStepper({
               </div>
               {index < steps.length - 1 && (
                 <div
-                  className={cn('mx-4 h-0.5 w-16 transition-colors duration-300', {
-                    'bg-green-500': index < safeCurrentIndex,
-                    'bg-primary': index < safeCurrentIndex && isCurrent,
-                    'bg-muted': index >= safeCurrentIndex,
-                  })}
+                  className={cn(
+                    'mx-4 h-0.5 w-16 transition-colors duration-300',
+                    {
+                      'bg-green-500': index < safeCurrentIndex,
+                      'bg-primary': index < safeCurrentIndex && isCurrent,
+                      'bg-muted': index >= safeCurrentIndex,
+                    }
+                  )}
                   aria-hidden="true"
                 />
               )}
@@ -122,13 +132,12 @@ export function OnboardingStepper({
           );
         })}
       </ol>
-      
+
       {/* Screen reader only completion percentage */}
       <div className="sr-only" aria-live="polite">
-        {isProcessing 
+        {isProcessing
           ? `Processing your account setup. Please wait.`
-          : `${Math.round(((safeCurrentIndex + 1) / steps.length) * 100)}% complete`
-        }
+          : `${Math.round(((safeCurrentIndex + 1) / steps.length) * 100)}% complete`}
       </div>
     </nav>
   );

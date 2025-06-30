@@ -11,7 +11,11 @@ const WEBHOOK_CONFIG = {
   maxTimestampAgeMs: 5 * 60 * 1000, // 5 minutes
   signatureHeader: 'paddle-signature',
   timestampHeader: 'paddle-timestamp',
-  allowedEventTypes: ['subscription.created', 'subscription.updated', 'subscription.activated'],
+  allowedEventTypes: [
+    'subscription.created',
+    'subscription.updated',
+    'subscription.activated',
+  ],
   maxPayloadSize: 10 * 1024, // 10KB
 } as const;
 
@@ -45,29 +49,35 @@ function validateTimestamp(timestampHeader: string | null): boolean {
   try {
     const webhookTime = new Date(timestampHeader).getTime();
     const currentTime = Date.now();
-    
+
     if (isNaN(webhookTime)) {
-      logger.warn('PADDLE_WEBHOOK', 'Invalid timestamp format', { timestamp: timestampHeader });
-      return false;
-    }
-    
-    const age = currentTime - webhookTime;
-    
-    if (age > WEBHOOK_CONFIG.maxTimestampAgeMs) {
-      logger.warn('PADDLE_WEBHOOK', 'Webhook timestamp too old, possible replay attack', {
-        age: Math.round(age / 1000),
-        maxAgeSeconds: Math.round(WEBHOOK_CONFIG.maxTimestampAgeMs / 1000),
+      logger.warn('PADDLE_WEBHOOK', 'Invalid timestamp format', {
+        timestamp: timestampHeader,
       });
       return false;
     }
-    
+
+    const age = currentTime - webhookTime;
+
+    if (age > WEBHOOK_CONFIG.maxTimestampAgeMs) {
+      logger.warn(
+        'PADDLE_WEBHOOK',
+        'Webhook timestamp too old, possible replay attack',
+        {
+          age: Math.round(age / 1000),
+          maxAgeSeconds: Math.round(WEBHOOK_CONFIG.maxTimestampAgeMs / 1000),
+        }
+      );
+      return false;
+    }
+
     if (age < 0) {
       logger.warn('PADDLE_WEBHOOK', 'Webhook timestamp from future', {
         futureSeconds: Math.round(Math.abs(age) / 1000),
       });
       return false;
     }
-    
+
     return true;
   } catch (error) {
     logger.warn('PADDLE_WEBHOOK', 'Error validating timestamp', {
@@ -82,7 +92,7 @@ function validateEventType(eventType: string): boolean {
   if (!eventType || typeof eventType !== 'string') {
     return false;
   }
-  
+
   return WEBHOOK_CONFIG.allowedEventTypes.includes(eventType as any);
 }
 
@@ -90,22 +100,25 @@ function validateSubscriptionData(data: any): boolean {
   if (!data || typeof data !== 'object') {
     return false;
   }
-  
+
   // Required fields
   if (!data.id || typeof data.id !== 'string') {
     logger.warn('PADDLE_WEBHOOK', 'Missing or invalid subscription ID');
     return false;
   }
-  
+
   if (!data.status || typeof data.status !== 'string') {
     logger.warn('PADDLE_WEBHOOK', 'Missing or invalid subscription status');
     return false;
   }
-  
+
   return true;
 }
 
-async function findUserBySubscriptionId(supabase: any, subscriptionId: string): Promise<string | null> {
+async function findUserBySubscriptionId(
+  supabase: any,
+  subscriptionId: string
+): Promise<string | null> {
   try {
     // First try to find existing subscription by exact ID match
     const { data: existingSubscription } = await supabase
@@ -131,11 +144,15 @@ async function findUserBySubscriptionId(supabase: any, subscriptionId: string): 
     if (recentSubscription && recentSubscription.length > 0) {
       // For now, return the most recent user_id as a fallback
       // In production, you'd want more sophisticated matching logic
-      logger.info('PADDLE_WEBHOOK', 'Using fallback user lookup for subscription ID mismatch', {
-        webhookSubscriptionId: subscriptionId,
-        fallbackUserId: logger.maskUserId(recentSubscription[0].user_id),
-        recentSubscriptionId: recentSubscription[0].id,
-      });
+      logger.info(
+        'PADDLE_WEBHOOK',
+        'Using fallback user lookup for subscription ID mismatch',
+        {
+          webhookSubscriptionId: subscriptionId,
+          fallbackUserId: logger.maskUserId(recentSubscription[0].user_id),
+          recentSubscriptionId: recentSubscription[0].id,
+        }
+      );
       return recentSubscription[0].user_id;
     }
 
@@ -157,26 +174,40 @@ export async function POST(request: NextRequest) {
     const contentType = request.headers.get('content-type');
     if (!contentType?.includes('application/json')) {
       logger.warn('PADDLE_WEBHOOK', 'Invalid content type', { contentType });
-      return NextResponse.json({ error: 'Invalid content type' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid content type' },
+        { status: 400 }
+      );
     }
 
     // Check content length to prevent large payloads
     const contentLength = request.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > WEBHOOK_CONFIG.maxPayloadSize) {
-      logger.warn('PADDLE_WEBHOOK', 'Payload too large', { size: contentLength });
+    if (
+      contentLength &&
+      parseInt(contentLength) > WEBHOOK_CONFIG.maxPayloadSize
+    ) {
+      logger.warn('PADDLE_WEBHOOK', 'Payload too large', {
+        size: contentLength,
+      });
       return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
     }
 
     // Validate timestamp for replay attack protection (skip in development for testing)
     const timestampHeader = request.headers.get(WEBHOOK_CONFIG.timestampHeader);
     const isDevelopment = process.env.NODE_ENV === 'development';
-    
+
     if (!isDevelopment && !validateTimestamp(timestampHeader)) {
-      return NextResponse.json({ error: 'Invalid or expired timestamp' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid or expired timestamp' },
+        { status: 400 }
+      );
     }
-    
+
     if (isDevelopment && !timestampHeader) {
-      logger.info('PADDLE_WEBHOOK', 'Skipping timestamp validation in development mode');
+      logger.info(
+        'PADDLE_WEBHOOK',
+        'Skipping timestamp validation in development mode'
+      );
     }
 
     // Parse the webhook payload
@@ -200,25 +231,37 @@ export async function POST(request: NextRequest) {
         eventType: webhookEvent.event_type,
         supportedTypes: WEBHOOK_CONFIG.allowedEventTypes,
       });
-      return NextResponse.json({ error: 'Unsupported event type' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Unsupported event type' },
+        { status: 400 }
+      );
     }
 
     // Validate subscription data
     if (!validateSubscriptionData(webhookEvent.data)) {
       logger.warn('PADDLE_WEBHOOK', 'Invalid subscription data in webhook');
-      return NextResponse.json({ error: 'Invalid subscription data' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid subscription data' },
+        { status: 400 }
+      );
     }
 
     const { data: subscriptionData } = webhookEvent;
     const supabase = createSupabaseAdmin();
 
     // Find user associated with this subscription
-    const userId = await findUserBySubscriptionId(supabase, subscriptionData.id);
+    const userId = await findUserBySubscriptionId(
+      supabase,
+      subscriptionData.id
+    );
     if (!userId) {
       logger.warn('PADDLE_WEBHOOK', 'No user found for subscription', {
         subscriptionId: subscriptionData.id,
       });
-      return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Subscription not found' },
+        { status: 404 }
+      );
     }
 
     // Prepare subscription data for upsert
@@ -250,29 +293,44 @@ export async function POST(request: NextRequest) {
     }
 
     // Use atomic upsert function to handle webhook updates
-    const { data: upsertResult, error: upsertError } = await supabase
-      .rpc('upsert_subscription', {
-        p_subscription_data: subscriptionUpsertData
-      });
+    const { data: upsertResult, error: upsertError } = await supabase.rpc(
+      'upsert_subscription',
+      {
+        p_subscription_data: subscriptionUpsertData,
+      }
+    );
 
     if (upsertError) {
-      logger.error('PADDLE_WEBHOOK', 'Failed to upsert subscription', upsertError, {
-        userId: logger.maskUserId(userId),
-        subscriptionId: subscriptionData.id,
-        eventType: webhookEvent.event_type,
-      });
+      logger.error(
+        'PADDLE_WEBHOOK',
+        'Failed to upsert subscription',
+        upsertError,
+        {
+          userId: logger.maskUserId(userId),
+          subscriptionId: subscriptionData.id,
+          eventType: webhookEvent.event_type,
+        }
+      );
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
     // Check if upsert was successful
     const result = upsertResult as any;
     if (!result?.success) {
-      logger.error('PADDLE_WEBHOOK', 'Subscription upsert returned error', new Error(result?.error || 'Unknown upsert error'), {
-        userId: logger.maskUserId(userId),
-        subscriptionId: subscriptionData.id,
-        errorCode: result?.error_code,
-      });
-      return NextResponse.json({ error: 'Subscription update failed' }, { status: 500 });
+      logger.error(
+        'PADDLE_WEBHOOK',
+        'Subscription upsert returned error',
+        new Error(result?.error || 'Unknown upsert error'),
+        {
+          userId: logger.maskUserId(userId),
+          subscriptionId: subscriptionData.id,
+          errorCode: result?.error_code,
+        }
+      );
+      return NextResponse.json(
+        { error: 'Subscription update failed' },
+        { status: 500 }
+      );
     }
 
     logger.info('PADDLE_WEBHOOK', 'Subscription processed successfully', {
@@ -287,14 +345,18 @@ export async function POST(request: NextRequest) {
     if (subscriptionData.status === 'active') {
       try {
         // Import assistant provisioning function dynamically to avoid circular imports
-        const { provisionAssistant } = await import('@/lib/actions/assistant.actions');
-        
+        const { provisionAssistant } = await import(
+          '@/lib/actions/assistant.actions'
+        );
+
         // Provision assistant in background (don't await to avoid blocking webhook response)
-        provisionAssistant(userId).catch((provisionError) => {
+        provisionAssistant(userId).catch(provisionError => {
           logger.error(
             'PADDLE_WEBHOOK',
             'Failed to provision assistant after subscription activation',
-            provisionError instanceof Error ? provisionError : new Error(String(provisionError)),
+            provisionError instanceof Error
+              ? provisionError
+              : new Error(String(provisionError)),
             {
               userId: logger.maskUserId(userId),
               subscriptionId: subscriptionData.id,
@@ -310,7 +372,9 @@ export async function POST(request: NextRequest) {
         logger.error(
           'PADDLE_WEBHOOK',
           'Failed to import assistant provisioning function',
-          importError instanceof Error ? importError : new Error(String(importError)),
+          importError instanceof Error
+            ? importError
+            : new Error(String(importError)),
           {
             userId: logger.maskUserId(userId),
             subscriptionId: subscriptionData.id,
@@ -319,12 +383,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ 
-      success: true,
-      message: 'Webhook processed successfully',
-      operation: result.operation 
-    }, { status: 200 });
-
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Webhook processed successfully',
+        operation: result.operation,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     logger.error(
       'PADDLE_WEBHOOK',
@@ -332,6 +398,9 @@ export async function POST(request: NextRequest) {
       error instanceof Error ? error : new Error(String(error))
     );
 
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

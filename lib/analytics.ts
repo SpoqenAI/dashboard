@@ -4,7 +4,7 @@
 import { logger } from '@/lib/logger';
 
 // Event types for conversion funnel tracking
-export type AnalyticsEvent = 
+export type AnalyticsEvent =
   | 'onboarding_started'
   | 'profile_completed'
   | 'assistant_setup_completed'
@@ -56,7 +56,7 @@ export interface PerformanceMetrics {
 // Conversion funnel stages
 export const FUNNEL_STAGES = {
   PROFILE_SETUP: 'profile_setup',
-  ASSISTANT_SETUP: 'assistant_setup', 
+  ASSISTANT_SETUP: 'assistant_setup',
   PAYMENT: 'payment',
   PROCESSING: 'processing',
   COMPLETION: 'completion',
@@ -73,9 +73,16 @@ interface AnalyticsClient {
 
 // In-memory analytics for development and fallback
 class InMemoryAnalytics implements AnalyticsClient {
-  private events: Array<{ event: AnalyticsEvent; properties?: AnalyticsProperties; timestamp: number }> = [];
-  
-  async track(event: AnalyticsEvent, properties?: AnalyticsProperties): Promise<void> {
+  private events: Array<{
+    event: AnalyticsEvent;
+    properties?: AnalyticsProperties;
+    timestamp: number;
+  }> = [];
+
+  async track(
+    event: AnalyticsEvent,
+    properties?: AnalyticsProperties
+  ): Promise<void> {
     const eventData = {
       event,
       properties: {
@@ -84,32 +91,32 @@ class InMemoryAnalytics implements AnalyticsClient {
       },
       timestamp: Date.now(),
     };
-    
+
     this.events.push(eventData);
-    
+
     // Log for development debugging
     logger.info('ANALYTICS', `Event: ${event}`, {
       event,
       properties: this.sanitizeProperties(properties),
     });
-    
+
     // Keep only last 1000 events in memory
     if (this.events.length > 1000) {
       this.events = this.events.slice(-1000);
     }
   }
-  
+
   async identify(userId: string, traits?: Record<string, any>): Promise<void> {
     logger.info('ANALYTICS', 'User identified', {
       userId: logger.maskUserId(userId),
       traits,
     });
   }
-  
+
   async page(name: string, properties?: AnalyticsProperties): Promise<void> {
     await this.track('page_viewed', { ...properties, page: name });
   }
-  
+
   async trackPerformance(metrics: PerformanceMetrics): Promise<void> {
     logger.info('ANALYTICS_PERF', `Performance: ${metrics.metricName}`, {
       metricName: metrics.metricName,
@@ -120,19 +127,27 @@ class InMemoryAnalytics implements AnalyticsClient {
       additionalData: metrics.additionalData,
     });
   }
-  
-  private sanitizeProperties(properties?: AnalyticsProperties): AnalyticsProperties | undefined {
+
+  private sanitizeProperties(
+    properties?: AnalyticsProperties
+  ): AnalyticsProperties | undefined {
     if (!properties) return undefined;
-    
+
     const sanitized = { ...properties };
     if (sanitized.userId) {
       sanitized.userId = logger.maskUserId(sanitized.userId);
     }
     return sanitized;
   }
-  
+
   // Development utility to get recent events
-  getRecentEvents(count = 10): Array<{ event: AnalyticsEvent; properties?: AnalyticsProperties; timestamp: number }> {
+  getRecentEvents(
+    count = 10
+  ): Array<{
+    event: AnalyticsEvent;
+    properties?: AnalyticsProperties;
+    timestamp: number;
+  }> {
     return this.events.slice(-count);
   }
 }
@@ -153,15 +168,22 @@ function getAnalyticsClient(): AnalyticsClient {
 // Convenience functions for common tracking patterns
 export const analytics = {
   // Track conversion funnel events
-  async trackFunnelStage(stage: string, properties?: AnalyticsProperties): Promise<void> {
+  async trackFunnelStage(
+    stage: string,
+    properties?: AnalyticsProperties
+  ): Promise<void> {
     await getAnalyticsClient().track('onboarding_started', {
       ...properties,
       funnelStage: stage,
     });
   },
-  
+
   // Track onboarding completion
-  async trackOnboardingComplete(userId: string, duration: number, properties?: AnalyticsProperties): Promise<void> {
+  async trackOnboardingComplete(
+    userId: string,
+    duration: number,
+    properties?: AnalyticsProperties
+  ): Promise<void> {
     await getAnalyticsClient().track('onboarding_completed', {
       ...properties,
       userId,
@@ -169,28 +191,42 @@ export const analytics = {
       success: true,
     });
   },
-  
+
   // Track payment events
-  async trackPaymentEvent(event: 'payment_initiated' | 'payment_completed' | 'payment_failed', properties?: AnalyticsProperties): Promise<void> {
+  async trackPaymentEvent(
+    event: 'payment_initiated' | 'payment_completed' | 'payment_failed',
+    properties?: AnalyticsProperties
+  ): Promise<void> {
     await getAnalyticsClient().track(event, properties);
   },
-  
+
   // Track errors with context
-  async trackError(error: Error | string, context?: AnalyticsProperties): Promise<void> {
+  async trackError(
+    error: Error | string,
+    context?: AnalyticsProperties
+  ): Promise<void> {
     await getAnalyticsClient().track('error_encountered', {
       ...context,
       error: error instanceof Error ? error.message : error,
       errorStack: error instanceof Error ? error.stack : undefined,
     });
   },
-  
+
   // Track page views
-  async trackPageView(page: string, properties?: AnalyticsProperties): Promise<void> {
+  async trackPageView(
+    page: string,
+    properties?: AnalyticsProperties
+  ): Promise<void> {
     await getAnalyticsClient().page(page, properties);
   },
-  
+
   // Track performance metrics
-  async trackPerformance(metricName: string, value: number, unit: PerformanceMetrics['unit'], additionalData?: Record<string, any>): Promise<void> {
+  async trackPerformance(
+    metricName: string,
+    value: number,
+    unit: PerformanceMetrics['unit'],
+    additionalData?: Record<string, any>
+  ): Promise<void> {
     await getAnalyticsClient().trackPerformance({
       eventType: 'performance_metric',
       metricName,
@@ -199,14 +235,16 @@ export const analytics = {
       additionalData,
     });
   },
-  
+
   // Track user identification
   async identify(userId: string, traits?: Record<string, any>): Promise<void> {
     await getAnalyticsClient().identify(userId, traits);
   },
-  
+
   // Batch track multiple events (useful for performance)
-  async trackBatch(events: Array<{ event: AnalyticsEvent; properties?: AnalyticsProperties }>): Promise<void> {
+  async trackBatch(
+    events: Array<{ event: AnalyticsEvent; properties?: AnalyticsProperties }>
+  ): Promise<void> {
     for (const { event, properties } of events) {
       await getAnalyticsClient().track(event, properties);
     }
@@ -216,54 +254,89 @@ export const analytics = {
 // Performance monitoring helpers
 export const performance = {
   // Track time to interactive
-  async trackTimeToInteractive(startTime: number, userId?: string, page?: string): Promise<void> {
+  async trackTimeToInteractive(
+    startTime: number,
+    userId?: string,
+    page?: string
+  ): Promise<void> {
     const tti = Date.now() - startTime;
     await analytics.trackPerformance('time_to_interactive', tti, 'ms', {
       userId,
       page,
     });
   },
-  
+
   // Track API response times
-  async trackApiResponse(endpoint: string, duration: number, success: boolean, statusCode?: number): Promise<void> {
+  async trackApiResponse(
+    endpoint: string,
+    duration: number,
+    success: boolean,
+    statusCode?: number
+  ): Promise<void> {
     await analytics.trackPerformance('api_response_time', duration, 'ms', {
       endpoint,
       success,
       statusCode,
     });
   },
-  
+
   // Track subscription creation time
-  async trackSubscriptionCreationTime(duration: number, userId?: string): Promise<void> {
-    await analytics.trackPerformance('subscription_creation_time', duration, 'ms', {
-      userId,
-      critical: true,
-    });
+  async trackSubscriptionCreationTime(
+    duration: number,
+    userId?: string
+  ): Promise<void> {
+    await analytics.trackPerformance(
+      'subscription_creation_time',
+      duration,
+      'ms',
+      {
+        userId,
+        critical: true,
+      }
+    );
   },
-  
+
   // Track middleware performance
-  async trackMiddlewarePerformance(duration: number, cacheHit: boolean, requestPath: string): Promise<void> {
-    await analytics.trackPerformance('middleware_response_time', duration, 'ms', {
-      cacheHit,
-      requestPath,
-      optimal: duration < 50, // Flag if response time is optimal
-    });
+  async trackMiddlewarePerformance(
+    duration: number,
+    cacheHit: boolean,
+    requestPath: string
+  ): Promise<void> {
+    await analytics.trackPerformance(
+      'middleware_response_time',
+      duration,
+      'ms',
+      {
+        cacheHit,
+        requestPath,
+        optimal: duration < 50, // Flag if response time is optimal
+      }
+    );
   },
 };
 
 // Conversion funnel tracking
 export const funnel = {
   // Track funnel drop-off
-  async trackDropOff(fromStage: string, userId?: string, reason?: string): Promise<void> {
+  async trackDropOff(
+    fromStage: string,
+    userId?: string,
+    reason?: string
+  ): Promise<void> {
     await analytics.trackError(`Funnel drop-off: ${fromStage}`, {
       userId,
       funnelStage: fromStage,
       dropOffReason: reason,
     });
   },
-  
+
   // Track funnel progression
-  async trackProgression(fromStage: string, toStage: string, userId?: string, duration?: number): Promise<void> {
+  async trackProgression(
+    fromStage: string,
+    toStage: string,
+    userId?: string,
+    duration?: number
+  ): Promise<void> {
     await getAnalyticsClient().track('onboarding_started', {
       userId,
       funnelProgression: `${fromStage}_to_${toStage}`,
@@ -271,7 +344,7 @@ export const funnel = {
       success: true,
     });
   },
-  
+
   // Calculate conversion rates (for analytics dashboard)
   async getConversionRate(fromStage: string, toStage: string): Promise<number> {
     // This would query analytics data in a real implementation
@@ -283,7 +356,11 @@ export const funnel = {
 // A/B testing helpers (for future optimization)
 export const experiments = {
   // Track experiment participation
-  async trackExperiment(experimentName: string, variant: string, userId?: string): Promise<void> {
+  async trackExperiment(
+    experimentName: string,
+    variant: string,
+    userId?: string
+  ): Promise<void> {
     await getAnalyticsClient().track('onboarding_started', {
       userId,
       experimentName,
@@ -291,9 +368,13 @@ export const experiments = {
       isExperiment: true,
     });
   },
-  
+
   // Track experiment conversion
-  async trackExperimentConversion(experimentName: string, variant: string, userId?: string): Promise<void> {
+  async trackExperimentConversion(
+    experimentName: string,
+    variant: string,
+    userId?: string
+  ): Promise<void> {
     await getAnalyticsClient().track('onboarding_completed', {
       userId,
       experimentName,
@@ -304,4 +385,4 @@ export const experiments = {
 };
 
 // Export the main analytics instance
-export default analytics; 
+export default analytics;

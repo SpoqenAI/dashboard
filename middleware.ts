@@ -46,7 +46,10 @@ let cacheHits = 0;
 let cacheHitRate = 0;
 
 // Cache management functions
-function getCachedSubscriptionStatus(userId: string, cacheConfig: CacheConfig): boolean | null {
+function getCachedSubscriptionStatus(
+  userId: string,
+  cacheConfig: CacheConfig
+): boolean | null {
   if (!cacheConfig.enabled) return null;
 
   const entry = subscriptionCache.get(userId);
@@ -62,7 +65,11 @@ function getCachedSubscriptionStatus(userId: string, cacheConfig: CacheConfig): 
   return entry.hasValidSubscription;
 }
 
-function setCachedSubscriptionStatus(userId: string, hasValidSubscription: boolean, cacheConfig: CacheConfig): void {
+function setCachedSubscriptionStatus(
+  userId: string,
+  hasValidSubscription: boolean,
+  cacheConfig: CacheConfig
+): void {
   if (!cacheConfig.enabled) return;
 
   // Implement LRU cache eviction if cache is full
@@ -94,7 +101,7 @@ function clearExpiredCacheEntries(cacheConfig: CacheConfig): void {
 // Performance logging
 function logPerformanceMetrics(): void {
   requestCount++;
-  
+
   if (requestCount > 0) {
     cacheHitRate = (cacheHits / requestCount) * 100;
   }
@@ -219,7 +226,10 @@ export async function middleware(request: NextRequest) {
 
     try {
       // Check cache first for performance optimization
-      let hasValidSubscription = getCachedSubscriptionStatus(user.id, cacheConfig);
+      let hasValidSubscription = getCachedSubscriptionStatus(
+        user.id,
+        cacheConfig
+      );
       let cacheHit = hasValidSubscription !== null;
 
       if (!cacheHit) {
@@ -296,7 +306,7 @@ export async function middleware(request: NextRequest) {
         }
 
         hasValidSubscription = !!subscription;
-        
+
         // Cache the result for future requests
         setCachedSubscriptionStatus(user.id, hasValidSubscription, cacheConfig);
       }

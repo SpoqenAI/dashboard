@@ -70,7 +70,10 @@ export async function provisionAssistant(userId: string): Promise<void> {
 
     if (createError) {
       // Handle unique constraint violation (race condition where another process created assistant)
-      if (createError.code === '23505' && createError.message?.includes('assistants_user_id_key')) {
+      if (
+        createError.code === '23505' &&
+        createError.message?.includes('assistants_user_id_key')
+      ) {
         logger.info(
           'ASSISTANT_PROVISIONING',
           'Assistant already exists (race condition detected), fetching existing assistant',
@@ -78,7 +81,7 @@ export async function provisionAssistant(userId: string): Promise<void> {
             userId: logger.maskUserId(userId),
           }
         );
-        
+
         // Fetch the existing assistant created by concurrent process
         const { data: existingAssistant, error: refetchError } = await supabase
           .from('assistants')
@@ -93,7 +96,9 @@ export async function provisionAssistant(userId: string): Promise<void> {
           logger.error(
             'ASSISTANT_PROVISIONING',
             errorMessage,
-            refetchError instanceof Error ? refetchError : new Error(String(refetchError))
+            refetchError instanceof Error
+              ? refetchError
+              : new Error(String(refetchError))
           );
           throw new Error(errorMessage);
         }
@@ -113,7 +118,9 @@ export async function provisionAssistant(userId: string): Promise<void> {
         logger.error(
           'ASSISTANT_PROVISIONING',
           errorMessage,
-          createError instanceof Error ? createError : new Error(String(createError))
+          createError instanceof Error
+            ? createError
+            : new Error(String(createError))
         );
         throw new Error(errorMessage);
       }
@@ -213,10 +220,7 @@ export async function provisionAssistant(userId: string): Promise<void> {
     let twilioClient;
     try {
       const twilioModule = await import('twilio');
-      twilioClient = twilioModule.default(
-        twilioAccountSid,
-        twilioAuthToken
-      );
+      twilioClient = twilioModule.default(twilioAccountSid, twilioAuthToken);
     } catch (error) {
       throw new Error(
         'Twilio module not found. Please install twilio package: npm install twilio'
@@ -283,32 +287,41 @@ export async function provisionAssistant(userId: string): Promise<void> {
     // Validate Vapi credentials
     const vapiApiKey = process.env.VAPI_PRIVATE_KEY;
     const vapiWebhookSecret = process.env.VAPI_WEBHOOK_SECRET;
-    
+
     // Use enhanced URL detection with better fallbacks
-    let appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
-    
+    let appUrl =
+      process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
+
     // For development, try to auto-detect ngrok or use localhost fallback
     if (!appUrl && process.env.NODE_ENV === 'development') {
       // Check if we have any ngrok-related environment variables
-      const ngrokUrl = Object.keys(process.env).find(key => 
-        key.includes('NGROK') && process.env[key]?.includes('ngrok')
+      const ngrokUrl = Object.keys(process.env).find(
+        key => key.includes('NGROK') && process.env[key]?.includes('ngrok')
       );
-      
+
       if (ngrokUrl) {
         appUrl = process.env[ngrokUrl];
-        logger.info('ASSISTANT_PROVISIONING', 'Auto-detected ngrok URL from environment', {
-          assistantId: assistant.id,
-          source: ngrokUrl,
-          url: appUrl,
-        });
+        logger.info(
+          'ASSISTANT_PROVISIONING',
+          'Auto-detected ngrok URL from environment',
+          {
+            assistantId: assistant.id,
+            source: ngrokUrl,
+            url: appUrl,
+          }
+        );
       } else {
         // Use localhost fallback for development
         const devPort = process.env.PORT || '3000';
         appUrl = `http://localhost:${devPort}`;
-        logger.warn('ASSISTANT_PROVISIONING', 'Using localhost fallback for development. For production or ngrok testing, set NEXT_PUBLIC_APP_URL', {
-          assistantId: assistant.id,
-          fallbackUrl: appUrl,
-        });
+        logger.warn(
+          'ASSISTANT_PROVISIONING',
+          'Using localhost fallback for development. For production or ngrok testing, set NEXT_PUBLIC_APP_URL',
+          {
+            assistantId: assistant.id,
+            fallbackUrl: appUrl,
+          }
+        );
       }
     }
 
@@ -323,10 +336,11 @@ export async function provisionAssistant(userId: string): Promise<void> {
     }
 
     if (!appUrl) {
-      const errorMessage = process.env.NODE_ENV === 'production' 
-        ? 'Missing required NEXT_PUBLIC_APP_URL environment variable. This is required for production deployment.'
-        : 'Missing required NEXT_PUBLIC_APP_URL environment variable. For ngrok testing, set NEXT_PUBLIC_APP_URL to your ngrok URL (e.g., https://abc123.ngrok-free.app)';
-      
+      const errorMessage =
+        process.env.NODE_ENV === 'production'
+          ? 'Missing required NEXT_PUBLIC_APP_URL environment variable. This is required for production deployment.'
+          : 'Missing required NEXT_PUBLIC_APP_URL environment variable. For ngrok testing, set NEXT_PUBLIC_APP_URL to your ngrok URL (e.g., https://abc123.ngrok-free.app)';
+
       throw new Error(errorMessage);
     }
 
@@ -334,7 +348,9 @@ export async function provisionAssistant(userId: string): Promise<void> {
     try {
       new URL(appUrl);
     } catch (urlError) {
-      throw new Error(`Invalid NEXT_PUBLIC_APP_URL format: ${appUrl}. Please provide a valid URL (e.g., https://yourdomain.com or https://abc123.ngrok-free.app)`);
+      throw new Error(
+        `Invalid NEXT_PUBLIC_APP_URL format: ${appUrl}. Please provide a valid URL (e.g., https://yourdomain.com or https://abc123.ngrok-free.app)`
+      );
     }
 
     // Create Vapi assistant using their API
@@ -494,9 +510,14 @@ export async function syncVapiAssistant(
     try {
       supabase = createSupabaseAdmin();
     } catch (envErr) {
-      logger.error('VAPI_SYNC', 'Failed to create Supabase admin client', envErr as Error, {
-        userId: logger.maskUserId(userId),
-      });
+      logger.error(
+        'VAPI_SYNC',
+        'Failed to create Supabase admin client',
+        envErr as Error,
+        {
+          userId: logger.maskUserId(userId),
+        }
+      );
       return; // Early exit – nothing else to do without DB access
     }
 
@@ -522,7 +543,8 @@ export async function syncVapiAssistant(
     }
 
     // Call Vapi API
-    const res = await fetch(`https://api.vapi.ai/assistant/${assistant.vapi_assistant_id}`,
+    const res = await fetch(
+      `https://api.vapi.ai/assistant/${assistant.vapi_assistant_id}`,
       {
         method: 'PATCH',
         headers: {
@@ -540,7 +562,8 @@ export async function syncVapiAssistant(
             ],
           },
         }),
-      });
+      }
+    );
 
     if (!res.ok) {
       const txt = await res.text();

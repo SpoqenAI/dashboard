@@ -2,7 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { PhoneCall, CheckCircle, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import {
+  PhoneCall,
+  CheckCircle,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+} from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/logger';
 import { analytics, performance } from '@/lib/analytics';
@@ -23,8 +29,18 @@ const PROCESSING_CONFIG = {
   optimisticTimeoutMs: 5000, // Time to wait before falling back to polling
 } as const;
 
-type ProcessingStage = 'initializing' | 'checking' | 'processing' | 'complete' | 'error';
-type ErrorType = 'subscription_failed' | 'auth_error' | 'connection_error' | 'timeout' | 'unknown';
+type ProcessingStage =
+  | 'initializing'
+  | 'checking'
+  | 'processing'
+  | 'complete'
+  | 'error';
+type ErrorType =
+  | 'subscription_failed'
+  | 'auth_error'
+  | 'connection_error'
+  | 'timeout'
+  | 'unknown';
 
 interface ProcessingError {
   type: ErrorType;
@@ -37,7 +53,9 @@ export default function ProcessingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [stage, setStage] = useState<ProcessingStage>('initializing');
-  const [statusMessage, setStatusMessage] = useState('Setting up your Spoqen account...');
+  const [statusMessage, setStatusMessage] = useState(
+    'Setting up your Spoqen account...'
+  );
   const [error, setError] = useState<ProcessingError | null>(null);
   const [isInstant, setIsInstant] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -53,7 +71,8 @@ export default function ProcessingPage() {
         return {
           type: 'subscription_failed',
           message: 'Subscription creation failed',
-          recoveryAction: 'Please try subscribing again or contact support if the issue persists.',
+          recoveryAction:
+            'Please try subscribing again or contact support if the issue persists.',
           canRetry: true,
         };
       case 'auth_error':
@@ -74,14 +93,16 @@ export default function ProcessingPage() {
         return {
           type: 'timeout',
           message: 'Setup is taking longer than expected',
-          recoveryAction: 'Your payment was processed. Please check your dashboard or try refreshing.',
+          recoveryAction:
+            'Your payment was processed. Please check your dashboard or try refreshing.',
           canRetry: true,
         };
       default:
         return {
           type: 'unknown',
           message: 'An unexpected error occurred',
-          recoveryAction: 'Please try again or contact support if the problem continues.',
+          recoveryAction:
+            'Please try again or contact support if the problem continues.',
           canRetry: true,
         };
     }
@@ -90,13 +111,15 @@ export default function ProcessingPage() {
   // Optimistic success - redirect immediately and handle errors if they occur
   const handleOptimisticSuccess = useCallback(async () => {
     logger.info('PAYMENT_PROCESSING', 'Starting optimistic redirect flow');
-    
+
     setStage('complete');
     setStatusMessage('Account setup complete! Welcome to Spoqen!');
-    
+
     // Track onboarding completion
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         const onboardingDuration = 5000; // Approximate duration for optimistic flow
         await analytics.trackOnboardingComplete(user.id, onboardingDuration, {
@@ -105,14 +128,20 @@ export default function ProcessingPage() {
         });
       }
     } catch (error) {
-      logger.warn('PAYMENT_PROCESSING', 'Failed to track onboarding completion', {
-        error: error instanceof Error ? error.message : String(error),
-      });
+      logger.warn(
+        'PAYMENT_PROCESSING',
+        'Failed to track onboarding completion',
+        {
+          error: error instanceof Error ? error.message : String(error),
+        }
+      );
     }
-    
+
     // Short delay to show success message, then redirect
-    await new Promise(resolve => setTimeout(resolve, PROCESSING_CONFIG.successDelayMs));
-    
+    await new Promise(resolve =>
+      setTimeout(resolve, PROCESSING_CONFIG.successDelayMs)
+    );
+
     logger.info('PAYMENT_PROCESSING', 'Redirecting to dashboard (optimistic)');
     router.push('/dashboard?welcome=true&onboarding=complete');
   }, [router, supabase, isInstant]);
@@ -120,7 +149,10 @@ export default function ProcessingPage() {
   // Fallback verification - check if subscription actually exists
   const verifySubscription = useCallback(async (): Promise<boolean> => {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
 
       if (authError || !user) {
         setError(getErrorDetails('auth_error'));
@@ -137,14 +169,21 @@ export default function ProcessingPage() {
         .maybeSingle();
 
       if (error) {
-        logger.error('PAYMENT_PROCESSING', 'Subscription verification failed', error);
+        logger.error(
+          'PAYMENT_PROCESSING',
+          'Subscription verification failed',
+          error
+        );
         return false;
       }
 
       return !!subscription;
     } catch (error) {
-      logger.error('PAYMENT_PROCESSING', 'Error during subscription verification', 
-        error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'PAYMENT_PROCESSING',
+        'Error during subscription verification',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return false;
     }
   }, [supabase, getErrorDetails]);
@@ -157,7 +196,7 @@ export default function ProcessingPage() {
     setStatusMessage('Retrying... Please wait.');
 
     const hasSubscription = await verifySubscription();
-    
+
     if (hasSubscription) {
       await handleOptimisticSuccess();
     } else {
@@ -167,25 +206,28 @@ export default function ProcessingPage() {
   }, [verifySubscription, handleOptimisticSuccess, getErrorDetails]);
 
   // Recovery actions
-  const handleRecoveryAction = useCallback((errorType: ErrorType) => {
-    switch (errorType) {
-      case 'auth_error':
-        router.push('/login?error=session_expired');
-        break;
-      case 'subscription_failed':
-        router.push('/onboarding/subscribe?error=subscription_failed');
-        break;
-      case 'timeout':
-        router.push('/dashboard');
-        break;
-      default:
-        if (retryCount < 3) {
-          handleRetry();
-        } else {
-          router.push('/onboarding/subscribe?error=max_retries');
-        }
-    }
-  }, [router, retryCount, handleRetry]);
+  const handleRecoveryAction = useCallback(
+    (errorType: ErrorType) => {
+      switch (errorType) {
+        case 'auth_error':
+          router.push('/login?error=session_expired');
+          break;
+        case 'subscription_failed':
+          router.push('/onboarding/subscribe?error=subscription_failed');
+          break;
+        case 'timeout':
+          router.push('/dashboard');
+          break;
+        default:
+          if (retryCount < 3) {
+            handleRetry();
+          } else {
+            router.push('/onboarding/subscribe?error=max_retries');
+          }
+      }
+    },
+    [router, retryCount, handleRetry]
+  );
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -195,7 +237,7 @@ export default function ProcessingPage() {
 
       const instant = searchParams.get('instant') === 'true';
       const errorParam = searchParams.get('error');
-      
+
       setIsInstant(instant);
 
       // Handle error states from success callback
@@ -209,7 +251,7 @@ export default function ProcessingPage() {
         // Optimistic flow - assume success and redirect immediately
         setStatusMessage('Payment confirmed! Setting up your account...');
         setStage('processing');
-        
+
         // Start optimistic success flow
         setTimeout(() => {
           if (!abortController.signal.aborted) {
@@ -235,7 +277,7 @@ export default function ProcessingPage() {
         setStatusMessage('Verifying your subscription...');
 
         const hasSubscription = await verifySubscription();
-        
+
         if (hasSubscription) {
           await handleOptimisticSuccess();
         } else {
@@ -247,10 +289,13 @@ export default function ProcessingPage() {
 
     // Only start processing if we have the payment success indicator
     if (searchParams.get('payment') === 'success') {
-      initializeProcessing().catch((error) => {
+      initializeProcessing().catch(error => {
         if (!abortController.signal.aborted) {
-          logger.error('PAYMENT_PROCESSING', 'Unexpected error in payment processing flow',
-            error instanceof Error ? error : new Error(String(error)));
+          logger.error(
+            'PAYMENT_PROCESSING',
+            'Unexpected error in payment processing flow',
+            error instanceof Error ? error : new Error(String(error))
+          );
           setError(getErrorDetails('unknown'));
           setStage('error');
         }
@@ -263,12 +308,19 @@ export default function ProcessingPage() {
     return () => {
       abortController.abort();
     };
-  }, [router, searchParams, supabase, getErrorDetails, handleOptimisticSuccess, verifySubscription]);
+  }, [
+    router,
+    searchParams,
+    supabase,
+    getErrorDetails,
+    handleOptimisticSuccess,
+    verifySubscription,
+  ]);
 
   // Performance monitoring
   useEffect(() => {
     const startTime = Date.now();
-    
+
     return () => {
       const duration = Date.now() - startTime;
       logger.info('PAYMENT_PROCESSING', 'Processing page performance', {
@@ -285,12 +337,12 @@ export default function ProcessingPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Onboarding Stepper */}
       <div className="container py-8">
-        <OnboardingStepper 
-          currentStep="processing" 
-          isProcessing={stage === 'processing' || stage === 'checking'} 
+        <OnboardingStepper
+          currentStep="processing"
+          isProcessing={stage === 'processing' || stage === 'checking'}
         />
       </div>
-      
+
       {/* Processing Content */}
       <div className="flex flex-1 items-center justify-center p-4">
         <div className="mx-auto max-w-md space-y-8 px-6 text-center">
@@ -303,51 +355,57 @@ export default function ProcessingPage() {
           {/* Status Icon */}
           <div className="transition-all duration-500">
             {stage === 'complete' ? (
-              <CheckCircle className="mx-auto mb-6 h-20 w-20 text-green-500 animate-in zoom-in duration-500" />
+              <CheckCircle className="mx-auto mb-6 h-20 w-20 text-green-500 duration-500 animate-in zoom-in" />
             ) : stage === 'error' ? (
-              <AlertCircle className="mx-auto mb-6 h-20 w-20 text-red-500 animate-in zoom-in duration-500" />
+              <AlertCircle className="mx-auto mb-6 h-20 w-20 text-red-500 duration-500 animate-in zoom-in" />
             ) : (
-              <div className="mx-auto mb-6 h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
-                <Loader2 className="h-10 w-10 text-primary animate-spin" />
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
               </div>
             )}
           </div>
 
           {/* Main Content */}
           <div className="space-y-4">
-            <h1 className={`text-3xl font-bold transition-colors duration-500 ${
-              stage === 'complete' ? 'text-green-600' : 
-              stage === 'error' ? 'text-red-600' : 'text-gray-900'
-            }`}>
-              {stage === 'complete' ? 'Welcome to Spoqen!' :
-               stage === 'error' ? 'Setup Issue' :
-               'Payment Successful!'}
+            <h1
+              className={`text-3xl font-bold transition-colors duration-500 ${
+                stage === 'complete'
+                  ? 'text-green-600'
+                  : stage === 'error'
+                    ? 'text-red-600'
+                    : 'text-gray-900'
+              }`}
+            >
+              {stage === 'complete'
+                ? 'Welcome to Spoqen!'
+                : stage === 'error'
+                  ? 'Setup Issue'
+                  : 'Payment Successful!'}
             </h1>
-            
+
             <p className="text-lg text-gray-600 transition-all duration-500">
               {error ? error.message : statusMessage}
             </p>
 
             {stage !== 'complete' && stage !== 'error' && (
               <p className="text-sm text-gray-500">
-                {isInstant 
-                  ? 'Your payment was processed instantly!' 
-                  : 'This usually takes just a few seconds'
-                }
+                {isInstant
+                  ? 'Your payment was processed instantly!'
+                  : 'This usually takes just a few seconds'}
               </p>
             )}
 
             {/* Error State */}
             {error && (
-              <div className="space-y-4 animate-in slide-in-from-bottom duration-500">
+              <div className="space-y-4 duration-500 animate-in slide-in-from-bottom">
                 <Alert className="border-red-200 bg-red-50">
                   <AlertCircle className="h-4 w-4 text-red-600" />
                   <AlertDescription className="text-red-700">
                     {error.recoveryAction}
                   </AlertDescription>
                 </Alert>
-                
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+
+                <div className="flex flex-col justify-center gap-3 sm:flex-row">
                   {error.canRetry && retryCount < 3 && (
                     <Button
                       onClick={handleRetry}
@@ -359,15 +417,17 @@ export default function ProcessingPage() {
                       Try Again
                     </Button>
                   )}
-                  
+
                   <Button
                     onClick={() => handleRecoveryAction(error.type)}
                     size="sm"
                     className="flex items-center gap-2"
                   >
-                    {error.type === 'auth_error' ? 'Sign In Again' :
-                     error.type === 'timeout' ? 'Go to Dashboard' :
-                     'Back to Subscribe'}
+                    {error.type === 'auth_error'
+                      ? 'Sign In Again'
+                      : error.type === 'timeout'
+                        ? 'Go to Dashboard'
+                        : 'Back to Subscribe'}
                   </Button>
                 </div>
               </div>
@@ -375,7 +435,7 @@ export default function ProcessingPage() {
 
             {/* Success State */}
             {stage === 'complete' && (
-              <div className="animate-in zoom-in duration-500 delay-100">
+              <div className="delay-100 duration-500 animate-in zoom-in">
                 <div className="flex items-center justify-center gap-2 text-green-600">
                   <CheckCircle className="h-5 w-5" />
                   <span className="text-sm font-medium">Ready to go!</span>
@@ -398,10 +458,13 @@ export default function ProcessingPage() {
 
       {/* Screen reader announcements */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
-        {stage === 'complete' && 'Account setup complete. Redirecting to dashboard.'}
-        {stage === 'error' && error && `Error: ${error.message}. ${error.recoveryAction}`}
+        {stage === 'complete' &&
+          'Account setup complete. Redirecting to dashboard.'}
+        {stage === 'error' &&
+          error &&
+          `Error: ${error.message}. ${error.recoveryAction}`}
         {stage === 'processing' && 'Setting up your account. Please wait.'}
       </div>
     </div>
   );
-} 
+}

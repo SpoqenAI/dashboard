@@ -91,7 +91,10 @@ export function useUserSettings() {
   const { user } = useAuth();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [assistant, setAssistant] = useState<{ assistant_name: string; greeting: string } | null>(null);
+  const [assistant, setAssistant] = useState<{
+    assistant_name: string;
+    greeting: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -124,23 +127,28 @@ export function useUserSettings() {
         }
 
         // Fetch settings, profile, and assistant data in parallel
-        const [settingsResponse, profileResponse, assistantResponse] = await Promise.all([
-          supabase.from('user_settings').select('*').eq('id', user.id).single(),
-          supabase
-            .from('profiles')
-            .select(
-              'id, first_name, last_name, full_name, business_name, email, phone, bio, website, license_number, brokerage, street_address, city, state, postal_code, country, formatted_address, avatar_url'
-            )
-            .eq('id', user.id)
-            .single(),
-          supabase
-            .from('assistants')
-            .select('assistant_name, greeting')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-        ]);
+        const [settingsResponse, profileResponse, assistantResponse] =
+          await Promise.all([
+            supabase
+              .from('user_settings')
+              .select('*')
+              .eq('id', user.id)
+              .single(),
+            supabase
+              .from('profiles')
+              .select(
+                'id, first_name, last_name, full_name, business_name, email, phone, bio, website, license_number, brokerage, street_address, city, state, postal_code, country, formatted_address, avatar_url'
+              )
+              .eq('id', user.id)
+              .single(),
+            supabase
+              .from('assistants')
+              .select('assistant_name, greeting')
+              .eq('user_id', user.id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+          ]);
 
         // Check abort signal after requests complete
         if (signal?.aborted) {
@@ -202,12 +210,15 @@ export function useUserSettings() {
         } else {
           // If assistant_name is default but assistant table has a real name, merge it
           if (
-            (!settingsData.assistant_name || settingsData.assistant_name === 'Ava') &&
-            (await supabase
-              .from('assistants')
-              .select('assistant_name')
-              .eq('user_id', user.id)
-              .maybeSingle()).data?.assistant_name
+            (!settingsData.assistant_name ||
+              settingsData.assistant_name === 'Ava') &&
+            (
+              await supabase
+                .from('assistants')
+                .select('assistant_name')
+                .eq('user_id', user.id)
+                .maybeSingle()
+            ).data?.assistant_name
           ) {
             settingsData.assistant_name = (
               await supabase
@@ -233,7 +244,9 @@ export function useUserSettings() {
 
         setProfile(profileData);
         if (assistantData) {
-          setAssistant(assistantData as { assistant_name: string; greeting: string });
+          setAssistant(
+            assistantData as { assistant_name: string; greeting: string }
+          );
         }
         setDataLoaded(true);
       } catch (err: any) {
@@ -303,14 +316,12 @@ export function useUserSettings() {
           .eq('id', assistantId);
         if (updateErr) throw updateErr;
       } else {
-        const { error: insertErr } = await supabase
-          .from('assistants')
-          .insert({
-            user_id: user.id,
-            assistant_name: newSettings.aiAssistantName.trim(),
-            greeting: newSettings.greetingScript.trim(),
-            business_name: newSettings.businessName.trim(),
-          });
+        const { error: insertErr } = await supabase.from('assistants').insert({
+          user_id: user.id,
+          assistant_name: newSettings.aiAssistantName.trim(),
+          greeting: newSettings.greetingScript.trim(),
+          business_name: newSettings.businessName.trim(),
+        });
         if (insertErr) throw insertErr;
       }
 
@@ -775,7 +786,8 @@ export function useUserSettings() {
     }
 
     return {
-      aiAssistantName: assistant?.assistant_name || settings?.assistant_name || 'Ava',
+      aiAssistantName:
+        assistant?.assistant_name || settings?.assistant_name || 'Ava',
       yourName: profile?.full_name || '',
       businessName: profile?.business_name || '',
       greetingScript:

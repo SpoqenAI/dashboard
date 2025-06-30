@@ -16,7 +16,7 @@ const nextConfig = {
       ? [process.env.NEXT_PUBLIC_APP_URL]
       : ['http://localhost:3000'],
   },
-  
+
   // Enhanced security headers with proper CORS for development
   async headers() {
     const headers = [

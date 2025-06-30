@@ -85,8 +85,6 @@ function SubscribePageContent() {
     };
   }, [router]);
 
-
-
   // Show loading while fetching user data
   if (!userData) {
     return (

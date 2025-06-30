@@ -87,7 +87,7 @@ export function SubscriptionForm({
       try {
         const { createClient } = await import('@/lib/supabase/client');
         const supabase = createClient();
-        
+
         const { data: subscription } = await supabase
           .from('subscriptions')
           .select('status')
@@ -96,9 +96,13 @@ export function SubscriptionForm({
           .maybeSingle();
 
         if (subscription) {
-          logger.info('SUBSCRIPTION_FORM', 'Subscription found after checkout', {
-            userId: logger.maskUserId(userId),
-          });
+          logger.info(
+            'SUBSCRIPTION_FORM',
+            'Subscription found after checkout',
+            {
+              userId: logger.maskUserId(userId),
+            }
+          );
           setCheckoutInProgress(false);
           router.push('/onboarding/processing?payment=success');
         }
@@ -164,9 +168,13 @@ export function SubscriptionForm({
           .maybeSingle();
 
         if (subscription) {
-          logger.info('SUBSCRIPTION_FORM', 'Subscription detected via polling', {
-            userId: logger.maskUserId(userId),
-          });
+          logger.info(
+            'SUBSCRIPTION_FORM',
+            'Subscription detected via polling',
+            {
+              userId: logger.maskUserId(userId),
+            }
+          );
           setCheckoutInProgress(false);
           router.push('/onboarding/processing?payment=success');
         }
@@ -394,7 +402,9 @@ export function SubscriptionForm({
         {checkoutInProgress && (
           <Button
             variant="outline"
-            onClick={() => router.push('/onboarding/processing?payment=success')}
+            onClick={() =>
+              router.push('/onboarding/processing?payment=success')
+            }
             className="ml-2"
           >
             Payment Complete? Continue →

@@ -41,7 +41,7 @@ export default function Home() {
                   <Button
                     size="lg"
                     asChild
-                    className="bg-spoqen-gradient border-0 text-white hover:opacity-90"
+                    className="border-0 bg-spoqen-gradient text-white hover:opacity-90"
                   >
                     <Link href="/signup">
                       Get Started <ArrowRight className="ml-2 h-4 w-4" />

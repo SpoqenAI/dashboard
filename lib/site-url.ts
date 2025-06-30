@@ -56,7 +56,9 @@ export function getSiteUrl() {
   if (typeof window !== 'undefined' && window.location.host.includes('ngrok')) {
     const url = `${window.location.protocol}//${window.location.host}`;
     if (process.env.NODE_ENV === 'development') {
-      logger.debug('SITE_URL', 'Auto-detected ngrok URL from window.location', { url });
+      logger.debug('SITE_URL', 'Auto-detected ngrok URL from window.location', {
+        url,
+      });
     }
     return url;
   }
@@ -75,11 +77,11 @@ export function getSiteUrl() {
   const devPort =
     process.env.NEXT_PUBLIC_DEV_PORT || process.env.PORT || '3000';
   const url = `http://localhost:${devPort}`;
-  
+
   if (process.env.NODE_ENV === 'development') {
     logger.debug('SITE_URL', 'Using localhost fallback', { url, devPort });
   }
-  
+
   return url;
 }
 
@@ -89,16 +91,23 @@ export function getSiteUrl() {
  */
 export function getAppUrl(): string {
   const siteUrl = getSiteUrl();
-  
+
   // Validate that we have a proper URL for production systems
   if (process.env.NODE_ENV === 'production' && siteUrl.includes('localhost')) {
-    logger.error('SITE_URL', 'Production environment using localhost URL', new Error('Invalid production URL'), {
-      siteUrl,
-      environment: process.env.NODE_ENV,
-    });
-    throw new Error('Production environment requires a proper domain URL. Please set NEXT_PUBLIC_SITE_URL or NEXT_PUBLIC_APP_URL environment variable.');
+    logger.error(
+      'SITE_URL',
+      'Production environment using localhost URL',
+      new Error('Invalid production URL'),
+      {
+        siteUrl,
+        environment: process.env.NODE_ENV,
+      }
+    );
+    throw new Error(
+      'Production environment requires a proper domain URL. Please set NEXT_PUBLIC_SITE_URL or NEXT_PUBLIC_APP_URL environment variable.'
+    );
   }
-  
+
   return siteUrl;
 }
 
@@ -108,25 +117,28 @@ export function getAppUrl(): string {
  */
 export function detectNgrokUrl(request?: Request): string | null {
   if (!request) return null;
-  
+
   const host = request.headers.get('host');
   const forwarded = request.headers.get('x-forwarded-host');
   const proto = request.headers.get('x-forwarded-proto') || 'https';
-  
+
   // Check for ngrok in host headers
-  const ngrokHost = forwarded?.includes('ngrok') ? forwarded : 
-                   host?.includes('ngrok') ? host : null;
-  
+  const ngrokHost = forwarded?.includes('ngrok')
+    ? forwarded
+    : host?.includes('ngrok')
+      ? host
+      : null;
+
   if (ngrokHost) {
     const url = `${proto}://${ngrokHost}`;
-    logger.debug('SITE_URL', 'Auto-detected ngrok URL from request headers', { 
-      url, 
-      host, 
-      forwarded, 
-      proto 
+    logger.debug('SITE_URL', 'Auto-detected ngrok URL from request headers', {
+      url,
+      host,
+      forwarded,
+      proto,
     });
     return url;
   }
-  
+
   return null;
 }

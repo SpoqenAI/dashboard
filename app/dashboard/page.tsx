@@ -213,7 +213,11 @@ export default function DashboardPage() {
         );
       }
     } catch (syncErr) {
-      logger.error('DASHBOARD', 'Failed to sync Vapi assistant', syncErr as Error);
+      logger.error(
+        'DASHBOARD',
+        'Failed to sync Vapi assistant',
+        syncErr as Error
+      );
       // No user-facing error – we don't want to block the user on a transient sync issue
     }
   };
