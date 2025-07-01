@@ -7,7 +7,9 @@ import { AuthProvider } from '@/hooks/use-auth';
 export const metadata: Metadata = {
   title: 'Spoqen - AI Receptionist',
   description: 'Never miss a lead again with Spoqen, your AI receptionist',
-  generator: 'v0.dev',
+  openGraph: {
+    images: '/Spoqen.png',
+  },
 };
 
 export default function RootLayout({
