@@ -154,95 +154,111 @@ export async function createAssistantAction(
   const { assistantName, businessName, greeting } = validatedFields.data;
 
   try {
-    // First, check if user already has an assistant to decide between insert or update
-    const { data: existingAssistant, error: checkError } = await supabase
-      .from('assistants')
-      .select('id')
-      .eq('user_id', user.id)
+    /* ------------------------------------------------------------------
+       1) Create assistant in Vapi (or reuse existing)
+    ------------------------------------------------------------------ */
+    const vapiApiKey = process.env.VAPI_PRIVATE_KEY;
+    const vapiWebhookSecret = process.env.VAPI_WEBHOOK_SECRET;
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
+
+    if (!vapiApiKey || !vapiWebhookSecret || !appUrl) {
+      throw new Error('Missing required Vapi environment variables');
+    }
+
+    // Check if the user already has an assistant id stored
+    const { data: settingsRow, error: fetchSettingsErr } = await supabase
+      .from('user_settings')
+      .select('vapi_assistant_id')
+      .eq('id', user.id)
       .maybeSingle();
 
-    if (checkError) {
-      logger.error(
-        'ONBOARDING_ACTIONS',
-        'Error checking existing assistant',
-        checkError,
-        { userId: logger.maskUserId(user.id) }
-      );
-      throw new Error('Failed to check existing assistant data');
-    }
+    if (fetchSettingsErr) throw fetchSettingsErr;
 
-    let assistantError;
-    if (existingAssistant) {
-      // Update existing assistant
-      const { error } = await supabase
-        .from('assistants')
-        .update({
-          business_name: businessName,
-          assistant_name: assistantName,
-          greeting: greeting,
-          status: 'draft',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id);
-      assistantError = error;
-    } else {
-      // Insert new assistant
-      const { error } = await supabase.from('assistants').insert({
-        user_id: user.id,
-        business_name: businessName,
-        assistant_name: assistantName,
-        greeting: greeting,
-        status: 'draft',
-      });
-      assistantError = error;
-    }
+    let vapiAssistantId: string | null = settingsRow?.vapi_assistant_id ?? null;
 
-    if (assistantError) {
-      logger.error(
-        'ONBOARDING_ACTIONS',
-        'Assistant database operation failed',
-        assistantError,
-        {
-          userId: logger.maskUserId(user.id),
-          operation: existingAssistant ? 'update' : 'insert',
-          errorCode: assistantError.code,
-          errorMessage: assistantError.message,
-        }
-      );
-      throw new Error(
-        `Failed to ${existingAssistant ? 'update' : 'create'} assistant: ${assistantError.message}`
-      );
-    }
-
-    // Sync assistant data to user_settings table for dashboard consistency
-    const { error: settingsError } = await supabase
-      .from('user_settings')
-      .upsert(
-        {
-          id: user.id,
-          ai_greeting: greeting,
-          updated_at: new Date().toISOString(),
+    if (!vapiAssistantId) {
+      // Create a new assistant via Vapi
+      const vapiRes = await fetch('https://api.vapi.ai/assistant', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${vapiApiKey}`,
         },
-        {
-          onConflict: 'id',
-        }
-      );
+        body: JSON.stringify({
+          name: assistantName,
+          model: {
+            provider: 'openai',
+            model: 'gpt-3.5-turbo',
+            messages: [
+              {
+                role: 'system',
+                content: greeting,
+              },
+            ],
+          },
+          voice: {
+            provider: 'azure',
+            voiceId: 'andrew',
+          },
+          serverUrl: `${appUrl}/api/vapi-webhook`,
+          serverUrlSecret: vapiWebhookSecret,
+        }),
+      });
 
-    if (settingsError) {
-      // Log detailed error but don't fail - assistant creation is more important
-      logger.warn(
-        'ONBOARDING_ACTIONS',
-        'Failed to sync assistant data to user_settings',
-        {
-          userId: logger.maskUserId(user.id),
-          error: settingsError,
-          errorCode: settingsError.code,
-          errorMessage: settingsError.message,
-        }
-      );
+      if (!vapiRes.ok) {
+        const txt = await vapiRes.text();
+        logger.error('ONBOARDING_ACTIONS', 'Vapi create failed', new Error(txt), {
+          status: vapiRes.status,
+        });
+        throw new Error('Failed to create assistant on Vapi');
+      }
+
+      const vapiAssistant = (await vapiRes.json()) as { id: string };
+      vapiAssistantId = vapiAssistant.id;
+
+      // Persist assistant id in user_settings via admin client to bypass RLS
+      const { createSupabaseAdmin } = await import('@/lib/supabase/admin');
+      const adminClient = createSupabaseAdmin();
+      const { error: storeErr } = await adminClient
+      .from('user_settings')
+        .update({ vapi_assistant_id: vapiAssistantId })
+        .eq('id', user.id);
+
+      if (storeErr) throw storeErr;
+    } else {
+      // Assistant already exists – patch its name & greeting to match latest form
+      const patchRes = await fetch(`https://api.vapi.ai/assistant/${vapiAssistantId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${vapiApiKey}`,
+        },
+        body: JSON.stringify({
+          name: assistantName,
+          model: {
+            messages: [
+              {
+                role: 'system',
+                content: greeting,
+              },
+            ],
+          },
+        }),
+      });
+
+      if (!patchRes.ok) {
+        const txt = await patchRes.text();
+        logger.error('ONBOARDING_ACTIONS', 'Vapi patch failed', new Error(txt), {
+          status: patchRes.status,
+        });
+        throw new Error('Failed to update assistant on Vapi');
+      }
     }
 
-    // Also update the business name in the profile if it has changed
+    /* ------------------------------------------------------------------
+       2) Update profile (first/last name, business name) same as before
+    ------------------------------------------------------------------ */
     const { error: profileError } = await supabase
       .from('profiles')
       .update({

@@ -126,29 +126,21 @@ export function useUserSettings() {
           return;
         }
 
-        // Fetch settings, profile, and assistant data in parallel
-        const [settingsResponse, profileResponse, assistantResponse] =
-          await Promise.all([
-            supabase
-              .from('user_settings')
-              .select('*')
-              .eq('id', user.id)
-              .single(),
-            supabase
-              .from('profiles')
-              .select(
-                'id, first_name, last_name, full_name, business_name, email, phone, bio, website, license_number, brokerage, street_address, city, state, postal_code, country, formatted_address, avatar_url'
-              )
-              .eq('id', user.id)
-              .single(),
-            supabase
-              .from('assistants')
-              .select('assistant_name, greeting')
-              .eq('user_id', user.id)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle(),
-          ]);
+        // Fetch settings and profile data in parallel
+        const [settingsResponse, profileResponse] = await Promise.all([
+          supabase
+            .from('user_settings')
+            .select('*')
+            .eq('id', user.id)
+            .single(),
+          supabase
+            .from('profiles')
+            .select(
+              'id, first_name, last_name, full_name, business_name, email, phone, bio, website, license_number, brokerage, street_address, city, state, postal_code, country, formatted_address, avatar_url'
+            )
+            .eq('id', user.id)
+            .single(),
+        ]);
 
         // Check abort signal after requests complete
         if (signal?.aborted) {
@@ -157,7 +149,6 @@ export function useUserSettings() {
 
         const { data: settingsData, error: settingsError } = settingsResponse;
         const { data: profileData, error: profileError } = profileResponse;
-        const { data: assistantData } = assistantResponse;
 
         // Handle settings errors (ignore not found)
         if (settingsError && settingsError.code !== 'PGRST116') {
@@ -167,6 +158,27 @@ export function useUserSettings() {
         // Handle profile errors (ignore not found)
         if (profileError && profileError.code !== 'PGRST116') {
           throw profileError;
+        }
+
+        // Attempt to fetch assistant details from Vapi via internal API (optional)
+        let assistantData: { assistant_name: string; greeting: string } | null = null;
+        if (settingsData?.vapi_assistant_id) {
+          try {
+            const res = await fetch('/api/vapi/assistant/info');
+            if (res.ok) {
+              const json = await res.json();
+              if (json?.assistant) {
+                assistantData = {
+                  assistant_name: json.assistant.name ?? 'Ava',
+                  greeting:
+                    json.assistant.model?.messages?.[0]?.content ||
+                    'Hello! Thank you for calling. How can I assist you today?',
+                };
+              }
+            }
+          } catch {
+            /* silent – non-critical */
+          }
         }
 
         // If no settings exist, create default settings
@@ -244,9 +256,7 @@ export function useUserSettings() {
 
         setProfile(profileData);
         if (assistantData) {
-          setAssistant(
-            assistantData as { assistant_name: string; greeting: string }
-          );
+          setAssistant(assistantData);
         }
         setDataLoaded(true);
       } catch (err: any) {
@@ -293,36 +303,35 @@ export function useUserSettings() {
 
     try {
       /* -----------------------------------------------------------------
-         1) Retrieve latest assistant (if multiple, pick most recent)
+         1) Sync assistant settings directly to Vapi (no DB writes)
       ----------------------------------------------------------------- */
-      const { data: assistantRows, error: fetchAssistErr } = await supabase
-        .from('assistants')
-        .select('id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1);
+      try {
+        const { createClient } = await import('@/lib/supabase/client');
 
-      if (fetchAssistErr) throw fetchAssistErr;
+        const browserSupabase = createClient();
+        const {
+          data: { user: browserUser },
+        } = await browserSupabase.auth.getUser();
 
-      if (assistantRows && assistantRows.length > 0) {
-        const assistantId = assistantRows[0].id as string;
-        const { error: updateErr } = await supabase
-          .from('assistants')
-          .update({
-            assistant_name: newSettings.aiAssistantName.trim(),
-            greeting: newSettings.greetingScript.trim(),
-            business_name: newSettings.businessName.trim(),
-          })
-          .eq('id', assistantId);
-        if (updateErr) throw updateErr;
-      } else {
-        const { error: insertErr } = await supabase.from('assistants').insert({
-          user_id: user.id,
-          assistant_name: newSettings.aiAssistantName.trim(),
-          greeting: newSettings.greetingScript.trim(),
-          business_name: newSettings.businessName.trim(),
-        });
-        if (insertErr) throw insertErr;
+        if (browserUser) {
+          // Fire-and-forget
+          const { syncVapiAssistant } = await import(
+            '@/lib/actions/assistant.actions'
+          );
+
+          syncVapiAssistant(
+            browserUser.id,
+            newSettings.aiAssistantName.trim(),
+            newSettings.greetingScript.trim()
+          );
+        }
+      } catch (syncErr) {
+        logger.error(
+          'USER_SETTINGS',
+          'Failed to sync Vapi assistant from settings hook',
+          syncErr as Error
+        );
+        // Non-fatal
       }
 
       /* -----------------------------------------------------------------
@@ -385,7 +394,7 @@ export function useUserSettings() {
           : null
       );
 
-      // Update local assistant cache
+      // Update local assistant cache (used for display purposes)
       setAssistant({
         assistant_name: newSettings.aiAssistantName,
         greeting: newSettings.greetingScript,

@@ -521,13 +521,13 @@ export async function syncVapiAssistant(
       return; // Early exit – nothing else to do without DB access
     }
 
-    const { data: assistant } = await supabase
-      .from('assistants')
+    const { data: settingsRow } = await supabase
+      .from('user_settings')
       .select('vapi_assistant_id')
-      .eq('user_id', userId)
+      .eq('id', userId)
       .maybeSingle();
 
-    if (!assistant || !assistant.vapi_assistant_id) {
+    if (!settingsRow || !settingsRow.vapi_assistant_id) {
       logger.warn('VAPI_SYNC', 'No Vapi assistant ID found; skipping sync', {
         userId: logger.maskUserId(userId),
       });
@@ -544,7 +544,7 @@ export async function syncVapiAssistant(
 
     // Call Vapi API
     const res = await fetch(
-      `https://api.vapi.ai/assistant/${assistant.vapi_assistant_id}`,
+      `https://api.vapi.ai/assistant/${settingsRow.vapi_assistant_id}`,
       {
         method: 'PATCH',
         headers: {
