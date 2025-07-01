@@ -23,7 +23,7 @@ This document tracks what works, what's left to build, current status, and the e
 - ✅ Responsive design with comprehensive loading and error states
 - ✅ **User-specific call data filtering based on `vapi_assistant_id`**
 - ✅ **Integration of real sentiment and lead quality data from `call_analysis` table**
-- ✅ **Bulk analysis endpoint to process historical calls**
+- ✅ **Bulk analysis endpoint to process historical calls, now correctly identifying and analyzing previously unanalyzed calls.**
 
 ### AI Receptionist Management
 - ✅ **Restored AI receptionist settings management in dashboard tab**
@@ -63,7 +63,7 @@ This document tracks what works, what's left to build, current status, and the e
 
 ## Current Status
 
-**MILESTONE ACHIEVED**: The dashboard has been successfully transformed into a comprehensive analytics platform with integrated AI receptionist configuration. The system now offers:
+**MILESTONE ACHIEVED**: The dashboard has been successfully transformed into a comprehensive analytics platform with integrated AI receptionist configuration. **The 'Analyze Calls' functionality is now fully operational, correctly processing and populating analysis for calls that previously lacked sentiment data.** The system now offers:
 
 - Professional-grade call analytics with trend analysis and real sentiment data
 - AI-powered insights and action point generation, persisted for performance
