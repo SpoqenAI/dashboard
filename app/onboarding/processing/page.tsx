@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   PhoneCall,
@@ -49,7 +49,7 @@ interface ProcessingError {
   canRetry: boolean;
 }
 
-export default function ProcessingPage() {
+function ProcessingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [stage, setStage] = useState<ProcessingStage>('initializing');
@@ -466,5 +466,13 @@ export default function ProcessingPage() {
         {stage === 'processing' && 'Setting up your account. Please wait.'}
       </div>
     </div>
+  );
+}
+
+export default function ProcessingPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProcessingPageContent />
+    </Suspense>
   );
 }
