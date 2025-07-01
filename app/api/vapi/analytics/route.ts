@@ -56,16 +56,39 @@ export async function GET(request: NextRequest) {
       return callDate >= cutoffDate;
     });
 
-    // Get authenticated user for sentiment data lookup
+    // Get authenticated user and their assistant ID
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+    
+    let userAssistantId: string | null = null;
+    if (user) {
+      // Get the user's VAPI assistant ID from user_settings
+      const { data: userSettings } = await supabase
+        .from('user_settings')
+        .select('vapi_assistant_id')
+        .eq('id', user.id)
+        .single();
+      
+      userAssistantId = userSettings?.vapi_assistant_id || null;
+    }
+
+    // Filter calls to only include those from the user's assistant
+    const userFilteredCalls = userAssistantId 
+      ? filteredCalls.filter(call => call.assistantId === userAssistantId)
+      : [];
+
+    logger.info('ANALYTICS', 'Filtering calls by user assistant', {
+      totalCallsFromVAPI: filteredCalls.length,
+      userAssistantId,
+      userFilteredCalls: userFilteredCalls.length,
+    });
 
     // Calculate metrics with real sentiment data
-    const metrics = await calculateMetrics(filteredCalls, user?.id, supabase, days);
-    const trends = calculateTrends(filteredCalls, days);
+    const metrics = await calculateMetrics(userFilteredCalls, user?.id, supabase, days);
+    const trends = calculateTrends(userFilteredCalls, days);
 
-    // Map calls to frontend format
-    const recentCalls = filteredCalls.slice(0, 20).map(mapVapiCallToFrontend);
+    // Map calls to frontend format (only user's calls)
+    const recentCalls = userFilteredCalls.slice(0, 20).map(mapVapiCallToFrontend);
 
     const analytics: DashboardAnalytics = {
       metrics,

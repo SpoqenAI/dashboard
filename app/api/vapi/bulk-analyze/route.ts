@@ -18,6 +18,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
+    // Get the user's VAPI assistant ID
+    const { data: userSettings } = await supabase
+      .from('user_settings')
+      .select('vapi_assistant_id')
+      .eq('id', user.id)
+      .single();
+    
+    const userAssistantId = userSettings?.vapi_assistant_id;
+    if (!userAssistantId) {
+      return NextResponse.json({ error: 'No assistant configured for user' }, { status: 400 });
+    }
+
     const apiKey = process.env.VAPI_PRIVATE_KEY;
     const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
 
@@ -38,7 +50,9 @@ export async function POST(request: NextRequest) {
     }
 
     const calls = await vapiResponse.json();
-    const answeredCalls = calls.filter((call: any) => call.durationSeconds > 0);
+    const answeredCalls = calls.filter((call: any) => 
+      call.durationSeconds > 0 && call.assistantId === userAssistantId
+    );
 
     let processed = 0;
     for (const call of answeredCalls.slice(0, limit)) {

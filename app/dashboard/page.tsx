@@ -1,12 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/protected-route';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Filter as BadWordsFilter } from 'bad-words';
 import {
   Phone,
   Clock,
@@ -17,7 +21,7 @@ import {
   Calendar,
   AlertTriangle,
   FileText,
-  Filter,
+  Filter as FilterIcon,
   TrendingUp,
   Users,
   PhoneCall,
@@ -27,6 +31,11 @@ import {
   Heart,
   Loader2,
   RefreshCw,
+  Settings,
+  Edit,
+  Save,
+  X,
+  BarChart3,
 } from 'lucide-react';
 import {
   Dialog,
@@ -35,12 +44,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { useActionPoints } from '@/hooks/use-action-points';
 import { useDashboardAnalytics } from '@/hooks/use-dashboard-analytics';
+import { useUserSettings, type AIReceptionistSettings } from '@/hooks/use-user-settings';
 import { DashboardAnalytics } from '@/components/dashboard-analytics';
 import { ActionPoints, VapiCall } from '@/lib/types';
+import { toast } from '@/components/ui/use-toast';
+import { logger } from '@/lib/logger';
+import { syncVapiAssistant } from '@/lib/actions/assistant.actions';
+
+// Initialize content filter outside component to prevent recreation on every render
+const contentFilter = new BadWordsFilter();
+contentFilter.addWords('scam', 'fraud', 'fake', 'illegal', 'drugs');
 
 export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,7 +80,36 @@ export default function DashboardPage() {
   const [timeRange, setTimeRange] = useState<number>(30);
   const [isBulkAnalyzing, setIsBulkAnalyzing] = useState(false);
   
+  // AI Receptionist Settings State
+  const [isEditing, setIsEditing] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  
   const { generateActionPoints, loading: actionPointsLoading, error: actionPointsError } = useActionPoints();
+  
+  // Use the user settings hook for AI receptionist settings
+  const {
+    loading: settingsLoading,
+    saving: settingsSaving,
+    error: settingsError,
+    dataLoaded,
+    updateAIReceptionistSettings,
+    getAIReceptionistSettings,
+  } = useUserSettings();
+
+  // Get current settings from the hook
+  const savedData = getAIReceptionistSettings();
+
+  // Current form data (can be different from saved while editing)
+  const [formData, setFormData] = useState<AIReceptionistSettings>(savedData);
+
+  // Update form data when settings are loaded
+  useEffect(() => {
+    if (dataLoaded) {
+      const currentSettings = getAIReceptionistSettings();
+      setFormData(currentSettings);
+    }
+  }, [dataLoaded, getAIReceptionistSettings]);
 
   // Fetch dashboard analytics data
   const { analytics, isLoading, error, refetch, isRefetching } = useDashboardAnalytics({
@@ -169,6 +226,123 @@ export default function DashboardPage() {
     }
   };
 
+  // AI Receptionist Settings Functions
+  const fieldLimits = {
+    aiAssistantName: { maxLength: 25, minLength: 1 },
+    yourName: { maxLength: 50, minLength: 1 },
+    businessName: { maxLength: 100, minLength: 1 },
+    greetingScript: { maxLength: 500, minLength: 10 },
+  };
+
+  const VALIDATION_PATTERNS = {
+    NAME_PATTERN: /^[\p{L}](?:[\p{L}\s\-'.])*[\p{L}]$|^[\p{L}]$/u,
+    BUSINESS_NAME_PATTERN: /^[a-zA-Z0-9](?:[a-zA-Z0-9\s\-'.,&()]*[a-zA-Z0-9.)])?$/,
+  };
+
+  const validateContent = (field: string, value: string): string | null => {
+    const limits = fieldLimits[field as keyof typeof fieldLimits];
+
+    if (value.length < limits.minLength) {
+      return `Minimum ${limits.minLength} characters required`;
+    }
+    if (value.length > limits.maxLength) {
+      return `Maximum ${limits.maxLength} characters allowed`;
+    }
+
+    if (contentFilter.isProfane(value)) {
+      return 'Please use professional, appropriate language';
+    }
+
+    switch (field) {
+      case 'aiAssistantName':
+      case 'yourName':
+        if (!VALIDATION_PATTERNS.NAME_PATTERN.test(value)) {
+          return 'Names should only contain letters, spaces, and basic punctuation';
+        }
+        break;
+      case 'businessName':
+        if (!VALIDATION_PATTERNS.BUSINESS_NAME_PATTERN.test(value)) {
+          return 'Business names should only contain letters, numbers, spaces, and basic punctuation';
+        }
+        break;
+    }
+    return null;
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setValidationErrors({});
+  };
+
+  const doSave = async () => {
+    setConfirmOpen(false);
+    const errors: Record<string, string> = {};
+    Object.entries(formData).forEach(([field, value]) => {
+      const error = validateContent(field, value);
+      if (error) {
+        errors[field] = error;
+      }
+    });
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    try {
+      await updateAIReceptionistSettings(formData);
+      setIsEditing(false);
+      setValidationErrors({});
+      
+      logger.info('DASHBOARD', 'AI receptionist settings saved successfully', {
+        settingsUpdated: Object.keys(formData),
+      });
+
+      toast({
+        title: 'Settings saved',
+        description: 'Your AI receptionist settings have been updated successfully.',
+      });
+    } catch (error) {
+      logger.error('DASHBOARD', 'Failed to save settings', error as Error, {
+        formData: logger.sanitizeData(formData),
+      });
+
+      toast({
+        title: 'Failed to save settings',
+        description: 'There was an error saving your settings. Please try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Fire-and-forget Vapi sync
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await syncVapiAssistant(user.id, formData.aiAssistantName, formData.greetingScript);
+      }
+    } catch (syncErr) {
+      logger.error('DASHBOARD', 'Failed to sync Vapi assistant', syncErr as Error);
+    }
+  };
+
+  const handleCancel = () => {
+    const currentSavedData = getAIReceptionistSettings();
+    setFormData({ ...currentSavedData });
+    setIsEditing(false);
+    setValidationErrors({});
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    const error = validateContent(field, value);
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
+  };
+
+  const currentSavedData = getAIReceptionistSettings();
+  const isFormChanged = JSON.stringify(formData) !== JSON.stringify(currentSavedData);
+
   if (error) {
     return (
       <ProtectedRoute>
@@ -203,51 +377,74 @@ export default function DashboardPage() {
             <div>
               <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
               <p className="text-foreground mt-2">
-                Monitor your AI receptionist performance and call analytics
+                Monitor your AI receptionist and manage your settings
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <Select value={timeRange.toString()} onValueChange={(value) => setTimeRange(parseInt(value))}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Time range" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">Last 7 days</SelectItem>
-                  <SelectItem value="30">Last 30 days</SelectItem>
-                  <SelectItem value="90">Last 90 days</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetch()}
-                disabled={isRefetching}
-              >
-                {isRefetching ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-4 h-4" />
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBulkAnalyze}
-                disabled={isBulkAnalyzing}
-                title="Analyze recent calls to improve sentiment data accuracy"
-              >
-                {isBulkAnalyzing ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Lightbulb className="w-4 h-4" />
-                )}
-              </Button>
-              <Badge variant="outline" className="text-sm">
-                <Phone className="w-3 h-3 mr-1" />
-                {totalCalls} Total Calls
-              </Badge>
-            </div>
           </div>
+
+          {/* Tabbed Interface */}
+          <Tabs defaultValue="analytics" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="analytics" className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Analytics
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                AI Settings
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Analytics Tab */}
+            <TabsContent value="analytics" className="space-y-6">
+              <div className="flex justify-between items-center">
+                <p className="text-muted-foreground">
+                  Monitor your AI receptionist performance and call analytics
+                </p>
+                <div className="flex items-center gap-4">
+                  <Select value={timeRange.toString()} onValueChange={(value) => setTimeRange(parseInt(value))}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Time range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7">Last 7 days</SelectItem>
+                      <SelectItem value="30">Last 30 days</SelectItem>
+                      <SelectItem value="90">Last 90 days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetch()}
+                    disabled={isRefetching}
+                  >
+                    {isRefetching ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4" />
+                    )}
+                    Refresh
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkAnalyze}
+                    disabled={isBulkAnalyzing}
+                    title="Analyze recent calls to improve sentiment data accuracy"
+                  >
+                    {isBulkAnalyzing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Lightbulb className="w-4 h-4" />
+                    )}
+                    Analyze Calls
+                  </Button>
+                  <Badge variant="outline" className="text-sm">
+                    <Phone className="w-3 h-3 mr-1" />
+                    {totalCalls} Total Calls
+                  </Badge>
+                </div>
+              </div>
 
           {/* Analytics Section */}
           {analytics && analytics.metrics && (
@@ -286,7 +483,7 @@ export default function DashboardPage() {
                 {/* Status Filter */}
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-48">
-                    <Filter className="w-4 h-4 mr-2" />
+                    <FilterIcon className="w-4 h-4 mr-2" />
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -617,6 +814,162 @@ export default function DashboardPage() {
               )}
             </DialogContent>
           </Dialog>
+            </TabsContent>
+
+            {/* AI Settings Tab */}
+            <TabsContent value="settings" className="space-y-6">
+              <div className="flex justify-between items-center">
+                <p className="text-muted-foreground">
+                  Configure your AI receptionist settings and greeting
+                </p>
+                {!isEditing && (
+                  <Button onClick={handleEdit} className="flex items-center gap-2">
+                    <Edit className="w-4 h-4" />
+                    Edit Settings
+                  </Button>
+                )}
+              </div>
+
+              {/* AI Receptionist Settings Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="w-5 h-5" />
+                    AI Receptionist Configuration
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {settingsError && (
+                    <div className="p-4 border border-red-200 bg-red-50 rounded-lg">
+                      <p className="text-red-600 text-sm">{settingsError}</p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Assistant Name */}
+                    <div className="space-y-2">
+                      <Label htmlFor="aiAssistantName">AI Assistant Name</Label>
+                      <Input
+                        id="aiAssistantName"
+                        value={formData.aiAssistantName}
+                        onChange={(e) => handleInputChange('aiAssistantName', e.target.value)}
+                        placeholder="e.g., Ava"
+                        disabled={!isEditing || settingsSaving}
+                        className={validationErrors.aiAssistantName ? 'border-red-500' : ''}
+                      />
+                      {validationErrors.aiAssistantName && (
+                        <p className="text-red-500 text-sm">{validationErrors.aiAssistantName}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {formData.aiAssistantName.length}/{fieldLimits.aiAssistantName.maxLength} characters
+                      </p>
+                    </div>
+
+                    {/* Your Name */}
+                    <div className="space-y-2">
+                      <Label htmlFor="yourName">Your Name</Label>
+                      <Input
+                        id="yourName"
+                        value={formData.yourName}
+                        onChange={(e) => handleInputChange('yourName', e.target.value)}
+                        placeholder="e.g., John Smith"
+                        disabled={!isEditing || settingsSaving}
+                        className={validationErrors.yourName ? 'border-red-500' : ''}
+                      />
+                      {validationErrors.yourName && (
+                        <p className="text-red-500 text-sm">{validationErrors.yourName}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {formData.yourName.length}/{fieldLimits.yourName.maxLength} characters
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Business Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="businessName">Business Name</Label>
+                    <Input
+                      id="businessName"
+                      value={formData.businessName}
+                      onChange={(e) => handleInputChange('businessName', e.target.value)}
+                      placeholder="e.g., Smith Real Estate Group"
+                      disabled={!isEditing || settingsSaving}
+                      className={validationErrors.businessName ? 'border-red-500' : ''}
+                    />
+                    {validationErrors.businessName && (
+                      <p className="text-red-500 text-sm">{validationErrors.businessName}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {formData.businessName.length}/{fieldLimits.businessName.maxLength} characters
+                    </p>
+                  </div>
+
+                  {/* Greeting Script */}
+                  <div className="space-y-2">
+                    <Label htmlFor="greetingScript">Greeting Script</Label>
+                    <Textarea
+                      id="greetingScript"
+                      value={formData.greetingScript}
+                      onChange={(e) => handleInputChange('greetingScript', e.target.value)}
+                      placeholder="Hello! Thank you for calling [Business Name]. This is [Assistant Name], how can I help you today?"
+                      disabled={!isEditing || settingsSaving}
+                      className={`min-h-[120px] ${validationErrors.greetingScript ? 'border-red-500' : ''}`}
+                    />
+                    {validationErrors.greetingScript && (
+                      <p className="text-red-500 text-sm">{validationErrors.greetingScript}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {formData.greetingScript.length}/{fieldLimits.greetingScript.maxLength} characters
+                    </p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  {isEditing && (
+                    <div className="flex items-center gap-3 pt-4 border-t">
+                      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            disabled={settingsSaving || !isFormChanged || Object.values(validationErrors).some(Boolean)}
+                            className="flex items-center gap-2"
+                          >
+                            {settingsSaving ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Save className="w-4 h-4" />
+                            )}
+                            {settingsSaving ? 'Saving...' : 'Save Changes'}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirm Changes</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to save these changes to your AI receptionist settings?
+                              This will update how your assistant introduces itself and responds to callers.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={doSave}>Save Changes</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+
+                      <Button
+                        variant="outline"
+                        onClick={handleCancel}
+                        disabled={settingsSaving}
+                        className="flex items-center gap-2"
+                      >
+                        <X className="w-4 h-4" />
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </ProtectedRoute>
