@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   openGraph: {
     images: '/Spoqen.png',
   },
+  icons: {
+    icon: '/Spoqen.png', // Fallback favicon
+    shortcut: '/Spoqen.png',
+    apple: '/Spoqen.png',
+  },
 };
 
 export default function RootLayout({
