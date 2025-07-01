@@ -1,0 +1,14 @@
+modules = ["nodejs-20", "web", "bash"]
+run = "pnpm run dev"
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "pnpm run start"]
+build = ["sh", "-c", "pnpm install && pnpm run build"]
+deploymentTarget = "cloudrun"
+
+[[ports]]
+localPort = 3000
+externalPort = 80
