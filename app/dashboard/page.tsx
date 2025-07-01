@@ -207,19 +207,56 @@ export default function DashboardPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          limit: 15, // Process 15 calls at a time to avoid overwhelming the system
+          limit: 100, // Process 15 calls at a time to avoid overwhelming the system
         }),
       });
 
       if (response.ok) {
         const result = await response.json();
+        
+        // Show detailed feedback to user
+        if (result.processed > 0) {
+          toast({
+            title: 'Analysis Complete!',
+            description: `Successfully analyzed ${result.processed} calls. ${result.errors ? `${result.errors} errors occurred.` : 'No errors.'}`,
+          });
+        } else if (result.alreadyAnalyzed > 0) {
+          toast({
+            title: 'All calls already analyzed',
+            description: `Found ${result.alreadyAnalyzed} previously analyzed calls. No new analysis needed.`,
+          });
+        } else {
+          toast({
+            title: 'No calls to analyze',
+            description: 'No answered calls found for your assistant.',
+            variant: 'destructive',
+          });
+        }
+        
         // Refresh analytics to show updated sentiment data
         await refetch();
-        console.log(`Bulk analysis completed: ${result.processed} calls processed`);
+        
+        logger.info('DASHBOARD', 'Bulk analysis completed', {
+          processed: result.processed,
+          errors: result.errors || 0,
+          totalAvailable: result.totalAvailable,
+          alreadyAnalyzed: result.alreadyAnalyzed,
+        });
       } else {
-        console.error('Bulk analysis failed:', response.statusText);
+        const errorData = await response.json();
+        toast({
+          title: 'Analysis Failed',
+          description: errorData.error || response.statusText,
+          variant: 'destructive',
+        });
+        console.error('Bulk analysis failed:', response.statusText, errorData);
       }
     } catch (error) {
+      toast({
+        title: 'Analysis Error',
+        description: 'An unexpected error occurred during analysis.',
+        variant: 'destructive',
+      });
       console.error('Error during bulk analysis:', error);
     } finally {
       setIsBulkAnalyzing(false);
