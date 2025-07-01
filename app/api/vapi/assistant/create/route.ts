@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
-import logger from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // POST /api/vapi/assistant/create
 // Body: { assistantName: string; greeting: string }
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
         name: assistantName,
         model: {
           provider: 'openai',
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4.1-nano',
           messages: [
             {
               role: 'system',
@@ -63,8 +63,8 @@ export async function POST(req: NextRequest) {
           ],
         },
         voice: {
-          provider: 'azure',
-          voiceId: 'andrew',
+          provider: 'deepgram',
+          voiceId: 'luna',
         },
         serverUrl: `${appUrl}/api/vapi-webhook`,
         serverUrlSecret: vapiWebhookSecret,

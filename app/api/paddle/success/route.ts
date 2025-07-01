@@ -108,28 +108,7 @@ async function triggerAssistantProvisioning(
       userId: logger.maskUserId(userId),
     });
 
-    // Check if assistant data exists before attempting provisioning
     const supabase = createSupabaseAdmin();
-    const { data: assistantData, error: assistantError } = await supabase
-      .from('assistants')
-      .select('id, status, assistant_name, greeting')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (assistantError) {
-      throw new Error(
-        `Failed to check assistant data: ${assistantError.message}`
-      );
-    }
-
-    if (!assistantData) {
-      logger.warn(
-        'PADDLE_SUCCESS',
-        'No assistant data found for provisioning',
-        { userId: logger.maskUserId(userId) }
-      );
-      return; // Don't fail the flow, just skip provisioning
-    }
 
     // Update provisioning status to indicate start
     await supabase
@@ -138,9 +117,9 @@ async function triggerAssistantProvisioning(
         assistant_provisioning_status: 'in_progress',
         assistant_provisioning_started_at: new Date().toISOString(),
       })
-      .eq('user_id', userId);
+      .eq('id', userId);
 
-    // Trigger the actual provisioning
+    // Trigger the actual provisioning (idempotent – skips if number exists)
     await provisionAssistant(userId);
 
     // Update provisioning status to completed
@@ -150,7 +129,7 @@ async function triggerAssistantProvisioning(
         assistant_provisioning_status: 'completed',
         assistant_provisioning_completed_at: new Date().toISOString(),
       })
-      .eq('user_id', userId);
+      .eq('id', userId);
 
     logger.info(
       'ASSISTANT_PROVISIONING',
@@ -181,7 +160,7 @@ async function triggerAssistantProvisioning(
           assistant_provisioning_status: 'failed',
           assistant_provisioning_error: error.message,
         })
-        .eq('user_id', userId);
+        .eq('id', userId);
     } catch (updateError) {
       logger.error(
         'ASSISTANT_PROVISIONING',
@@ -420,7 +399,7 @@ export async function GET(request: NextRequest) {
             assistant_provisioning_status: 'failed',
             assistant_provisioning_error: provisioningError.message,
           })
-          .eq('user_id', userId);
+          .eq('id', userId);
       } catch (updateError) {
         logger.error(
           'PADDLE_SUCCESS',

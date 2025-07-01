@@ -76,33 +76,28 @@ export async function POST(req: NextRequest) {
 
       const supabase = createSupabaseAdmin();
 
-      // a. Find the assistant row → get user_id (auth id)
-      const { data: assistantRow, error: assistantError } = await supabase
-        .from('assistants')
-        .select('user_id')
+      // a. Resolve user_id via user_settings
+      const { data: settingsRow, error: settingsErr } = await supabase
+        .from('user_settings')
+        .select('id')
         .eq('vapi_assistant_id', assistantId)
         .maybeSingle();
 
-      if (assistantError) {
-        logger.error(
-          'EMAIL',
-          'Failed to fetch assistant row',
-          assistantError as Error,
-          {
-            assistantId,
-          }
-        );
-        return new NextResponse(null, { status: 200 });
-      }
-
-      if (!assistantRow) {
-        logger.warn('EMAIL', 'No assistant row found for assistantId', {
+      if (settingsErr) {
+        logger.error('EMAIL', 'Failed to fetch user_settings', settingsErr, {
           assistantId,
         });
         return new NextResponse(null, { status: 200 });
       }
 
-      const userId: string = assistantRow!.user_id;
+      if (!settingsRow) {
+        logger.warn('EMAIL', 'No user_settings row for assistantId', {
+          assistantId,
+        });
+        return new NextResponse(null, { status: 200 });
+      }
+
+      const userId: string = settingsRow.id;
 
       // b. Fetch profile email & settings in parallel
       const [profileRes, settingsRes] = await Promise.all([

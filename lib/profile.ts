@@ -56,8 +56,8 @@ export interface CreateProfileResponse {
   };
   settings: {
     id: string;
-    ai_greeting: string;
-    assistant_name: string;
+    ai_greeting?: string;
+    assistant_name?: string;
     business_hours: string;
     email_notifications: boolean;
     sms_notifications: boolean;

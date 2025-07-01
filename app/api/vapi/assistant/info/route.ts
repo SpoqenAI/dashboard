@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
-import logger from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // GET /api/vapi/assistant/info – returns the assistant JSON from Vapi for the authenticated user
 export async function GET(req: NextRequest) {
@@ -41,7 +41,11 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const vapiRes = await fetch(`https://api.vapi.ai/assistant/${assistantId}`);
+    const vapiRes = await fetch(`https://api.vapi.ai/assistant/${assistantId}`, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
     if (!vapiRes.ok) {
       const txt = await vapiRes.text();
       logger.error('VAPI_INFO', 'Failed to get assistant', new Error(txt), {

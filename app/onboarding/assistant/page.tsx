@@ -47,36 +47,11 @@ async function getUserData() {
     }
   }
 
-  // Check if assistant already exists
-  const { data: assistant, error: assistantError } = await supabase
-    .from('assistants')
-    .select('assistant_name, business_name, greeting')
-    .eq('user_id', user.id)
-    .single();
-
-  if (assistantError) {
-    // Only log actual errors, not "no rows found" type responses
-    if (assistantError.code !== 'PGRST116') {
-      logger.error(
-        'ONBOARDING_ASSISTANT',
-        'Error fetching assistant data',
-        assistantError instanceof Error
-          ? assistantError
-          : new Error(JSON.stringify(assistantError)),
-        {
-          userId: logger.maskUserId(user.id),
-          errorCode: assistantError.code,
-          errorMessage: assistantError.message,
-        }
-      );
-    }
-  }
-
-  return { profile, assistant };
+  return { profile };
 }
 
 export default async function AssistantSetupPage() {
-  const { profile, assistant } = await getUserData();
+  const { profile } = await getUserData();
 
   return (
     <div className="mx-auto w-full max-w-2xl">
@@ -93,12 +68,9 @@ export default async function AssistantSetupPage() {
 
         <AssistantSetupForm
           initialData={{
-            businessName:
-              assistant?.business_name || profile?.business_name || '',
-            assistantName: assistant?.assistant_name || 'Sarah',
-            greeting:
-              assistant?.greeting ||
-              `Hi, thanks for calling [Business Name]! I'm [Assistant Name], the AI assistant. How can I help you today?`,
+            businessName: profile?.business_name || '',
+            assistantName: 'Sarah',
+            greeting: `Hi, thanks for calling [Business Name]! I'm [Assistant Name], the AI assistant. How can I help you today?`,
           }}
         />
       </Card>
