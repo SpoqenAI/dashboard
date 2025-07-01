@@ -38,30 +38,27 @@ export default function CallForwardingInstructions() {
           return;
         }
 
-        // Fetch the user's most recent assistant and join with the phone number
-        const { data: assistantData, error } = await supabase
-          .from('assistants')
-          .select(
-            `
-            status,
-            status_detail,
-            phone_numbers ( e164_number )
-          `
-          )
+        // Fetch the user's phone number provisioning status
+        const { data: phoneRow, error } = await supabase
+          .from('phone_numbers')
+          .select('status, e164_number')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
           .maybeSingle();
 
         if (error) {
           if (error.code === 'PGRST116') {
-            // No assistant found - this is expected for users who haven't completed onboarding
+            // No phone number yet – onboarding might be incomplete
             setAssistantData(null);
           } else {
             setError(error.message);
           }
+        } else if (phoneRow) {
+          setAssistantData({
+            status: phoneRow.status as any,
+            phone_numbers: [{ e164_number: phoneRow.e164_number }],
+          });
         } else {
-          setAssistantData(assistantData);
+          setAssistantData(null);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
