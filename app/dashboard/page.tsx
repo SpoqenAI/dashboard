@@ -693,7 +693,7 @@ export default function DashboardPage() {
                           {filteredCalls.map(call => (
                             <TableRow
                               key={call.id}
-                              className={`cursor-pointer ${selectedCall?.id === call.id ? 'bg-blue-50' : ''}`}
+                              className={`cursor-pointer`}
                               onClick={() => openCallDetail(call)}
                             >
                               <TableCell className="font-medium">
