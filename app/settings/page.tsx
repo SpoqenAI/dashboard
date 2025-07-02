@@ -29,7 +29,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DashboardLayout } from '@/components/dashboard-layout';
+import { DashboardHeader } from '@/components/dashboard-header';
+import { DashboardShell } from '@/components/dashboard-shell';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { Camera, Bell, Shield, User } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
@@ -1124,648 +1125,664 @@ function SettingsContent() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
-      </div>
-      <Tabs defaultValue={tab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="profile">General</TabsTrigger>
-          <TabsTrigger value="billing">Billing</TabsTrigger>
-        </TabsList>
-        <TabsContent value="profile" className="space-y-4">
-          {loading || !dataLoaded ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
-                <p className="text-muted-foreground">Loading your profile...</p>
+    <div className="flex min-h-screen flex-col">
+      <DashboardHeader />
+      <DashboardShell>
+        <div className="flex items-center justify-between">
+          <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+        </div>
+        <Tabs defaultValue={tab} className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="profile">General</TabsTrigger>
+            <TabsTrigger value="billing">Billing</TabsTrigger>
+          </TabsList>
+          <TabsContent value="profile" className="space-y-4">
+            {loading || !dataLoaded ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
+                  <p className="text-muted-foreground">
+                    Loading your profile...
+                  </p>
+                </div>
               </div>
-            </div>
-          ) : (
-            <form
-              onSubmit={e => {
-                e.preventDefault();
-                if (
-                  !Object.values(validationErrors).some(error => error) &&
-                  isFormChanged
-                ) {
-                  setConfirmOpen(true);
-                }
-              }}
-              className="space-y-4"
-            >
-              {/* Profile Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    Profile Information
-                  </CardTitle>
-                  <CardDescription>
-                    Manage your personal information and account details.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Profile Picture */}
-                  <div className="flex items-center space-x-4">
-                    <div className="relative">
-                      <Avatar className="h-20 w-20">
-                        {profile?.avatar_url ? (
-                          <AvatarImage
-                            src={profile.avatar_url}
-                            alt="Profile picture"
-                          />
-                        ) : null}
-                        <AvatarFallback className="text-lg">
-                          {formData.firstName.charAt(0)}
-                          {formData.lastName.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
-                      >
-                        <Camera className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Profile Picture</p>
-                      <p className="text-sm text-muted-foreground">
-                        JPG, PNG or GIF. Max size 2MB.
-                      </p>
-                      <Button variant="outline" size="sm">
-                        Upload new picture
-                      </Button>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Basic Information */}
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <label className="font-medium">First Name</label>
-                      <input
-                        type="text"
-                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                          validationErrors.firstName
-                            ? 'border-red-500 bg-background'
-                            : 'bg-background'
-                        }`}
-                        value={formData.firstName}
-                        onChange={e =>
-                          handleInputChange('firstName', e.target.value)
-                        }
-                        onBlur={() => handleFieldBlur('firstName')}
-                        maxLength={50}
-                      />
-                      {validationErrors.firstName && (
-                        <p className="text-sm text-red-500">
-                          {validationErrors.firstName}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-500">
-                        {formData.firstName.length}/50 characters
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="font-medium">Last Name</label>
-                      <input
-                        type="text"
-                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                          validationErrors.lastName
-                            ? 'border-red-500 bg-background'
-                            : 'bg-background'
-                        }`}
-                        value={formData.lastName}
-                        onChange={e =>
-                          handleInputChange('lastName', e.target.value)
-                        }
-                        onBlur={() => handleFieldBlur('lastName')}
-                        maxLength={50}
-                      />
-                      {validationErrors.lastName && (
-                        <p className="text-sm text-red-500">
-                          {validationErrors.lastName}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-500">
-                        {formData.lastName.length}/50 characters
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="text"
-                      placeholder="Enter your email"
-                      value={formData.email}
-                      onChange={e => handleInputChange('email', e.target.value)}
-                      onBlur={() => handleFieldBlur('email')}
-                      required
-                      aria-invalid={!!validationErrors.email}
-                      maxLength={254}
-                      inputMode="email"
-                      autoComplete="email"
-                      ref={emailMaskRef}
-                    />
-                    {validationErrors.email && (
-                      <p className="text-sm text-muted-foreground">
-                        {validationErrors.email}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="font-medium">Phone Number</label>
-                    <input
-                      type="tel"
-                      className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                        validationErrors.phone
-                          ? 'border-red-500 bg-background'
-                          : 'bg-background'
-                      }`}
-                      value={formData.phone}
-                      onChange={e => handleInputChange('phone', e.target.value)}
-                      onBlur={() => handleFieldBlur('phone')}
-                      placeholder="(555) 123-4567 or +1 555 123 4567"
-                      autoComplete="tel"
-                      maxLength={25}
-                    />
-                    {validationErrors.phone && (
-                      <p className="text-sm text-red-500">
-                        {validationErrors.phone}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500">
-                      Enter your phone number. International numbers should
-                      start with +
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="font-medium">Business Name</label>
-                    <input
-                      type="text"
-                      className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                        validationErrors.businessName
-                          ? 'border-red-500 bg-background'
-                          : 'bg-background'
-                      }`}
-                      value={formData.businessName}
-                      onChange={e =>
-                        handleInputChange('businessName', e.target.value)
-                      }
-                      onBlur={() => handleFieldBlur('businessName')}
-                      maxLength={100}
-                      placeholder="e.g., ABC Real Estate, Smith & Associates, etc."
-                    />
-                    {validationErrors.businessName && (
-                      <p className="text-sm text-red-500">
-                        {validationErrors.businessName}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500">
-                      {formData.businessName.length}/100 characters
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="font-medium">Bio</label>
-                    <textarea
-                      className={`w-full resize-none rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                        validationErrors.bio
-                          ? 'border-red-500 bg-background'
-                          : 'bg-background'
-                      }`}
-                      rows={3}
-                      value={formData.bio}
-                      onChange={e => handleInputChange('bio', e.target.value)}
-                      onBlur={() => handleFieldBlur('bio')}
-                      maxLength={500}
-                      placeholder="Tell us about yourself and your real estate business..."
-                    />
-                    {validationErrors.bio && (
-                      <p className="text-sm text-red-500">
-                        {validationErrors.bio}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500">
-                      {formData.bio.length}/500 characters
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Notification Preferences */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bell className="h-5 w-5" />
-                    Notification Preferences
-                  </CardTitle>
-                  <CardDescription>
-                    Configure how you want to receive notifications and updates.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="email-notifications">
-                        Email Notifications
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        Receive notifications about new calls and messages via
-                        email
-                      </p>
-                    </div>
-                    <Switch
-                      id="email-notifications"
-                      checked={formData.emailNotifications}
-                      onCheckedChange={checked =>
-                        setFormData(prev => ({
-                          ...prev,
-                          emailNotifications: checked,
-                        }))
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="marketing-emails">Marketing Emails</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Receive updates about new features and tips
-                      </p>
-                    </div>
-                    <Switch
-                      id="marketing-emails"
-                      checked={formData.marketingEmails}
-                      onCheckedChange={checked =>
-                        setFormData(prev => ({
-                          ...prev,
-                          marketingEmails: checked,
-                        }))
-                      }
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Security Settings */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
-                    Security Settings
-                  </CardTitle>
-                  <CardDescription>
-                    Manage your password and security preferences.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <Input
-                      id="currentPassword"
-                      type="password"
-                      placeholder="Enter your current password"
-                      value={formData.currentPassword}
-                      onChange={e =>
-                        handleInputChange('currentPassword', e.target.value)
-                      }
-                      onBlur={() => handleFieldBlur('currentPassword')}
-                      aria-invalid={!!validationErrors.currentPassword}
-                      maxLength={128}
-                    />
-                    {validationErrors.currentPassword && (
-                      <p className="text-sm text-muted-foreground">
-                        {validationErrors.currentPassword}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">New Password</Label>
-                    <Input
-                      id="newPassword"
-                      type="password"
-                      placeholder="Create a new password"
-                      value={formData.newPassword}
-                      onChange={e =>
-                        handleInputChange('newPassword', e.target.value)
-                      }
-                      onBlur={() => handleFieldBlur('newPassword')}
-                      aria-invalid={!!validationErrors.newPassword}
-                      maxLength={128}
-                    />
-                    <PasswordStrengthBar
-                      password={formData.newPassword}
-                      minLength={8}
-                      scoreWords={[
-                        'Too weak',
-                        'Weak',
-                        'Okay',
-                        'Strong',
-                        'Very strong',
-                      ]}
-                      onChangeScore={setNewPasswordScore}
-                    />
-                    {validationErrors.newPassword && (
-                      <p className="text-sm text-muted-foreground">
-                        {validationErrors.newPassword}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">
-                      Confirm New Password
-                    </Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="Confirm your new password"
-                      value={formData.confirmPassword}
-                      onChange={e =>
-                        handleInputChange('confirmPassword', e.target.value)
-                      }
-                      onBlur={() => handleFieldBlur('confirmPassword')}
-                      aria-invalid={!!validationErrors.confirmPassword}
-                      maxLength={128}
-                    />
-                    {validationErrors.confirmPassword && (
-                      <p className="text-sm text-muted-foreground">
-                        {validationErrors.confirmPassword}
-                      </p>
-                    )}
-                  </div>
-
-                  <Button variant="outline">Change Password</Button>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="two-factor">
-                        Two-Factor Authentication
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        Add an extra layer of security to your account
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      Enable 2FA
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Business Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Business Information</CardTitle>
-                  <CardDescription>
-                    Professional details for your real estate business.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="font-medium">License Number</label>
-                    <input
-                      ref={licenseMaskRef}
-                      type="text"
-                      className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                        validationErrors.licenseNumber
-                          ? 'border-red-500 bg-background'
-                          : 'bg-background'
-                      }`}
-                      value={formData.licenseNumber}
-                      onChange={e =>
-                        handleInputChange('licenseNumber', e.target.value)
-                      }
-                      onBlur={() => handleFieldBlur('licenseNumber')}
-                      maxLength={50}
-                      placeholder="e.g., RE123456789"
-                      autoComplete="off"
-                    />
-                    {validationErrors.licenseNumber && (
-                      <p className="text-sm text-red-500">
-                        {validationErrors.licenseNumber}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500">
-                      {formData.licenseNumber.length}/50 characters
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="font-medium">Brokerage</label>
-                    <input
-                      type="text"
-                      className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                        validationErrors.brokerage
-                          ? 'border-red-500 bg-background'
-                          : 'bg-background'
-                      }`}
-                      value={formData.brokerage}
-                      onChange={e =>
-                        handleInputChange('brokerage', e.target.value)
-                      }
-                      onBlur={() => handleFieldBlur('brokerage')}
-                      maxLength={100}
-                    />
-                    {validationErrors.brokerage && (
-                      <p className="text-sm text-red-500">
-                        {validationErrors.brokerage}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500">
-                      {formData.brokerage.length}/100 characters
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="font-medium">Website</label>
-                    <input
-                      type="text"
-                      className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                        validationErrors.website
-                          ? 'border-red-500 bg-background'
-                          : 'bg-background'
-                      }`}
-                      value={formData.website}
-                      onChange={e =>
-                        handleInputChange('website', e.target.value)
-                      }
-                      onBlur={() => handleFieldBlur('website')}
-                      maxLength={254}
-                      placeholder="https://your-website.com"
-                      autoComplete="url"
-                      inputMode="url"
-                    />
-                    {validationErrors.website && (
-                      <p className="text-sm text-red-500">
-                        {validationErrors.website}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500">
-                      {formData.website.length}/254 characters
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="font-medium">Business Address</label>
-                    <AddressAutocomplete
-                      onPlaceSelect={handleAddressSelect}
-                      onInputChange={handleAddressInputChange}
-                      placeholder="Search for your business address..."
-                      value={formData.businessAddress}
-                      className="w-full"
-                    />
-                    <p className="text-xs text-gray-500">
-                      Search and select your business address from the
-                      suggestions.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Save Changes */}
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancel}
-                  disabled={!isFormChanged || saving}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={
-                    saving ||
-                    Object.values(validationErrors).some(error => error) ||
-                    !isFormChanged
+            ) : (
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  if (
+                    !Object.values(validationErrors).some(error => error) &&
+                    isFormChanged
+                  ) {
+                    setConfirmOpen(true);
                   }
-                >
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </Button>
-                <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Confirm Save</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to save these changes to your
-                        settings? This action will update your settings
-                        immediately.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel asChild>
+                }}
+                className="space-y-4"
+              >
+                {/* Profile Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      Profile Information
+                    </CardTitle>
+                    <CardDescription>
+                      Manage your personal information and account details.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Profile Picture */}
+                    <div className="flex items-center space-x-4">
+                      <div className="relative">
+                        <Avatar className="h-20 w-20">
+                          {profile?.avatar_url ? (
+                            <AvatarImage
+                              src={profile.avatar_url}
+                              alt="Profile picture"
+                            />
+                          ) : null}
+                          <AvatarFallback className="text-lg">
+                            {formData.firstName.charAt(0)}
+                            {formData.lastName.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
                         <Button
+                          size="sm"
                           variant="outline"
-                          onClick={() => setConfirmOpen(false)}
+                          className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
                         >
-                          Cancel
+                          <Camera className="h-4 w-4" />
                         </Button>
-                      </AlertDialogCancel>
-                      <AlertDialogAction asChild>
-                        <Button onClick={doSave}>Confirm</Button>
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </form>
-          )}
-        </TabsContent>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Profile Picture</p>
+                        <p className="text-sm text-muted-foreground">
+                          JPG, PNG or GIF. Max size 2MB.
+                        </p>
+                        <Button variant="outline" size="sm">
+                          Upload new picture
+                        </Button>
+                      </div>
+                    </div>
 
-        <TabsContent value="billing" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Subscription Plan</CardTitle>
-              <CardDescription>
-                Manage your subscription and billing information.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {subscriptionLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="text-center">
-                    <div className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-b-2 border-gray-900"></div>
-                    <p className="text-sm text-muted-foreground">
-                      Loading subscription...
-                    </p>
-                  </div>
-                </div>
-              ) : subscription && isActiveSubscription(subscription) ? (
-                // Active subscription
-                <div className="rounded-md border p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Professional Plan</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Active subscription
-                      </p>
+                    <Separator />
+
+                    {/* Basic Information */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <label className="font-medium">First Name</label>
+                        <input
+                          type="text"
+                          className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                            validationErrors.firstName
+                              ? 'border-red-500 bg-background'
+                              : 'bg-background'
+                          }`}
+                          value={formData.firstName}
+                          onChange={e =>
+                            handleInputChange('firstName', e.target.value)
+                          }
+                          onBlur={() => handleFieldBlur('firstName')}
+                          maxLength={50}
+                        />
+                        {validationErrors.firstName && (
+                          <p className="text-sm text-red-500">
+                            {validationErrors.firstName}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500">
+                          {formData.firstName.length}/50 characters
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="font-medium">Last Name</label>
+                        <input
+                          type="text"
+                          className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                            validationErrors.lastName
+                              ? 'border-red-500 bg-background'
+                              : 'bg-background'
+                          }`}
+                          value={formData.lastName}
+                          onChange={e =>
+                            handleInputChange('lastName', e.target.value)
+                          }
+                          onBlur={() => handleFieldBlur('lastName')}
+                          maxLength={50}
+                        />
+                        {validationErrors.lastName && (
+                          <p className="text-sm text-red-500">
+                            {validationErrors.lastName}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500">
+                          {formData.lastName.length}/50 characters
+                        </p>
+                      </div>
                     </div>
-                    <div className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                      {subscription.status === 'trialing' ? 'Trial' : 'Active'}
-                    </div>
-                  </div>
-                  <div className="mt-4 text-sm text-muted-foreground">
-                    <p>
-                      Current period ends:{' '}
-                      {formatSubscriptionDate(
-                        subscription.current_period_end_at
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input
+                        id="email"
+                        type="text"
+                        placeholder="Enter your email"
+                        value={formData.email}
+                        onChange={e =>
+                          handleInputChange('email', e.target.value)
+                        }
+                        onBlur={() => handleFieldBlur('email')}
+                        required
+                        aria-invalid={!!validationErrors.email}
+                        maxLength={254}
+                        inputMode="email"
+                        autoComplete="email"
+                        ref={emailMaskRef}
+                      />
+                      {validationErrors.email && (
+                        <p className="text-sm text-muted-foreground">
+                          {validationErrors.email}
+                        </p>
                       )}
-                    </p>
-                    {subscription.cancel_at_period_end && (
-                      <p className="text-amber-600">
-                        Subscription will cancel at end of period
-                      </p>
-                    )}
-                  </div>
-                  <div className="mt-4 flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleManageSubscription}
-                    >
-                      Manage Subscription
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                // No active subscription
-                <div className="rounded-md border p-4">
-                  <div className="py-6 text-center">
-                    <h3 className="mb-2 font-medium">No Active Subscription</h3>
-                    <p className="mb-4 text-sm text-muted-foreground">
-                      Subscribe to access premium features
-                    </p>
-                    <div className="mb-4 text-sm text-muted-foreground">
-                      <ul className="space-y-1">
-                        <li>• Unlimited AI call answering</li>
-                        <li>• Customizable greeting and questions</li>
-                        <li>• Instant email summaries</li>
-                        <li>• Basic analytics</li>
-                      </ul>
                     </div>
-                    <Button onClick={handlePlanChange} disabled={!paddle}>
-                      {!paddle ? 'Loading...' : 'Subscribe Now'}
-                    </Button>
-                  </div>
+
+                    <div className="space-y-2">
+                      <label className="font-medium">Phone Number</label>
+                      <input
+                        type="tel"
+                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.phone
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        value={formData.phone}
+                        onChange={e =>
+                          handleInputChange('phone', e.target.value)
+                        }
+                        onBlur={() => handleFieldBlur('phone')}
+                        placeholder="(555) 123-4567 or +1 555 123 4567"
+                        autoComplete="tel"
+                        maxLength={25}
+                      />
+                      {validationErrors.phone && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.phone}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        Enter your phone number. International numbers should
+                        start with +
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="font-medium">Business Name</label>
+                      <input
+                        type="text"
+                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.businessName
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        value={formData.businessName}
+                        onChange={e =>
+                          handleInputChange('businessName', e.target.value)
+                        }
+                        onBlur={() => handleFieldBlur('businessName')}
+                        maxLength={100}
+                        placeholder="e.g., ABC Real Estate, Smith & Associates, etc."
+                      />
+                      {validationErrors.businessName && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.businessName}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        {formData.businessName.length}/100 characters
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="font-medium">Bio</label>
+                      <textarea
+                        className={`w-full resize-none rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.bio
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        rows={3}
+                        value={formData.bio}
+                        onChange={e => handleInputChange('bio', e.target.value)}
+                        onBlur={() => handleFieldBlur('bio')}
+                        maxLength={500}
+                        placeholder="Tell us about yourself and your real estate business..."
+                      />
+                      {validationErrors.bio && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.bio}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        {formData.bio.length}/500 characters
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Notification Preferences */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Bell className="h-5 w-5" />
+                      Notification Preferences
+                    </CardTitle>
+                    <CardDescription>
+                      Configure how you want to receive notifications and
+                      updates.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="email-notifications">
+                          Email Notifications
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Receive notifications about new calls and messages via
+                          email
+                        </p>
+                      </div>
+                      <Switch
+                        id="email-notifications"
+                        checked={formData.emailNotifications}
+                        onCheckedChange={checked =>
+                          setFormData(prev => ({
+                            ...prev,
+                            emailNotifications: checked,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="marketing-emails">
+                          Marketing Emails
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Receive updates about new features and tips
+                        </p>
+                      </div>
+                      <Switch
+                        id="marketing-emails"
+                        checked={formData.marketingEmails}
+                        onCheckedChange={checked =>
+                          setFormData(prev => ({
+                            ...prev,
+                            marketingEmails: checked,
+                          }))
+                        }
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Security Settings */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-5 w-5" />
+                      Security Settings
+                    </CardTitle>
+                    <CardDescription>
+                      Manage your password and security preferences.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="currentPassword">Current Password</Label>
+                      <Input
+                        id="currentPassword"
+                        type="password"
+                        placeholder="Enter your current password"
+                        value={formData.currentPassword}
+                        onChange={e =>
+                          handleInputChange('currentPassword', e.target.value)
+                        }
+                        onBlur={() => handleFieldBlur('currentPassword')}
+                        aria-invalid={!!validationErrors.currentPassword}
+                        maxLength={128}
+                      />
+                      {validationErrors.currentPassword && (
+                        <p className="text-sm text-muted-foreground">
+                          {validationErrors.currentPassword}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword">New Password</Label>
+                      <Input
+                        id="newPassword"
+                        type="password"
+                        placeholder="Create a new password"
+                        value={formData.newPassword}
+                        onChange={e =>
+                          handleInputChange('newPassword', e.target.value)
+                        }
+                        onBlur={() => handleFieldBlur('newPassword')}
+                        aria-invalid={!!validationErrors.newPassword}
+                        maxLength={128}
+                      />
+                      <PasswordStrengthBar
+                        password={formData.newPassword}
+                        minLength={8}
+                        scoreWords={[
+                          'Too weak',
+                          'Weak',
+                          'Okay',
+                          'Strong',
+                          'Very strong',
+                        ]}
+                        onChangeScore={setNewPasswordScore}
+                      />
+                      {validationErrors.newPassword && (
+                        <p className="text-sm text-muted-foreground">
+                          {validationErrors.newPassword}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">
+                        Confirm New Password
+                      </Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        placeholder="Confirm your new password"
+                        value={formData.confirmPassword}
+                        onChange={e =>
+                          handleInputChange('confirmPassword', e.target.value)
+                        }
+                        onBlur={() => handleFieldBlur('confirmPassword')}
+                        aria-invalid={!!validationErrors.confirmPassword}
+                        maxLength={128}
+                      />
+                      {validationErrors.confirmPassword && (
+                        <p className="text-sm text-muted-foreground">
+                          {validationErrors.confirmPassword}
+                        </p>
+                      )}
+                    </div>
+
+                    <Button variant="outline">Change Password</Button>
+
+                    <Separator />
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="two-factor">
+                          Two-Factor Authentication
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Add an extra layer of security to your account
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm">
+                        Enable 2FA
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Business Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Business Information</CardTitle>
+                    <CardDescription>
+                      Professional details for your real estate business.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="font-medium">License Number</label>
+                      <input
+                        ref={licenseMaskRef}
+                        type="text"
+                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.licenseNumber
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        value={formData.licenseNumber}
+                        onChange={e =>
+                          handleInputChange('licenseNumber', e.target.value)
+                        }
+                        onBlur={() => handleFieldBlur('licenseNumber')}
+                        maxLength={50}
+                        placeholder="e.g., RE123456789"
+                        autoComplete="off"
+                      />
+                      {validationErrors.licenseNumber && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.licenseNumber}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        {formData.licenseNumber.length}/50 characters
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="font-medium">Brokerage</label>
+                      <input
+                        type="text"
+                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.brokerage
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        value={formData.brokerage}
+                        onChange={e =>
+                          handleInputChange('brokerage', e.target.value)
+                        }
+                        onBlur={() => handleFieldBlur('brokerage')}
+                        maxLength={100}
+                      />
+                      {validationErrors.brokerage && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.brokerage}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        {formData.brokerage.length}/100 characters
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="font-medium">Website</label>
+                      <input
+                        type="text"
+                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
+                          validationErrors.website
+                            ? 'border-red-500 bg-background'
+                            : 'bg-background'
+                        }`}
+                        value={formData.website}
+                        onChange={e =>
+                          handleInputChange('website', e.target.value)
+                        }
+                        onBlur={() => handleFieldBlur('website')}
+                        maxLength={254}
+                        placeholder="https://your-website.com"
+                        autoComplete="url"
+                        inputMode="url"
+                      />
+                      {validationErrors.website && (
+                        <p className="text-sm text-red-500">
+                          {validationErrors.website}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        {formData.website.length}/254 characters
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="font-medium">Business Address</label>
+                      <AddressAutocomplete
+                        onPlaceSelect={handleAddressSelect}
+                        onInputChange={handleAddressInputChange}
+                        placeholder="Search for your business address..."
+                        value={formData.businessAddress}
+                        className="w-full"
+                      />
+                      <p className="text-xs text-gray-500">
+                        Search and select your business address from the
+                        suggestions.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Save Changes */}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={!isFormChanged || saving}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={
+                      saving ||
+                      Object.values(validationErrors).some(error => error) ||
+                      !isFormChanged
+                    }
+                  >
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                  <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Confirm Save</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to save these changes to your
+                          settings? This action will update your settings
+                          immediately.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel asChild>
+                          <Button
+                            variant="outline"
+                            onClick={() => setConfirmOpen(false)}
+                          >
+                            Cancel
+                          </Button>
+                        </AlertDialogCancel>
+                        <AlertDialogAction asChild>
+                          <Button onClick={doSave}>Confirm</Button>
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </DashboardLayout>
+              </form>
+            )}
+          </TabsContent>
+
+          <TabsContent value="billing" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Subscription Plan</CardTitle>
+                <CardDescription>
+                  Manage your subscription and billing information.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {subscriptionLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <div className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-b-2 border-gray-900"></div>
+                      <p className="text-sm text-muted-foreground">
+                        Loading subscription...
+                      </p>
+                    </div>
+                  </div>
+                ) : subscription && isActiveSubscription(subscription) ? (
+                  // Active subscription
+                  <div className="rounded-md border p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium">Professional Plan</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Active subscription
+                        </p>
+                      </div>
+                      <div className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                        {subscription.status === 'trialing'
+                          ? 'Trial'
+                          : 'Active'}
+                      </div>
+                    </div>
+                    <div className="mt-4 text-sm text-muted-foreground">
+                      <p>
+                        Current period ends:{' '}
+                        {formatSubscriptionDate(
+                          subscription.current_period_end_at
+                        )}
+                      </p>
+                      {subscription.cancel_at_period_end && (
+                        <p className="text-amber-600">
+                          Subscription will cancel at end of period
+                        </p>
+                      )}
+                    </div>
+                    <div className="mt-4 flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleManageSubscription}
+                      >
+                        Manage Subscription
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  // No active subscription
+                  <div className="rounded-md border p-4">
+                    <div className="py-6 text-center">
+                      <h3 className="mb-2 font-medium">
+                        No Active Subscription
+                      </h3>
+                      <p className="mb-4 text-sm text-muted-foreground">
+                        Subscribe to access premium features
+                      </p>
+                      <div className="mb-4 text-sm text-muted-foreground">
+                        <ul className="space-y-1">
+                          <li>• Unlimited AI call answering</li>
+                          <li>• Customizable greeting and questions</li>
+                          <li>• Instant email summaries</li>
+                          <li>• Basic analytics</li>
+                        </ul>
+                      </div>
+                      <Button onClick={handlePlanChange} disabled={!paddle}>
+                        {!paddle ? 'Loading...' : 'Subscribe Now'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </DashboardShell>
+    </div>
   );
 }
 
