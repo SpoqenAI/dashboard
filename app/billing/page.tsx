@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { DashboardHeader } from '@/components/dashboard-header';
+import { DashboardLayout } from '@/components/dashboard-layout';
 import { DashboardShell } from '@/components/dashboard-shell';
 import {
   CreditCard,
@@ -284,8 +284,7 @@ startxref
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <DashboardHeader />
+    <DashboardLayout>
       <DashboardShell>
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">
@@ -691,6 +690,6 @@ startxref
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </DashboardLayout>
   );
 }
