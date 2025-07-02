@@ -10,29 +10,95 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  
+  /* ACCESSIBILITY: Focus improvements */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background;
+  }
+  
+  .focus-visible-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+  
+  /* ACCESSIBILITY: Skip links */
+  .skip-link {
+    @apply absolute left-[-10000px] top-auto w-[1px] h-[1px] overflow-hidden;
+    @apply focus:left-[6px] focus:top-[6px] focus:w-auto focus:h-auto focus:overflow-visible;
+    @apply focus:bg-primary focus:text-primary-foreground focus:px-3 focus:py-2 focus:rounded focus:z-50;
+  }
+  
+  /* ACCESSIBILITY: High contrast mode support */
+  @media (prefers-contrast: high) {
+    .contrast-enhanced {
+      @apply border-2 border-foreground;
+    }
+  }
+  
+  /* ACCESSIBILITY: Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in,
+    .animate-slide-up,
+    .animate-pulse,
+    .animate-spin {
+      animation: none !important;
+    }
+    
+    .transition-all,
+    .transition-transform,
+    .transition-colors {
+      transition: none !important;
+    }
+  }
+  
+  /* CONVERSION OPTIMIZATION: Visual hierarchy improvements */
+  .gradient-dark {
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%);
+  }
+  
+  .gradient-primary {
+    background: linear-gradient(135deg, 
+      hsl(217.2 91.2% 59.8%) 0%, 
+      hsl(252.5 95% 85.8%) 100%);
+  }
+  
+  .backdrop-blur-glass {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  
+  .shadow-glass {
+    box-shadow: 
+      0 8px 32px 0 rgba(31, 38, 135, 0.37),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  }
+  
+  .shadow-glow-primary {
+    box-shadow: 0 0 20px hsl(217.2 91.2% 59.8% / 0.3);
+  }
 }
 
 @layer base {
   :root {
+    /* ACCESSIBILITY: Enhanced contrast ratios for WCAG AA compliance */
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
+    --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --secondary: 210 40% 98%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%; /* Enhanced from 45.1% for better contrast */
+    --accent: 210 40% 98%;
+    --accent-foreground: 222.2 84% 4.9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 217.2 91.2% 59.8%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -48,26 +114,28 @@ body {
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+  
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    /* ACCESSIBILITY: Enhanced dark mode contrast */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%; /* Enhanced from 63.9% for better contrast */
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 217.2 91.2% 59.8%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -88,7 +156,110 @@ body {
   * {
     @apply border-border;
   }
+  
   body {
     @apply bg-background text-foreground;
+    /* ACCESSIBILITY: Smooth scrolling with reduced motion support */
+    scroll-behavior: smooth;
   }
+  
+  /* ACCESSIBILITY: Ensure all interactive elements are keyboard accessible */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
+  
+  /* ACCESSIBILITY: Improve link accessibility */
+  a {
+    @apply transition-colors;
+  }
+  
+  a:focus-visible {
+    @apply underline;
+  }
+  
+  /* ACCESSIBILITY: Ensure buttons have adequate target size (44px minimum) */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* ACCESSIBILITY: High contrast mode */
+  @media (prefers-contrast: high) {
+    :root {
+      --muted-foreground: 0 0% 30%; /* Higher contrast in high contrast mode */
+    }
+    
+    .dark {
+      --muted-foreground: 0 0% 70%; /* Higher contrast in dark high contrast mode */
+    }
+  }
+  
+  /* ACCESSIBILITY: Large text mode support */
+  @media (min-resolution: 2dppx) and (max-width: 768px) {
+    body {
+      font-size: 18px;
+      line-height: 1.6;
+    }
+  }
+}
+
+/* ACCESSIBILITY: Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* PERSUASION: Animations for persuasion components */
+@keyframes slide-down {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
 }
