@@ -6,7 +6,9 @@ export function useActionPoints() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const generateActionPoints = async (callId: string): Promise<ActionPoints | null> => {
+  const generateActionPoints = async (
+    callId: string
+  ): Promise<ActionPoints | null> => {
     setLoading(true);
     setError(null);
 
@@ -20,16 +22,25 @@ export function useActionPoints() {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to generate action points: ${response.statusText}`);
+        throw new Error(
+          `Failed to generate action points: ${response.statusText}`
+        );
       }
 
       const data = await response.json();
-      logger.info('ACTION_POINTS', 'Successfully generated action points', { callId });
+      logger.info('ACTION_POINTS', 'Successfully generated action points', {
+        callId,
+      });
       return data.actionPoints;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
-      logger.error('ACTION_POINTS', 'Failed to generate action points', err as Error, { callId });
+      logger.error(
+        'ACTION_POINTS',
+        'Failed to generate action points',
+        err as Error,
+        { callId }
+      );
       return null;
     } finally {
       setLoading(false);
@@ -41,4 +52,4 @@ export function useActionPoints() {
     loading,
     error,
   };
-} 
+}

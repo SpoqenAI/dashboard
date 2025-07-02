@@ -141,9 +141,7 @@ class InMemoryAnalytics implements AnalyticsClient {
   }
 
   // Development utility to get recent events
-  getRecentEvents(
-    count = 10
-  ): Array<{
+  getRecentEvents(count = 10): Array<{
     event: AnalyticsEvent;
     properties?: AnalyticsProperties;
     timestamp: number;

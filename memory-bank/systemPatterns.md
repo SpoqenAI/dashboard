@@ -8,33 +8,33 @@ The project follows a Next.js App Router architecture, organizing code into `app
 
 ## Key Technical Decisions
 
--   **Frontend:** Next.js App Router for routing and rendering, aiming for server-side rendering (SSR).
--   **UI:** Shadcn UI and Radix UI for robust and accessible components, styled with Tailwind CSS.
--   **Data Layer:** Supabase SDK for all data fetching and querying operations, including server-side rendering with `@supabase/ssr`. The database schema includes a `public.profiles` table (storing user profile information like email, name, business, etc.), a `public.user_settings` table (for AI and user preferences, now including `vapi_assistant_id` to link users to their specific AI assistants), a `public.user_subscriptions` table (for legacy Stripe-based subscriptions), and a `public.subscriptions` table (for Paddle-based subscriptions). A new `public.call_analysis` table has been added to cache AI-generated insights (sentiment, lead quality, action points) from VAPI calls, significantly improving dashboard analytics performance and reducing redundant VAPI API calls. Row Level Security (RLS) is enabled for these tables, with policies ensuring users can only view/update their own data. Indexes are created for performance. Database functions like `handle_updated_at()` automatically update `updated_at` timestamps, `handle_new_user()` (optional trigger) automatically creates profile, settings, and subscription entries on new user sign-up with validations, and `get_user_data()` and `user_profile_exists()` provide secure data retrieval. Grants are set for `anon` and `authenticated` roles.
--   **AI Features:** Vercel AI SDK for building AI-powered functionalities, including AI SDK Core for LLM interactions and AI SDK UI hooks for chat interfaces. New API routes (`/api/vapi/action-points` and `/api/vapi/bulk-analyze`) interact with VAPI to fetch call transcripts and summaries, perform AI analysis (e.g., sentiment, key points), and store these results in the `call_analysis` table. **The `/api/vapi/bulk-analyze` endpoint has been refined to intelligently identify and process only those calls that do not yet have an existing analysis in the `call_analysis` table, ensuring efficient and targeted data population.** The `/api/vapi/analytics` route now aggregates data from `call_analysis` to power the dashboard metrics.
--   **State Management:** `nuqs` for URL search parameter state management.
--   **Deployment:** Automated continuous deployment to Vercel via GitHub Actions. This includes production deployments on `main` branch pushes/releases and preview deployments for all pull requests to `main`. The current strategy favors Vercel-handled builds over GitHub Actions builds for optimization and cost-effectiveness.
--   **Error Tracking:** Sentry integration with `@sentry/nextjs` for comprehensive error monitoring, including automatic Vercel Cron Monitors.
--   **Security Headers:** Implemented `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: strict-origin-when-cross-origin`.
--   **CORS:** Flexible CORS policy (`Access-Control-Allow-Origin: *`) for `/api/(.*)` routes in development to facilitate local testing with tools like ngrok.
--   **Billing Integration:** Paddle for subscription management, relying on client-side and server-side Paddle SDKs, and webhook processing for `subscription.created`, `updated`, and `canceled` events. The database schema has been updated to support Paddle billing with a `paddle_customer_id` in `profiles` and a dedicated `subscriptions` table.
+- **Frontend:** Next.js App Router for routing and rendering, aiming for server-side rendering (SSR).
+- **UI:** Shadcn UI and Radix UI for robust and accessible components, styled with Tailwind CSS.
+- **Data Layer:** Supabase SDK for all data fetching and querying operations, including server-side rendering with `@supabase/ssr`. The database schema includes a `public.profiles` table (storing user profile information like email, name, business, etc.), a `public.user_settings` table (for AI and user preferences, now including `vapi_assistant_id` to link users to their specific AI assistants), a `public.user_subscriptions` table (for legacy Stripe-based subscriptions), and a `public.subscriptions` table (for Paddle-based subscriptions). A new `public.call_analysis` table has been added to cache AI-generated insights (sentiment, lead quality, action points) from VAPI calls, significantly improving dashboard analytics performance and reducing redundant VAPI API calls. Row Level Security (RLS) is enabled for these tables, with policies ensuring users can only view/update their own data. Indexes are created for performance. Database functions like `handle_updated_at()` automatically update `updated_at` timestamps, `handle_new_user()` (optional trigger) automatically creates profile, settings, and subscription entries on new user sign-up with validations, and `get_user_data()` and `user_profile_exists()` provide secure data retrieval. Grants are set for `anon` and `authenticated` roles.
+- **AI Features:** Vercel AI SDK for building AI-powered functionalities, including AI SDK Core for LLM interactions and AI SDK UI hooks for chat interfaces. New API routes (`/api/vapi/action-points` and `/api/vapi/bulk-analyze`) interact with VAPI to fetch call transcripts and summaries, perform AI analysis (e.g., sentiment, key points), and store these results in the `call_analysis` table. **The `/api/vapi/bulk-analyze` endpoint has been refined to intelligently identify and process only those calls that do not yet have an existing analysis in the `call_analysis` table, ensuring efficient and targeted data population.** The `/api/vapi/analytics` route now aggregates data from `call_analysis` to power the dashboard metrics.
+- **State Management:** `nuqs` for URL search parameter state management.
+- **Deployment:** Automated continuous deployment to Vercel via GitHub Actions. This includes production deployments on `main` branch pushes/releases and preview deployments for all pull requests to `main`. The current strategy favors Vercel-handled builds over GitHub Actions builds for optimization and cost-effectiveness.
+- **Error Tracking:** Sentry integration with `@sentry/nextjs` for comprehensive error monitoring, including automatic Vercel Cron Monitors.
+- **Security Headers:** Implemented `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: strict-origin-when-cross-origin`.
+- **CORS:** Flexible CORS policy (`Access-Control-Allow-Origin: *`) for `/api/(.*)` routes in development to facilitate local testing with tools like ngrok.
+- **Billing Integration:** Paddle for subscription management, relying on client-side and server-side Paddle SDKs, and webhook processing for `subscription.created`, `updated`, and `canceled` events. The database schema has been updated to support Paddle billing with a `paddle_customer_id` in `profiles` and a dedicated `subscriptions` table.
 
 ## Design Patterns
 
--   **Functional and Declarative Programming:** Emphasis on functional components and declarative JSX.
--   **Modularization:** Code is organized into reusable components and utility functions.
--   **Mobile-First Responsive Design:** Implemented using Tailwind CSS.
--   **Component Structure:** Exported components, subcomponents, helpers, static content, and types within files.
+- **Functional and Declarative Programming:** Emphasis on functional components and declarative JSX.
+- **Modularization:** Code is organized into reusable components and utility functions.
+- **Mobile-First Responsive Design:** Implemented using Tailwind CSS.
+- **Component Structure:** Exported components, subcomponents, helpers, static content, and types within files.
 
 ## Component Relationships
 
--   `app/`: Contains top-level pages and route handlers, often composed of components from `components/`.
--   `components/`: Houses UI building blocks used across different pages.
--   `lib/`: Provides shared utility functions and configurations that components and pages can import.
--   `hooks/`: Contains custom React hooks to encapsulate reusable logic for components.
--   `api/webhooks/paddle`: Handles incoming Paddle webhook events to update the Supabase database.
--   `api/vapi/action-points`: Processes VAPI call data and stores AI-generated insights (sentiment, lead quality, etc.) into the `call_analysis` table.
--   `api/vapi/analytics`: Aggregates and serves analytics data from VAPI calls and the `call_analysis` table to the dashboard, ensuring data is filtered by the user's specific assistant.
--   `api/vapi/bulk-analyze`: Provides an endpoint for triggering batch processing of historical VAPI calls to populate the `call_analysis` table.
--   `.github/workflows/`: Contains GitHub Actions workflows for automated testing, building, and deployment to Vercel.
--   `supabase/migrations/`: Contains database migration scripts for schema changes. 
+- `app/`: Contains top-level pages and route handlers, often composed of components from `components/`.
+- `components/`: Houses UI building blocks used across different pages.
+- `lib/`: Provides shared utility functions and configurations that components and pages can import.
+- `hooks/`: Contains custom React hooks to encapsulate reusable logic for components.
+- `api/webhooks/paddle`: Handles incoming Paddle webhook events to update the Supabase database.
+- `api/vapi/action-points`: Processes VAPI call data and stores AI-generated insights (sentiment, lead quality, etc.) into the `call_analysis` table.
+- `api/vapi/analytics`: Aggregates and serves analytics data from VAPI calls and the `call_analysis` table to the dashboard, ensuring data is filtered by the user's specific assistant.
+- `api/vapi/bulk-analyze`: Provides an endpoint for triggering batch processing of historical VAPI calls to populate the `call_analysis` table.
+- `.github/workflows/`: Contains GitHub Actions workflows for automated testing, building, and deployment to Vercel.
+- `supabase/migrations/`: Contains database migration scripts for schema changes.

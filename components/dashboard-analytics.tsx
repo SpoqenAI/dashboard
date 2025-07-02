@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CallMetrics } from '@/lib/types';
@@ -16,6 +16,7 @@ import {
   Heart,
   Clock,
 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface DashboardAnalyticsProps {
   metrics: CallMetrics;
@@ -26,7 +27,24 @@ interface DashboardAnalyticsProps {
   };
 }
 
-export function DashboardAnalytics({ metrics, trends }: DashboardAnalyticsProps) {
+export function DashboardAnalytics({
+  metrics,
+  trends,
+}: DashboardAnalyticsProps) {
+  // Debugging: Log the metrics received by DashboardAnalytics component
+  useEffect(() => {
+    if (metrics) {
+      logger.info(
+        'DASHBOARD_ANALYTICS_COMPONENT',
+        'Metrics received by component',
+        {
+          totalCalls: metrics.totalCalls,
+          answeredCalls: metrics.answeredCalls,
+        }
+      );
+    }
+  }, [metrics]);
+
   const formatDuration = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -36,11 +54,11 @@ export function DashboardAnalytics({ metrics, trends }: DashboardAnalyticsProps)
   const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
     switch (trend) {
       case 'up':
-        return <TrendingUp className="w-4 h-4 text-green-600" />;
+        return <TrendingUp className="h-4 w-4 text-green-600" />;
       case 'down':
-        return <TrendingDown className="w-4 h-4 text-red-600" />;
+        return <TrendingDown className="h-4 w-4 text-red-600" />;
       default:
-        return <Minus className="w-4 h-4 text-gray-600" />;
+        return <Minus className="h-4 w-4 text-gray-600" />;
     }
   };
 
@@ -55,27 +73,34 @@ export function DashboardAnalytics({ metrics, trends }: DashboardAnalyticsProps)
     }
   };
 
-  const answerRate = metrics.totalCalls > 0 
-    ? ((metrics.answeredCalls / metrics.totalCalls) * 100).toFixed(1)
-    : '0';
+  const answerRate =
+    metrics.totalCalls > 0
+      ? ((metrics.answeredCalls / metrics.totalCalls) * 100).toFixed(1)
+      : '0';
 
   return (
     <div className="space-y-6">
       {/* Main Metrics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <PhoneCall className="w-6 h-6 text-blue-600" />
+                <div className="rounded-lg bg-blue-100 p-2">
+                  <PhoneCall className="h-6 w-6 text-blue-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Total Calls</p>
-                  <p className="text-2xl font-bold text-foreground">{metrics.totalCalls}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Total Calls
+                  </p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {metrics.totalCalls}
+                  </p>
                 </div>
               </div>
-              <div className={`flex items-center ${getTrendColor(trends.callVolumeTrend)}`}>
+              <div
+                className={`flex items-center ${getTrendColor(trends.callVolumeTrend)}`}
+              >
                 {getTrendIcon(trends.callVolumeTrend)}
               </div>
             </div>
@@ -85,13 +110,17 @@ export function DashboardAnalytics({ metrics, trends }: DashboardAnalyticsProps)
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+              <div className="rounded-lg bg-green-100 p-2">
+                <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Answered</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Answered
+                </p>
                 <div className="flex items-center gap-2">
-                  <p className="text-2xl font-bold text-foreground">{metrics.answeredCalls}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {metrics.answeredCalls}
+                  </p>
                   <Badge variant="secondary" className="text-xs">
                     {answerRate}%
                   </Badge>
@@ -105,17 +134,21 @@ export function DashboardAnalytics({ metrics, trends }: DashboardAnalyticsProps)
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Timer className="w-6 h-6 text-purple-600" />
+                <div className="rounded-lg bg-purple-100 p-2">
+                  <Timer className="h-6 w-6 text-purple-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Avg Duration</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Avg Duration
+                  </p>
                   <p className="text-2xl font-bold text-foreground">
                     {formatDuration(Math.round(metrics.avgDuration))}
                   </p>
                 </div>
               </div>
-              <div className={`flex items-center ${getTrendColor(trends.avgDurationTrend)}`}>
+              <div
+                className={`flex items-center ${getTrendColor(trends.avgDurationTrend)}`}
+              >
                 {getTrendIcon(trends.avgDurationTrend)}
               </div>
             </div>
@@ -126,17 +159,21 @@ export function DashboardAnalytics({ metrics, trends }: DashboardAnalyticsProps)
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <DollarSign className="w-6 h-6 text-green-600" />
+                <div className="rounded-lg bg-green-100 p-2">
+                  <DollarSign className="h-6 w-6 text-green-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Total Cost</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Total Cost
+                  </p>
                   <p className="text-2xl font-bold text-foreground">
                     ${metrics.totalCost.toFixed(2)}
                   </p>
                 </div>
               </div>
-              <div className={`flex items-center ${getTrendColor(trends.costTrend)}`}>
+              <div
+                className={`flex items-center ${getTrendColor(trends.costTrend)}`}
+              >
                 {getTrendIcon(trends.costTrend)}
               </div>
             </div>
@@ -145,11 +182,11 @@ export function DashboardAnalytics({ metrics, trends }: DashboardAnalyticsProps)
       </div>
 
       {/* Secondary Metrics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Heart className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Heart className="h-5 w-5" />
               Call Sentiment
             </CardTitle>
           </CardHeader>
@@ -157,24 +194,34 @@ export function DashboardAnalytics({ metrics, trends }: DashboardAnalyticsProps)
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-muted-foreground">Positive</span>
+                  <div className="h-3 w-3 rounded-full bg-green-500"></div>
+                  <span className="text-sm text-muted-foreground">
+                    Positive
+                  </span>
                 </div>
-                <span className="font-medium">{metrics.sentimentDistribution.positive}</span>
+                <span className="font-medium">
+                  {metrics.sentimentDistribution.positive}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                  <div className="h-3 w-3 rounded-full bg-gray-400"></div>
                   <span className="text-sm text-muted-foreground">Neutral</span>
                 </div>
-                <span className="font-medium">{metrics.sentimentDistribution.neutral}</span>
+                <span className="font-medium">
+                  {metrics.sentimentDistribution.neutral}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="text-sm text-muted-foreground">Negative</span>
+                  <div className="h-3 w-3 rounded-full bg-red-500"></div>
+                  <span className="text-sm text-muted-foreground">
+                    Negative
+                  </span>
                 </div>
-                <span className="font-medium">{metrics.sentimentDistribution.negative}</span>
+                <span className="font-medium">
+                  {metrics.sentimentDistribution.negative}
+                </span>
               </div>
             </div>
           </CardContent>
@@ -182,8 +229,8 @@ export function DashboardAnalytics({ metrics, trends }: DashboardAnalyticsProps)
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Target className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Target className="h-5 w-5" />
               Lead Quality
             </CardTitle>
           </CardHeader>
@@ -191,24 +238,30 @@ export function DashboardAnalytics({ metrics, trends }: DashboardAnalyticsProps)
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <div className="h-3 w-3 rounded-full bg-red-500"></div>
                   <span className="text-sm text-muted-foreground">Hot</span>
                 </div>
-                <span className="font-medium">{metrics.leadQualityDistribution.hot}</span>
+                <span className="font-medium">
+                  {metrics.leadQualityDistribution.hot}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <div className="h-3 w-3 rounded-full bg-yellow-500"></div>
                   <span className="text-sm text-muted-foreground">Warm</span>
                 </div>
-                <span className="font-medium">{metrics.leadQualityDistribution.warm}</span>
+                <span className="font-medium">
+                  {metrics.leadQualityDistribution.warm}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <div className="h-3 w-3 rounded-full bg-blue-500"></div>
                   <span className="text-sm text-muted-foreground">Cold</span>
                 </div>
-                <span className="font-medium">{metrics.leadQualityDistribution.cold}</span>
+                <span className="font-medium">
+                  {metrics.leadQualityDistribution.cold}
+                </span>
               </div>
             </div>
           </CardContent>
@@ -216,8 +269,8 @@ export function DashboardAnalytics({ metrics, trends }: DashboardAnalyticsProps)
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Clock className="h-5 w-5" />
               Peak Hours
             </CardTitle>
           </CardHeader>
@@ -228,12 +281,20 @@ export function DashboardAnalytics({ metrics, trends }: DashboardAnalyticsProps)
                 .sort((a, b) => b.count - a.count)
                 .slice(0, 3)
                 .map((hour, index) => (
-                  <div key={hour.hour} className="flex items-center justify-between">
+                  <div
+                    key={hour.hour}
+                    className="flex items-center justify-between"
+                  >
                     <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${
-                        index === 0 ? 'bg-blue-500' : 
-                        index === 1 ? 'bg-blue-400' : 'bg-blue-300'
-                      }`}></div>
+                      <div
+                        className={`h-3 w-3 rounded-full ${
+                          index === 0
+                            ? 'bg-blue-500'
+                            : index === 1
+                              ? 'bg-blue-400'
+                              : 'bg-blue-300'
+                        }`}
+                      ></div>
                       <span className="text-sm text-muted-foreground">
                         {hour.hour.toString().padStart(2, '0')}:00
                       </span>
@@ -250,25 +311,30 @@ export function DashboardAnalytics({ metrics, trends }: DashboardAnalyticsProps)
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
+            <Users className="h-5 w-5" />
             Weekly Call Distribution
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-7 gap-2">
-            {metrics.callsByDay.map((day) => {
-              const maxCalls = Math.max(...metrics.callsByDay.map(d => d.count));
+            {metrics.callsByDay.map(day => {
+              const maxCalls = Math.max(
+                ...metrics.callsByDay.map(d => d.count)
+              );
               const height = maxCalls > 0 ? (day.count / maxCalls) * 100 : 0;
-              
+
               return (
                 <div key={day.day} className="text-center">
-                  <div className="h-24 flex items-end justify-center mb-2">
-                    <div 
-                      className="w-8 bg-blue-500 rounded-t"
-                      style={{ height: `${height}%`, minHeight: day.count > 0 ? '4px' : '0' }}
+                  <div className="mb-2 flex h-24 items-end justify-center">
+                    <div
+                      className="w-8 rounded-t bg-blue-500"
+                      style={{
+                        height: `${height}%`,
+                        minHeight: day.count > 0 ? '4px' : '0',
+                      }}
                     ></div>
                   </div>
-                  <div className="text-xs text-muted-foreground font-medium">
+                  <div className="text-xs font-medium text-muted-foreground">
                     {day.day.slice(0, 3)}
                   </div>
                   <div className="text-sm font-bold text-foreground">
@@ -282,4 +348,4 @@ export function DashboardAnalytics({ metrics, trends }: DashboardAnalyticsProps)
       </Card>
     </div>
   );
-} 
+}

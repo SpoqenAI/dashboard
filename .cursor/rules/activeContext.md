@@ -40,4 +40,4 @@ The current focus is on understanding the existing codebase, its architecture, a
 - Comprehensive environment variable management is in place for both local development and CI/CD.
 - Local webhook testing with ngrok is a key development setup for Paddle integration.
 - The Paddle billing integration involves specific database schema changes and webhook configurations, with dedicated debugging procedures in place.
-- The Supabase database schema includes multiple user-related tables, functions for data management and security, and a dual approach to subscription management (legacy Stripe and current Paddle). 
+- The Supabase database schema includes multiple user-related tables, functions for data management and security, and a dual approach to subscription management (legacy Stripe and current Paddle).

@@ -8,14 +8,14 @@ The primary goal of the Spoqen Dashboard is to provide a comprehensive AI-powere
 
 ## Key Requirements
 
--   **AI-Powered Receptionist:** Core functionality for automated customer interaction.
--   **Data Management:** Seamless integration with Supabase for data handling, **including cached call analysis data for performance**.
--   **Web Application:** Built with Next.js for a responsive and modern user interface.
--   **Deployment:** Continuous deployment via GitHub Actions to Vercel.
--   **Address Autocomplete:** Integration with Geoapify for address input.
--   **Comprehensive Analytics Dashboard:** **Display real-time and historical call metrics, sentiment analysis, and lead quality specific to the user's AI assistant.**
--   **AI Assistant Settings Management:** **Allow users to configure and manage their AI receptionist's name, greeting, and business details securely and intuitively.**
+- **AI-Powered Receptionist:** Core functionality for automated customer interaction.
+- **Data Management:** Seamless integration with Supabase for data handling, **including cached call analysis data for performance**.
+- **Web Application:** Built with Next.js for a responsive and modern user interface.
+- **Deployment:** Continuous deployment via GitHub Actions to Vercel.
+- **Address Autocomplete:** Integration with Geoapify for address input.
+- **Comprehensive Analytics Dashboard:** **Display real-time and historical call metrics, sentiment analysis, and lead quality specific to the user's AI assistant.**
+- **AI Assistant Settings Management:** **Allow users to configure and manage their AI receptionist's name, greeting, and business details securely and intuitively.**
 
 ## Scope
 
-The project encompasses the Next.js frontend application, integration with Supabase for backend services, and deployment automation. It focuses on providing a dashboard for real estate agents to **monitor their AI receptionist's performance, gain actionable insights, and manage its configuration**. 
+The project encompasses the Next.js frontend application, integration with Supabase for backend services, and deployment automation. It focuses on providing a dashboard for real estate agents to **monitor their AI receptionist's performance, gain actionable insights, and manage its configuration**.

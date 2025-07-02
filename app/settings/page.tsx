@@ -76,6 +76,7 @@ function SettingsContent() {
     updateProfile,
     updateUserSettings,
     getProfileFormData,
+    profile,
   } = useUserSettings();
 
   // Get subscription data
@@ -1174,10 +1175,12 @@ function SettingsContent() {
                     <div className="flex items-center space-x-4">
                       <div className="relative">
                         <Avatar className="h-20 w-20">
-                          <AvatarImage
-                            src="/placeholder.svg?height=80&width=80&query=person"
-                            alt="Profile picture"
-                          />
+                          {profile?.avatar_url ? (
+                            <AvatarImage
+                              src={profile.avatar_url}
+                              alt="Profile picture"
+                            />
+                          ) : null}
                           <AvatarFallback className="text-lg">
                             {formData.firstName.charAt(0)}
                             {formData.lastName.charAt(0)}

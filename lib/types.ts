@@ -40,7 +40,11 @@ export interface CallMetrics {
   avgCost: number;
   callsByHour: { hour: number; count: number }[];
   callsByDay: { day: string; count: number }[];
-  sentimentDistribution: { positive: number; negative: number; neutral: number };
+  sentimentDistribution: {
+    positive: number;
+    negative: number;
+    neutral: number;
+  };
   leadQualityDistribution: { hot: number; warm: number; cold: number };
 }
 
@@ -52,4 +56,4 @@ export interface DashboardAnalytics {
     avgDurationTrend: 'up' | 'down' | 'stable';
     costTrend: 'up' | 'down' | 'stable';
   };
-} 
+}

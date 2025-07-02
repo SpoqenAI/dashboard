@@ -403,14 +403,12 @@ function ProfilePageContent() {
             <CardContent className="flex items-center space-x-4">
               <div className="relative">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage
-                    src={
-                      profile?.avatar_url ||
-                      user?.user_metadata?.avatar_url ||
-                      '/placeholder.svg?height=80&width=80&query=person'
-                    }
-                    alt="Profile picture"
-                  />
+                  {profile?.avatar_url || user?.user_metadata?.avatar_url ? (
+                    <AvatarImage
+                      src={profile?.avatar_url || user?.user_metadata?.avatar_url}
+                      alt="Profile picture"
+                    />
+                  ) : null}
                   <AvatarFallback className="text-lg">
                     {getUserInitials()}
                   </AvatarFallback>

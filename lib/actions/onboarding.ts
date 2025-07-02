@@ -208,9 +208,14 @@ export async function createAssistantAction(
 
       if (!vapiRes.ok) {
         const txt = await vapiRes.text();
-        logger.error('ONBOARDING_ACTIONS', 'Vapi create failed', new Error(txt), {
-          status: vapiRes.status,
-        });
+        logger.error(
+          'ONBOARDING_ACTIONS',
+          'Vapi create failed',
+          new Error(txt),
+          {
+            status: vapiRes.status,
+          }
+        );
         throw new Error('Failed to create assistant on Vapi');
       }
 
@@ -221,37 +226,45 @@ export async function createAssistantAction(
       const { createSupabaseAdmin } = await import('@/lib/supabase/admin');
       const adminClient = createSupabaseAdmin();
       const { error: storeErr } = await adminClient
-      .from('user_settings')
+        .from('user_settings')
         .update({ vapi_assistant_id: vapiAssistantId })
         .eq('id', user.id);
 
       if (storeErr) throw storeErr;
     } else {
       // Assistant already exists – patch its name & greeting to match latest form
-      const patchRes = await fetch(`https://api.vapi.ai/assistant/${vapiAssistantId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${vapiApiKey}`,
-        },
-        body: JSON.stringify({
-          name: assistantName,
-          model: {
-            messages: [
-              {
-                role: 'system',
-                content: greeting,
-              },
-            ],
+      const patchRes = await fetch(
+        `https://api.vapi.ai/assistant/${vapiAssistantId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${vapiApiKey}`,
           },
-        }),
-      });
+          body: JSON.stringify({
+            name: assistantName,
+            model: {
+              messages: [
+                {
+                  role: 'system',
+                  content: greeting,
+                },
+              ],
+            },
+          }),
+        }
+      );
 
       if (!patchRes.ok) {
         const txt = await patchRes.text();
-        logger.error('ONBOARDING_ACTIONS', 'Vapi patch failed', new Error(txt), {
-          status: patchRes.status,
-        });
+        logger.error(
+          'ONBOARDING_ACTIONS',
+          'Vapi patch failed',
+          new Error(txt),
+          {
+            status: patchRes.status,
+          }
+        );
         throw new Error('Failed to update assistant on Vapi');
       }
     }

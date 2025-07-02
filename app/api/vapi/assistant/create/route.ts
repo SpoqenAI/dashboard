@@ -91,7 +91,11 @@ export async function POST(req: NextRequest) {
     try {
       adminClient = createSupabaseAdmin();
     } catch (err) {
-      logger.error('VAPI_CREATE', 'Failed to init supabase admin', err as Error);
+      logger.error(
+        'VAPI_CREATE',
+        'Failed to init supabase admin',
+        err as Error
+      );
       return NextResponse.json(
         { error: 'Server misconfiguration — supabase admin' },
         { status: 500 }
@@ -118,10 +122,14 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ assistantId: vapiAssistant.id });
   } catch (err: any) {
-    logger.error('VAPI_CREATE', 'Unhandled error', err instanceof Error ? err : new Error(String(err)));
+    logger.error(
+      'VAPI_CREATE',
+      'Unhandled error',
+      err instanceof Error ? err : new Error(String(err))
+    );
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
-} 
+}
