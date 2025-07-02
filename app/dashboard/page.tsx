@@ -69,7 +69,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { DashboardHeader } from '@/components/dashboard-header';
+import { DashboardLayout } from '@/components/dashboard-layout';
 import { useActionPoints } from '@/hooks/use-action-points';
 import { useDashboardAnalytics } from '@/hooks/use-dashboard-analytics';
 import {
@@ -458,8 +458,7 @@ export default function DashboardPage() {
   if (error) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gradient-to-br from-background via-purple-950/10 to-blue-950/10">
-          <DashboardHeader />
+        <DashboardLayout>
           <div className="p-6">
             <Card>
               <CardContent className="pt-6">
@@ -473,16 +472,14 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </DashboardLayout>
       </ProtectedRoute>
     );
   }
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-background via-purple-950/10 to-blue-950/10">
-        <DashboardHeader />
-
+      <DashboardLayout>
         <div className="space-y-6 p-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -1241,7 +1238,7 @@ export default function DashboardPage() {
             </TabsContent>
           </Tabs>
         </div>
-      </div>
+      </DashboardLayout>
     </ProtectedRoute>
   );
 }
