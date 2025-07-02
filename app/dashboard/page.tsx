@@ -70,6 +70,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { DashboardHeader } from '@/components/dashboard-header';
+import { DashboardShell } from '@/components/dashboard-shell';
+import { ModernStatsCard } from '@/components/modern-stats-card';
 import { useActionPoints } from '@/hooks/use-action-points';
 import { useDashboardAnalytics } from '@/hooks/use-dashboard-analytics';
 import {
@@ -458,12 +460,12 @@ export default function DashboardPage() {
   if (error) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gradient-to-br from-background via-purple-950/10 to-blue-950/10">
+        <div className="min-h-screen bg-gradient-dark">
           <DashboardHeader />
-          <div className="p-6">
+          <DashboardShell>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-center text-red-600">
+                <div className="text-center text-destructive">
                   <AlertTriangle className="mx-auto mb-4 h-12 w-12" />
                   <p>Error loading dashboard: {error.message}</p>
                   <Button onClick={() => refetch()} className="mt-4">
@@ -472,7 +474,7 @@ export default function DashboardPage() {
                 </div>
               </CardContent>
             </Card>
-          </div>
+          </DashboardShell>
         </div>
       </ProtectedRoute>
     );
@@ -480,31 +482,35 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-background via-purple-950/10 to-blue-950/10">
+      <div className="min-h-screen bg-gradient-dark">
         <DashboardHeader />
-
-        <div className="space-y-6 p-6">
+        <DashboardShell>
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between animate-fade-in">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-              <p className="mt-2 text-foreground">
+              <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                Dashboard
+              </h1>
+              <p className="mt-2 text-muted-foreground text-lg">
                 Monitor your AI receptionist and manage your settings
               </p>
             </div>
           </div>
 
           {/* Tabbed Interface */}
-          <Tabs defaultValue="analytics" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
+          <Tabs defaultValue="analytics" className="space-y-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            <TabsList className="grid w-full grid-cols-2 bg-card/20 backdrop-blur-glass border border-white/10">
               <TabsTrigger
                 value="analytics"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary transition-all duration-300"
               >
                 <BarChart3 className="h-4 w-4" />
                 Analytics
               </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-2">
+              <TabsTrigger 
+                value="settings" 
+                className="flex items-center gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary transition-all duration-300"
+              >
                 <Settings className="h-4 w-4" />
                 AI Settings
               </TabsTrigger>
@@ -1240,7 +1246,7 @@ export default function DashboardPage() {
               </Card>
             </TabsContent>
           </Tabs>
-        </div>
+        </DashboardShell>
       </div>
     </ProtectedRoute>
   );

@@ -57,6 +57,19 @@ const config = {
       backgroundImage: {
         'spoqen-gradient':
           'linear-gradient(135deg, #eb39ff 0%, #7537ff 50%, #00b4d8 100%)',
+        'gradient-primary': 'linear-gradient(135deg, hsl(315 100% 50%), hsl(270 100% 60%), hsl(180 100% 50%))',
+        'gradient-secondary': 'linear-gradient(135deg, hsl(180 100% 50%), hsl(220 100% 60%))',
+        'gradient-dark': 'linear-gradient(135deg, hsl(222 24% 4%), hsl(222 24% 8%))',
+        'gradient-glow': 'linear-gradient(135deg, hsl(315 100% 50% / 0.2), hsl(180 100% 50% / 0.2))',
+      },
+      backdropBlur: {
+        'glass': '16px',
+      },
+      boxShadow: {
+        'glow-primary': '0 0 20px hsl(315 100% 50% / 0.5)',
+        'glow-secondary': '0 0 20px hsl(180 100% 50% / 0.5)',
+        'glow-accent': '0 0 20px hsl(270 100% 60% / 0.5)',
+        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -72,10 +85,47 @@ const config = {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
+        'float': {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-20px)' },
+        },
+        'glow-pulse': {
+          '0%, 100%': { opacity: '0.4', transform: 'scale(1)' },
+          '50%': { opacity: '0.8', transform: 'scale(1.1)' },
+        },
+        'slide-up': {
+          'from': { 
+            opacity: '0', 
+            transform: 'translateY(30px)' 
+          },
+          'to': { 
+            opacity: '1', 
+            transform: 'translateY(0)' 
+          },
+        },
+        'slide-in-right': {
+          'from': { 
+            opacity: '0', 
+            transform: 'translateX(20px)' 
+          },
+          'to': { 
+            opacity: '1', 
+            transform: 'translateX(0)' 
+          },
+        },
+        'fade-in': {
+          'from': { opacity: '0' },
+          'to': { opacity: '1' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'float': 'float 6s ease-in-out infinite',
+        'glow-pulse': 'glow-pulse 3s ease-in-out infinite',
+        'slide-up': 'slide-up 0.6s ease-out',
+        'slide-in-right': 'slide-in-right 0.5s ease-out',
+        'fade-in': 'fade-in 0.6s ease-out',
       },
     },
   },

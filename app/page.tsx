@@ -1,153 +1,183 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, PhoneCall, User } from 'lucide-react';
+import { ArrowRight, CheckCircle, PhoneCall, User, Play } from 'lucide-react';
 import { PricingCard } from '@/components/pricing-card';
 import Logo from '@/components/ui/logo';
+import { InteractiveBackground } from '@/components/interactive-background';
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-card/20 backdrop-blur-glass border-b border-white/10">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2 text-xl font-bold">
             <Logo width={140} height={48} />
           </div>
           <nav className="flex items-center gap-4">
-            <Link href="/login" className="text-sm font-medium">
+            <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
               Login
             </Link>
-            <Button asChild>
+            <Button variant="neon" asChild>
               <Link href="/signup">Sign Up</Link>
             </Button>
           </nav>
         </div>
       </header>
       <main className="flex-1">
-        <section className="w-full bg-gradient-to-br from-purple-900/30 via-background to-blue-900/30 py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
-              <div className="flex flex-col justify-center space-y-4">
-                <div className="space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                    Never Miss a Lead Again
+        <InteractiveBackground variant="hero" className="min-h-screen flex items-center justify-center bg-gradient-dark">
+          <section className="w-full py-20 pt-32">
+            <div className="container px-6">
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
+                {/* Left Content */}
+                <div className="space-y-8 animate-fade-in">
+                  <div className="inline-flex items-center px-4 py-2 bg-card/20 backdrop-blur-glass border border-white/10 rounded-full">
+                    <span className="text-sm text-muted-foreground">🚀 AI-Powered Lead Capture</span>
+                  </div>
+                  
+                  <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
+                    Never Miss a
+                    <span className="bg-gradient-primary bg-clip-text text-transparent block leading-[1.2] py-[6px]">
+                      Lead Again
+                    </span>
                   </h1>
-                  <p className="max-w-[600px] text-gray-500 dark:text-gray-400 md:text-xl">
-                    Spoqen is your AI receptionist that answers calls, qualifies
-                    leads, and emails you summaries—so you can focus on closing
-                    deals.
+                  
+                  <p className="text-xl text-muted-foreground leading-relaxed max-w-lg">
+                    Spoqen is your AI receptionist that answers calls, qualifies leads, 
+                    and emails you summaries—so you can focus on closing deals.
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Button variant="neon" size="xl" className="group" asChild>
+                      <Link href="/signup">
+                        Get Started
+                        <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+                      </Link>
+                    </Button>
+                    <Button variant="glass" size="xl" className="group">
+                      <Play className="mr-2" />
+                      See Demo
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center space-x-8 pt-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">100%</div>
+                      <div className="text-sm text-muted-foreground">Call Coverage</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-accent">24/7</div>
+                      <div className="text-sm text-muted-foreground">Available</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-secondary">60s</div>
+                      <div className="text-sm text-muted-foreground">Response Time</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Content - Dashboard Preview */}
+                <div className="relative animate-slide-up" style={{ animationDelay: '0.3s' }}>
+                  <div className="relative aspect-video w-full max-w-[500px] overflow-hidden rounded-xl border border-white/10 bg-card/20 backdrop-blur-glass shadow-glass">
+                    <img
+                      src="/Spoqen-full.png"
+                      alt="Spoqen Logo"
+                      className="h-full w-full object-contain p-8"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </InteractiveBackground>
+        <InteractiveBackground variant="features" className="py-20 bg-gradient-to-b from-background to-card/30">
+          <section className="w-full">
+            <div className="container px-6">
+              <div className="text-center mb-16 animate-fade-in">
+                <h2 className="text-4xl lg:text-5xl font-bold mb-6">
+                  How It 
+                  <span className="bg-gradient-primary bg-clip-text text-transparent"> Works</span>
+                </h2>
+                <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                  Spoqen seamlessly integrates with your existing workflow to capture and qualify leads when you're unavailable.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <div className="flex flex-col items-center space-y-6 text-center p-6 bg-card/20 backdrop-blur-glass border border-white/10 rounded-xl hover:bg-card/30 transition-all duration-300 group hover:scale-105 hover:shadow-glow-primary/20 animate-slide-up">
+                  <div className="inline-flex p-4 rounded-xl bg-gradient-to-r from-card/50 to-card/80 text-primary group-hover:scale-110 transition-transform duration-300">
+                    <PhoneCall className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-semibold">1. Call Answering</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    When you're unavailable, Spoqen answers calls with your personalized greeting.
                   </p>
                 </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Button
-                    size="lg"
-                    asChild
-                    className="border-0 bg-spoqen-gradient text-white hover:opacity-90"
-                  >
-                    <Link href="/signup">
-                      Get Started <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <Button size="lg" variant="outline" asChild>
-                    <Link href="/demo">See Demo</Link>
-                  </Button>
+
+                <div className="flex flex-col items-center space-y-6 text-center p-6 bg-card/20 backdrop-blur-glass border border-white/10 rounded-xl hover:bg-card/30 transition-all duration-300 group hover:scale-105 hover:shadow-glow-accent/20 animate-slide-up" style={{animationDelay: '0.1s'}}>
+                  <div className="inline-flex p-4 rounded-xl bg-gradient-to-r from-card/50 to-card/80 text-accent group-hover:scale-110 transition-transform duration-300">
+                    <User className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-semibold">2. Lead Qualification</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Your AI assistant asks your customized qualification questions to gather important details.
+                  </p>
                 </div>
-              </div>
-              <div className="flex items-center justify-center">
-                <div className="relative aspect-video w-full max-w-[500px] overflow-hidden rounded-xl border bg-background shadow-xl">
-                  <img
-                    src="/Spoqen-full.png"
-                    alt="Spoqen Logo"
-                    className="h-full w-full object-contain"
-                  />
+
+                <div className="flex flex-col items-center space-y-6 text-center p-6 bg-card/20 backdrop-blur-glass border border-white/10 rounded-xl hover:bg-card/30 transition-all duration-300 group hover:scale-105 hover:shadow-glow-secondary/20 animate-slide-up" style={{animationDelay: '0.2s'}}>
+                  <div className="inline-flex p-4 rounded-xl bg-gradient-to-r from-card/50 to-card/80 text-secondary group-hover:scale-110 transition-transform duration-300">
+                    <CheckCircle className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-semibold">3. Instant Summaries</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Within 60 seconds, you receive a detailed email summary with all the lead information.
+                  </p>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-        <section className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  How It Works
-                </h2>
-                <p className="max-w-[900px] text-gray-500 dark:text-gray-400 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Spoqen seamlessly integrates with your existing workflow to
-                  capture and qualify leads when you're unavailable.
-                </p>
+          </section>
+        </InteractiveBackground>
+        <InteractiveBackground variant="minimal" className="py-20 bg-gradient-to-b from-card/30 to-background">
+          <section className="w-full">
+            <div className="container px-6">
+              <div className="flex flex-col items-center justify-center space-y-8 text-center">
+                <div className="space-y-4">
+                  <h2 className="text-4xl lg:text-5xl font-bold">
+                    Ready to Never Miss a 
+                    <span className="bg-gradient-primary bg-clip-text text-transparent"> Lead?</span>
+                  </h2>
+                </div>
+                <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                  <PricingCard />
+                </div>
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl items-center gap-6 py-12 lg:grid-cols-3 lg:gap-12">
-              <div className="flex flex-col items-center space-y-4 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                  <PhoneCall className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold">1. Call Answering</h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  When you're unavailable, Spoqen answers calls with your
-                  personalized greeting.
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-4 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                  <User className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold">2. Lead Qualification</h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  Your AI assistant asks your customized qualification questions
-                  to gather important details.
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-4 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                  <CheckCircle className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold">3. Instant Summaries</h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  Within 60 seconds, you receive a detailed email summary with
-                  all the lead information.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-        <section className="w-full bg-muted/30 py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  Ready to Never Miss a Lead?
-                </h2>
-              </div>
-              <PricingCard />
-            </div>
-          </div>
-        </section>
+          </section>
+        </InteractiveBackground>
       </main>
-      <footer className="w-full border-t py-6">
+      <footer className="w-full border-t border-white/10 bg-card/20 backdrop-blur-glass py-8">
         <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
           <div className="flex items-center gap-2 font-semibold">
             <Logo width={100} height={30} />
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             © 2025 Spoqen. All rights reserved.
           </p>
-          <nav className="flex gap-4 text-sm">
+          <nav className="flex gap-6 text-sm">
             <Link
               href="/terms"
-              className="text-gray-500 hover:underline dark:text-gray-400"
+              className="text-muted-foreground hover:text-primary transition-colors"
             >
               Terms
             </Link>
             <Link
               href="/privacy"
-              className="text-gray-500 hover:underline dark:text-gray-400"
+              className="text-muted-foreground hover:text-primary transition-colors"
             >
               Privacy
             </Link>
             <Link
               href="/contact"
-              className="text-gray-500 hover:underline dark:text-gray-400"
+              className="text-muted-foreground hover:text-primary transition-colors"
             >
               Contact
             </Link>

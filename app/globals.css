@@ -2,9 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
+/* Tech/Crypto Bro Design System - Dark theme with neon accents */
 
 @layer utilities {
   .text-balance {
@@ -14,73 +12,116 @@ body {
 
 @layer base {
   :root {
-    --background: 225 39% 7%; /* Very dark navy blue matching the logo background */
-    --foreground: 0 0% 98%; /* Pure white text for maximum contrast */
-    --card: 225 39% 10%; /* Slightly lighter navy for cards */
-    --card-foreground: 0 0% 98%;
-    --popover: 225 39% 10%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 267 100% 61%; /* Spoqen purple */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 225 39% 15%; /* Lighter navy for secondary elements */
-    --secondary-foreground: 0 0% 95%;
-    --muted: 225 39% 15%;
-    --muted-foreground: 0 0% 75%; /* Light gray for muted text */
-    --accent: 195 100% 50%; /* Brighter Spoqen blue for better visibility */
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 225 39% 20%; /* Lighter border for visibility */
-    --input: 225 39% 12%; /* Dark input background with slight contrast */
-    --ring: 267 100% 61%; /* Primary color for focus rings */
-    --chart-1: 267 100% 61%;
-    --chart-2: 195 100% 50%;
-    --chart-3: 300 100% 58%;
+    /* Dark Background System */
+    --background: 222 24% 4%;
+    --foreground: 210 40% 98%;
+
+    /* Glass Cards */
+    --card: 222 24% 6%;
+    --card-foreground: 210 40% 98%;
+
+    /* Popover/Modal */
+    --popover: 222 24% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Brand Magenta Primary */
+    --primary: 315 100% 50%;
+    --primary-foreground: 210 40% 98%;
+
+    /* Brand Cyan Secondary */
+    --secondary: 180 100% 50%;
+    --secondary-foreground: 222 24% 4%;
+
+    /* Muted Dark */
+    --muted: 222 24% 12%;
+    --muted-foreground: 215 20% 65%;
+
+    /* Brand Purple Accent */
+    --accent: 270 100% 60%;
+    --accent-foreground: 210 40% 98%;
+
+    /* Red Destructive */
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Subtle borders */
+    --border: 222 24% 16%;
+    --input: 222 24% 16%;
+    --ring: 315 100% 50%;
+
+    /* Charts */
+    --chart-1: 315 100% 50%;
+    --chart-2: 180 100% 50%;
+    --chart-3: 270 100% 60%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --radius: 0.5rem;
-    --sidebar-background: 225 39% 7%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 267 100% 61%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 225 39% 15%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 225 39% 20%;
-    --sidebar-ring: 267 100% 61%;
+
+    /* Rounded corners */
+    --radius: 1rem;
+
+    /* Sidebar */
+    --sidebar-background: 222 24% 4%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 315 100% 50%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 222 24% 12%;
+    --sidebar-accent-foreground: 215 20% 65%;
+    --sidebar-border: 222 24% 16%;
+    --sidebar-ring: 315 100% 50%;
+
+    /* Brand Gradients - Matching Logo */
+    --gradient-primary: linear-gradient(135deg, hsl(315 100% 50%), hsl(270 100% 60%), hsl(180 100% 50%));
+    --gradient-secondary: linear-gradient(135deg, hsl(180 100% 50%), hsl(220 100% 60%));
+    --gradient-dark: linear-gradient(135deg, hsl(222 24% 4%), hsl(222 24% 8%));
+    --gradient-glow: linear-gradient(135deg, hsl(315 100% 50% / 0.2), hsl(180 100% 50% / 0.2));
+
+    /* Brand Neon Glows */
+    --glow-primary: 0 0 20px hsl(315 100% 50% / 0.5);
+    --glow-secondary: 0 0 20px hsl(180 100% 50% / 0.5);
+    --glow-accent: 0 0 20px hsl(270 100% 60% / 0.5);
+
+    /* Glass Effect */
+    --glass-bg: hsl(222 24% 6% / 0.8);
+    --glass-border: hsl(210 40% 98% / 0.1);
+
+    /* Smooth Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
+
   .dark {
-    --background: 225 39% 7%;
-    --foreground: 0 0% 98%;
-    --card: 225 39% 10%;
-    --card-foreground: 0 0% 98%;
-    --popover: 225 39% 10%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 267 100% 61%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 225 39% 15%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 225 39% 15%;
-    --muted-foreground: 0 0% 75%;
-    --accent: 195 100% 50%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 225 39% 20%;
-    --input: 225 39% 12%;
-    --ring: 267 100% 61%;
-    --chart-1: 267 100% 61%;
-    --chart-2: 195 100% 50%;
-    --chart-3: 300 100% 58%;
+    --background: 222 24% 4%;
+    --foreground: 210 40% 98%;
+    --card: 222 24% 6%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 24% 8%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 315 100% 50%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 180 100% 50%;
+    --secondary-foreground: 222 24% 4%;
+    --muted: 222 24% 12%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 270 100% 60%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 222 24% 16%;
+    --input: 222 24% 16%;
+    --ring: 315 100% 50%;
+    --chart-1: 315 100% 50%;
+    --chart-2: 180 100% 50%;
+    --chart-3: 270 100% 60%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --sidebar-background: 225 39% 7%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 267 100% 61%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 225 39% 15%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 225 39% 20%;
-    --sidebar-ring: 267 100% 61%;
+    --sidebar-background: 222 24% 4%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 315 100% 50%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 222 24% 12%;
+    --sidebar-accent-foreground: 215 20% 65%;
+    --sidebar-border: 222 24% 16%;
+    --sidebar-ring: 315 100% 50%;
   }
 }
 
@@ -90,6 +131,7 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   }
 }
 
