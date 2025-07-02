@@ -41,7 +41,9 @@ export function useDashboardAnalytics(options: UseDashboardAnalyticsOptions = {}
       const data = await response.json();
       logger.info('DASHBOARD_ANALYTICS', 'Analytics data fetched successfully', {
         totalCalls: data.metrics?.totalCalls || 0,
+        recentCallsCount: data.recentCalls?.length || 0,
         timeRange: `${days} days`,
+        isRefetch,
       });
 
       setAnalytics(data);

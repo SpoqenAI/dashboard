@@ -120,14 +120,14 @@ export default function DashboardPage() {
   const calls: VapiCall[] = analytics?.recentCalls || [];
 
   // Calculate basic metrics from calls if analytics aren't loaded yet
-  const totalCalls = calls.length;
-  const answeredCalls = calls.filter(call => 
-    call.durationSeconds > 0 && !['customer-did-not-give-microphone-permission', 'assistant-error', 'no-answer'].includes(call.endedReason)
-  ).length;
-  const missedCalls = totalCalls - answeredCalls;
-  const avgDuration = answeredCalls > 0 
-    ? calls.filter(call => call.durationSeconds > 0).reduce((sum, call) => sum + call.durationSeconds, 0) / answeredCalls 
-    : 0;
+  // Note: We no longer do client-side filtering here - the server-side analytics
+  // handles this properly using VAPI's built-in success evaluation
+  const totalCalls = analytics?.metrics?.totalCalls ?? 0;
+  
+  // Use the server-side analytics metrics when available, fallback for loading state
+  const answeredCalls = analytics?.metrics?.answeredCalls ?? 0;
+  const missedCalls = analytics?.metrics?.missedCalls ?? 0;
+  const avgDuration = analytics?.metrics?.avgDuration ?? 0;
 
   // Filter and search logic
   const filteredCalls = calls
@@ -150,6 +150,18 @@ export default function DashboardPage() {
           return 0;
       }
     });
+
+  // Debugging: Log the total calls from different sources in DashboardPage
+  useEffect(() => {
+    if (analytics) {
+      logger.info('DASHBOARD_PAGE_METRICS', 'Analytics data loaded', {
+        timeRange: timeRange,
+        totalCallsFromAnalyticsMetrics: analytics.metrics?.totalCalls,
+        totalCallsFromRecentCallsArray: calls.length,
+        filteredCallsCount: filteredCalls.length,
+      });
+    }
+  }, [analytics, calls.length, timeRange, filteredCalls.length]);
 
   const formatDuration = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -439,7 +451,14 @@ export default function DashboardPage() {
                   Monitor your AI receptionist performance and call analytics
                 </p>
                 <div className="flex items-center gap-4">
-                  <Select value={timeRange.toString()} onValueChange={(value) => setTimeRange(parseInt(value))}>
+                  <Select value={timeRange.toString()} onValueChange={(value) => {
+                    const newTimeRange = parseInt(value);
+                    logger.info('DASHBOARD_TIME_FILTER', 'Time range filter changed', {
+                      oldTimeRange: timeRange,
+                      newTimeRange: newTimeRange,
+                    });
+                    setTimeRange(newTimeRange);
+                  }}>
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="Time range" />
                     </SelectTrigger>
@@ -487,6 +506,7 @@ export default function DashboardPage() {
           {analytics && analytics.metrics && (
             <DashboardAnalytics metrics={analytics.metrics} trends={analytics.trends} />
           )}
+
 
           {/* Loading State */}
           {isLoading && (
@@ -585,7 +605,11 @@ export default function DashboardPage() {
                     </TableHeader>
                     <TableBody>
                       {filteredCalls.map((call) => (
-                        <TableRow key={call.id} className="hover:bg-gray-50">
+                        <TableRow
+                          key={call.id}
+                          className={`cursor-pointer ${selectedCall?.id === call.id ? 'bg-blue-50/50' : ''}`}
+                          onClick={() => openCallDetail(call)}
+                        >
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
                               <Phone className="w-4 h-4 text-muted-foreground" />
@@ -595,7 +619,7 @@ export default function DashboardPage() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Calendar className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-foreground">{formatDate(call.createdAt)}</span>
+                              <span className="text-foreground">{formatDate((call.createdAt || call.startedAt || ''))}</span>
                             </div>
                           </TableCell>
                           <TableCell>

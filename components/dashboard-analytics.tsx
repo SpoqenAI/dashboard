@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CallMetrics } from '@/lib/types';
@@ -16,6 +16,7 @@ import {
   Heart,
   Clock,
 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface DashboardAnalyticsProps {
   metrics: CallMetrics;
@@ -27,6 +28,16 @@ interface DashboardAnalyticsProps {
 }
 
 export function DashboardAnalytics({ metrics, trends }: DashboardAnalyticsProps) {
+  // Debugging: Log the metrics received by DashboardAnalytics component
+  useEffect(() => {
+    if (metrics) {
+      logger.info('DASHBOARD_ANALYTICS_COMPONENT', 'Metrics received by component', {
+        totalCalls: metrics.totalCalls,
+        answeredCalls: metrics.answeredCalls,
+      });
+    }
+  }, [metrics]);
+
   const formatDuration = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
