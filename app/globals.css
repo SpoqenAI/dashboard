@@ -118,3 +118,21 @@ body {
 .address-autocomplete-wrapper .geoapify-close-button {
   @apply text-muted-foreground hover:text-foreground;
 }
+
+/* Sidebar styles */
+.sidebar {
+  @apply bg-sidebar-background text-sidebar-foreground;
+}
+.sidebar-item {
+  @apply rounded-lg;
+}
+.sidebar-item:hover,
+.sidebar-item.active {
+  @apply bg-sidebar-accent text-sidebar-accent-foreground;
+}
+.sidebar-item.active {
+  @apply outline-sidebar-ring shadow outline outline-2;
+}
+.icon {
+  @apply h-5 w-5;
+}
