@@ -12,4 +12,4 @@ It addresses the need for real estate agents to efficiently manage customer inqu
 
 ## User Experience Goals
 
-The application aims to provide a seamless and intuitive experience for real estate agents to **monitor, configure, and manage their AI receptionist**. This includes **clear, user-specific dashboards for analytics**, an **easy-to-use interface for updating AI settings**, leveraging a modern Next.js interface for ease of use, and efficient data management through Supabase integration. The user should feel empowered to both **track their AI's impact and fine-tune its behavior**. 
+The application aims to provide a seamless and intuitive experience for real estate agents to **monitor, configure, and manage their AI receptionist**. This includes **clear, user-specific dashboards for analytics**, an **easy-to-use interface for updating AI settings**, leveraging a modern Next.js interface for ease of use, and efficient data management through Supabase integration. The user should feel empowered to both **track their AI's impact and fine-tune its behavior**.

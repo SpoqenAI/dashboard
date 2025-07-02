@@ -6,11 +6,16 @@ This document tracks the current work focus, recent changes, next steps, and imp
 
 **✅ COMPLETED: Time Range Filtering Fix (January 2025)** - Fixed critical issue where changing the time range filter (7/30/90 days) wasn't updating metrics and recent calls count properly.
 
+**✅ COMPLETED: Remove placeholder.svg from codebase (July 2025)** - Removed all instances of `placeholder.svg` from the codebase, resolving 404 errors for missing placeholder images. The Avatar components now conditionally render user avatars or fall back to initials.
+
+**✅ COMPLETED: Tone down recent calls highlight (July 2025)** - Modified the highlight color for selected recent calls in the dashboard to a softer blue (`bg-blue-50`) for a less prominent visual indication.
+
 **Root Cause**: The analytics API was fetching a fixed limit of 100 calls from VAPI and then filtering by date range. For longer time ranges (like 90 days), relevant older calls weren't being fetched because they fell outside the latest 100 calls.
 
 **Solution Implemented**:
+
 - Modified API to use dynamic limit adjustment based on time range: `Math.max(limit, days * 10)`
-- Added comprehensive logging to track filtering effectiveness  
+- Added comprehensive logging to track filtering effectiveness
 - Enhanced date range verification to ensure all calls within the requested period are captured
 - Created test page (`/test-time-filtering`) to verify the fix works correctly
 
@@ -23,6 +28,7 @@ Successfully integrated comprehensive real-time and historical call sentiment an
 ## Recent Changes
 
 - **✅ COMPLETED: Architectural Improvement - VAPI Success Evaluation Integration (January 2025)**
+
   - **Replaced hardcoded call filtering with VAPI's built-in AI analysis**
   - **Problem:** Previously used hardcoded arrays of `endedReason` strings to determine if calls were successful (e.g., excluding 'silence-timed-out', 'assistant-error', etc.)
   - **Solution:** Now leverages VAPI's `call.analysis.successEvaluation` which uses AI to determine call success based on the assistant's objectives
@@ -31,28 +37,31 @@ Successfully integrated comprehensive real-time and historical call sentiment an
     - Handles various rubric types: boolean (PassFail), numeric scales (1-10, 0-100%), descriptive scales
     - Eliminates maintenance burden of hardcoded failure reasons
     - Uses VAPI's own AI analysis instead of guessing based on technical end reasons
-  - **Files Modified:** 
+  - **Files Modified:**
     - `app/api/vapi/analytics/route.ts` - Updated both main metrics and trends calculation
     - `app/dashboard/page.tsx` - Removed client-side hardcoded filtering, relies on server-side analytics
   - **Fallback:** Maintains basic criteria for calls without VAPI analysis (duration > 0, no microphone permission errors)
 
 - **✅ COMPLETED: Data Consistency Fix - Analytics Count Alignment (January 2025)**
+
   - **Fixed discrepancy** between call counts (64) and sentiment analysis counts (68)
   - **Root Cause:** Database query was filtering by analysis date rather than current VAPI calls, including orphaned analysis records
   - **Solution:** Modified analytics API to only count sentiment/lead quality data for calls that exist in both current VAPI dataset AND database
   - **Result:** Perfect data alignment - sentiment totals now match call totals
 
 - **✅ COMPLETED: Dashboard Metrics Calculation Fix (January 2025)**
+
   - **Successfully resolved** incorrect "Avg Duration" and "Answered" metrics display in the dashboard
   - **Root Cause 1:** Analytics API was receiving raw VAPI calls without calculated `durationSeconds` field, causing all calls to be filtered out as unanswered
   - **Root Cause 2:** Filtering logic wasn't excluding failed calls like "silence-timed-out", leading to inflated answer rates
-  - **Solution:** 
+  - **Solution:**
     - Fixed analytics API to map VAPI calls using `mapVapiCallToFrontend` BEFORE calculating metrics (calculates `durationSeconds` from timestamps)
     - Enhanced call filtering to exclude failed call types: `silence-timed-out`, `assistant-error`, `no-answer`, etc.
   - **Files Modified:** `app/api/vapi/analytics/route.ts`
   - **Result:** Dashboard now shows accurate metrics - distinguishes successful calls from failed calls, displays correct answer rates (e.g., 98% vs inflated 100%)
 
 - **COMPLETED: Comprehensive Dashboard Redesign & AI Settings Restoration**
+
   - Transformed the dashboard into a tabbed interface with dedicated sections for Analytics and AI Settings.
   - **Analytics Tab Enhancements:**
     - Replaced mock sentiment and lead quality data with real analysis from the new `call_analysis` database table.
@@ -70,9 +79,10 @@ Successfully integrated comprehensive real-time and historical call sentiment an
   - Implemented `/api/vapi/bulk-analyze` to allow batch processing of unanalyzed calls for sentiment and lead quality.
 
 - **FIXED: 'Analyze Calls' Button (Bulk Analysis Logic)**
+
   - **Problem:** The bulk analysis API was not correctly identifying or processing calls that needed analysis, leading to no new data being populated despite clicking the button. This was due to overly strict content filtering (`durationSeconds` being `undefined`) and incorrect logic for skipping already analyzed calls.
   - **Solution:**
-    - Modified the call filtering logic in `app/api/vapi/bulk-analyze/route.ts` to match the broader criteria used by the analytics API, ensuring *all* relevant user calls are considered for analysis, regardless of `durationSeconds`.
+    - Modified the call filtering logic in `app/api/vapi/bulk-analyze/route.ts` to match the broader criteria used by the analytics API, ensuring _all_ relevant user calls are considered for analysis, regardless of `durationSeconds`.
     - Implemented a precise mechanism to **only process calls that genuinely lack existing analysis** in the `call_analysis` table. Calls already analyzed are now correctly skipped.
     - Simplified the API and dashboard by removing the redundant `skipExisting` and `forceAnalyze` parameters, as the core functionality now inherently focuses on processing only unanalyzed calls.
     - Enhanced logging in the `bulk-analyze` API to provide clearer insights into the number of total calls, calls needing analysis, and calls actually processed, aiding in debugging and verification.
@@ -112,7 +122,9 @@ Successfully integrated comprehensive real-time and historical call sentiment an
 ## Recent Critical Discovery & Fix
 
 ### **Problem Identified**
+
 Through detailed logging analysis, discovered that:
+
 - **ALL 64 calls had `status: 'ended'`** and were being marked as successful
 - **Logic prioritized `status` over `endedReason` and AI analysis**
 - **`'ended'` in VAPI means "call finished" NOT "call successful"`**
@@ -120,6 +132,7 @@ Through detailed logging analysis, discovered that:
 - **Calls with `endedReason: 'silence-timed-out'` were incorrectly marked successful**
 
 ### **Root Cause**
+
 ```javascript
 // OLD (BROKEN) LOGIC:
 if (['completed', 'answered', 'ended'].includes(status)) {
@@ -128,14 +141,16 @@ if (['completed', 'answered', 'ended'].includes(status)) {
 ```
 
 ### **Solution Implemented**
+
 Completely reordered success evaluation priority:
 
 1. **PRIORITY 1: VAPI AI Analysis** - `call.analysis.successEvaluation` (most accurate)
-2. **PRIORITY 2: EndedReason** - Specific failure/success indicators  
+2. **PRIORITY 2: EndedReason** - Specific failure/success indicators
 3. **PRIORITY 3: Status** - Explicit success/failure statuses (excluding generic 'ended')
 4. **FALLBACK: Duration** - Conservative ≥5 seconds threshold
 
 ### **Expected Impact**
+
 - **Before**: 64/64 calls marked successful (100% answer rate - clearly wrong)
 - **After**: Should show ~63/64 calls successful (98% answer rate - realistic)
 - **The 1 call with `endedReason: 'silence-timed-out'` now properly marked as failed**
@@ -157,7 +172,7 @@ Completely reordered success evaluation priority:
 
 - ✅ Dashboard displays real-time call analytics with accurate metrics
 - ✅ AI-powered call sentiment and lead quality analysis
-- ✅ User-specific data filtering and privacy controls  
+- ✅ User-specific data filtering and privacy controls
 - ✅ Proper call success evaluation using VAPI's built-in AI analysis
 - ✅ Comprehensive error tracking and logging
-- ✅ Data consistency between call counts and analysis records 
+- ✅ Data consistency between call counts and analysis records

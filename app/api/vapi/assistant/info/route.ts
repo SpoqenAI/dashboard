@@ -41,24 +41,33 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const vapiRes = await fetch(`https://api.vapi.ai/assistant/${assistantId}`, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-    });
+    const vapiRes = await fetch(
+      `https://api.vapi.ai/assistant/${assistantId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      }
+    );
     if (!vapiRes.ok) {
       const txt = await vapiRes.text();
       logger.error('VAPI_INFO', 'Failed to get assistant', new Error(txt), {
         status: vapiRes.status,
         assistantId,
       });
-      return NextResponse.json({ error: 'Failed to fetch assistant' }, { status: 502 });
+      return NextResponse.json(
+        { error: 'Failed to fetch assistant' },
+        { status: 502 }
+      );
     }
 
     const assistantJson = await vapiRes.json();
     return NextResponse.json({ assistant: assistantJson });
   } catch (err) {
     logger.error('VAPI_INFO', 'Unhandled', err as Error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
-} 
+}

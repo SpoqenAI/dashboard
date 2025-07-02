@@ -3,7 +3,14 @@
 import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/protected-route';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -55,11 +62,20 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { useActionPoints } from '@/hooks/use-action-points';
 import { useDashboardAnalytics } from '@/hooks/use-dashboard-analytics';
-import { useUserSettings, type AIReceptionistSettings } from '@/hooks/use-user-settings';
+import {
+  useUserSettings,
+  type AIReceptionistSettings,
+} from '@/hooks/use-user-settings';
 import { DashboardAnalytics } from '@/components/dashboard-analytics';
 import { ActionPoints, VapiCall } from '@/lib/types';
 import { toast } from '@/components/ui/use-toast';
@@ -79,14 +95,20 @@ export default function DashboardPage() {
   const [actionPoints, setActionPoints] = useState<ActionPoints | null>(null);
   const [timeRange, setTimeRange] = useState<number>(30);
   const [isBulkAnalyzing, setIsBulkAnalyzing] = useState(false);
-  
+
   // AI Receptionist Settings State
   const [isEditing, setIsEditing] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
   const [confirmOpen, setConfirmOpen] = useState(false);
-  
-  const { generateActionPoints, loading: actionPointsLoading, error: actionPointsError } = useActionPoints();
-  
+
+  const {
+    generateActionPoints,
+    loading: actionPointsLoading,
+    error: actionPointsError,
+  } = useActionPoints();
+
   // Use the user settings hook for AI receptionist settings
   const {
     loading: settingsLoading,
@@ -112,10 +134,11 @@ export default function DashboardPage() {
   }, [dataLoaded, getAIReceptionistSettings]);
 
   // Fetch dashboard analytics data
-  const { analytics, isLoading, error, refetch, isRefetching } = useDashboardAnalytics({
-    days: timeRange,
-    refetchInterval: 60000, // Refetch every minute
-  });
+  const { analytics, isLoading, error, refetch, isRefetching } =
+    useDashboardAnalytics({
+      days: timeRange,
+      refetchInterval: 60000, // Refetch every minute
+    });
 
   const calls: VapiCall[] = analytics?.recentCalls || [];
 
@@ -123,7 +146,7 @@ export default function DashboardPage() {
   // Note: We no longer do client-side filtering here - the server-side analytics
   // handles this properly using VAPI's built-in success evaluation
   const totalCalls = analytics?.metrics?.totalCalls ?? 0;
-  
+
   // Use the server-side analytics metrics when available, fallback for loading state
   const answeredCalls = analytics?.metrics?.answeredCalls ?? 0;
   const missedCalls = analytics?.metrics?.missedCalls ?? 0;
@@ -132,16 +155,20 @@ export default function DashboardPage() {
   // Filter and search logic
   const filteredCalls = calls
     .filter(call => {
-      const matchesSearch = call.phoneNumber?.includes(searchQuery) ||
-                           call.summary?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           call.endedReason.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || call.endedReason === statusFilter;
+      const matchesSearch =
+        call.phoneNumber?.includes(searchQuery) ||
+        call.summary?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        call.endedReason.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus =
+        statusFilter === 'all' || call.endedReason === statusFilter;
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
       switch (sortBy) {
         case 'date':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
         case 'duration':
           return b.durationSeconds - a.durationSeconds;
         case 'phone':
@@ -175,24 +202,46 @@ export default function DashboardPage() {
       day: 'numeric',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
   const getStatusBadge = (endedReason: string) => {
     switch (endedReason.toLowerCase()) {
       case 'customer-ended-call':
-        return <Badge variant="default" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Completed</Badge>;
+        return (
+          <Badge variant="default" className="bg-green-100 text-green-800">
+            <CheckCircle className="mr-1 h-3 w-3" />
+            Completed
+          </Badge>
+        );
       case 'assistant-error':
       case 'error':
-        return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Error</Badge>;
+        return (
+          <Badge variant="destructive">
+            <XCircle className="mr-1 h-3 w-3" />
+            Error
+          </Badge>
+        );
       case 'customer-did-not-give-microphone-permission':
       case 'no-answer':
-        return <Badge variant="secondary"><Phone className="w-3 h-3 mr-1" />No Answer</Badge>;
+        return (
+          <Badge variant="secondary">
+            <Phone className="mr-1 h-3 w-3" />
+            No Answer
+          </Badge>
+        );
       case 'assistant-ended-call':
-        return <Badge variant="outline"><Phone className="w-3 h-3 mr-1" />Assistant Ended</Badge>;
+        return (
+          <Badge variant="outline">
+            <Phone className="mr-1 h-3 w-3" />
+            Assistant Ended
+          </Badge>
+        );
       default:
-        return <Badge variant="secondary">{endedReason.replace(/-/g, ' ')}</Badge>;
+        return (
+          <Badge variant="secondary">{endedReason.replace(/-/g, ' ')}</Badge>
+        );
     }
   };
 
@@ -200,7 +249,7 @@ export default function DashboardPage() {
     setSelectedCall(call);
     setCallDetailDialogOpen(true);
     setActionPoints(null); // Reset previous action points
-    
+
     // Generate action points for this call
     if (call.transcript || call.summary) {
       const points = await generateActionPoints(call.id);
@@ -225,7 +274,7 @@ export default function DashboardPage() {
 
       if (response.ok) {
         const result = await response.json();
-        
+
         // Show detailed feedback to user
         if (result.processed > 0) {
           toast({
@@ -244,10 +293,10 @@ export default function DashboardPage() {
             variant: 'destructive',
           });
         }
-        
+
         // Refresh analytics to show updated sentiment data
         await refetch();
-        
+
         logger.info('DASHBOARD', 'Bulk analysis completed', {
           processed: result.processed,
           errors: result.errors || 0,
@@ -285,7 +334,8 @@ export default function DashboardPage() {
 
   const VALIDATION_PATTERNS = {
     NAME_PATTERN: /^[\p{L}](?:[\p{L}\s\-'.])*[\p{L}]$|^[\p{L}]$/u,
-    BUSINESS_NAME_PATTERN: /^[a-zA-Z0-9](?:[a-zA-Z0-9\s\-'.,&()]*[a-zA-Z0-9.)])?$/,
+    BUSINESS_NAME_PATTERN:
+      /^[a-zA-Z0-9](?:[a-zA-Z0-9\s\-'.,&()]*[a-zA-Z0-9.)])?$/,
   };
 
   const validateContent = (field: string, value: string): string | null => {
@@ -341,14 +391,15 @@ export default function DashboardPage() {
       await updateAIReceptionistSettings(formData);
       setIsEditing(false);
       setValidationErrors({});
-      
+
       logger.info('DASHBOARD', 'AI receptionist settings saved successfully', {
         settingsUpdated: Object.keys(formData),
       });
 
       toast({
         title: 'Settings saved',
-        description: 'Your AI receptionist settings have been updated successfully.',
+        description:
+          'Your AI receptionist settings have been updated successfully.',
       });
     } catch (error) {
       logger.error('DASHBOARD', 'Failed to save settings', error as Error, {
@@ -357,7 +408,8 @@ export default function DashboardPage() {
 
       toast({
         title: 'Failed to save settings',
-        description: 'There was an error saving your settings. Please try again.',
+        description:
+          'There was an error saving your settings. Please try again.',
         variant: 'destructive',
       });
       return;
@@ -367,12 +419,22 @@ export default function DashboardPage() {
     try {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
-        await syncVapiAssistant(user.id, formData.aiAssistantName, formData.greetingScript);
+        await syncVapiAssistant(
+          user.id,
+          formData.aiAssistantName,
+          formData.greetingScript
+        );
       }
     } catch (syncErr) {
-      logger.error('DASHBOARD', 'Failed to sync Vapi assistant', syncErr as Error);
+      logger.error(
+        'DASHBOARD',
+        'Failed to sync Vapi assistant',
+        syncErr as Error
+      );
     }
   };
 
@@ -390,7 +452,8 @@ export default function DashboardPage() {
   };
 
   const currentSavedData = getAIReceptionistSettings();
-  const isFormChanged = JSON.stringify(formData) !== JSON.stringify(currentSavedData);
+  const isFormChanged =
+    JSON.stringify(formData) !== JSON.stringify(currentSavedData);
 
   if (error) {
     return (
@@ -401,7 +464,7 @@ export default function DashboardPage() {
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center text-red-600">
-                  <AlertTriangle className="w-12 h-12 mx-auto mb-4" />
+                  <AlertTriangle className="mx-auto mb-4 h-12 w-12" />
                   <p>Error loading dashboard: {error.message}</p>
                   <Button onClick={() => refetch()} className="mt-4">
                     Retry
@@ -419,13 +482,13 @@ export default function DashboardPage() {
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-to-br from-background via-purple-950/10 to-blue-950/10">
         <DashboardHeader />
-        
-        <div className="p-6 space-y-6">
+
+        <div className="space-y-6 p-6">
           {/* Header */}
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-foreground mt-2">
+              <p className="mt-2 text-foreground">
                 Monitor your AI receptionist and manage your settings
               </p>
             </div>
@@ -434,31 +497,41 @@ export default function DashboardPage() {
           {/* Tabbed Interface */}
           <Tabs defaultValue="analytics" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="analytics" className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
+              <TabsTrigger
+                value="analytics"
+                className="flex items-center gap-2"
+              >
+                <BarChart3 className="h-4 w-4" />
                 Analytics
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-2">
-                <Settings className="w-4 h-4" />
+                <Settings className="h-4 w-4" />
                 AI Settings
               </TabsTrigger>
             </TabsList>
 
             {/* Analytics Tab */}
             <TabsContent value="analytics" className="space-y-6">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <p className="text-muted-foreground">
                   Monitor your AI receptionist performance and call analytics
                 </p>
                 <div className="flex items-center gap-4">
-                  <Select value={timeRange.toString()} onValueChange={(value) => {
-                    const newTimeRange = parseInt(value);
-                    logger.info('DASHBOARD_TIME_FILTER', 'Time range filter changed', {
-                      oldTimeRange: timeRange,
-                      newTimeRange: newTimeRange,
-                    });
-                    setTimeRange(newTimeRange);
-                  }}>
+                  <Select
+                    value={timeRange.toString()}
+                    onValueChange={value => {
+                      const newTimeRange = parseInt(value);
+                      logger.info(
+                        'DASHBOARD_TIME_FILTER',
+                        'Time range filter changed',
+                        {
+                          oldTimeRange: timeRange,
+                          newTimeRange: newTimeRange,
+                        }
+                      );
+                      setTimeRange(newTimeRange);
+                    }}
+                  >
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="Time range" />
                     </SelectTrigger>
@@ -475,9 +548,9 @@ export default function DashboardPage() {
                     disabled={isRefetching}
                   >
                     {isRefetching ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <RefreshCw className="w-4 h-4" />
+                      <RefreshCw className="h-4 w-4" />
                     )}
                     Refresh
                   </Button>
@@ -489,403 +562,500 @@ export default function DashboardPage() {
                     title="Analyze recent calls to improve sentiment data accuracy"
                   >
                     {isBulkAnalyzing ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Lightbulb className="w-4 h-4" />
+                      <Lightbulb className="h-4 w-4" />
                     )}
                     Analyze Calls
                   </Button>
                   <Badge variant="outline" className="text-sm">
-                    <Phone className="w-3 h-3 mr-1" />
+                    <Phone className="mr-1 h-3 w-3" />
                     {totalCalls} Total Calls
                   </Badge>
                 </div>
               </div>
 
-          {/* Analytics Section */}
-          {analytics && analytics.metrics && (
-            <DashboardAnalytics metrics={analytics.metrics} trends={analytics.trends} />
-          )}
+              {/* Analytics Section */}
+              {analytics && analytics.metrics && (
+                <DashboardAnalytics
+                  metrics={analytics.metrics}
+                  trends={analytics.trends}
+                />
+              )}
 
+              {/* Loading State */}
+              {isLoading && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="py-8 text-center">
+                      <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin" />
+                      <p className="text-muted-foreground">
+                        Loading analytics...
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-          {/* Loading State */}
-          {isLoading && (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center py-8">
-                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-                  <p className="text-muted-foreground">Loading analytics...</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+              {/* Filters and Search */}
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-col gap-4 md:flex-row">
+                    {/* Search */}
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+                        <Input
+                          placeholder="Search by phone number, summary, or status..."
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
 
-          {/* Filters and Search */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col md:flex-row gap-4">
-                {/* Search */}
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                    <Input
-                      placeholder="Search by phone number, summary, or status..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                    />
+                    {/* Status Filter */}
+                    <Select
+                      value={statusFilter}
+                      onValueChange={setStatusFilter}
+                    >
+                      <SelectTrigger className="w-48">
+                        <FilterIcon className="mr-2 h-4 w-4" />
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="customer-ended-call">
+                          Completed
+                        </SelectItem>
+                        <SelectItem value="assistant-error">Error</SelectItem>
+                        <SelectItem value="customer-did-not-give-microphone-permission">
+                          No Answer
+                        </SelectItem>
+                        <SelectItem value="assistant-ended-call">
+                          Assistant Ended
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Sort By */}
+                    <Select value={sortBy} onValueChange={setSortBy}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="date">Recent First</SelectItem>
+                        <SelectItem value="duration">Duration</SelectItem>
+                        <SelectItem value="phone">Phone Number</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
+                </CardContent>
+              </Card>
 
-                {/* Status Filter */}
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-48">
-                    <FilterIcon className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="customer-ended-call">Completed</SelectItem>
-                    <SelectItem value="assistant-error">Error</SelectItem>
-                    <SelectItem value="customer-did-not-give-microphone-permission">No Answer</SelectItem>
-                    <SelectItem value="assistant-ended-call">Assistant Ended</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* Sort By */}
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="date">Recent First</SelectItem>
-                    <SelectItem value="duration">Duration</SelectItem>
-                    <SelectItem value="phone">Phone Number</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Call History Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
-                Recent Calls ({filteredCalls.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-4 text-gray-600">Loading calls...</p>
-                </div>
-              ) : filteredCalls.length === 0 ? (
-                <div className="text-center py-8">
-                  <Phone className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">
-                    {searchQuery || statusFilter !== "all"
-                      ? "No calls match your search criteria"
-                      : "No calls available yet"}
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Phone Number</TableHead>
-                        <TableHead>Date & Time</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Cost</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredCalls.map((call) => (
-                        <TableRow
-                          key={call.id}
-                          className={`cursor-pointer ${selectedCall?.id === call.id ? 'bg-blue-50/50' : ''}`}
-                          onClick={() => openCallDetail(call)}
-                        >
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-2">
-                              <Phone className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-foreground">{call.phoneNumber || 'Unknown'}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-foreground">{formatDate((call.createdAt || call.startedAt || ''))}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-foreground font-mono">{formatDuration(call.durationSeconds)}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(call.endedReason)}
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-foreground">
-                              {call.cost ? `$${call.cost.toFixed(3)}` : '-'}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
+              {/* Call History Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    Recent Calls ({filteredCalls.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isLoading ? (
+                    <div className="py-8 text-center">
+                      <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
+                      <p className="mt-4 text-gray-600">Loading calls...</p>
+                    </div>
+                  ) : filteredCalls.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <Phone className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                      <p className="text-muted-foreground">
+                        {searchQuery || statusFilter !== 'all'
+                          ? 'No calls match your search criteria'
+                          : 'No calls available yet'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Phone Number</TableHead>
+                            <TableHead>Date & Time</TableHead>
+                            <TableHead>Duration</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Cost</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredCalls.map(call => (
+                            <TableRow
+                              key={call.id}
+                              className={`cursor-pointer ${selectedCall?.id === call.id ? 'bg-blue-50' : ''}`}
                               onClick={() => openCallDetail(call)}
-                              className="text-xs"
                             >
-                              <FileText className="w-3 h-3 mr-1" />
-                              View Details
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Call Detail Dialog */}
-          <Dialog open={callDetailDialogOpen} onOpenChange={setCallDetailDialogOpen}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Phone className="w-5 h-5" />
-                  Call Details - {selectedCall?.phoneNumber || 'Unknown'}
-                </DialogTitle>
-                <DialogDescription>
-                  {selectedCall && formatDate(selectedCall.createdAt)} • {selectedCall && formatDuration(selectedCall.durationSeconds)}
-                </DialogDescription>
-              </DialogHeader>
-
-              {selectedCall && (
-                <div className="space-y-6">
-                  {/* Call Info */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Card>
-                      <CardContent className="pt-4">
-                        <div className="text-center">
-                          <Clock className="w-8 h-8 mx-auto text-blue-600 mb-2" />
-                          <p className="text-2xl font-bold text-foreground">{formatDuration(selectedCall.durationSeconds)}</p>
-                          <p className="text-sm text-foreground">Duration</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-4">
-                        <div className="text-center">
-                          {getStatusBadge(selectedCall.endedReason)}
-                          <p className="text-sm text-foreground mt-2">Call Status</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-4">
-                        <div className="text-center">
-                          <Phone className="w-8 h-8 mx-auto text-green-600 mb-2" />
-                          <p className="text-lg font-bold text-foreground">{selectedCall.phoneNumber || 'Unknown'}</p>
-                          <p className="text-sm text-foreground">Phone Number</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-4">
-                        <div className="text-center">
-                          <TrendingUp className="w-8 h-8 mx-auto text-purple-600 mb-2" />
-                          <p className="text-2xl font-bold text-foreground">{selectedCall.cost ? `$${selectedCall.cost.toFixed(3)}` : '-'}</p>
-                          <p className="text-sm text-foreground">Cost</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Summary */}
-                  {selectedCall.summary && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg text-foreground">Call Summary</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-foreground leading-relaxed">{selectedCall.summary}</p>
-                      </CardContent>
-                    </Card>
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-2">
+                                  <Phone className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-foreground">
+                                    {call.phoneNumber || 'Unknown'}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-foreground">
+                                    {formatDate(
+                                      call.createdAt || call.startedAt || ''
+                                    )}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-4 w-4 text-muted-foreground" />
+                                  <span className="font-mono text-foreground">
+                                    {formatDuration(call.durationSeconds)}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {getStatusBadge(call.endedReason)}
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-foreground">
+                                  {call.cost ? `$${call.cost.toFixed(3)}` : '-'}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openCallDetail(call)}
+                                  className="text-xs"
+                                >
+                                  <FileText className="mr-1 h-3 w-3" />
+                                  View Details
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
+                </CardContent>
+              </Card>
 
-                  {/* Action Points Section */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                        <Lightbulb className="w-5 h-5" />
-                        AI-Generated Action Points
-                        {actionPointsLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {actionPointsLoading && (
-                        <div className="text-center py-4">
-                          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                          <p className="text-sm text-muted-foreground">Analyzing call content...</p>
-                        </div>
-                      )}
-                      
-                      {actionPointsError && (
-                        <div className="text-center py-4">
-                          <AlertTriangle className="w-6 h-6 text-red-500 mx-auto mb-2" />
-                          <p className="text-sm text-red-600">Failed to generate action points: {actionPointsError}</p>
-                        </div>
-                      )}
-                      
-                      {actionPoints && !actionPointsLoading && (
-                        <div className="space-y-4">
-                          {/* Call Purpose */}
-                          {actionPoints.callPurpose && (
-                            <div>
-                              <h4 className="font-semibold text-foreground mb-2">Call Purpose</h4>
-                              <p className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
-                                {actionPoints.callPurpose}
+              {/* Call Detail Dialog */}
+              <Dialog
+                open={callDetailDialogOpen}
+                onOpenChange={setCallDetailDialogOpen}
+              >
+                <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Phone className="h-5 w-5" />
+                      Call Details - {selectedCall?.phoneNumber || 'Unknown'}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {selectedCall && formatDate(selectedCall.createdAt)} •{' '}
+                      {selectedCall &&
+                        formatDuration(selectedCall.durationSeconds)}
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  {selectedCall && (
+                    <div className="space-y-6">
+                      {/* Call Info */}
+                      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                        <Card>
+                          <CardContent className="pt-4">
+                            <div className="text-center">
+                              <Clock className="mx-auto mb-2 h-8 w-8 text-blue-600" />
+                              <p className="text-2xl font-bold text-foreground">
+                                {formatDuration(selectedCall.durationSeconds)}
+                              </p>
+                              <p className="text-sm text-foreground">
+                                Duration
                               </p>
                             </div>
-                          )}
-
-                          {/* Sentiment */}
-                          {actionPoints.sentiment && (
-                            <div>
-                              <h4 className="font-semibold text-foreground mb-2">Call Sentiment</h4>
-                              <Badge 
-                                variant={
-                                  actionPoints.sentiment === 'positive' ? 'default' : 
-                                  actionPoints.sentiment === 'negative' ? 'destructive' : 'secondary'
-                                }
-                                className="capitalize"
-                              >
-                                <Heart className="w-3 h-3 mr-1" />
-                                {actionPoints.sentiment}
-                              </Badge>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-4">
+                            <div className="text-center">
+                              {getStatusBadge(selectedCall.endedReason)}
+                              <p className="mt-2 text-sm text-foreground">
+                                Call Status
+                              </p>
                             </div>
-                          )}
-
-                          {/* Key Points */}
-                          {actionPoints.keyPoints && actionPoints.keyPoints.length > 0 && (
-                            <div>
-                              <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                                <MessageSquare className="w-4 h-4" />
-                                Key Discussion Points ({actionPoints.keyPoints.length})
-                              </h4>
-                              <ul className="space-y-2">
-                                {actionPoints.keyPoints.map((point, index) => (
-                                  <li key={index} className="flex items-start gap-2">
-                                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                                    <span className="text-sm text-foreground">{point}</span>
-                                  </li>
-                                ))}
-                              </ul>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-4">
+                            <div className="text-center">
+                              <Phone className="mx-auto mb-2 h-8 w-8 text-green-600" />
+                              <p className="text-lg font-bold text-foreground">
+                                {selectedCall.phoneNumber || 'Unknown'}
+                              </p>
+                              <p className="text-sm text-foreground">
+                                Phone Number
+                              </p>
                             </div>
-                          )}
-
-                          {/* Follow-up Items */}
-                          {actionPoints.followUpItems && actionPoints.followUpItems.length > 0 && (
-                            <div>
-                              <h4 className="font-semibold text-green-700 mb-2 flex items-center gap-2">
-                                <ListTodo className="w-4 h-4" />
-                                Follow-up Actions ({actionPoints.followUpItems.length})
-                              </h4>
-                              <ul className="space-y-2">
-                                {actionPoints.followUpItems.map((item, index) => (
-                                  <li key={index} className="flex items-start gap-2">
-                                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                                    <span className="text-sm text-foreground">{item}</span>
-                                  </li>
-                                ))}
-                              </ul>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-4">
+                            <div className="text-center">
+                              <TrendingUp className="mx-auto mb-2 h-8 w-8 text-purple-600" />
+                              <p className="text-2xl font-bold text-foreground">
+                                {selectedCall.cost
+                                  ? `$${selectedCall.cost.toFixed(3)}`
+                                  : '-'}
+                              </p>
+                              <p className="text-sm text-foreground">Cost</p>
                             </div>
-                          )}
+                          </CardContent>
+                        </Card>
+                      </div>
 
-                          {/* Urgent Concerns */}
-                          {actionPoints.urgentConcerns && actionPoints.urgentConcerns.length > 0 && (
-                            <div>
-                              <h4 className="font-semibold text-red-700 mb-2 flex items-center gap-2">
-                                <AlertTriangle className="w-4 h-4" />
-                                Urgent Concerns ({actionPoints.urgentConcerns.length})
-                              </h4>
-                              <ul className="space-y-2">
-                                {actionPoints.urgentConcerns.map((concern, index) => (
-                                  <li key={index} className="flex items-start gap-2">
-                                    <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                                    <span className="text-sm text-foreground">{concern}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                      {/* Summary */}
+                      {selectedCall.summary && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg text-foreground">
+                              Call Summary
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="leading-relaxed text-foreground">
+                              {selectedCall.summary}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      )}
 
-                          {/* Empty State */}
-                          {(!actionPoints.keyPoints || actionPoints.keyPoints.length === 0) &&
-                           (!actionPoints.followUpItems || actionPoints.followUpItems.length === 0) &&
-                           (!actionPoints.urgentConcerns || actionPoints.urgentConcerns.length === 0) && (
-                            <div className="text-center py-4">
-                              <MessageSquare className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      {/* Action Points Section */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-lg text-foreground">
+                            <Lightbulb className="h-5 w-5" />
+                            AI-Generated Action Points
+                            {actionPointsLoading && (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            )}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {actionPointsLoading && (
+                            <div className="py-4 text-center">
+                              <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
                               <p className="text-sm text-muted-foreground">
-                                No specific action points identified from this call.
+                                Analyzing call content...
                               </p>
                             </div>
                           )}
-                        </div>
-                      )}
 
-                      {!actionPoints && !actionPointsLoading && !actionPointsError && (
-                        <div className="text-center py-4">
-                          <Lightbulb className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                          <p className="text-sm text-muted-foreground">
-                            {selectedCall.transcript || selectedCall.summary 
-                              ? 'Action points will be generated automatically...' 
-                              : 'No transcript or summary available for analysis.'}
-                          </p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                          {actionPointsError && (
+                            <div className="py-4 text-center">
+                              <AlertTriangle className="mx-auto mb-2 h-6 w-6 text-red-500" />
+                              <p className="text-sm text-red-600">
+                                Failed to generate action points:{' '}
+                                {actionPointsError}
+                              </p>
+                            </div>
+                          )}
 
-                  {/* Transcript */}
-                  {selectedCall.transcript && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg text-foreground">Call Transcript</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="bg-card p-4 rounded-lg max-h-60 overflow-y-auto">
-                          <pre className="text-foreground whitespace-pre-wrap font-mono">
-                            {selectedCall.transcript}
-                          </pre>
-                        </div>
-                      </CardContent>
-                    </Card>
+                          {actionPoints && !actionPointsLoading && (
+                            <div className="space-y-4">
+                              {/* Call Purpose */}
+                              {actionPoints.callPurpose && (
+                                <div>
+                                  <h4 className="mb-2 font-semibold text-foreground">
+                                    Call Purpose
+                                  </h4>
+                                  <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
+                                    {actionPoints.callPurpose}
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Sentiment */}
+                              {actionPoints.sentiment && (
+                                <div>
+                                  <h4 className="mb-2 font-semibold text-foreground">
+                                    Call Sentiment
+                                  </h4>
+                                  <Badge
+                                    variant={
+                                      actionPoints.sentiment === 'positive'
+                                        ? 'default'
+                                        : actionPoints.sentiment === 'negative'
+                                          ? 'destructive'
+                                          : 'secondary'
+                                    }
+                                    className="capitalize"
+                                  >
+                                    <Heart className="mr-1 h-3 w-3" />
+                                    {actionPoints.sentiment}
+                                  </Badge>
+                                </div>
+                              )}
+
+                              {/* Key Points */}
+                              {actionPoints.keyPoints &&
+                                actionPoints.keyPoints.length > 0 && (
+                                  <div>
+                                    <h4 className="mb-2 flex items-center gap-2 font-semibold text-foreground">
+                                      <MessageSquare className="h-4 w-4" />
+                                      Key Discussion Points (
+                                      {actionPoints.keyPoints.length})
+                                    </h4>
+                                    <ul className="space-y-2">
+                                      {actionPoints.keyPoints.map(
+                                        (point, index) => (
+                                          <li
+                                            key={index}
+                                            className="flex items-start gap-2"
+                                          >
+                                            <span className="mt-2 inline-block h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"></span>
+                                            <span className="text-sm text-foreground">
+                                              {point}
+                                            </span>
+                                          </li>
+                                        )
+                                      )}
+                                    </ul>
+                                  </div>
+                                )}
+
+                              {/* Follow-up Items */}
+                              {actionPoints.followUpItems &&
+                                actionPoints.followUpItems.length > 0 && (
+                                  <div>
+                                    <h4 className="mb-2 flex items-center gap-2 font-semibold text-green-700">
+                                      <ListTodo className="h-4 w-4" />
+                                      Follow-up Actions (
+                                      {actionPoints.followUpItems.length})
+                                    </h4>
+                                    <ul className="space-y-2">
+                                      {actionPoints.followUpItems.map(
+                                        (item, index) => (
+                                          <li
+                                            key={index}
+                                            className="flex items-start gap-2"
+                                          >
+                                            <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
+                                            <span className="text-sm text-foreground">
+                                              {item}
+                                            </span>
+                                          </li>
+                                        )
+                                      )}
+                                    </ul>
+                                  </div>
+                                )}
+
+                              {/* Urgent Concerns */}
+                              {actionPoints.urgentConcerns &&
+                                actionPoints.urgentConcerns.length > 0 && (
+                                  <div>
+                                    <h4 className="mb-2 flex items-center gap-2 font-semibold text-red-700">
+                                      <AlertTriangle className="h-4 w-4" />
+                                      Urgent Concerns (
+                                      {actionPoints.urgentConcerns.length})
+                                    </h4>
+                                    <ul className="space-y-2">
+                                      {actionPoints.urgentConcerns.map(
+                                        (concern, index) => (
+                                          <li
+                                            key={index}
+                                            className="flex items-start gap-2"
+                                          >
+                                            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
+                                            <span className="text-sm text-foreground">
+                                              {concern}
+                                            </span>
+                                          </li>
+                                        )
+                                      )}
+                                    </ul>
+                                  </div>
+                                )}
+
+                              {/* Empty State */}
+                              {(!actionPoints.keyPoints ||
+                                actionPoints.keyPoints.length === 0) &&
+                                (!actionPoints.followUpItems ||
+                                  actionPoints.followUpItems.length === 0) &&
+                                (!actionPoints.urgentConcerns ||
+                                  actionPoints.urgentConcerns.length === 0) && (
+                                  <div className="py-4 text-center">
+                                    <MessageSquare className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+                                    <p className="text-sm text-muted-foreground">
+                                      No specific action points identified from
+                                      this call.
+                                    </p>
+                                  </div>
+                                )}
+                            </div>
+                          )}
+
+                          {!actionPoints &&
+                            !actionPointsLoading &&
+                            !actionPointsError && (
+                              <div className="py-4 text-center">
+                                <Lightbulb className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+                                <p className="text-sm text-muted-foreground">
+                                  {selectedCall.transcript ||
+                                  selectedCall.summary
+                                    ? 'Action points will be generated automatically...'
+                                    : 'No transcript or summary available for analysis.'}
+                                </p>
+                              </div>
+                            )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Transcript */}
+                      {selectedCall.transcript && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg text-foreground">
+                              Call Transcript
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="max-h-60 overflow-y-auto rounded-lg bg-card p-4">
+                              <pre className="whitespace-pre-wrap font-mono text-foreground">
+                                {selectedCall.transcript}
+                              </pre>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
+                </DialogContent>
+              </Dialog>
             </TabsContent>
 
             {/* AI Settings Tab */}
             <TabsContent value="settings" className="space-y-6">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <p className="text-muted-foreground">
                   Configure your AI receptionist settings and greeting
                 </p>
                 {!isEditing && (
-                  <Button onClick={handleEdit} className="flex items-center gap-2">
-                    <Edit className="w-4 h-4" />
+                  <Button
+                    onClick={handleEdit}
+                    className="flex items-center gap-2"
+                  >
+                    <Edit className="h-4 w-4" />
                     Edit Settings
                   </Button>
                 )}
@@ -895,34 +1065,43 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Settings className="w-5 h-5" />
+                    <Settings className="h-5 w-5" />
                     AI Receptionist Configuration
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {settingsError && (
-                    <div className="p-4 border border-red-200 bg-red-50 rounded-lg">
-                      <p className="text-red-600 text-sm">{settingsError}</p>
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                      <p className="text-sm text-red-600">{settingsError}</p>
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     {/* Assistant Name */}
                     <div className="space-y-2">
                       <Label htmlFor="aiAssistantName">AI Assistant Name</Label>
                       <Input
                         id="aiAssistantName"
                         value={formData.aiAssistantName}
-                        onChange={(e) => handleInputChange('aiAssistantName', e.target.value)}
+                        onChange={e =>
+                          handleInputChange('aiAssistantName', e.target.value)
+                        }
                         placeholder="e.g., Ava"
                         disabled={!isEditing || settingsSaving}
-                        className={validationErrors.aiAssistantName ? 'border-red-500' : ''}
+                        className={
+                          validationErrors.aiAssistantName
+                            ? 'border-red-500'
+                            : ''
+                        }
                       />
                       {validationErrors.aiAssistantName && (
-                        <p className="text-red-500 text-sm">{validationErrors.aiAssistantName}</p>
+                        <p className="text-sm text-red-500">
+                          {validationErrors.aiAssistantName}
+                        </p>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        {formData.aiAssistantName.length}/{fieldLimits.aiAssistantName.maxLength} characters
+                        {formData.aiAssistantName.length}/
+                        {fieldLimits.aiAssistantName.maxLength} characters
                       </p>
                     </div>
 
@@ -932,16 +1111,23 @@ export default function DashboardPage() {
                       <Input
                         id="yourName"
                         value={formData.yourName}
-                        onChange={(e) => handleInputChange('yourName', e.target.value)}
+                        onChange={e =>
+                          handleInputChange('yourName', e.target.value)
+                        }
                         placeholder="e.g., John Smith"
                         disabled={!isEditing || settingsSaving}
-                        className={validationErrors.yourName ? 'border-red-500' : ''}
+                        className={
+                          validationErrors.yourName ? 'border-red-500' : ''
+                        }
                       />
                       {validationErrors.yourName && (
-                        <p className="text-red-500 text-sm">{validationErrors.yourName}</p>
+                        <p className="text-sm text-red-500">
+                          {validationErrors.yourName}
+                        </p>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        {formData.yourName.length}/{fieldLimits.yourName.maxLength} characters
+                        {formData.yourName.length}/
+                        {fieldLimits.yourName.maxLength} characters
                       </p>
                     </div>
                   </div>
@@ -952,16 +1138,23 @@ export default function DashboardPage() {
                     <Input
                       id="businessName"
                       value={formData.businessName}
-                      onChange={(e) => handleInputChange('businessName', e.target.value)}
+                      onChange={e =>
+                        handleInputChange('businessName', e.target.value)
+                      }
                       placeholder="e.g., Smith Real Estate Group"
                       disabled={!isEditing || settingsSaving}
-                      className={validationErrors.businessName ? 'border-red-500' : ''}
+                      className={
+                        validationErrors.businessName ? 'border-red-500' : ''
+                      }
                     />
                     {validationErrors.businessName && (
-                      <p className="text-red-500 text-sm">{validationErrors.businessName}</p>
+                      <p className="text-sm text-red-500">
+                        {validationErrors.businessName}
+                      </p>
                     )}
                     <p className="text-xs text-muted-foreground">
-                      {formData.businessName.length}/{fieldLimits.businessName.maxLength} characters
+                      {formData.businessName.length}/
+                      {fieldLimits.businessName.maxLength} characters
                     </p>
                   </div>
 
@@ -971,32 +1164,44 @@ export default function DashboardPage() {
                     <Textarea
                       id="greetingScript"
                       value={formData.greetingScript}
-                      onChange={(e) => handleInputChange('greetingScript', e.target.value)}
+                      onChange={e =>
+                        handleInputChange('greetingScript', e.target.value)
+                      }
                       placeholder="Hello! Thank you for calling [Business Name]. This is [Assistant Name], how can I help you today?"
                       disabled={!isEditing || settingsSaving}
                       className={`min-h-[120px] ${validationErrors.greetingScript ? 'border-red-500' : ''}`}
                     />
                     {validationErrors.greetingScript && (
-                      <p className="text-red-500 text-sm">{validationErrors.greetingScript}</p>
+                      <p className="text-sm text-red-500">
+                        {validationErrors.greetingScript}
+                      </p>
                     )}
                     <p className="text-xs text-muted-foreground">
-                      {formData.greetingScript.length}/{fieldLimits.greetingScript.maxLength} characters
+                      {formData.greetingScript.length}/
+                      {fieldLimits.greetingScript.maxLength} characters
                     </p>
                   </div>
 
                   {/* Action Buttons */}
                   {isEditing && (
-                    <div className="flex items-center gap-3 pt-4 border-t">
-                      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                    <div className="flex items-center gap-3 border-t pt-4">
+                      <AlertDialog
+                        open={confirmOpen}
+                        onOpenChange={setConfirmOpen}
+                      >
                         <AlertDialogTrigger asChild>
                           <Button
-                            disabled={settingsSaving || !isFormChanged || Object.values(validationErrors).some(Boolean)}
+                            disabled={
+                              settingsSaving ||
+                              !isFormChanged ||
+                              Object.values(validationErrors).some(Boolean)
+                            }
                             className="flex items-center gap-2"
                           >
                             {settingsSaving ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                              <Save className="w-4 h-4" />
+                              <Save className="h-4 w-4" />
                             )}
                             {settingsSaving ? 'Saving...' : 'Save Changes'}
                           </Button>
@@ -1005,13 +1210,17 @@ export default function DashboardPage() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Confirm Changes</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to save these changes to your AI receptionist settings?
-                              This will update how your assistant introduces itself and responds to callers.
+                              Are you sure you want to save these changes to
+                              your AI receptionist settings? This will update
+                              how your assistant introduces itself and responds
+                              to callers.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={doSave}>Save Changes</AlertDialogAction>
+                            <AlertDialogAction onClick={doSave}>
+                              Save Changes
+                            </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
@@ -1022,7 +1231,7 @@ export default function DashboardPage() {
                         disabled={settingsSaving}
                         className="flex items-center gap-2"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="h-4 w-4" />
                         Cancel
                       </Button>
                     </div>

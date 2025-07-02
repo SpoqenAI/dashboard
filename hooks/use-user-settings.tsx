@@ -128,11 +128,7 @@ export function useUserSettings() {
 
         // Fetch settings and profile data in parallel
         const [settingsResponse, profileResponse] = await Promise.all([
-          supabase
-            .from('user_settings')
-            .select('*')
-            .eq('id', user.id)
-            .single(),
+          supabase.from('user_settings').select('*').eq('id', user.id).single(),
           supabase
             .from('profiles')
             .select(
@@ -161,7 +157,8 @@ export function useUserSettings() {
         }
 
         // Attempt to fetch assistant details from Vapi via internal API (optional)
-        let assistantData: { assistant_name: string; greeting: string } | null = null;
+        let assistantData: { assistant_name: string; greeting: string } | null =
+          null;
         if (settingsData?.vapi_assistant_id) {
           try {
             const res = await fetch('/api/vapi/assistant/info');

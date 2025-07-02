@@ -8,7 +8,9 @@ interface UseDashboardAnalyticsOptions {
   refetchInterval?: number;
 }
 
-export function useDashboardAnalytics(options: UseDashboardAnalyticsOptions = {}) {
+export function useDashboardAnalytics(
+  options: UseDashboardAnalyticsOptions = {}
+) {
   const { days = 30, limit = 100, refetchInterval = 60000 } = options; // Default 1 minute refetch
 
   const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
@@ -16,46 +18,57 @@ export function useDashboardAnalytics(options: UseDashboardAnalyticsOptions = {}
   const [isRefetching, setIsRefetching] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchAnalytics = useCallback(async (isRefetch = false) => {
-    if (isRefetch) {
-      setIsRefetching(true);
-    } else {
-      setIsLoading(true);
-    }
-    setError(null);
-
-    try {
-      const params = new URLSearchParams({
-        days: days.toString(),
-        limit: limit.toString(),
-      });
-
-      const response = await fetch(`/api/vapi/analytics?${params}`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        logger.error('DASHBOARD_ANALYTICS', 'Failed to fetch analytics', new Error(errorText));
-        throw new Error(`Failed to fetch analytics: ${response.statusText}`);
+  const fetchAnalytics = useCallback(
+    async (isRefetch = false) => {
+      if (isRefetch) {
+        setIsRefetching(true);
+      } else {
+        setIsLoading(true);
       }
+      setError(null);
 
-      const data = await response.json();
-      logger.info('DASHBOARD_ANALYTICS', 'Analytics data fetched successfully', {
-        totalCalls: data.metrics?.totalCalls || 0,
-        recentCallsCount: data.recentCalls?.length || 0,
-        timeRange: `${days} days`,
-        isRefetch,
-      });
+      try {
+        const params = new URLSearchParams({
+          days: days.toString(),
+          limit: limit.toString(),
+        });
 
-      setAnalytics(data);
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Unknown error');
-      setError(error);
-      logger.error('DASHBOARD_ANALYTICS', 'Failed to fetch analytics', error);
-    } finally {
-      setIsLoading(false);
-      setIsRefetching(false);
-    }
-  }, [days, limit]);
+        const response = await fetch(`/api/vapi/analytics?${params}`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          logger.error(
+            'DASHBOARD_ANALYTICS',
+            'Failed to fetch analytics',
+            new Error(errorText)
+          );
+          throw new Error(`Failed to fetch analytics: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        logger.info(
+          'DASHBOARD_ANALYTICS',
+          'Analytics data fetched successfully',
+          {
+            totalCalls: data.metrics?.totalCalls || 0,
+            recentCallsCount: data.recentCalls?.length || 0,
+            timeRange: `${days} days`,
+            isRefetch,
+          }
+        );
+
+        setAnalytics(data);
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Unknown error');
+        setError(error);
+        logger.error('DASHBOARD_ANALYTICS', 'Failed to fetch analytics', error);
+      } finally {
+        setIsLoading(false);
+        setIsRefetching(false);
+      }
+    },
+    [days, limit]
+  );
 
   const refetch = useCallback(() => {
     return fetchAnalytics(true);
@@ -94,4 +107,4 @@ export function useDashboardAnalytics(options: UseDashboardAnalyticsOptions = {}
     refetch,
     isRefetching,
   };
-} 
+}

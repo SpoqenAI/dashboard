@@ -48,13 +48,12 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button className="relative h-8 w-8 rounded-full bg-black text-white hover:bg-gray-800">
           <Avatar className="h-8 w-8">
-            <AvatarImage
-              src={
-                user?.user_metadata?.avatar_url ||
-                '/placeholder.svg?height=32&width=32&query=person'
-              }
-              alt="User"
-            />
+            {user?.user_metadata?.avatar_url ? (
+              <AvatarImage
+                src={user.user_metadata.avatar_url}
+                alt="User Avatar"
+              />
+            ) : null}
             <AvatarFallback>
               {user?.user_metadata?.first_name?.[0]?.toUpperCase() || ''}
               {user?.user_metadata?.last_name?.[0]?.toUpperCase() ||

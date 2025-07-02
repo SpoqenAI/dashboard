@@ -5,13 +5,15 @@ This document tracks what works, what's left to build, current status, known iss
 ## What Works
 
 ### Core Application Infrastructure
+
 - ✅ Next.js App Router with TypeScript
-- ✅ Supabase authentication and database integration  
+- ✅ Supabase authentication and database integration
 - ✅ Tailwind CSS + Shadcn UI components
 - ✅ Comprehensive error tracking with Sentry
 - ✅ Environment configuration and logging system
 
 ### VAPI Integration & Analytics Dashboard
+
 - ✅ **Comprehensive Dashboard Redesign** - Fully functional analytics-focused dashboard
 - ✅ Real-time VAPI call data integration and processing
 - ✅ Advanced analytics API with metrics calculation and trend analysis
@@ -28,17 +30,20 @@ This document tracks what works, what's left to build, current status, known iss
 - ✅ **Bulk analysis endpoint to process historical calls, now correctly identifying and analyzing previously unanalyzed calls.**
 
 ### AI Receptionist Management
+
 - ✅ **Restored AI receptionist settings management in dashboard tab**
 - ✅ **Client-side validation and profanity filtering for AI settings**
 - ✅ **Seamless VAPI assistant synchronization from dashboard settings**
 
 ### Billing and Subscription Management
+
 - ✅ Paddle billing integration with webhook processing
 - ✅ Subscription lifecycle management (creation, updates, cancellation)
 - ✅ Database schema supporting both legacy Stripe and current Paddle subscriptions
 - ✅ Automated user profile and subscription creation
 
 ### Security & Performance
+
 - ✅ Row Level Security (RLS) policies for data protection
 - ✅ Comprehensive middleware for authentication and routing
 - ✅ Performance optimized with proper caching strategies
@@ -66,20 +71,27 @@ This document tracks what works, what's left to build, current status, known iss
 
 ✅ **Error Handling & Logging** - Comprehensive error tracking with Sentry integration and detailed logging for debugging
 
+✅ **Placeholder Image Removal** - Eliminated all `placeholder.svg` references, ensuring no 404 errors for missing placeholder images and improving production readiness.
+
+✅ **Softened Recent Calls Highlight** - Adjusted the highlight color for selected recent calls in the dashboard from a harsh white to a softer blue (`bg-blue-50`) for a more subtle visual indication.
+
 ## What's Left to Build
 
 ### Enhanced Analytics Features
+
 - Advanced business intelligence and conversion tracking
 - CRM system integrations for lead management
 - Automated reporting and email summaries
 - Custom dashboard widgets and personalization
 
 ### AI Receptionist Management
+
 - Call forwarding setup and management interface
 - Voice training and personality customization
 - Integration with multiple voice providers
 
 ### Advanced Features
+
 - Multi-language support for international clients
 - API rate limiting and usage tracking
 - Advanced user role management
@@ -101,11 +113,13 @@ The core platform is production-ready with robust error handling, responsive des
 ## Known Issues
 
 ### Technical Debt
+
 - Memory bank system needs regular maintenance for accuracy
 - Some legacy components could be modernized
 - API rate limiting not yet implemented for VAPI endpoints
 
-### Enhancement Opportunities  
+### Enhancement Opportunities
+
 - Action points AI can be enhanced with proper LLM integration (currently uses pattern matching)
 - Additional chart types and data visualizations could be added
 - Mobile responsiveness could be further optimized
@@ -113,6 +127,7 @@ The core platform is production-ready with robust error handling, responsive des
 ### Recently Fixed
 
 - **✅ COMPLETED: Critical Call Success Evaluation Logic Fix (Jan 2025)**
+
   - **Problem:** ALL calls (64/64) were being marked as successful due to incorrect priority order - `status='ended'` was checked first and treated as success indicator
   - **Root Cause:** `'ended'` in VAPI means "call finished" NOT "call successful", but our logic prioritized status over AI analysis and endedReason
   - **Discovery:** Detailed logging revealed VAPI provides `call.analysis.successEvaluation` (AI-powered) but was being ignored
@@ -122,6 +137,7 @@ The core platform is production-ready with robust error handling, responsive des
   - **Files Modified:** `app/api/vapi/analytics/route.ts` (both calculateMetrics and calculateTrends functions)
 
 - **✅ COMPLETED: VAPI Success Evaluation Integration (Jan 2025)**
+
   - **Problem:** Used hardcoded arrays of `endedReason` strings to determine call success, which was maintenance-heavy and inaccurate
   - **Solution:** Replaced with VAPI's built-in `call.analysis.successEvaluation` which uses AI to determine call success based on assistant objectives
   - **Benefits:** More accurate success determination, handles multiple rubric types (boolean, numeric, descriptive), eliminates hardcoded filtering
@@ -129,15 +145,16 @@ The core platform is production-ready with robust error handling, responsive des
   - **Impact:** More intelligent and maintainable call success classification
 
 - **✅ COMPLETED: Data Consistency Fix - Analytics Count Alignment (Jan 2025)**
+
   - **Problem:** Discrepancy between call counts (64) and sentiment analysis counts (68) due to orphaned database records
   - **Solution:** Modified analytics API to only count analysis data for calls that exist in both current VAPI dataset AND database
   - **Impact:** Perfect data alignment - sentiment totals now match call totals for accurate reporting
 
 - **✅ COMPLETED: Dashboard Metrics Calculation Issues (Jan 2025)**
   - **Problem:** "Avg Duration" and "Answered" metrics were inaccurate - first showing 0, then showing inflated 100% answer rates
-  - **Root Causes:** 
+  - **Root Causes:**
     1. Analytics API was processing raw VAPI calls without mapping them to include calculated duration field from timestamps
     2. Filtering logic wasn't excluding failed calls (timeouts, errors) leading to inflated success rates
-  - **Solution:** 
-    - Fixed analytics API to apply `mapVapiCallToFrontend` transformation BEFORE calculating metrics 
+  - **Solution:**
+    - Fixed analytics API to apply `mapVapiCallToFrontend` transformation BEFORE calculating metrics
     - Enhanced call filtering to exclude failed call types: `
