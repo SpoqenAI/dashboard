@@ -10,6 +10,8 @@ This document tracks the current work focus, recent changes, next steps, and imp
 
 **✅ COMPLETED: Tone down recent calls highlight (July 2025)** - Modified the highlight color for selected recent calls in the dashboard to a softer blue (`bg-blue-50`) for a less prominent visual indication.
 
+**✅ COMPLETED: Spoqen Logo links to home page (July 2025)** - Updated the Spoqen logo in the dashboard header to link to the home page (`/`) instead of the dashboard (`/dashboard`).
+
 **Root Cause**: The analytics API was fetching a fixed limit of 100 calls from VAPI and then filtering by date range. For longer time ranges (like 90 days), relevant older calls weren't being fetched because they fell outside the latest 100 calls.
 
 **Solution Implemented**:

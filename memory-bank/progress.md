@@ -75,6 +75,8 @@ This document tracks what works, what's left to build, current status, known iss
 
 ✅ **Softened Recent Calls Highlight** - Adjusted the highlight color for selected recent calls in the dashboard from a harsh white to a softer blue (`bg-blue-50`) for a more subtle visual indication.
 
+✅ **Spoqen Logo Links to Home** - Updated the Spoqen logo in the dashboard header to link to the home page (`/`) for consistent navigation.
+
 ## What's Left to Build
 
 ### Enhanced Analytics Features
