@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useState, useCallback, memo, Suspense, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { initializeAnalytics, trackEvent, trackCTA, trackConversion } from '@/lib/analytics-tracking';
@@ -13,6 +12,7 @@ import Logo from '@/components/ui/logo';
 import { TestimonialsSection, MicroTestimonial, TestimonialStrip } from '@/components/testimonials-section';
 import { ScarcityBanner } from '@/components/ui/scarcity-banner';
 import { ExitIntentModal } from '@/components/ui/exit-intent-modal';
+import { DashboardPreview } from '@/components/dashboard-preview';
 
 // PERFORMANCE: Dynamic imports with lazy loading for heavy components
 const InteractiveBackground = dynamic(
@@ -258,110 +258,104 @@ export default function Home() {
       </header>
       
       <main id="main-content" className="flex-1" role="main">
-        <Suspense fallback={<div className="min-h-screen bg-gradient-dark" />}>
-          <BackgroundComponent 
-            variant="hero" 
-            className="min-h-screen flex items-center justify-center bg-gradient-dark bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(29,155,240,0.1),rgba(255,255,255,0))] bg-[radial-gradient(ellipse_60%_80%_at_20%_40%,rgba(139,92,246,0.1),transparent)]"
-            {...(shouldLoadBackground ? {} : { style: { background: 'linear-gradient(to bottom, hsl(var(--background)), hsl(var(--card))' } })}
-          >
-            <section className="w-full py-20 pt-32" aria-label="Hero section">
-              <div className="container px-6">
-                <div className="grid lg:grid-cols-2 gap-12 items-center">
-                  {/* Left Content */}
-                  <div className="space-y-8 animate-fade-in">
-                    <div className="inline-flex items-center px-4 py-2 bg-card/20 backdrop-blur-glass border border-white/10 rounded-full">
-                      <span className="text-sm text-muted-foreground">🚀 Join 2,847+ Founders Using AI</span>
+        <div className="relative min-h-screen w-full flex items-center justify-center bg-gradient-dark">
+          <Suspense fallback={<div className="absolute inset-0 min-h-screen bg-gradient-dark z-0" />}>
+            <BackgroundComponent 
+              variant="hero" 
+              className="absolute inset-0 w-full h-full z-0 bg-gradient-dark bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(29,155,240,0.1),rgba(255,255,255,0))] bg-[radial-gradient(ellipse_60%_80%_at_20%_40%,rgba(139,92,246,0.1),transparent)]"
+              {...(shouldLoadBackground ? {} : { style: { background: 'linear-gradient(to bottom, hsl(var(--background)), hsl(var(--card))' } })}
+            >
+              <></>
+            </BackgroundComponent>
+          </Suspense>
+          <section className="w-full py-20 pt-32 relative z-10" aria-label="Hero section">
+            <div className="container px-6">
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
+                {/* Left Content */}
+                <div className="space-y-8 animate-fade-in">
+                  <div className="inline-flex items-center px-4 py-2 bg-card/20 backdrop-blur-glass border border-white/10 rounded-full">
+                    <span className="text-sm text-muted-foreground">🚀 Join 2,847+ Founders Using AI</span>
+                  </div>
+                  
+                  <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
+                    <span className="bg-gradient-primary bg-clip-text text-transparent leading-[1.2] py-[6px]">
+                      Never Miss Another Call.
+                    </span>
+                  </h1>
+                  
+                  <p className="text-xl text-muted-foreground leading-relaxed max-w-lg">
+                    AI receptionist that captures leads 24/7, qualifies prospects instantly, and syncs with your CRM—so you never lose revenue to missed calls again.
+                  </p>
+
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    <div className="flex items-center gap-1 text-sm bg-primary/20 backdrop-blur-glass border border-primary/30 rounded-full px-3 py-1">
+                      <Zap className="w-4 h-4 text-primary" />
+                      <span>24/7 Lead Capture</span>
                     </div>
-                    
-                    <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
-                      <span className="bg-gradient-primary bg-clip-text text-transparent leading-[1.2] py-[6px]">
-                        Never Miss Another Call.
-                      </span>
-                    </h1>
-                    
-                    <p className="text-xl text-muted-foreground leading-relaxed max-w-lg">
-                      AI receptionist that captures leads 24/7, qualifies prospects instantly, and syncs with your CRM—so you never lose revenue to missed calls again.
-                    </p>
-
-                    <div className="flex flex-wrap gap-2 mb-6">
-                      <div className="flex items-center gap-1 text-sm bg-primary/20 backdrop-blur-glass border border-primary/30 rounded-full px-3 py-1">
-                        <Zap className="w-4 h-4 text-primary" />
-                        <span>24/7 Lead Capture</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-sm bg-accent/20 backdrop-blur-glass border border-accent/30 rounded-full px-3 py-1">
-                        <TrendingUp className="w-4 h-4 text-accent" />
-                        <span>10X ROI Guarantee</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-sm bg-secondary/20 backdrop-blur-glass border border-secondary/30 rounded-full px-3 py-1">
-                        <Shield className="w-4 h-4 text-secondary" />
-                        <span>API-First Integration</span>
-                      </div>
+                    <div className="flex items-center gap-1 text-sm bg-accent/20 backdrop-blur-glass border border-accent/30 rounded-full px-3 py-1">
+                      <TrendingUp className="w-4 h-4 text-accent" />
+                      <span>10X ROI Guarantee</span>
                     </div>
-
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <Button variant="neon" size="xl" className="group focus-visible-ring" asChild>
-                        <Link 
-                          href="/signup" 
-                          aria-label="Start your 14-day free trial"
-                          onClick={() => trackCTA('start_trial', 'hero_section', { position: 'primary' })}
-                        >
-                          Start Free Trial
-                          <ArrowRight className="group-hover:translate-x-1 transition-transform" aria-hidden="true" />
-                        </Link>
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="xl" 
-                        className="group border-white/20 hover:bg-white/10 focus-visible-ring"
-                        onClick={openDemoVideo}
-                        aria-label="Watch product demo video, 2 minutes long"
-                      >
-                        <Play className="mr-2" aria-hidden="true" />
-                        Watch Demo
-                        <span className="text-xs ml-2 opacity-75" aria-hidden="true">2 min</span>
-                      </Button>
-                    </div>
-
-                    <div className="text-sm text-muted-foreground">
-                      No credit card • Setup in 5 min • Cancel anytime
-                    </div>
-
-                    <TrustLogoStrip />
-
-                    <div className="flex items-center space-x-8 pt-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-primary">340%</div>
-                        <div className="text-sm text-muted-foreground">Avg ROI</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-accent">24/7</div>
-                        <div className="text-sm text-muted-foreground">Available</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-secondary">99.9%</div>
-                        <div className="text-sm text-muted-foreground">Uptime</div>
-                      </div>
+                    <div className="flex items-center gap-1 text-sm bg-secondary/20 backdrop-blur-glass border border-secondary/30 rounded-full px-3 py-1">
+                      <Shield className="w-4 h-4 text-secondary" />
+                      <span>API-First Integration</span>
                     </div>
                   </div>
 
-                  {/* Right Content - Dashboard Preview with OPTIMIZED IMAGE */}
-                  <div className="relative animate-slide-up" style={{ animationDelay: '0.3s' }}>
-                    <div className="relative aspect-video w-full max-w-[500px] overflow-hidden rounded-xl border border-white/10 bg-card/20 backdrop-blur-glass shadow-glass">
-                      <Image
-                        src="/Spoqen-full.png"
-                        alt="Spoqen AI Receptionist Dashboard"
-                        fill
-                        className="object-contain p-8"
-                        priority
-                        sizes="(max-width: 768px) 100vw, 500px"
-                      />
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Button variant="neon" size="xl" className="group focus-visible-ring" asChild>
+                      <Link 
+                        href="/signup" 
+                        aria-label="Start your 14-day free trial"
+                        onClick={() => trackCTA('start_trial', 'hero_section', { position: 'primary' })}
+                      >
+                        Start Free Trial
+                        <ArrowRight className="group-hover:translate-x-1 transition-transform" aria-hidden="true" />
+                      </Link>
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="xl" 
+                      className="group border-white/20 hover:bg-white/10 focus-visible-ring"
+                      onClick={openDemoVideo}
+                      aria-label="Watch product demo video, 2 minutes long"
+                    >
+                      <Play className="mr-2" aria-hidden="true" />
+                      Watch Demo
+                      <span className="text-xs ml-2 opacity-75" aria-hidden="true">2 min</span>
+                    </Button>
+                  </div>
+
+                  <div className="text-sm text-muted-foreground">
+                    No credit card • Setup in 5 min • Cancel anytime
+                  </div>
+
+                  <TrustLogoStrip />
+
+                  <div className="flex items-center space-x-8 pt-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">340%</div>
+                      <div className="text-sm text-muted-foreground">Avg ROI</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-accent">24/7</div>
+                      <div className="text-sm text-muted-foreground">Available</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-secondary">99.9%</div>
+                      <div className="text-sm text-muted-foreground">Uptime</div>
                     </div>
                   </div>
                 </div>
+
+                {/* Right Content - Live Dashboard Preview */}
+                <div className="relative animate-slide-up" style={{ animationDelay: '0.3s' }}>
+                  <DashboardPreview />
+                </div>
               </div>
-            </section>
-          </BackgroundComponent>
-        </Suspense>
+            </div>
+          </section>
+        </div>
 
         {/* PERFORMANCE: Lazy load below-the-fold sections */}
         <Suspense fallback={<div className="h-32 bg-card/20 animate-pulse" />}>
