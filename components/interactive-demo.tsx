@@ -37,6 +37,21 @@ interface ConversationStep {
   };
 }
 
+interface LeadData {
+  name?: string;
+  company?: string;
+  budget?: string;
+  timeline?: string;
+  phone?: string;
+  email?: string;
+}
+
+interface AnalysisData {
+  sentiment?: 'positive' | 'neutral' | 'negative';
+  leadQuality?: 'high' | 'medium' | 'low';
+  intent?: string;
+}
+
 const conversationFlow: ConversationStep[] = [
   {
     id: 1,
@@ -148,7 +163,7 @@ const ConversationMessage = memo(({ step }: { step: ConversationStep }) => (
 ConversationMessage.displayName = 'ConversationMessage';
 
 // PERFORMANCE: Memoized lead data display component
-const LeadDataDisplay = memo(({ leadData }: { leadData: any }) => (
+const LeadDataDisplay = memo(({ leadData }: { leadData: LeadData }) => (
   <div className="space-y-3">
     {leadData.name && (
       <div className="flex items-center gap-2">
@@ -200,8 +215,8 @@ LeadDataDisplay.displayName = 'LeadDataDisplay';
 export const InteractiveDemo = memo(() => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [leadData, setLeadData] = useState<any>({});
-  const [analysisData, setAnalysisData] = useState<any>({});
+  const [leadData, setLeadData] = useState<LeadData>({});
+  const [analysisData, setAnalysisData] = useState<AnalysisData>({});
 
   // PERFORMANCE: Memoized callbacks to prevent re-renders
   const startDemo = useCallback(() => {
@@ -231,7 +246,7 @@ export const InteractiveDemo = memo(() => {
         const step = conversationFlow[currentStep];
 
         if (step.data) {
-          setLeadData((prev: any) => ({ ...prev, ...step.data }));
+          setLeadData((prev: LeadData) => ({ ...prev, ...step.data }));
         }
 
         if (step.analysis) {
@@ -371,7 +386,7 @@ export const InteractiveDemo = memo(() => {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">Intent:</span>
                       <span className="text-sm capitalize">
-                        {analysisData.intent.replace('_', ' ')}
+                        {analysisData.intent ? analysisData.intent.replace('_', ' ') : ''}
                       </span>
                     </div>
                   </div>
