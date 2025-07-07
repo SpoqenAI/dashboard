@@ -331,7 +331,7 @@ export default function DashboardPage() {
     aiAssistantName: { maxLength: 25, minLength: 1 },
     yourName: { maxLength: 50, minLength: 1 },
     businessName: { maxLength: 100, minLength: 1 },
-    greetingScript: { maxLength: 500, minLength: 10 },
+    greetingScript: { minLength: 10 },
   };
 
   const VALIDATION_PATTERNS = {
@@ -346,7 +346,7 @@ export default function DashboardPage() {
     if (value.length < limits.minLength) {
       return `Minimum ${limits.minLength} characters required`;
     }
-    if (value.length > limits.maxLength) {
+    if ('maxLength' in limits && value.length > limits.maxLength) {
       return `Maximum ${limits.maxLength} characters allowed`;
     }
 
@@ -1164,9 +1164,9 @@ export default function DashboardPage() {
                     </p>
                   </div>
 
-                  {/* Greeting Script */}
+                  {/* System Prompt */}
                   <div className="space-y-2">
-                    <Label htmlFor="greetingScript">Greeting Script</Label>
+                    <Label htmlFor="greetingScript">System Prompt</Label>
                     <Textarea
                       id="greetingScript"
                       value={formData.greetingScript}
@@ -1182,10 +1182,6 @@ export default function DashboardPage() {
                         {validationErrors.greetingScript}
                       </p>
                     )}
-                    <p className="text-xs text-muted-foreground">
-                      {formData.greetingScript.length}/
-                      {fieldLimits.greetingScript.maxLength} characters
-                    </p>
                   </div>
 
                   {/* Action Buttons */}
