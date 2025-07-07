@@ -270,18 +270,20 @@ export default function DashboardPage() {
           return b.durationSeconds - a.durationSeconds;
         case 'phone':
           return (a.phoneNumber || '').localeCompare(b.phoneNumber || '');
-        case 'sentiment':
+        case 'sentiment': {
           const sentimentOrder = { positive: 3, neutral: 2, negative: 1 };
           return (
             (sentimentOrder[b.sentiment as keyof typeof sentimentOrder] || 0) -
             (sentimentOrder[a.sentiment as keyof typeof sentimentOrder] || 0)
           );
-        case 'leadQuality':
+        }
+        case 'leadQuality': {
           const leadOrder = { hot: 3, warm: 2, cold: 1 };
           return (
             (leadOrder[b.leadQuality as keyof typeof leadOrder] || 0) -
             (leadOrder[a.leadQuality as keyof typeof leadOrder] || 0)
           );
+        }
         default:
           return 0;
       }
