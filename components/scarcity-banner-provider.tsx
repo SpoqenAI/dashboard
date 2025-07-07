@@ -34,4 +34,4 @@ export function ScarcityBannerProvider() {
       duration={30000}
     />
   );
-} 
+}

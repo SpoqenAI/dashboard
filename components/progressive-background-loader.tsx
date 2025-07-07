@@ -84,4 +84,4 @@ export function ProgressiveBackgroundLoader({
       {children}
     </BackgroundComponent>
   );
-} 
+}

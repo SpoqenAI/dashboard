@@ -73,15 +73,12 @@ export function HeroCTASection() {
         >
           <Play className="mr-2" aria-hidden="true" />
           Watch Demo
-          <span
-            className="ml-2 text-xs opacity-75"
-            aria-hidden="true"
-          >
+          <span className="ml-2 text-xs opacity-75" aria-hidden="true">
             2 min
           </span>
         </Button>
       </div>
-      
+
       {/* Demo video modal loaded on demand */}
       <Suspense fallback={null}>
         <DemoVideoModal
@@ -92,4 +89,4 @@ export function HeroCTASection() {
       </Suspense>
     </>
   );
-} 
+}
