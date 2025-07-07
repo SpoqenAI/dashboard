@@ -37,13 +37,7 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
-  // PERFORMANCE: Enable SWC minification
-  swcMinify: true,
   experimental: {
-    // Add support for ngrok and other development origins (validated strings only)
-    allowedDevOrigins: process.env.NEXT_PUBLIC_APP_URL
-      ? [process.env.NEXT_PUBLIC_APP_URL]
-      : ['http://localhost:3000'],
     // PERFORMANCE: Enable modern CSS
     optimizeCss: true,
     // PERFORMANCE: Enable memory optimization
