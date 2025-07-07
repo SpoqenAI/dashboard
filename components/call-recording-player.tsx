@@ -3,7 +3,14 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Play, Pause, Volume2, Download, Loader2, AlertCircle } from 'lucide-react';
+import {
+  Play,
+  Pause,
+  Volume2,
+  Download,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
 
@@ -12,7 +19,10 @@ interface CallRecordingPlayerProps {
   className?: string;
 }
 
-export function CallRecordingPlayer({ callId, className }: CallRecordingPlayerProps) {
+export function CallRecordingPlayer({
+  callId,
+  className,
+}: CallRecordingPlayerProps) {
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +38,9 @@ export function CallRecordingPlayer({ callId, className }: CallRecordingPlayerPr
         setIsLoading(true);
         setError(null);
 
-        const response = await fetch(`/api/vapi/call-recording?callId=${callId}`);
+        const response = await fetch(
+          `/api/vapi/call-recording?callId=${callId}`
+        );
         const data = await response.json();
 
         if (!response.ok) {
@@ -41,9 +53,15 @@ export function CallRecordingPlayer({ callId, className }: CallRecordingPlayerPr
           setError(data.message || 'No recording available for this call');
         }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load recording';
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to load recording';
         setError(errorMessage);
-        logger.error('RECORDING_PLAYER', 'Failed to fetch recording', err as Error, { callId });
+        logger.error(
+          'RECORDING_PLAYER',
+          'Failed to fetch recording',
+          err as Error,
+          { callId }
+        );
       } finally {
         setIsLoading(false);
       }
@@ -58,7 +76,7 @@ export function CallRecordingPlayer({ callId, className }: CallRecordingPlayerPr
   useEffect(() => {
     if (recordingUrl && !audio) {
       const audioElement = new Audio(recordingUrl);
-      
+
       audioElement.addEventListener('loadedmetadata', () => {
         setDuration(audioElement.duration);
       });
@@ -71,9 +89,14 @@ export function CallRecordingPlayer({ callId, className }: CallRecordingPlayerPr
         setIsPlaying(false);
       });
 
-      audioElement.addEventListener('error', (e) => {
+      audioElement.addEventListener('error', e => {
         setError('Failed to load audio file');
-        logger.error('RECORDING_PLAYER', 'Audio load error', new Error('Audio load failed'), { callId, recordingUrl });
+        logger.error(
+          'RECORDING_PLAYER',
+          'Audio load error',
+          new Error('Audio load failed'),
+          { callId, recordingUrl }
+        );
       });
 
       setAudio(audioElement);
@@ -97,12 +120,15 @@ export function CallRecordingPlayer({ callId, className }: CallRecordingPlayerPr
       audio.pause();
       setIsPlaying(false);
     } else {
-      audio.play().then(() => {
-        setIsPlaying(true);
-      }).catch((err) => {
-        setError('Failed to play audio');
-        logger.error('RECORDING_PLAYER', 'Audio play error', err, { callId });
-      });
+      audio
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch(err => {
+          setError('Failed to play audio');
+          logger.error('RECORDING_PLAYER', 'Audio play error', err, { callId });
+        });
     }
   };
 
@@ -115,14 +141,14 @@ export function CallRecordingPlayer({ callId, className }: CallRecordingPlayerPr
 
   const downloadRecording = () => {
     if (!recordingUrl) return;
-    
+
     const link = document.createElement('a');
     link.href = recordingUrl;
     link.download = `call-recording-${callId}.mp3`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     toast({
       title: 'Download Started',
       description: 'The call recording download has started.',
@@ -147,7 +173,9 @@ export function CallRecordingPlayer({ callId, className }: CallRecordingPlayerPr
         <CardContent>
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin" />
-            <span className="ml-2 text-sm text-muted-foreground">Loading recording...</span>
+            <span className="ml-2 text-sm text-muted-foreground">
+              Loading recording...
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -224,9 +252,9 @@ export function CallRecordingPlayer({ callId, className }: CallRecordingPlayerPr
               max={duration || 0}
               value={currentTime}
               onChange={handleSeek}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200"
               style={{
-                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(currentTime / duration) * 100}%, #e5e7eb ${(currentTime / duration) * 100}%, #e5e7eb 100%)`
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(currentTime / duration) * 100}%, #e5e7eb ${(currentTime / duration) * 100}%, #e5e7eb 100%)`,
               }}
             />
             <div className="flex justify-between text-xs text-muted-foreground">

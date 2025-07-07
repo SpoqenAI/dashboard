@@ -78,7 +78,7 @@ export function RecentCallsList() {
                   variant="ghost"
                   size="sm"
                   className="h-6 px-2 text-xs text-blue-600 hover:text-blue-700"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     // This would open a quick play modal or start playing inline
                     console.log('Quick play recording for call:', call.id);

@@ -579,30 +579,34 @@ export default function DashboardPage() {
         <DashboardHeader />
         <DashboardShell>
           {/* Header */}
-          <div className="flex items-center justify-between animate-fade-in">
+          <div className="flex animate-fade-in items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              <h1 className="bg-gradient-primary bg-clip-text text-4xl font-bold text-transparent">
                 Dashboard
               </h1>
-              <p className="mt-2 text-muted-foreground text-lg">
+              <p className="mt-2 text-lg text-muted-foreground">
                 Monitor your AI receptionist and manage your settings
               </p>
             </div>
           </div>
 
           {/* Tabbed Interface */}
-          <Tabs defaultValue="analytics" className="space-y-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            <TabsList className="grid w-full grid-cols-2 bg-card/20 backdrop-blur-glass border border-white/10">
+          <Tabs
+            defaultValue="analytics"
+            className="animate-slide-up space-y-6"
+            style={{ animationDelay: '0.1s' }}
+          >
+            <TabsList className="grid w-full grid-cols-2 border border-white/10 bg-card/20 backdrop-blur-glass">
               <TabsTrigger
                 value="analytics"
-                className="flex items-center gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary transition-all duration-300"
+                className="flex items-center gap-2 transition-all duration-300 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
               >
                 <BarChart3 className="h-4 w-4" />
                 Analytics
               </TabsTrigger>
-              <TabsTrigger 
-                value="settings" 
-                className="flex items-center gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary transition-all duration-300"
+              <TabsTrigger
+                value="settings"
+                className="flex items-center gap-2 transition-all duration-300 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
               >
                 <Settings className="h-4 w-4" />
                 AI Settings

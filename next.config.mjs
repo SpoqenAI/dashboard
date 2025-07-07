@@ -21,11 +21,11 @@ const nextConfig = {
       // Add other domains as needed for production
       {
         protocol: 'https',
-        hostname: '**.vercel.app',
+        hostname: 'spoqen.com',
       },
       {
         protocol: 'https',
-        hostname: '**.netlify.app',
+        hostname: 'myapp.netlify.app',
       },
     ],
     formats: ['image/webp', 'image/avif'],
@@ -76,9 +76,10 @@ const nextConfig = {
         headers: [
           {
             key: 'Cache-Control',
-            value: process.env.NODE_ENV === 'production'
-              ? 'public, max-age=31536000, immutable'
-              : 'no-store',
+            value:
+              process.env.NODE_ENV === 'production'
+                ? 'public, max-age=31536000, immutable'
+                : 'no-store',
           },
         ],
       },
@@ -124,7 +125,7 @@ const nextConfig = {
       // Enable source maps for better debugging
       config.devtool = 'eval-source-map';
     }
-    
+
     // PERFORMANCE: Optimize bundle splitting
     if (!dev && !isServer) {
       config.optimization = {
@@ -142,7 +143,7 @@ const nextConfig = {
         },
       };
     }
-    
+
     return config;
   },
 

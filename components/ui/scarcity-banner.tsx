@@ -18,7 +18,7 @@ export const ScarcityBanner = ({
   ctaText = 'Claim Now',
   ctaLink = '/signup',
   autoHide = true,
-  duration = 30000 // 30 seconds
+  duration = 30000, // 30 seconds
 }: ScarcityBannerProps) => {
   const [isVisible, setIsVisible] = useState(true);
   const [timeLeft, setTimeLeft] = useState(duration / 1000);
@@ -27,7 +27,7 @@ export const ScarcityBanner = ({
     if (!autoHide) return;
 
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
+      setTimeLeft(prev => {
         if (prev <= 1) {
           setIsVisible(false);
           return 0;
@@ -56,7 +56,6 @@ export const ScarcityBanner = ({
         return '🔥 47 people signed up in the last hour';
       case 'countdown':
         return '⚡ Special launch pricing ends soon';
-      case 'limited_time':
       default:
         return '🎯 Limited time: Get 3 months free with annual plan';
     }
@@ -65,30 +64,34 @@ export const ScarcityBanner = ({
   const displayMessage = message || getDefaultMessage();
 
   return (
-    <aside 
-      className="fixed bottom-4 left-1/2 transform -translate-x-1/2 w-[calc(100%-2rem)] max-w-2xl rounded-lg bg-card/20 backdrop-blur-glass border border-white/10 text-foreground shadow-lg animate-slide-down" 
-      role="region" 
+    <aside
+      className="animate-slide-down fixed bottom-4 left-1/2 w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 transform rounded-lg border border-white/10 bg-card/20 text-foreground shadow-lg backdrop-blur-glass"
+      role="region"
       aria-label="Limited time promotion banner"
     >
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             {type === 'countdown' && (
-              <div className="flex items-center space-x-1 bg-white/20 rounded-full px-3 py-1" aria-live="polite">
-                <Clock className="w-4 h-4" aria-hidden="true" />
+              <div
+                className="flex items-center space-x-1 rounded-full bg-white/20 px-3 py-1"
+                aria-live="polite"
+              >
+                <Clock className="h-4 w-4" aria-hidden="true" />
                 <span className="text-sm font-medium" aria-label="Time left">
-                  {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                  {Math.floor(timeLeft / 60)}:
+                  {(timeLeft % 60).toString().padStart(2, '0')}
                 </span>
               </div>
             )}
             {type === 'social_proof' && (
-              <TrendingUp className="w-5 h-5 text-white/90" />
+              <TrendingUp className="h-5 w-5 text-white/90" />
             )}
-            <span className="text-sm sm:text-base font-medium">
+            <span className="text-sm font-medium sm:text-base">
               {displayMessage}
             </span>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Button
               variant="neon"
@@ -103,11 +106,11 @@ export const ScarcityBanner = ({
             <Button
               variant="ghost"
               size="sm"
-              className="text-white hover:bg-white/20 p-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="p-1 text-white hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               onClick={handleClose}
               aria-label="Close banner"
             >
-              <X className="w-4 h-4" />
+              <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -132,4 +135,4 @@ export const scarcityBannerStyles = `
 .animate-slide-down {
   animation: slide-down 0.3s ease-out;
 }
-`; 
+`;

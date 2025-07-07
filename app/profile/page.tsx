@@ -405,7 +405,9 @@ function ProfilePageContent() {
                 <Avatar className="h-20 w-20">
                   {profile?.avatar_url || user?.user_metadata?.avatar_url ? (
                     <AvatarImage
-                      src={profile?.avatar_url || user?.user_metadata?.avatar_url}
+                      src={
+                        profile?.avatar_url || user?.user_metadata?.avatar_url
+                      }
                       alt="Profile picture"
                     />
                   ) : null}

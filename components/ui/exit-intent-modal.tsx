@@ -16,12 +16,12 @@ interface ExitIntentModalProps {
 
 export const ExitIntentModal = ({
   title = "Wait! Don't Miss Out",
-  subtitle = "Before you go, grab this exclusive offer",
-  offer = "50% OFF",
-  ctaText = "Claim My Discount",
-  ctaLink = "/signup?discount=50",
-  incentive = "Join 2,847+ founders already using Spoqen",
-  onClose
+  subtitle = 'Before you go, grab this exclusive offer',
+  offer = '50% OFF',
+  ctaText = 'Claim My Discount',
+  ctaLink = '/signup?discount=50',
+  incentive = 'Join 2,847+ founders already using Spoqen',
+  onClose,
 }: ExitIntentModalProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [hasShown, setHasShown] = useState(false);
@@ -33,30 +33,39 @@ export const ExitIntentModal = ({
   }, []);
 
   // Exit intent detection
-  const handleMouseLeave = useCallback((e: MouseEvent) => {
-    // Only trigger if:
-    // 1. Mouse is moving toward browser controls (top edge)
-    // 2. Near the top of the screen
-    // 3. Modal hasn't been shown yet
-    if (
-      e.clientY <= 5 && 
-      !hasShown && 
-      window.pageYOffset > 50 &&
-      document.hasFocus()
-    ) {
-      setIsVisible(true);
-      setHasShown(true);
-      trackEvent('exit_intent_triggered', {
-        timeOnPage: (Date.now() - (window as any).pageLoadTime) / 1000,
-        scrollDepth: (window.pageYOffset / (document.documentElement.scrollHeight - window.innerHeight)) * 100
-      });
-    }
-  }, [hasShown]);
+  const handleMouseLeave = useCallback(
+    (e: MouseEvent) => {
+      // Only trigger if:
+      // 1. Mouse is moving toward browser controls (top edge)
+      // 2. Near the top of the screen
+      // 3. Modal hasn't been shown yet
+      if (
+        e.clientY <= 5 &&
+        !hasShown &&
+        window.pageYOffset > 50 &&
+        document.hasFocus()
+      ) {
+        setIsVisible(true);
+        setHasShown(true);
+        trackEvent('exit_intent_triggered', {
+          timeOnPage: (Date.now() - (window as any).pageLoadTime) / 1000,
+          scrollDepth:
+            (window.pageYOffset /
+              (document.documentElement.scrollHeight - window.innerHeight)) *
+            100,
+        });
+      }
+    },
+    [hasShown]
+  );
 
   // Alternative triggers for mobile (scroll-based)
   const handleScroll = useCallback(() => {
-    const scrollPercent = (window.pageYOffset / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
-    
+    const scrollPercent =
+      (window.pageYOffset /
+        (document.documentElement.scrollHeight - window.innerHeight)) *
+      100;
+
     // Trigger on mobile if user scrolls back up significantly after reading 50%+
     if (
       !hasShown &&
@@ -68,10 +77,10 @@ export const ExitIntentModal = ({
       setHasShown(true);
       trackEvent('exit_intent_triggered_mobile', {
         scrollPercent,
-        trigger: 'scroll_up'
+        trigger: 'scroll_up',
       });
     }
-    
+
     (window as any).lastScrollPosition = window.pageYOffset;
   }, [hasShown]);
 
@@ -85,10 +94,10 @@ export const ExitIntentModal = ({
       // Desktop exit intent
       document.addEventListener('mouseleave', handleMouseLeave);
       document.addEventListener('mousemove', handleMouseMove);
-      
+
       // Mobile scroll-based intent
       window.addEventListener('scroll', handleScroll, { passive: true });
-      
+
       // Time-based fallback (show after 1 minute of engagement)
       const fallbackTimer = setTimeout(() => {
         if (!hasShown && window.pageYOffset > 200) {
@@ -133,7 +142,10 @@ export const ExitIntentModal = ({
         clearTimeout(idleTimer);
         document.removeEventListener('mousemove', resetIdleTimer);
         window.removeEventListener('scroll', resetIdleTimer);
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        document.removeEventListener(
+          'visibilitychange',
+          handleVisibilityChange
+        );
       };
     }
   }, [hasShown, handleMouseLeave, handleMouseMove, handleScroll]);
@@ -145,25 +157,28 @@ export const ExitIntentModal = ({
   }, [onClose]);
 
   const handleCTAClick = useCallback(() => {
-    trackEvent('exit_intent_cta_clicked', { 
+    trackEvent('exit_intent_cta_clicked', {
       offer,
       ctaText,
-      timeVisible: Date.now() - (window as any).exitIntentShowTime
+      timeVisible: Date.now() - (window as any).exitIntentShowTime,
     });
   }, [offer, ctaText]);
 
-  const handleBackdropClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      handleClose();
-    }
-  }, [handleClose]);
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.target === e.currentTarget) {
+        handleClose();
+      }
+    },
+    [handleClose]
+  );
 
   useEffect(() => {
     if (isVisible) {
       (window as any).exitIntentShowTime = Date.now();
       // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden';
-      
+
       return () => {
         document.body.style.overflow = 'unset';
       };
@@ -173,14 +188,14 @@ export const ExitIntentModal = ({
   if (!isVisible) return null;
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in"
+    <div
+      className="fixed inset-0 z-50 flex animate-fade-in items-center justify-center bg-black/50 backdrop-blur-sm"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby="exit-intent-title"
     >
-      <Card className="relative w-full max-w-md mx-4 bg-card/20 backdrop-blur-glass border border-white/10 animate-slide-up">
+      <Card className="relative mx-4 w-full max-w-md animate-slide-up border border-white/10 bg-card/20 backdrop-blur-glass">
         <Button
           variant="ghost"
           size="sm"
@@ -191,30 +206,28 @@ export const ExitIntentModal = ({
           <X className="h-4 w-4" />
         </Button>
 
-        <CardHeader className="text-center pb-4">
-          <div className="flex justify-center mb-4">
-            <div className="p-3 bg-primary/20 rounded-full">
-              <Gift className="w-8 h-8 text-primary" />
+        <CardHeader className="pb-4 text-center">
+          <div className="mb-4 flex justify-center">
+            <div className="rounded-full bg-primary/20 p-3">
+              <Gift className="h-8 w-8 text-primary" />
             </div>
           </div>
-          
+
           <CardTitle id="exit-intent-title" className="text-2xl font-bold">
             {title}
           </CardTitle>
-          
-          <p className="text-muted-foreground mt-2">
-            {subtitle}
-          </p>
+
+          <p className="mt-2 text-muted-foreground">{subtitle}</p>
         </CardHeader>
 
         <CardContent className="space-y-6">
           {/* Offer highlight */}
           <div className="text-center">
-            <div className="inline-flex items-center space-x-2 bg-gradient-primary text-white px-6 py-3 rounded-full text-2xl font-bold">
+            <div className="inline-flex items-center space-x-2 rounded-full bg-gradient-primary px-6 py-3 text-2xl font-bold text-white">
               <span>{offer}</span>
-              <Clock className="w-6 h-6" />
+              <Clock className="h-6 w-6" />
             </div>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="mt-2 text-sm text-muted-foreground">
               For first-time customers only
             </p>
           </div>
@@ -222,42 +235,35 @@ export const ExitIntentModal = ({
           {/* Benefits */}
           <div className="space-y-3">
             <div className="flex items-center space-x-3 text-sm">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <div className="h-2 w-2 rounded-full bg-green-500"></div>
               <span>14-day free trial included</span>
             </div>
             <div className="flex items-center space-x-3 text-sm">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <div className="h-2 w-2 rounded-full bg-green-500"></div>
               <span>Setup in under 5 minutes</span>
             </div>
             <div className="flex items-center space-x-3 text-sm">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <div className="h-2 w-2 rounded-full bg-green-500"></div>
               <span>Cancel anytime, no questions asked</span>
             </div>
           </div>
 
           {/* Social proof */}
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
-            <p className="text-sm text-muted-foreground">
-              {incentive}
-            </p>
+          <div className="rounded-lg bg-muted/50 p-3 text-center">
+            <p className="text-sm text-muted-foreground">{incentive}</p>
           </div>
 
           {/* CTA */}
           <div className="space-y-3">
-            <Button 
-              variant="neon"
-              className="w-full"
-              size="lg"
-              asChild
-            >
+            <Button variant="neon" className="w-full" size="lg" asChild>
               <a href={ctaLink} onClick={handleCTAClick}>
                 {ctaText}
-                <ArrowRight className="ml-2 w-4 h-4" />
+                <ArrowRight className="ml-2 h-4 w-4" />
               </a>
             </Button>
-            
-            <button 
-              className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+
+            <button
+              className="w-full text-sm text-muted-foreground transition-colors hover:text-foreground"
               onClick={handleClose}
             >
               No thanks, I'll pay full price
@@ -265,11 +271,11 @@ export const ExitIntentModal = ({
           </div>
 
           {/* Urgency text */}
-          <p className="text-xs text-center text-muted-foreground">
+          <p className="text-center text-xs text-muted-foreground">
             ⚡ This offer expires when you leave the page
           </p>
         </CardContent>
       </Card>
     </div>
   );
-}; 
+};

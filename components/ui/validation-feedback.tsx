@@ -7,16 +7,16 @@ interface ValidationFeedbackProps {
   showOnValid?: boolean;
 }
 
-export const ValidationFeedback = ({ 
-  isValid, 
-  isValidating, 
-  message, 
-  showOnValid = false 
+export const ValidationFeedback = ({
+  isValid,
+  isValidating,
+  message,
+  showOnValid = false,
 }: ValidationFeedbackProps) => {
   if (isValidating) {
     return (
       <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         <span>Checking...</span>
       </div>
     );
@@ -25,7 +25,7 @@ export const ValidationFeedback = ({
   if (isValid && showOnValid) {
     return (
       <div className="flex items-center space-x-2 text-sm text-green-600">
-        <CheckCircle className="w-4 h-4" />
+        <CheckCircle className="h-4 w-4" />
         <span>Looks good!</span>
       </div>
     );
@@ -34,11 +34,11 @@ export const ValidationFeedback = ({
   if (!isValid && message) {
     return (
       <div className="flex items-center space-x-2 text-sm text-red-600">
-        <AlertCircle className="w-4 h-4" />
+        <AlertCircle className="h-4 w-4" />
         <span>{message}</span>
       </div>
     );
   }
 
   return null;
-}; 
+};

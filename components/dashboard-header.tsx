@@ -7,7 +7,10 @@ export function DashboardHeader() {
     <header className="sticky top-0 z-10 w-full border-b border-white/10 bg-card/20 backdrop-blur-glass">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center">
-          <Link href="/" className="transition-transform hover:scale-105 duration-300">
+          <Link
+            href="/"
+            className="transition-transform duration-300 hover:scale-105"
+          >
             <Logo width={140} height={48} />
           </Link>
         </div>
