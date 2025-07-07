@@ -21,11 +21,11 @@ const nextConfig = {
       // Add other domains as needed for production
       {
         protocol: 'https',
-        hostname: '**.vercel.app',
+        hostname: 'spoqen.com',
       },
       {
         protocol: 'https',
-        hostname: '**.netlify.app',
+        hostname: 'myapp.netlify.app',
       },
     ],
     formats: ['image/webp', 'image/avif'],
