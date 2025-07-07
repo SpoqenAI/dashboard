@@ -17,10 +17,12 @@ const buttonVariants = cva(
           'border border-input bg-background text-foreground hover:bg-accent/70 hover:border-primary hover:text-accent-foreground hover:shadow-sm transition-all duration-300 hover:scale-[1.02]',
         secondary:
           'bg-secondary text-secondary-foreground hover:bg-secondary/90 hover:shadow-glow-secondary/50 hover:scale-[1.02] transition-all duration-300',
-        ghost: 'hover:bg-accent/20 hover:text-accent-foreground transition-all duration-300',
+        ghost:
+          'hover:bg-accent/20 hover:text-accent-foreground transition-all duration-300',
         link: 'text-primary underline-offset-4 hover:underline',
         neon: 'bg-gradient-primary text-white font-semibold hover:shadow-glow-primary hover:scale-[1.05] transition-all duration-300 border-0',
-        glass: 'bg-card/20 backdrop-blur-glass border border-white/10 text-foreground hover:bg-card/30 hover:shadow-glass transition-all duration-300',
+        glass:
+          'bg-card/20 backdrop-blur-glass border border-white/10 text-foreground hover:bg-card/30 hover:shadow-glass transition-all duration-300',
       },
       size: {
         default: 'h-10 px-4 py-2',

@@ -32,11 +32,11 @@ type FormFieldName = 'email' | 'password' | 'confirmPassword' | 'firstName';
 type FormData = Record<FormFieldName, string>;
 
 // CONVERSION OPTIMIZATION: Real-time validation feedback component
-const ValidationFeedback = ({ 
-  isValid, 
-  isValidating, 
-  message, 
-  showOnValid = false 
+const ValidationFeedback = ({
+  isValid,
+  isValidating,
+  message,
+  showOnValid = false,
 }: {
   isValid: boolean;
   isValidating: boolean;
@@ -46,7 +46,7 @@ const ValidationFeedback = ({
   if (isValidating) {
     return (
       <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         <span>Checking...</span>
       </div>
     );
@@ -55,7 +55,7 @@ const ValidationFeedback = ({
   if (isValid && showOnValid) {
     return (
       <div className="flex items-center space-x-2 text-sm text-green-600">
-        <CheckCircle className="w-4 h-4" />
+        <CheckCircle className="h-4 w-4" />
         <span>Looks good!</span>
       </div>
     );
@@ -64,7 +64,7 @@ const ValidationFeedback = ({
   if (!isValid && message) {
     return (
       <div className="flex items-center space-x-2 text-sm text-red-600">
-        <AlertCircle className="w-4 h-4" />
+        <AlertCircle className="h-4 w-4" />
         <span>{message}</span>
       </div>
     );
@@ -78,7 +78,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   // CONVERSION OPTIMIZATION: Simplified form data with only essential fields
   const [formData, setFormData] = useState<FormData>({
     email: '',
@@ -87,14 +87,18 @@ export default function SignupPage() {
     firstName: '', // Optional - can be collected later in onboarding
   });
 
-  const [validationErrors, setValidationErrors] = useState<Record<FormFieldName, string>>({
+  const [validationErrors, setValidationErrors] = useState<
+    Record<FormFieldName, string>
+  >({
     email: '',
     password: '',
     confirmPassword: '',
     firstName: '',
   });
 
-  const [touchedFields, setTouchedFields] = useState<Record<FormFieldName, boolean>>({
+  const [touchedFields, setTouchedFields] = useState<
+    Record<FormFieldName, boolean>
+  >({
     email: false,
     password: false,
     confirmPassword: false,
@@ -102,14 +106,18 @@ export default function SignupPage() {
   });
 
   // CONVERSION OPTIMIZATION: Real-time validation states
-  const [isValidating, setIsValidating] = useState<Record<FormFieldName, boolean>>({
+  const [isValidating, setIsValidating] = useState<
+    Record<FormFieldName, boolean>
+  >({
     email: false,
     password: false,
     confirmPassword: false,
     firstName: false,
   });
 
-  const [fieldValidStates, setFieldValidStates] = useState<Record<FormFieldName, boolean>>({
+  const [fieldValidStates, setFieldValidStates] = useState<
+    Record<FormFieldName, boolean>
+  >({
     email: false,
     password: false,
     confirmPassword: false,
@@ -125,7 +133,8 @@ export default function SignupPage() {
   // Validation patterns
   const VALIDATION_PATTERNS = {
     NAME_PATTERN: /^[\p{L}'](?:[\p{L}\s\-'.])*[\p{L}']$|^[\p{L}']$/u,
-    EMAIL_PATTERN: /^[a-zA-Z0-9]([a-zA-Z0-9._+-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/,
+    EMAIL_PATTERN:
+      /^[a-zA-Z0-9]([a-zA-Z0-9._+-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/,
   };
 
   // Email mask
@@ -138,7 +147,10 @@ export default function SignupPage() {
   const removeSpaces = (value: string): string => value.replace(/\s/g, '');
 
   // CONVERSION OPTIMIZATION: Real-time validation with debouncing
-  const validateField = async (field: FormFieldName, value: string): Promise<string | null> => {
+  const validateField = async (
+    field: FormFieldName,
+    value: string
+  ): Promise<string | null> => {
     switch (field) {
       case 'firstName': {
         if (!value) return null; // Optional field
@@ -155,7 +167,8 @@ export default function SignupPage() {
         if (!VALIDATION_PATTERNS.EMAIL_PATTERN.test(value)) {
           return 'Please enter a valid email address';
         }
-        if (value.includes('..')) return 'Please remove consecutive dots from your email';
+        if (value.includes('..'))
+          return 'Please remove consecutive dots from your email';
         if (value.startsWith('.') || value.endsWith('.')) {
           return 'Email addresses cannot start or end with a dot';
         }
@@ -175,8 +188,10 @@ export default function SignupPage() {
         if (!value) return 'Password is required';
         if (value.length < 8) return 'Password must be at least 8 characters';
         if (value.length > 128) return 'Password is too long';
-        if (!/(?=.*[a-z])/.test(value)) return 'Include at least one lowercase letter';
-        if (!/(?=.*[A-Z])/.test(value)) return 'Include at least one uppercase letter';
+        if (!/(?=.*[a-z])/.test(value))
+          return 'Include at least one lowercase letter';
+        if (!/(?=.*[A-Z])/.test(value))
+          return 'Include at least one uppercase letter';
         if (!/(?=.*\d)/.test(value)) return 'Include at least one number';
         if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(value)) {
           return 'Include at least one special character';
@@ -199,7 +214,7 @@ export default function SignupPage() {
       if (!touchedFields[field]) return;
 
       setIsValidating(prev => ({ ...prev, [field]: true }));
-      
+
       // Debounce validation
       setTimeout(async () => {
         const error = await validateField(field, value);
@@ -209,8 +224,11 @@ export default function SignupPage() {
       }, 300);
     };
 
-    Object.keys(formData).forEach((field) => {
-      validateWithDelay(field as FormFieldName, formData[field as FormFieldName]);
+    Object.keys(formData).forEach(field => {
+      validateWithDelay(
+        field as FormFieldName,
+        formData[field as FormFieldName]
+      );
     });
   }, [formData, touchedFields]);
 
@@ -235,17 +253,23 @@ export default function SignupPage() {
 
   // CONVERSION OPTIMIZATION: Check if form is valid for submission
   const isFormValid = () => {
-    const requiredFields: FormFieldName[] = ['email', 'password', 'confirmPassword'];
-    return requiredFields.every(field => fieldValidStates[field] && formData[field]);
+    const requiredFields: FormFieldName[] = [
+      'email',
+      'password',
+      'confirmPassword',
+    ];
+    return requiredFields.every(
+      field => fieldValidStates[field] && formData[field]
+    );
   };
 
   const doSignup = async () => {
     try {
       setIsLoading(true);
-      
+
       // Use first name if provided, otherwise use email prefix
       const firstName = formData.firstName || formData.email.split('@')[0];
-      
+
       await signUp(formData.email, formData.password, {
         firstName,
         lastName: '', // Will be collected in onboarding
@@ -272,7 +296,11 @@ export default function SignupPage() {
     e.preventDefault();
 
     // Mark required fields as touched
-    const requiredFields: FormFieldName[] = ['email', 'password', 'confirmPassword'];
+    const requiredFields: FormFieldName[] = [
+      'email',
+      'password',
+      'confirmPassword',
+    ];
     const newTouchedFields = { ...touchedFields };
     requiredFields.forEach(field => {
       newTouchedFields[field] = true;
@@ -280,7 +308,7 @@ export default function SignupPage() {
     setTouchedFields(newTouchedFields);
 
     // Validate all fields
-    const validationPromises = requiredFields.map(async (field) => {
+    const validationPromises = requiredFields.map(async field => {
       const error = await validateField(field, formData[field]);
       return { field, error };
     });
@@ -313,13 +341,16 @@ export default function SignupPage() {
               </Link>
             </div>
             <nav className="flex items-center gap-4">
-              <Link href="/login" className="text-sm font-medium hover:text-primary transition-colors">
+              <Link
+                href="/login"
+                className="text-sm font-medium transition-colors hover:text-primary"
+              >
                 Login
               </Link>
             </nav>
           </div>
         </header>
-        
+
         <main className="flex flex-1 items-center justify-center p-4">
           <Card className="w-full max-w-md">
             <form onSubmit={handleSubmit}>
@@ -329,21 +360,26 @@ export default function SignupPage() {
                   Start your 14-day free trial. No credit card required.
                 </CardDescription>
               </CardHeader>
-              
+
               <CardContent className="space-y-4">
                 {/* CONVERSION OPTIMIZATION: Optional first name field for personalization */}
                 <div className="space-y-2">
                   <Label htmlFor="firstName">
-                    First Name <span className="text-muted-foreground text-sm">(optional)</span>
+                    First Name{' '}
+                    <span className="text-sm text-muted-foreground">
+                      (optional)
+                    </span>
                   </Label>
-                    <Input
-                      id="firstName"
-                      placeholder="Enter your first name"
-                      value={formData.firstName}
-                    onChange={e => handleInputChange('firstName', e.target.value)}
-                      onBlur={() => handleFieldBlur('firstName')}
-                      maxLength={50}
-                      inputMode="text"
+                  <Input
+                    id="firstName"
+                    placeholder="Enter your first name"
+                    value={formData.firstName}
+                    onChange={e =>
+                      handleInputChange('firstName', e.target.value)
+                    }
+                    onBlur={() => handleFieldBlur('firstName')}
+                    maxLength={50}
+                    inputMode="text"
                     autoComplete="given-name"
                   />
                   {touchedFields.firstName && (
@@ -353,7 +389,7 @@ export default function SignupPage() {
                       message={validationErrors.firstName}
                       showOnValid={!!formData.firstName}
                     />
-                    )}
+                  )}
                 </div>
 
                 {/* CONVERSION OPTIMIZATION: Email with real-time validation */}
@@ -371,7 +407,13 @@ export default function SignupPage() {
                     inputMode="email"
                     autoComplete="email"
                     ref={emailMaskRef}
-                    className={touchedFields.email ? (fieldValidStates.email ? 'border-green-500 focus:border-green-500' : 'border-red-500 focus:border-red-500') : ''}
+                    className={
+                      touchedFields.email
+                        ? fieldValidStates.email
+                          ? 'border-green-500 focus:border-green-500'
+                          : 'border-red-500 focus:border-red-500'
+                        : ''
+                    }
                   />
                   {touchedFields.email && (
                     <ValidationFeedback
@@ -387,17 +429,25 @@ export default function SignupPage() {
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
                   <div className="relative">
-                  <Input
-                    id="password"
+                    <Input
+                      id="password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Create a strong password"
-                    value={formData.password}
-                      onChange={e => handleInputChange('password', e.target.value)}
-                    onBlur={() => handleFieldBlur('password')}
-                    required
-                    maxLength={128}
+                      value={formData.password}
+                      onChange={e =>
+                        handleInputChange('password', e.target.value)
+                      }
+                      onBlur={() => handleFieldBlur('password')}
+                      required
+                      maxLength={128}
                       autoComplete="new-password"
-                      className={touchedFields.password ? (fieldValidStates.password ? 'border-green-500 focus:border-green-500' : 'border-red-500 focus:border-red-500') : ''}
+                      className={
+                        touchedFields.password
+                          ? fieldValidStates.password
+                            ? 'border-green-500 focus:border-green-500'
+                            : 'border-red-500 focus:border-red-500'
+                          : ''
+                      }
                     />
                     <Button
                       type="button"
@@ -413,16 +463,22 @@ export default function SignupPage() {
                       )}
                     </Button>
                   </div>
-                  
+
                   {formData.password && (
-                  <PasswordStrengthBar
-                    password={formData.password}
-                    minLength={8}
-                      scoreWords={['Too weak', 'Weak', 'Okay', 'Strong', 'Very strong']}
-                    onChangeScore={setScore}
-                  />
+                    <PasswordStrengthBar
+                      password={formData.password}
+                      minLength={8}
+                      scoreWords={[
+                        'Too weak',
+                        'Weak',
+                        'Okay',
+                        'Strong',
+                        'Very strong',
+                      ]}
+                      onChangeScore={setScore}
+                    />
                   )}
-                  
+
                   {touchedFields.password && (
                     <ValidationFeedback
                       isValid={fieldValidStates.password}
@@ -437,24 +493,34 @@ export default function SignupPage() {
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
                   <div className="relative">
-                  <Input
-                    id="confirmPassword"
+                    <Input
+                      id="confirmPassword"
                       type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="Confirm your password"
-                    value={formData.confirmPassword}
-                      onChange={e => handleInputChange('confirmPassword', e.target.value)}
-                    onBlur={() => handleFieldBlur('confirmPassword')}
-                    required
-                    maxLength={128}
+                      placeholder="Confirm your password"
+                      value={formData.confirmPassword}
+                      onChange={e =>
+                        handleInputChange('confirmPassword', e.target.value)
+                      }
+                      onBlur={() => handleFieldBlur('confirmPassword')}
+                      required
+                      maxLength={128}
                       autoComplete="new-password"
-                      className={touchedFields.confirmPassword ? (fieldValidStates.confirmPassword ? 'border-green-500 focus:border-green-500' : 'border-red-500 focus:border-red-500') : ''}
+                      className={
+                        touchedFields.confirmPassword
+                          ? fieldValidStates.confirmPassword
+                            ? 'border-green-500 focus:border-green-500'
+                            : 'border-red-500 focus:border-red-500'
+                          : ''
+                      }
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -463,7 +529,7 @@ export default function SignupPage() {
                       )}
                     </Button>
                   </div>
-                  
+
                   {touchedFields.confirmPassword && (
                     <ValidationFeedback
                       isValid={fieldValidStates.confirmPassword}
@@ -474,18 +540,18 @@ export default function SignupPage() {
                   )}
                 </div>
               </CardContent>
-              
+
               <CardFooter className="flex flex-col space-y-4">
                 <div className="w-full">
                   <Button
                     className="w-full"
                     type="submit"
                     disabled={isLoading || !isFormValid()}
-                    variant={isFormValid() ? "default" : "secondary"}
+                    variant={isFormValid() ? 'default' : 'secondary'}
                   >
                     {isLoading ? (
                       <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                         <span>Creating Account...</span>
                       </div>
                     ) : (
@@ -493,23 +559,26 @@ export default function SignupPage() {
                     )}
                   </Button>
                 </div>
-                
+
                 <SocialLogin mode="signup" />
-                
+
                 <div className="text-center text-sm text-muted-foreground">
                   Already have an account?{' '}
                   <Link href="/login" className="text-primary hover:underline">
                     Sign in
                   </Link>
                 </div>
-                
+
                 <div className="text-center text-xs text-muted-foreground">
                   By creating an account, you agree to our{' '}
                   <Link href="/terms" className="text-primary hover:underline">
                     Terms of Service
                   </Link>{' '}
                   and{' '}
-                  <Link href="/privacy" className="text-primary hover:underline">
+                  <Link
+                    href="/privacy"
+                    className="text-primary hover:underline"
+                  >
                     Privacy Policy
                   </Link>
                 </div>

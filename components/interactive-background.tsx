@@ -78,7 +78,7 @@ function useRAFThrottle<T extends (...args: any[]) => void>(
 
   const throttledCallback = useCallback((...args: Parameters<T>) => {
     argsRef.current = args;
-    
+
     if (frameRef.current === null) {
       frameRef.current = requestAnimationFrame(() => {
         if (argsRef.current) {
@@ -146,9 +146,12 @@ function useMouseAndScroll() {
     setScrollY(y);
   }, []);
 
-  const throttledMouseMove = useRAFThrottle((e: MouseEvent) => {
-    updateMousePosition(e.clientX, e.clientY);
-  }, [updateMousePosition]);
+  const throttledMouseMove = useRAFThrottle(
+    (e: MouseEvent) => {
+      updateMousePosition(e.clientX, e.clientY);
+    },
+    [updateMousePosition]
+  );
 
   const throttledScroll = useRAFThrottle(() => {
     updateScrollY(window.scrollY);
@@ -176,17 +179,30 @@ const BackgroundOrb = memo<{
   scrollY: number;
   animationIntensity: number;
   isVisible: boolean;
-}>((props) => {
-  const { config, index, mousePosition, scrollY, animationIntensity, isVisible } = props;
-  
+}>(props => {
+  const {
+    config,
+    index,
+    mousePosition,
+    scrollY,
+    animationIntensity,
+    isVisible,
+  } = props;
+
   const style = useMemo(() => {
     if (!isVisible) return { display: 'none' };
 
     const mouseSensitivity = 0.3 * animationIntensity;
     const scrollSensitivity = 0.1 * animationIntensity;
-    const offsetX = index % 2 === 0 ? mousePosition.x * mouseSensitivity : (100 - mousePosition.x) * mouseSensitivity * 0.5;
-    const offsetY = index % 2 === 0 ? mousePosition.y * mouseSensitivity : (100 - mousePosition.y) * mouseSensitivity * 0.5;
-    
+    const offsetX =
+      index % 2 === 0
+        ? mousePosition.x * mouseSensitivity
+        : (100 - mousePosition.x) * mouseSensitivity * 0.5;
+    const offsetY =
+      index % 2 === 0
+        ? mousePosition.y * mouseSensitivity
+        : (100 - mousePosition.y) * mouseSensitivity * 0.5;
+
     return {
       width: config.size,
       height: config.size,
@@ -202,7 +218,7 @@ const BackgroundOrb = memo<{
   return (
     <div
       className={cn(
-        'absolute rounded-full transition-all duration-1000 ease-out pointer-events-none',
+        'pointer-events-none absolute rounded-full transition-all duration-1000 ease-out',
         config.blur,
         config.color
       )}
@@ -219,9 +235,9 @@ const Particle = memo<{
   mousePosition: { x: number; y: number };
   scrollY: number;
   isVisible: boolean;
-}>((props) => {
+}>(props => {
   const { index, mousePosition, scrollY, isVisible } = props;
-  
+
   const style = useMemo(() => {
     if (!isVisible) return { display: 'none' };
 
@@ -229,7 +245,7 @@ const Particle = memo<{
     const baseY = 30 + index * 8;
     const offsetX = Math.sin(Date.now() * 0.001 + index) * 3;
     const offsetY = Math.cos(Date.now() * 0.001 + index) * 2 + scrollY * 0.02;
-    
+
     return {
       left: `calc(${baseX + offsetX}% - 4px)`,
       top: `calc(${baseY + offsetY}% - 4px)`,
@@ -241,7 +257,7 @@ const Particle = memo<{
 
   return (
     <div
-      className="absolute w-2 h-2 bg-primary/30 rounded-full blur-sm pointer-events-none"
+      className="pointer-events-none absolute h-2 w-2 rounded-full bg-primary/30 blur-sm"
       style={style}
     />
   );
@@ -250,24 +266,26 @@ const Particle = memo<{
 Particle.displayName = 'Particle';
 
 // Main component
-export const InteractiveBackground = memo<InteractiveBackgroundProps>((props) => {
+export const InteractiveBackground = memo<InteractiveBackgroundProps>(props => {
   const { children, variant = 'hero', className } = props;
-  
+
   const containerRef = useRef<HTMLDivElement>(null);
   const isVisible = useIntersectionObserver(containerRef);
   const { mousePosition, scrollY } = useMouseAndScroll();
-  
+
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   // Check for reduced motion preference
   useEffect(() => {
-    const mediaQuery = window.matchMedia(PERFORMANCE_CONFIG.REDUCE_MOTION_QUERY);
+    const mediaQuery = window.matchMedia(
+      PERFORMANCE_CONFIG.REDUCE_MOTION_QUERY
+    );
     setPrefersReducedMotion(mediaQuery.matches);
-    
+
     const handleChange = (e: MediaQueryListEvent) => {
       setPrefersReducedMotion(e.matches);
     };
-    
+
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
@@ -278,7 +296,7 @@ export const InteractiveBackground = memo<InteractiveBackgroundProps>((props) =>
   // Memoized gradient for minimal variant
   const gradientStyle = useMemo(() => {
     if (variant !== 'minimal' || !shouldAnimate) return {};
-    
+
     return {
       background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, 
         hsl(315 100% 50% / 0.05) 0%, 
@@ -287,7 +305,7 @@ export const InteractiveBackground = memo<InteractiveBackgroundProps>((props) =>
   }, [variant, mousePosition.x, mousePosition.y, shouldAnimate]);
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className={cn('relative overflow-hidden', className)}
       style={{
@@ -296,10 +314,10 @@ export const InteractiveBackground = memo<InteractiveBackgroundProps>((props) =>
       }}
     >
       {/* Background Elements */}
-      <div className="absolute inset-0 pointer-events-none">
+      <div className="pointer-events-none absolute inset-0">
         {variant === 'minimal' ? (
-          <div 
-            className="absolute inset-0 transition-all duration-2000 pointer-events-none"
+          <div
+            className="duration-2000 pointer-events-none absolute inset-0 transition-all"
             style={gradientStyle}
           />
         ) : (
@@ -316,26 +334,28 @@ export const InteractiveBackground = memo<InteractiveBackgroundProps>((props) =>
                 isVisible={shouldAnimate}
               />
             ))}
-            
+
             {/* Render particles for hero variant */}
-            {variant === 'hero' && config.particleCount > 0 && shouldAnimate && (
-              <>
-                {Array.from({ length: config.particleCount }, (_, index) => (
-                  <Particle
-                    key={index}
-                    index={index}
-                    mousePosition={mousePosition}
-                    scrollY={scrollY}
-                    isVisible={shouldAnimate}
-                  />
-                ))}
-              </>
-            )}
-            
+            {variant === 'hero' &&
+              config.particleCount > 0 &&
+              shouldAnimate && (
+                <>
+                  {Array.from({ length: config.particleCount }, (_, index) => (
+                    <Particle
+                      key={index}
+                      index={index}
+                      mousePosition={mousePosition}
+                      scrollY={scrollY}
+                      isVisible={shouldAnimate}
+                    />
+                  ))}
+                </>
+              )}
+
             {/* Interactive gradient overlay for hero */}
             {variant === 'hero' && shouldAnimate && (
-              <div 
-                className="absolute inset-0 opacity-30 transition-all duration-1000 pointer-events-none"
+              <div
+                className="pointer-events-none absolute inset-0 opacity-30 transition-all duration-1000"
                 style={{
                   background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, 
                     hsl(315 100% 50% / 0.08) 0%, 
@@ -348,11 +368,9 @@ export const InteractiveBackground = memo<InteractiveBackgroundProps>((props) =>
           </>
         )}
       </div>
-      
+
       {/* Content */}
-      <div className="relative z-10">
-        {children}
-      </div>
+      <div className="relative z-10">{children}</div>
     </div>
   );
 });

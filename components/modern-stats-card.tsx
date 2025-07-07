@@ -32,19 +32,23 @@ export function ModernStatsCard({
   };
 
   return (
-    <Card className={cn(
-      'group hover:scale-105 transition-all duration-300',
-      glowClasses[color],
-      className
-    )}>
+    <Card
+      className={cn(
+        'group transition-all duration-300 hover:scale-105',
+        glowClasses[color],
+        className
+      )}
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        <div className={cn(
-          'p-2 rounded-lg bg-gradient-to-r from-card/50 to-card/80 group-hover:scale-110 transition-transform duration-300',
-          colorClasses[color]
-        )}>
+        <div
+          className={cn(
+            'rounded-lg bg-gradient-to-r from-card/50 to-card/80 p-2 transition-transform duration-300 group-hover:scale-110',
+            colorClasses[color]
+          )}
+        >
           <Icon className="h-4 w-4" />
         </div>
       </CardHeader>
@@ -52,13 +56,15 @@ export function ModernStatsCard({
         <div className="text-2xl font-bold">{value}</div>
         {change && (
           <p className="text-xs text-muted-foreground">
-            <span className={cn(
-              'font-medium',
-              change.startsWith('+') ? 'text-green-400' : 'text-red-400'
-            )}>
+            <span
+              className={cn(
+                'font-medium',
+                change.startsWith('+') ? 'text-green-400' : 'text-red-400'
+              )}
+            >
               {change}
-            </span>
-            {' '}from last month
+            </span>{' '}
+            from last month
           </p>
         )}
       </CardContent>

@@ -22,30 +22,30 @@ body {
   .text-balance {
     text-wrap: balance;
   }
-  
+
   /* ACCESSIBILITY: Focus improvements */
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background;
   }
-  
+
   .focus-visible-ring {
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
-  
+
   /* ACCESSIBILITY: Skip links */
   .skip-link {
-    @apply absolute left-[-10000px] top-auto w-[1px] h-[1px] overflow-hidden;
-    @apply focus:left-[6px] focus:top-[6px] focus:w-auto focus:h-auto focus:overflow-visible;
-    @apply focus:bg-primary focus:text-primary-foreground focus:px-3 focus:py-2 focus:rounded focus:z-50;
+    @apply absolute left-[-10000px] top-auto h-[1px] w-[1px] overflow-hidden;
+    @apply focus:left-[6px] focus:top-[6px] focus:h-auto focus:w-auto focus:overflow-visible;
+    @apply focus:z-50 focus:rounded focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground;
   }
-  
+
   /* ACCESSIBILITY: High contrast mode support */
   @media (prefers-contrast: high) {
     .contrast-enhanced {
       @apply border-2 border-foreground;
     }
   }
-  
+
   /* ACCESSIBILITY: Reduced motion support */
   @media (prefers-reduced-motion: reduce) {
     .animate-fade-in,
@@ -54,36 +54,42 @@ body {
     .animate-spin {
       animation: none !important;
     }
-    
+
     .transition-all,
     .transition-transform,
     .transition-colors {
       transition: none !important;
     }
   }
-  
+
   /* CONVERSION OPTIMIZATION: Visual hierarchy improvements */
   .gradient-dark {
-    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%);
+    background: linear-gradient(
+      135deg,
+      hsl(var(--background)) 0%,
+      hsl(var(--card)) 100%
+    );
   }
-  
+
   .gradient-primary {
-    background: linear-gradient(135deg, 
-      hsl(217.2 91.2% 59.8%) 0%, 
-      hsl(252.5 95% 85.8%) 100%);
+    background: linear-gradient(
+      135deg,
+      hsl(217.2 91.2% 59.8%) 0%,
+      hsl(252.5 95% 85.8%) 100%
+    );
   }
-  
+
   .backdrop-blur-glass {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
-  
+
   .shadow-glass {
-    box-shadow: 
+    box-shadow:
       0 8px 32px 0 rgba(31, 38, 135, 0.37),
       inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
   }
-  
+
   .shadow-glow-primary {
     box-shadow: 0 0 20px hsl(217.2 91.2% 59.8% / 0.3);
   }
@@ -126,7 +132,7 @@ body {
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
-  
+
   .dark {
     /* ACCESSIBILITY: Enhanced dark mode contrast */
     --background: 222.2 84% 4.9%;
@@ -168,13 +174,13 @@ body {
   * {
     @apply border-border;
   }
-  
+
   body {
     @apply bg-background text-foreground;
     /* ACCESSIBILITY: Smooth scrolling with reduced motion support */
     scroll-behavior: smooth;
   }
-  
+
   /* ACCESSIBILITY: Ensure all interactive elements are keyboard accessible */
   button:focus-visible,
   a:focus-visible,
@@ -183,33 +189,33 @@ body {
   textarea:focus-visible {
     @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
   }
-  
+
   /* ACCESSIBILITY: Improve link accessibility */
   a {
     @apply transition-colors;
   }
-  
+
   a:focus-visible {
     @apply underline;
   }
-  
+
   /* ACCESSIBILITY: Ensure buttons have adequate target size (44px minimum) */
   button {
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   /* ACCESSIBILITY: High contrast mode */
   @media (prefers-contrast: high) {
     :root {
       --muted-foreground: 0 0% 30%; /* Higher contrast in high contrast mode */
     }
-    
+
     .dark {
       --muted-foreground: 0 0% 70%; /* Higher contrast in dark high contrast mode */
     }
   }
-  
+
   /* ACCESSIBILITY: Large text mode support */
   @media (min-resolution: 2dppx) and (max-width: 768px) {
     body {
@@ -334,7 +340,7 @@ body {
 }
 
 .animate-slideInUp {
-  animation: slideInUp 0.5s ease-out forwards;  
+  animation: slideInUp 0.5s ease-out forwards;
   will-change: transform, opacity;
 }
 
@@ -361,7 +367,7 @@ body {
     will-change: transform;
     transform: translate3d(0, 0, 0);
   }
-  
+
   .smooth-transition {
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }

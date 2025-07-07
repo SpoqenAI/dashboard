@@ -21,7 +21,7 @@ class AnalyticsTracker {
   private maxScrollDepth: number = 0;
   private engagementEvents: string[] = [];
   private conversionFunnel: string[] = [];
-  
+
   // PERFORMANCE: Add cleanup tracking
   private scrollListener: (() => void) | null = null;
   private visibilityListener: (() => void) | null = null;
@@ -40,7 +40,7 @@ class AnalyticsTracker {
   private initializeTracking() {
     // PERFORMANCE: Only initialize if in browser environment
     if (typeof window === 'undefined') return;
-    
+
     this.initializeScrollTracking();
     this.initializeTimeTracking();
     this.initializeVisibilityTracking();
@@ -54,24 +54,25 @@ class AnalyticsTracker {
 
     const updateScrollDepth = () => {
       const now = Date.now();
-      
+
       // Skip if called too frequently
       if (now - lastScrollTime < SCROLL_THROTTLE_DELAY) {
         ticking = false;
         return;
       }
-      
+
       lastScrollTime = now;
-      
+
       const scrollTop = window.pageYOffset;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      
+      const docHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
+
       // Prevent division by zero
       if (docHeight <= 0) {
         ticking = false;
         return;
       }
-      
+
       const scrollPercent = Math.min((scrollTop / docHeight) * 100, 100);
 
       if (scrollPercent > this.maxScrollDepth) {
@@ -102,11 +103,14 @@ class AnalyticsTracker {
       { threshold: 25, event: 'scroll_25' },
       { threshold: 50, event: 'scroll_50' },
       { threshold: 75, event: 'scroll_75' },
-      { threshold: 90, event: 'scroll_90' }
+      { threshold: 90, event: 'scroll_90' },
     ];
 
     milestones.forEach(({ threshold, event }) => {
-      if (scrollPercent >= threshold && !this.engagementEvents.includes(event)) {
+      if (
+        scrollPercent >= threshold &&
+        !this.engagementEvents.includes(event)
+      ) {
         this.trackEvent(event, { scrollDepth: threshold });
         this.engagementEvents.push(event);
       }
@@ -118,14 +122,14 @@ class AnalyticsTracker {
     const timeouts = [
       { delay: 30000, event: 'time_on_page_30s', time: 30 },
       { delay: 60000, event: 'time_on_page_60s', time: 60 },
-      { delay: 120000, event: 'time_on_page_120s', time: 120 }
+      { delay: 120000, event: 'time_on_page_120s', time: 120 },
     ];
 
     timeouts.forEach(({ delay, event, time }) => {
       const timeoutId = setTimeout(() => {
         this.trackEvent(event, { timeSpent: time });
       }, delay);
-      
+
       this.timeoutIds.push(timeoutId);
     });
   }
@@ -135,11 +139,11 @@ class AnalyticsTracker {
       if (document.hidden) {
         this.trackEvent('page_hidden', {
           timeSpent: (Date.now() - this.startTime) / 1000,
-          scrollDepth: this.maxScrollDepth
+          scrollDepth: this.maxScrollDepth,
         });
       } else {
         this.trackEvent('page_visible', {
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       }
     };
@@ -178,9 +182,9 @@ class AnalyticsTracker {
         sessionId: this.sessionId,
         timeOnPage: (Date.now() - this.startTime) / 1000,
         scrollDepth: this.maxScrollDepth,
-        url: window.location.href
+        url: window.location.href,
       },
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     // PERFORMANCE: Queue events for batch processing
@@ -217,12 +221,15 @@ class AnalyticsTracker {
   }
 
   // Conversion funnel tracking
-  public trackConversionStep(step: string, properties: Record<string, any> = {}) {
+  public trackConversionStep(
+    step: string,
+    properties: Record<string, any> = {}
+  ) {
     this.conversionFunnel.push(step);
     this.trackEvent(`conversion_${step}`, {
       ...properties,
       funnelStep: this.conversionFunnel.length,
-      funnelPath: this.conversionFunnel.join(' → ')
+      funnelPath: this.conversionFunnel.join(' → '),
     });
   }
 
@@ -230,7 +237,7 @@ class AnalyticsTracker {
   public trackDemoInteraction(action: string, data: Record<string, any> = {}) {
     this.trackEvent(`demo_${action}`, {
       ...data,
-      demoTimestamp: Date.now()
+      demoTimestamp: Date.now(),
     });
   }
 
@@ -238,17 +245,21 @@ class AnalyticsTracker {
   public trackROICalculatorUsage(data: Record<string, any>) {
     this.trackEvent('roi_calculator_used', {
       ...data,
-      engagementType: 'interactive_tool'
+      engagementType: 'interactive_tool',
     });
   }
 
   // CTA button tracking
-  public trackCTAClick(ctaType: string, location: string, properties: Record<string, any> = {}) {
+  public trackCTAClick(
+    ctaType: string,
+    location: string,
+    properties: Record<string, any> = {}
+  ) {
     this.trackConversionStep('cta_clicked');
     this.trackEvent('cta_clicked', {
       ctaType,
       location,
-      ...properties
+      ...properties,
     });
   }
 
@@ -256,30 +267,40 @@ class AnalyticsTracker {
   public trackVideoEngagement(action: string, data: Record<string, any> = {}) {
     this.trackEvent(`video_${action}`, {
       ...data,
-      mediaType: 'video'
+      mediaType: 'video',
     });
   }
 
   // Form interaction tracking
-  public trackFormInteraction(formType: string, action: string, data: Record<string, any> = {}) {
+  public trackFormInteraction(
+    formType: string,
+    action: string,
+    data: Record<string, any> = {}
+  ) {
     this.trackEvent(`form_${action}`, {
       formType,
-      ...data
+      ...data,
     });
   }
 
   // Pricing interaction tracking
-  public trackPricingInteraction(action: string, data: Record<string, any> = {}) {
+  public trackPricingInteraction(
+    action: string,
+    data: Record<string, any> = {}
+  ) {
     this.trackEvent(`pricing_${action}`, {
       ...data,
-      section: 'pricing'
+      section: 'pricing',
     });
   }
 
   // PERFORMANCE: Optimized analytics service integration
   private sendToAnalytics(event: AnalyticsEvent) {
     // Google Analytics 4 with error handling
-    if (typeof window !== 'undefined' && typeof (window as any).gtag !== 'undefined') {
+    if (
+      typeof window !== 'undefined' &&
+      typeof (window as any).gtag !== 'undefined'
+    ) {
       try {
         (window as any).gtag('event', event.event, event.properties);
       } catch (error) {
@@ -288,7 +309,10 @@ class AnalyticsTracker {
     }
 
     // Facebook Pixel with error handling
-    if (typeof window !== 'undefined' && typeof (window as any).fbq !== 'undefined') {
+    if (
+      typeof window !== 'undefined' &&
+      typeof (window as any).fbq !== 'undefined'
+    ) {
       try {
         (window as any).fbq('track', event.event, event.properties);
       } catch (error) {
@@ -303,7 +327,11 @@ class AnalyticsTracker {
   }
 
   // PERFORMANCE: Add retry logic for analytics endpoints
-  private async sendWithRetry(endpoint: string, event: AnalyticsEvent, retries = 2) {
+  private async sendWithRetry(
+    endpoint: string,
+    event: AnalyticsEvent,
+    retries = 2
+  ) {
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -315,15 +343,21 @@ class AnalyticsTracker {
 
       if (!response.ok && retries > 0) {
         // Retry with exponential backoff
-        setTimeout(() => {
-          this.sendWithRetry(endpoint, event, retries - 1);
-        }, Math.pow(2, 3 - retries) * 1000);
+        setTimeout(
+          () => {
+            this.sendWithRetry(endpoint, event, retries - 1);
+          },
+          Math.pow(2, 3 - retries) * 1000
+        );
       }
     } catch (error) {
       if (retries > 0) {
-        setTimeout(() => {
-          this.sendWithRetry(endpoint, event, retries - 1);
-        }, Math.pow(2, 3 - retries) * 1000);
+        setTimeout(
+          () => {
+            this.sendWithRetry(endpoint, event, retries - 1);
+          },
+          Math.pow(2, 3 - retries) * 1000
+        );
       } else {
         console.error('Analytics tracking failed after retries:', error);
       }
@@ -332,14 +366,16 @@ class AnalyticsTracker {
 
   private storeEventLocally(event: AnalyticsEvent) {
     try {
-      const events = JSON.parse(localStorage.getItem('analytics_events') || '[]');
+      const events = JSON.parse(
+        localStorage.getItem('analytics_events') || '[]'
+      );
       events.push(event);
-      
+
       // Keep only last 50 events to prevent storage bloat
       if (events.length > 50) {
         events.splice(0, events.length - 50);
       }
-      
+
       localStorage.setItem('analytics_events', JSON.stringify(events));
     } catch (error) {
       console.error('Local storage error:', error);
@@ -351,7 +387,7 @@ class AnalyticsTracker {
     this.trackEvent('page_exit', {
       timeSpent: (Date.now() - this.startTime) / 1000,
       scrollDepth: this.maxScrollDepth,
-      funnelProgress: this.conversionFunnel.length
+      funnelProgress: this.conversionFunnel.length,
     });
 
     // Process any remaining events immediately
@@ -369,7 +405,7 @@ class AnalyticsTracker {
       scrollDepth: this.maxScrollDepth,
       timeOnPage: (Date.now() - this.startTime) / 1000,
       interactionEvents: this.engagementEvents,
-      conversionFunnel: this.conversionFunnel
+      conversionFunnel: this.conversionFunnel,
     };
   }
 }
@@ -382,7 +418,7 @@ export function initializeAnalytics(): AnalyticsTracker {
   if (globalAnalyticsTracker) {
     globalAnalyticsTracker.cleanup();
   }
-  
+
   globalAnalyticsTracker = new AnalyticsTracker();
   return globalAnalyticsTracker;
 }
@@ -404,14 +440,21 @@ export function trackEvent(event: string, properties?: Record<string, any>) {
   globalAnalyticsTracker.trackEvent(event, properties);
 }
 
-export function trackConversion(step: string, properties?: Record<string, any>) {
+export function trackConversion(
+  step: string,
+  properties?: Record<string, any>
+) {
   if (!globalAnalyticsTracker) {
     globalAnalyticsTracker = initializeAnalytics();
   }
   globalAnalyticsTracker.trackConversionStep(step, properties);
 }
 
-export function trackCTA(ctaType: string, location: string, properties?: Record<string, any>) {
+export function trackCTA(
+  ctaType: string,
+  location: string,
+  properties?: Record<string, any>
+) {
   if (!globalAnalyticsTracker) {
     globalAnalyticsTracker = initializeAnalytics();
   }
@@ -444,4 +487,4 @@ export function cleanupAnalytics() {
 }
 
 // Export types
-export type { AnalyticsEvent, UserEngagement }; 
+export type { AnalyticsEvent, UserEngagement };

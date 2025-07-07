@@ -18,10 +18,7 @@ export async function GET(request: NextRequest) {
   const callId = searchParams.get('callId');
 
   if (!callId) {
-    return NextResponse.json(
-      { error: 'Call ID is required' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Call ID is required' }, { status: 400 });
   }
 
   try {
@@ -32,10 +29,7 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get the user's VAPI assistant ID from user_settings
@@ -56,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch call details from VAPI to verify ownership and get recording URL
     const url = new URL(`/call/${callId}`, baseUrl);
-    
+
     const res = await fetch(url.toString(), {
       headers: {
         Authorization: `Bearer ${apiKey}`,
