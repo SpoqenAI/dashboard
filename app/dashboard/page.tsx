@@ -46,6 +46,12 @@ import {
   Mic,
   User,
   Bot,
+  Smile,
+  Meh,
+  Frown,
+  Flame,
+  Thermometer,
+  Snowflake,
 } from 'lucide-react';
 import {
   Dialog,
@@ -93,11 +99,81 @@ import { syncVapiAssistant } from '@/lib/actions/assistant.actions';
 const contentFilter = new BadWordsFilter();
 contentFilter.addWords('scam', 'fraud', 'fake', 'illegal', 'drugs');
 
+// Helper function to get sentiment badge
+const getSentimentBadge = (sentiment?: string) => {
+  if (!sentiment) {
+    return <span className="text-xs text-muted-foreground">-</span>;
+  }
+
+  const config = {
+    positive: {
+      icon: Smile,
+      variant: 'default' as const,
+      className: 'bg-green-100 text-green-800 hover:bg-green-100',
+    },
+    neutral: {
+      icon: Meh,
+      variant: 'secondary' as const,
+      className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100',
+    },
+    negative: {
+      icon: Frown,
+      variant: 'destructive' as const,
+      className: 'bg-red-100 text-red-800 hover:bg-red-100',
+    },
+  };
+
+  const { icon: Icon, variant, className } = config[sentiment as keyof typeof config] || config.neutral;
+
+  return (
+    <Badge variant={variant} className={`text-xs ${className}`}>
+      <Icon className="mr-1 h-3 w-3" />
+      {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
+    </Badge>
+  );
+};
+
+// Helper function to get lead quality badge
+const getLeadQualityBadge = (leadQuality?: string) => {
+  if (!leadQuality) {
+    return <span className="text-xs text-muted-foreground">-</span>;
+  }
+
+  const config = {
+    hot: {
+      icon: Flame,
+      variant: 'destructive' as const,
+      className: 'bg-red-100 text-red-800 hover:bg-red-100',
+    },
+    warm: {
+      icon: Thermometer,
+      variant: 'default' as const,
+      className: 'bg-orange-100 text-orange-800 hover:bg-orange-100',
+    },
+    cold: {
+      icon: Snowflake,
+      variant: 'secondary' as const,
+      className: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
+    },
+  };
+
+  const { icon: Icon, variant, className } = config[leadQuality as keyof typeof config] || config.cold;
+
+  return (
+    <Badge variant={variant} className={`text-xs ${className}`}>
+      <Icon className="mr-1 h-3 w-3" />
+      {leadQuality.charAt(0).toUpperCase() + leadQuality.slice(1)}
+    </Badge>
+  );
+};
+
 export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCall, setSelectedCall] = useState<VapiCall | null>(null);
   const [callDetailDialogOpen, setCallDetailDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sentimentFilter, setSentimentFilter] = useState<string>('all');
+  const [leadQualityFilter, setLeadQualityFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('date');
   const [actionPoints, setActionPoints] = useState<ActionPoints | null>(null);
   const [timeRange, setTimeRange] = useState<number>(30);
@@ -168,7 +244,11 @@ export default function DashboardPage() {
         call.endedReason.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus =
         statusFilter === 'all' || call.endedReason === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesSentiment =
+        sentimentFilter === 'all' || call.sentiment === sentimentFilter;
+      const matchesLeadQuality =
+        leadQualityFilter === 'all' || call.leadQuality === leadQualityFilter;
+      return matchesSearch && matchesStatus && matchesSentiment && matchesLeadQuality;
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -180,6 +260,14 @@ export default function DashboardPage() {
           return b.durationSeconds - a.durationSeconds;
         case 'phone':
           return (a.phoneNumber || '').localeCompare(b.phoneNumber || '');
+        case 'sentiment':
+          const sentimentOrder = { positive: 3, neutral: 2, negative: 1 };
+          return (sentimentOrder[b.sentiment as keyof typeof sentimentOrder] || 0) - 
+                 (sentimentOrder[a.sentiment as keyof typeof sentimentOrder] || 0);
+        case 'leadQuality':
+          const leadOrder = { hot: 3, warm: 2, cold: 1 };
+          return (leadOrder[b.leadQuality as keyof typeof leadOrder] || 0) - 
+                 (leadOrder[a.leadQuality as keyof typeof leadOrder] || 0);
         default:
           return 0;
       }
@@ -611,7 +699,7 @@ export default function DashboardPage() {
               {/* Filters and Search */}
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex flex-col gap-4 md:flex-row">
+                  <div className="flex flex-col gap-4 md:flex-row md:flex-wrap">
                     {/* Search */}
                     <div className="flex-1">
                       <div className="relative">
@@ -649,6 +737,40 @@ export default function DashboardPage() {
                       </SelectContent>
                     </Select>
 
+                    {/* Sentiment Filter */}
+                    <Select
+                      value={sentimentFilter}
+                      onValueChange={setSentimentFilter}
+                    >
+                      <SelectTrigger className="w-40">
+                        <Smile className="mr-2 h-4 w-4" />
+                        <SelectValue placeholder="Sentiment" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sentiment</SelectItem>
+                        <SelectItem value="positive">Positive</SelectItem>
+                        <SelectItem value="neutral">Neutral</SelectItem>
+                        <SelectItem value="negative">Negative</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Lead Quality Filter */}
+                    <Select
+                      value={leadQualityFilter}
+                      onValueChange={setLeadQualityFilter}
+                    >
+                      <SelectTrigger className="w-40">
+                        <Flame className="mr-2 h-4 w-4" />
+                        <SelectValue placeholder="Lead Quality" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Leads</SelectItem>
+                        <SelectItem value="hot">Hot</SelectItem>
+                        <SelectItem value="warm">Warm</SelectItem>
+                        <SelectItem value="cold">Cold</SelectItem>
+                      </SelectContent>
+                    </Select>
+
                     {/* Sort By */}
                     <Select value={sortBy} onValueChange={setSortBy}>
                       <SelectTrigger className="w-40">
@@ -658,6 +780,8 @@ export default function DashboardPage() {
                         <SelectItem value="date">Recent First</SelectItem>
                         <SelectItem value="duration">Duration</SelectItem>
                         <SelectItem value="phone">Phone Number</SelectItem>
+                        <SelectItem value="sentiment">Sentiment</SelectItem>
+                        <SelectItem value="leadQuality">Lead Quality</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -682,7 +806,7 @@ export default function DashboardPage() {
                     <div className="py-8 text-center">
                       <Phone className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
                       <p className="text-muted-foreground">
-                        {searchQuery || statusFilter !== 'all'
+                        {searchQuery || statusFilter !== 'all' || sentimentFilter !== 'all' || leadQualityFilter !== 'all'
                           ? 'No calls match your search criteria'
                           : 'No calls available yet'}
                       </p>
@@ -696,6 +820,8 @@ export default function DashboardPage() {
                             <TableHead>Date & Time</TableHead>
                             <TableHead>Duration</TableHead>
                             <TableHead>Status</TableHead>
+                            <TableHead>Sentiment</TableHead>
+                            <TableHead>Lead Quality</TableHead>
                             <TableHead>Cost</TableHead>
                             <TableHead>Actions</TableHead>
                           </TableRow>
@@ -735,6 +861,12 @@ export default function DashboardPage() {
                               </TableCell>
                               <TableCell>
                                 {getStatusBadge(call.endedReason)}
+                              </TableCell>
+                              <TableCell>
+                                {getSentimentBadge(call.sentiment)}
+                              </TableCell>
+                              <TableCell>
+                                {getLeadQualityBadge(call.leadQuality)}
                               </TableCell>
                               <TableCell>
                                 <span className="text-foreground">

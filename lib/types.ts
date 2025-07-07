@@ -14,6 +14,8 @@ export interface VapiCall {
   transcript?: string;
   summary?: string;
   recordingUrl?: string;
+  sentiment?: 'positive' | 'neutral' | 'negative';
+  leadQuality?: 'hot' | 'warm' | 'cold';
 }
 
 export interface ActionPoints {
