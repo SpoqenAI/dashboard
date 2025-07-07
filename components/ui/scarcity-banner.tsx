@@ -56,7 +56,6 @@ export const ScarcityBanner = ({
         return '🔥 47 people signed up in the last hour';
       case 'countdown':
         return '⚡ Special launch pricing ends soon';
-      case 'limited_time':
       default:
         return '🎯 Limited time: Get 3 months free with annual plan';
     }
