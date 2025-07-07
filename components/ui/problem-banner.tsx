@@ -33,17 +33,19 @@ export function ProblemBanner({ className }: ProblemBannerProps) {
             competitors instead.
           </p>
 
-          <div className="flex items-center space-x-6 pt-2">
+          <div
+            className="flex flex-col items-center space-y-4 pt-2 sm:flex-row sm:space-y-0 sm:space-x-6"
+          >
             <div className="flex items-center space-x-2 text-red-400">
               <TrendingDown className="h-4 w-4" />
               <span className="text-sm">73% never call back</span>
             </div>
-            <div className="h-4 w-px bg-red-400/30"></div>
+            <div className="hidden h-4 w-px bg-red-400/30 sm:block"></div>
             <div className="flex items-center space-x-2 text-red-400">
               <TrendingDown className="h-4 w-4" />
               <span className="text-sm">42% go to competitors</span>
             </div>
-            <div className="h-4 w-px bg-red-400/30"></div>
+            <div className="hidden h-4 w-px bg-red-400/30 sm:block"></div>
             <div className="flex items-center space-x-2 text-red-400">
               <TrendingDown className="h-4 w-4" />
               <span className="text-sm">$1.2K avg. lost deal</span>
