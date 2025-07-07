@@ -15,6 +15,8 @@ interface DemoVideoModalProps {
   isOpen: boolean;
   onClose: () => void;
   onVideoEvent?: (event: string, data?: any) => void;
+  posterSrc?: string;
+  videoSrc?: string;
 }
 
 // PERFORMANCE: Memoized feature data to prevent re-creation
@@ -27,13 +29,14 @@ const demoFeatures = [
 ] as const;
 
 export const DemoVideoModal = memo(
-  ({ isOpen, onClose, onVideoEvent }: DemoVideoModalProps) => {
+  ({ isOpen, onClose, onVideoEvent, posterSrc = '', videoSrc = '' }: DemoVideoModalProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [progress, setProgress] = useState(0);
     const [isMuted, setIsMuted] = useState(false);
+    const [videoError, setVideoError] = useState(false);
 
     // PERFORMANCE: Memoized callbacks to prevent re-renders
     const handleTimeUpdate = useCallback(() => {
@@ -177,18 +180,31 @@ export const DemoVideoModal = memo(
           <div className="space-y-4">
             {/* Video Player */}
             <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
-              <video
-                ref={videoRef}
-                className="h-full w-full object-cover"
-                poster="/demo-thumbnail.jpg"
-                preload="metadata"
-                playsInline
-                muted={isMuted}
-              >
-                {/* Placeholder - In real implementation, add actual demo video */}
-                <source src="/spoqen-demo.mp4" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+              {videoError ? (
+                <div className="flex h-full w-full items-center justify-center bg-black text-white">
+                  <p>Sorry, the demo video could not be loaded.</p>
+                </div>
+              ) : (
+                <>
+                  <video
+                    ref={videoRef}
+                    className="h-full w-full object-cover"
+                    poster={posterSrc}
+                    preload="metadata"
+                    playsInline
+                    muted={isMuted}
+                    aria-describedby="demo-video-description"
+                    onError={() => setVideoError(true)}
+                  >
+                    <source src={videoSrc} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                  {/* Visually hidden description for screen readers */}
+                  <span id="demo-video-description" className="sr-only">
+                    This video demonstrates the Spoqen AI Receptionist handling real customer calls, showcasing features such as call answering, customer interaction, and automated responses. The video provides an overview of how the AI system works in a business environment.
+                  </span>
+                </>
+              )}
 
               {/* Video Overlay for Demo Purposes */}
               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/60 via-transparent to-black/30">
