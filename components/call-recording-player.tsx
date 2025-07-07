@@ -102,7 +102,10 @@ export function CallRecordingPlayer({
         );
       };
 
-      audioElement.addEventListener('loadedmetadata', handleLoadedMetadataRef.current!);
+      audioElement.addEventListener(
+        'loadedmetadata',
+        handleLoadedMetadataRef.current!
+      );
       audioElement.addEventListener('timeupdate', handleTimeUpdateRef.current!);
       audioElement.addEventListener('ended', handleEndedRef.current!);
       audioElement.addEventListener('error', handleErrorRef.current!);
@@ -115,7 +118,10 @@ export function CallRecordingPlayer({
         audio.pause();
         // Remove the same handlers that were added
         if (handleLoadedMetadataRef.current)
-          audio.removeEventListener('loadedmetadata', handleLoadedMetadataRef.current);
+          audio.removeEventListener(
+            'loadedmetadata',
+            handleLoadedMetadataRef.current
+          );
         if (handleTimeUpdateRef.current)
           audio.removeEventListener('timeupdate', handleTimeUpdateRef.current);
         if (handleEndedRef.current)

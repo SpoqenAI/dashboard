@@ -123,7 +123,11 @@ const getSentimentBadge = (sentiment?: string) => {
     },
   };
 
-  const { icon: Icon, variant, className } = config[sentiment as keyof typeof config] || config.neutral;
+  const {
+    icon: Icon,
+    variant,
+    className,
+  } = config[sentiment as keyof typeof config] || config.neutral;
 
   return (
     <Badge variant={variant} className={`text-xs ${className}`}>
@@ -157,7 +161,11 @@ const getLeadQualityBadge = (leadQuality?: string) => {
     },
   };
 
-  const { icon: Icon, variant, className } = config[leadQuality as keyof typeof config] || config.cold;
+  const {
+    icon: Icon,
+    variant,
+    className,
+  } = config[leadQuality as keyof typeof config] || config.cold;
 
   return (
     <Badge variant={variant} className={`text-xs ${className}`}>
@@ -248,7 +256,9 @@ export default function DashboardPage() {
         sentimentFilter === 'all' || call.sentiment === sentimentFilter;
       const matchesLeadQuality =
         leadQualityFilter === 'all' || call.leadQuality === leadQualityFilter;
-      return matchesSearch && matchesStatus && matchesSentiment && matchesLeadQuality;
+      return (
+        matchesSearch && matchesStatus && matchesSentiment && matchesLeadQuality
+      );
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -262,12 +272,16 @@ export default function DashboardPage() {
           return (a.phoneNumber || '').localeCompare(b.phoneNumber || '');
         case 'sentiment':
           const sentimentOrder = { positive: 3, neutral: 2, negative: 1 };
-          return (sentimentOrder[b.sentiment as keyof typeof sentimentOrder] || 0) - 
-                 (sentimentOrder[a.sentiment as keyof typeof sentimentOrder] || 0);
+          return (
+            (sentimentOrder[b.sentiment as keyof typeof sentimentOrder] || 0) -
+            (sentimentOrder[a.sentiment as keyof typeof sentimentOrder] || 0)
+          );
         case 'leadQuality':
           const leadOrder = { hot: 3, warm: 2, cold: 1 };
-          return (leadOrder[b.leadQuality as keyof typeof leadOrder] || 0) - 
-                 (leadOrder[a.leadQuality as keyof typeof leadOrder] || 0);
+          return (
+            (leadOrder[b.leadQuality as keyof typeof leadOrder] || 0) -
+            (leadOrder[a.leadQuality as keyof typeof leadOrder] || 0)
+          );
         default:
           return 0;
       }
@@ -785,7 +799,9 @@ export default function DashboardPage() {
                         <SelectItem value="duration">Duration</SelectItem>
                         <SelectItem value="phone">Phone Number</SelectItem>
                         <SelectItem value="sentiment">Sentiment</SelectItem>
-                        <SelectItem value="leadQuality">Lead Quality</SelectItem>
+                        <SelectItem value="leadQuality">
+                          Lead Quality
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -810,7 +826,10 @@ export default function DashboardPage() {
                     <div className="py-8 text-center">
                       <Phone className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
                       <p className="text-muted-foreground">
-                        {searchQuery || statusFilter !== 'all' || sentimentFilter !== 'all' || leadQualityFilter !== 'all'
+                        {searchQuery ||
+                        statusFilter !== 'all' ||
+                        sentimentFilter !== 'all' ||
+                        leadQualityFilter !== 'all'
                           ? 'No calls match your search criteria'
                           : 'No calls available yet'}
                       </p>
@@ -1173,7 +1192,9 @@ export default function DashboardPage() {
 
                       {/* Transcript */}
                       {selectedCall.transcript && (
-                        <CallTranscriptViewer transcript={selectedCall.transcript} />
+                        <CallTranscriptViewer
+                          transcript={selectedCall.transcript}
+                        />
                       )}
                     </div>
                   )}

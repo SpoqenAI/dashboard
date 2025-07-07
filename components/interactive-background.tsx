@@ -338,17 +338,16 @@ export const InteractiveBackground = memo<InteractiveBackgroundProps>(props => {
             {/* Render particles for hero variant */}
             {variant === 'hero' &&
               config.particleCount > 0 &&
-              shouldAnimate && (
-                Array.from({ length: config.particleCount }, (_, index) => (
-                    <Particle
-                      key={index}
-                      index={index}
-                      mousePosition={mousePosition}
-                      scrollY={scrollY}
-                      isVisible={shouldAnimate}
-                    />
-                ))
-              )}
+              shouldAnimate &&
+              Array.from({ length: config.particleCount }, (_, index) => (
+                <Particle
+                  key={index}
+                  index={index}
+                  mousePosition={mousePosition}
+                  scrollY={scrollY}
+                  isVisible={shouldAnimate}
+                />
+              ))}
 
             {/* Interactive gradient overlay for hero */}
             {variant === 'hero' && shouldAnimate && (

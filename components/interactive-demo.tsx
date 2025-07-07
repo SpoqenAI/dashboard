@@ -386,7 +386,9 @@ export const InteractiveDemo = memo(() => {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">Intent:</span>
                       <span className="text-sm capitalize">
-                        {analysisData.intent ? analysisData.intent.replace('_', ' ') : ''}
+                        {analysisData.intent
+                          ? analysisData.intent.replace('_', ' ')
+                          : ''}
                       </span>
                     </div>
                   </div>

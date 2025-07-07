@@ -98,9 +98,12 @@ export function RecentCallsList() {
           </div>
         ))}
       </div>
-      <Dialog open={quickPlayCallId !== null} onOpenChange={open => {
-        if (!open) setQuickPlayCallId(null);
-      }}>
+      <Dialog
+        open={quickPlayCallId !== null}
+        onOpenChange={open => {
+          if (!open) setQuickPlayCallId(null);
+        }}
+      >
         <DialogContent className="max-w-lg">
           {quickPlayCallId !== null && (
             <CallRecordingPlayer callId={quickPlayCallId.toString()} />

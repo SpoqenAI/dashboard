@@ -33,9 +33,7 @@ export function ProblemBanner({ className }: ProblemBannerProps) {
             competitors instead.
           </p>
 
-          <div
-            className="flex flex-col items-center space-y-4 pt-2 sm:flex-row sm:space-y-0 sm:space-x-6"
-          >
+          <div className="flex flex-col items-center space-y-4 pt-2 sm:flex-row sm:space-x-6 sm:space-y-0">
             <div className="flex items-center space-x-2 text-red-400">
               <TrendingDown className="h-4 w-4" />
               <span className="text-sm">73% never call back</span>

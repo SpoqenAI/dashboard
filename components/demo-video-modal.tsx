@@ -29,7 +29,13 @@ const demoFeatures = [
 ] as const;
 
 export const DemoVideoModal = memo(
-  ({ isOpen, onClose, onVideoEvent, posterSrc = '', videoSrc = '' }: DemoVideoModalProps) => {
+  ({
+    isOpen,
+    onClose,
+    onVideoEvent,
+    posterSrc = '',
+    videoSrc = '',
+  }: DemoVideoModalProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
@@ -186,22 +192,26 @@ export const DemoVideoModal = memo(
                 </div>
               ) : (
                 <>
-              <video
-                ref={videoRef}
-                className="h-full w-full object-cover"
+                  <video
+                    ref={videoRef}
+                    className="h-full w-full object-cover"
                     poster={posterSrc}
-                preload="metadata"
-                playsInline
-                muted={isMuted}
+                    preload="metadata"
+                    playsInline
+                    muted={isMuted}
                     aria-describedby="demo-video-description"
                     onError={() => setVideoError(true)}
-              >
+                  >
                     <source src={videoSrc} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+                    Your browser does not support the video tag.
+                  </video>
                   {/* Visually hidden description for screen readers */}
                   <span id="demo-video-description" className="sr-only">
-                    This video demonstrates the Spoqen AI Receptionist handling real customer calls, showcasing features such as call answering, customer interaction, and automated responses. The video provides an overview of how the AI system works in a business environment.
+                    This video demonstrates the Spoqen AI Receptionist handling
+                    real customer calls, showcasing features such as call
+                    answering, customer interaction, and automated responses.
+                    The video provides an overview of how the AI system works in
+                    a business environment.
                   </span>
                 </>
               )}

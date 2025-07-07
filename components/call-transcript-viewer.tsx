@@ -15,27 +15,32 @@ interface CallTranscriptViewerProps {
   className?: string;
 }
 
-export function CallTranscriptViewer({ transcript, className }: CallTranscriptViewerProps) {
+export function CallTranscriptViewer({
+  transcript,
+  className,
+}: CallTranscriptViewerProps) {
   // Parse the transcript and filter out system messages
   const parseTranscript = (rawTranscript: string): TranscriptMessage[] => {
     try {
       // Try to parse as JSON first (structured format)
       const parsed = JSON.parse(rawTranscript);
-      
+
       if (Array.isArray(parsed)) {
         // Filter out system messages and return only user/assistant conversation
-        return parsed.filter((msg: TranscriptMessage) => 
-          msg.role === 'user' || msg.role === 'assistant'
+        return parsed.filter(
+          (msg: TranscriptMessage) =>
+            msg.role === 'user' || msg.role === 'assistant'
         );
       }
-      
+
       // If it's an object with transcript property
       if (parsed.transcript && Array.isArray(parsed.transcript)) {
-        return parsed.transcript.filter((msg: TranscriptMessage) => 
-          msg.role === 'user' || msg.role === 'assistant'
+        return parsed.transcript.filter(
+          (msg: TranscriptMessage) =>
+            msg.role === 'user' || msg.role === 'assistant'
         );
       }
-      
+
       // If it's not structured, fall back to text parsing
       return parseTextTranscript(rawTranscript);
     } catch (error) {
@@ -48,29 +53,35 @@ export function CallTranscriptViewer({ transcript, className }: CallTranscriptVi
   const parseTextTranscript = (text: string): TranscriptMessage[] => {
     // First, remove the system prompt section
     let cleanedText = text;
-    
+
     // Find and remove system prompt (everything from "system:" until the first "bot:" or "user:")
-    const systemPromptRegex = /system:\s*[\s\S]*?(?=(?:bot:|user:|assistant:|caller:))/i;
+    const systemPromptRegex =
+      /system:\s*[\s\S]*?(?=(?:bot:|user:|assistant:|caller:))/i;
     cleanedText = cleanedText.replace(systemPromptRegex, '');
-    
+
     const lines = cleanedText.split('\n').filter(line => line.trim());
     const messages: TranscriptMessage[] = [];
-    
+
     for (const line of lines) {
       // Parse user messages
-      if (line.toLowerCase().startsWith('user:') || line.toLowerCase().startsWith('caller:')) {
+      if (
+        line.toLowerCase().startsWith('user:') ||
+        line.toLowerCase().startsWith('caller:')
+      ) {
         messages.push({
           role: 'user',
-          message: line.replace(/^(user:|caller:)/i, '').trim()
+          message: line.replace(/^(user:|caller:)/i, '').trim(),
         });
       }
       // Parse assistant/bot messages
-      else if (line.toLowerCase().startsWith('bot:') || 
-               line.toLowerCase().startsWith('assistant:') || 
-               line.toLowerCase().startsWith('ai:')) {
+      else if (
+        line.toLowerCase().startsWith('bot:') ||
+        line.toLowerCase().startsWith('assistant:') ||
+        line.toLowerCase().startsWith('ai:')
+      ) {
         messages.push({
           role: 'assistant',
-          message: line.replace(/^(bot:|assistant:|ai:)/i, '').trim()
+          message: line.replace(/^(bot:|assistant:|ai:)/i, '').trim(),
         });
       }
       // If no prefix but has content, treat as continuation of previous message
@@ -78,7 +89,7 @@ export function CallTranscriptViewer({ transcript, className }: CallTranscriptVi
         messages[messages.length - 1].message += ' ' + line.trim();
       }
     }
-    
+
     return messages;
   };
 
@@ -120,7 +131,7 @@ export function CallTranscriptViewer({ transcript, className }: CallTranscriptVi
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="max-h-96 overflow-y-auto space-y-4">
+        <div className="max-h-96 space-y-4 overflow-y-auto">
           {messages.map((message, index) => (
             <div
               key={index}
@@ -135,7 +146,7 @@ export function CallTranscriptViewer({ transcript, className }: CallTranscriptVi
                   </div>
                 </div>
               )}
-              
+
               <div
                 className={`max-w-[80%] rounded-lg px-4 py-2 ${
                   message.role === 'assistant'
@@ -143,9 +154,11 @@ export function CallTranscriptViewer({ transcript, className }: CallTranscriptVi
                     : 'bg-gray-100 text-gray-900'
                 }`}
               >
-                <div className="flex items-center gap-2 mb-1">
+                <div className="mb-1 flex items-center gap-2">
                   <Badge
-                    variant={message.role === 'assistant' ? 'default' : 'secondary'}
+                    variant={
+                      message.role === 'assistant' ? 'default' : 'secondary'
+                    }
                     className="text-xs"
                   >
                     {message.role === 'assistant' ? (
