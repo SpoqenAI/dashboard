@@ -270,11 +270,7 @@ export default function SignupPage() {
       // Use first name if provided, otherwise use email prefix
       const firstName = formData.firstName || formData.email.split('@')[0];
 
-      await signUp(formData.email, formData.password, {
-        firstName,
-        lastName: '', // Will be collected in onboarding
-        phone: '', // Will be collected in onboarding
-      });
+      await signUp(formData.email, formData.password, firstName, '', '');
 
       toast({
         title: 'Account created successfully!',
