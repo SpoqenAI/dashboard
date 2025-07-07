@@ -340,13 +340,13 @@ export const InteractiveBackground = memo<InteractiveBackgroundProps>(props => {
               config.particleCount > 0 &&
               shouldAnimate && (
                 Array.from({ length: config.particleCount }, (_, index) => (
-                  <Particle
-                    key={index}
-                    index={index}
-                    mousePosition={mousePosition}
-                    scrollY={scrollY}
-                    isVisible={shouldAnimate}
-                  />
+                    <Particle
+                      key={index}
+                      index={index}
+                      mousePosition={mousePosition}
+                      scrollY={scrollY}
+                      isVisible={shouldAnimate}
+                    />
                 ))
               )}
 
