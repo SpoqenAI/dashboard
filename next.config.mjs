@@ -68,10 +68,17 @@ const nextConfig = {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
           },
-          // PERFORMANCE: Add cache headers
+        ],
+      },
+      // Cache JS/CSS chunks but keep other routes fresh to avoid stale builds
+      {
+        source: '/_next/static/(.*)',
+        headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            value: process.env.NODE_ENV === 'production'
+              ? 'public, max-age=31536000, immutable'
+              : 'no-store',
           },
         ],
       },
