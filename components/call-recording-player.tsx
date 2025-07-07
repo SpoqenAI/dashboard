@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -30,6 +30,12 @@ export function CallRecordingPlayer({
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+
+  // Store handler refs to ensure stable references for add/removeEventListener
+  const handleLoadedMetadataRef = useRef<(() => void) | undefined>(undefined);
+  const handleTimeUpdateRef = useRef<(() => void) | undefined>(undefined);
+  const handleEndedRef = useRef<(() => void) | undefined>(undefined);
+  const handleErrorRef = useRef<((e: Event) => void) | undefined>(undefined);
 
   // Fetch recording URL
   useEffect(() => {
@@ -77,19 +83,16 @@ export function CallRecordingPlayer({
     if (recordingUrl && !audio) {
       const audioElement = new Audio(recordingUrl);
 
-      audioElement.addEventListener('loadedmetadata', () => {
+      handleLoadedMetadataRef.current = () => {
         setDuration(audioElement.duration);
-      });
-
-      audioElement.addEventListener('timeupdate', () => {
+      };
+      handleTimeUpdateRef.current = () => {
         setCurrentTime(audioElement.currentTime);
-      });
-
-      audioElement.addEventListener('ended', () => {
+      };
+      handleEndedRef.current = () => {
         setIsPlaying(false);
-      });
-
-      audioElement.addEventListener('error', e => {
+      };
+      handleErrorRef.current = (e: Event) => {
         setError('Failed to load audio file');
         logger.error(
           'RECORDING_PLAYER',
@@ -97,7 +100,12 @@ export function CallRecordingPlayer({
           new Error('Audio load failed'),
           { callId, recordingUrl }
         );
-      });
+      };
+
+      audioElement.addEventListener('loadedmetadata', handleLoadedMetadataRef.current!);
+      audioElement.addEventListener('timeupdate', handleTimeUpdateRef.current!);
+      audioElement.addEventListener('ended', handleEndedRef.current!);
+      audioElement.addEventListener('error', handleErrorRef.current!);
 
       setAudio(audioElement);
     }
@@ -105,10 +113,15 @@ export function CallRecordingPlayer({
     return () => {
       if (audio) {
         audio.pause();
-        audio.removeEventListener('loadedmetadata', () => {});
-        audio.removeEventListener('timeupdate', () => {});
-        audio.removeEventListener('ended', () => {});
-        audio.removeEventListener('error', () => {});
+        // Remove the same handlers that were added
+        if (handleLoadedMetadataRef.current)
+          audio.removeEventListener('loadedmetadata', handleLoadedMetadataRef.current);
+        if (handleTimeUpdateRef.current)
+          audio.removeEventListener('timeupdate', handleTimeUpdateRef.current);
+        if (handleEndedRef.current)
+          audio.removeEventListener('ended', handleEndedRef.current);
+        if (handleErrorRef.current)
+          audio.removeEventListener('error', handleErrorRef.current);
       }
     };
   }, [recordingUrl, audio, callId]);
