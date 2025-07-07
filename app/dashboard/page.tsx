@@ -44,6 +44,8 @@ import {
   X,
   BarChart3,
   Mic,
+  User,
+  Bot,
 } from 'lucide-react';
 import {
   Dialog,
@@ -81,6 +83,7 @@ import {
 } from '@/hooks/use-user-settings';
 import { DashboardAnalytics } from '@/components/dashboard-analytics';
 import { CallRecordingPlayer } from '@/components/call-recording-player';
+import { CallTranscriptViewer } from '@/components/call-transcript-viewer';
 import { ActionPoints, VapiCall } from '@/lib/types';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
@@ -1038,20 +1041,7 @@ export default function DashboardPage() {
 
                       {/* Transcript */}
                       {selectedCall.transcript && (
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="text-lg text-foreground">
-                              Call Transcript
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="max-h-60 overflow-y-auto rounded-lg bg-card p-4">
-                              <pre className="whitespace-pre-wrap font-mono text-foreground">
-                                {selectedCall.transcript}
-                              </pre>
-                            </div>
-                          </CardContent>
-                        </Card>
+                        <CallTranscriptViewer transcript={selectedCall.transcript} />
                       )}
                     </div>
                   )}
