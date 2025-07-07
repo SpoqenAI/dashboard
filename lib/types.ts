@@ -13,6 +13,7 @@ export interface VapiCall {
   cost?: number;
   transcript?: string;
   summary?: string;
+  recordingUrl?: string;
 }
 
 export interface ActionPoints {

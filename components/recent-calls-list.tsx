@@ -1,8 +1,19 @@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Calendar, Clock, PhoneCall } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, Clock, PhoneCall, Mic, Play } from 'lucide-react';
+
+interface RecentCall {
+  id: number;
+  name: string;
+  phone: string;
+  date: string;
+  time: string;
+  summary: string;
+  hasRecording?: boolean;
+}
 
 export function RecentCallsList() {
-  const recentCalls = [
+  const recentCalls: RecentCall[] = [
     {
       id: 1,
       name: 'Sarah Johnson',
@@ -11,6 +22,7 @@ export function RecentCallsList() {
       time: '10:30 AM',
       summary:
         'Interested in the 3-bedroom property on Oak Street. First-time homebuyer.',
+      hasRecording: true,
     },
     {
       id: 2,
@@ -19,6 +31,7 @@ export function RecentCallsList() {
       date: 'May 23, 2025',
       time: '2:15 PM',
       summary: 'Looking to sell condo in downtown. Relocating for work.',
+      hasRecording: true,
     },
     {
       id: 3,
@@ -27,6 +40,7 @@ export function RecentCallsList() {
       date: 'May 22, 2025',
       time: '4:45 PM',
       summary: 'Wants information about listings in Westside neighborhood.',
+      hasRecording: false,
     },
   ];
 
@@ -50,8 +64,31 @@ export function RecentCallsList() {
               {call.date}
               <Clock className="ml-2 mr-1 h-3 w-3" />
               {call.time}
+              {call.hasRecording && (
+                <div className="ml-2 flex items-center gap-1 text-blue-600">
+                  <Mic className="h-3 w-3" />
+                  <span className="text-xs">Recording</span>
+                </div>
+              )}
             </div>
             <p className="text-sm text-muted-foreground">{call.summary}</p>
+            {call.hasRecording && (
+              <div className="mt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs text-blue-600 hover:text-blue-700"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // This would open a quick play modal or start playing inline
+                    console.log('Quick play recording for call:', call.id);
+                  }}
+                >
+                  <Play className="mr-1 h-3 w-3" />
+                  Quick Play
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       ))}

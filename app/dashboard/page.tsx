@@ -43,6 +43,7 @@ import {
   Save,
   X,
   BarChart3,
+  Mic,
 } from 'lucide-react';
 import {
   Dialog,
@@ -79,6 +80,7 @@ import {
   type AIReceptionistSettings,
 } from '@/hooks/use-user-settings';
 import { DashboardAnalytics } from '@/components/dashboard-analytics';
+import { CallRecordingPlayer } from '@/components/call-recording-player';
 import { ActionPoints, VapiCall } from '@/lib/types';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
@@ -828,6 +830,9 @@ export default function DashboardPage() {
                           </CardContent>
                         </Card>
                       </div>
+
+                      {/* Call Recording */}
+                      <CallRecordingPlayer callId={selectedCall.id} />
 
                       {/* Summary */}
                       {selectedCall.summary && (
