@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useCallback } from 'react';
 import { X, Gift, Clock, ArrowRight } from 'lucide-react';
 import { Button } from './button';

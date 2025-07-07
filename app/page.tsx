@@ -1,14 +1,6 @@
-'use client';
-
 import Link from 'next/link';
-import { useState, useCallback, memo, Suspense, useEffect } from 'react';
+import { memo, Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import {
-  initializeAnalytics,
-  trackEvent,
-  trackCTA,
-  trackConversion,
-} from '@/lib/analytics-tracking';
 import { Button } from '@/components/ui/button';
 import {
   ArrowRight,
@@ -30,9 +22,15 @@ import {
   MicroTestimonial,
   TestimonialStrip,
 } from '@/components/testimonials-section';
-import { ScarcityBanner } from '@/components/ui/scarcity-banner';
 import { ExitIntentModal } from '@/components/ui/exit-intent-modal';
 import { DashboardPreview } from '@/components/dashboard-preview';
+
+// Client components for progressive enhancement
+import { AnalyticsTracker } from '@/components/analytics-tracker';
+import { ProgressiveBackgroundLoader } from '@/components/progressive-background-loader';
+import { ScarcityBannerProvider } from '@/components/scarcity-banner-provider';
+import { HeroCTASection } from '@/components/hero-cta-section';
+import { FinalCTAButtons } from '@/components/final-cta-buttons';
 
 // PERFORMANCE: Dynamic imports with lazy loading for heavy components
 const InteractiveBackground = dynamic(
@@ -42,21 +40,6 @@ const InteractiveBackground = dynamic(
     })),
   {
     loading: () => <div className="min-h-screen bg-gradient-dark" />,
-    ssr: false,
-  }
-);
-
-// PERFORMANCE: Load InteractiveBackground only when appropriate for better LCP
-const OptimizedInteractiveBackground = dynamic(
-  () =>
-    import('@/components/interactive-background').then(mod => ({
-      default: mod.InteractiveBackground,
-    })),
-  {
-    loading: () => (
-      <div className="min-h-screen bg-[radial-gradient(ellipse_60%_80%_at_20%_40%,rgba(139,92,246,0.1),transparent)] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(29,155,240,0.1),rgba(255,255,255,0))] bg-gradient-dark" />
-    ),
-    ssr: false,
   }
 );
 
@@ -118,17 +101,6 @@ const InteractiveDemo = dynamic(
     })),
   {
     loading: () => <div className="h-96 animate-pulse rounded-lg bg-card/20" />,
-  }
-);
-
-const DemoVideoModal = dynamic(
-  () =>
-    import('@/components/demo-video-modal').then(mod => ({
-      default: mod.DemoVideoModal,
-    })),
-  {
-    loading: () => null,
-    ssr: false,
   }
 );
 
@@ -225,89 +197,13 @@ const TrustLogoStrip = memo(() => (
 
 TrustLogoStrip.displayName = 'TrustLogoStrip';
 
+// Server Component - No client-side hooks
 export default function Home() {
-  const [isDemoVideoOpen, setIsDemoVideoOpen] = useState(false);
-  const [shouldLoadBackground, setShouldLoadBackground] = useState(false);
-  const [showScarcityBanner, setShowScarcityBanner] = useState(false);
-
-  // PERFORMANCE: Initialize analytics on mount
-  useEffect(() => {
-    const analytics = initializeAnalytics();
-    trackConversion('landing_page_view', {
-      source: window.location.search,
-      referrer: document.referrer,
-    });
-
-    // PERSUASION: Show scarcity banner after 15 seconds of engagement
-    const scarcityTimer = setTimeout(() => {
-      if (window.pageYOffset > 200) {
-        // Only if user has scrolled
-        setShowScarcityBanner(true);
-      }
-    }, 15000);
-
-    return () => {
-      analytics?.cleanup();
-      clearTimeout(scarcityTimer);
-    };
-  }, []);
-
-  // PERFORMANCE: Memoized event handlers to prevent re-renders
-  const handleVideoEvent = useCallback((event: string, data?: any) => {
-    trackEvent('video_interaction', { action: event, ...data });
-  }, []);
-
-  const openDemoVideo = useCallback(() => {
-    setIsDemoVideoOpen(true);
-    trackCTA('demo_video', 'hero_section', { position: 'secondary' });
-  }, []);
-
-  const closeDemoVideo = useCallback(() => {
-    setIsDemoVideoOpen(false);
-    trackEvent('demo_video_closed', {
-      duration: Date.now() - (window as any).demoStartTime,
-    });
-  }, []);
-
-  // PERFORMANCE: Load InteractiveBackground only when appropriate
-  useEffect(() => {
-    const shouldLoad = () => {
-      // Check if user prefers reduced motion
-      const prefersReducedMotion = window.matchMedia(
-        '(prefers-reduced-motion: reduce)'
-      ).matches;
-      if (prefersReducedMotion) return false;
-
-      // Check viewport size (≥768px)
-      const isLargeViewport = window.innerWidth >= 768;
-      if (!isLargeViewport) return false;
-
-      return true;
-    };
-
-    // Use requestIdleCallback for non-critical loading
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(() => {
-        if (shouldLoad()) {
-          setShouldLoadBackground(true);
-        }
-      });
-    } else {
-      // Fallback for browsers without requestIdleCallback
-      setTimeout(() => {
-        if (shouldLoad()) {
-          setShouldLoadBackground(true);
-        }
-      }, 100);
-    }
-  }, []);
-
-  const BackgroundComponent = shouldLoadBackground
-    ? OptimizedInteractiveBackground
-    : 'div';
-
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Client-side analytics tracking */}
+      <AnalyticsTracker page="landing_page" />
+
       {/* ACCESSIBILITY: Skip link for keyboard navigation */}
       <a href="#main-content" className="skip-link">
         Skip to main content
@@ -342,20 +238,16 @@ export default function Home() {
               <div className="absolute inset-0 z-0 min-h-screen bg-gradient-dark" />
             }
           >
-            <BackgroundComponent
+            <ProgressiveBackgroundLoader
               variant="hero"
               className="absolute inset-0 z-0 h-full w-full bg-[radial-gradient(ellipse_60%_80%_at_20%_40%,rgba(139,92,246,0.1),transparent)] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(29,155,240,0.1),rgba(255,255,255,0))] bg-gradient-dark"
-              {...(shouldLoadBackground
-                ? {}
-                : {
-                    style: {
-                      background:
-                        'linear-gradient(to bottom, hsl(var(--background)), hsl(var(--card))',
-                    },
-                  })}
+              fallbackStyle={{
+                background:
+                  'linear-gradient(to bottom, hsl(var(--background)), hsl(var(--card))',
+              }}
             >
               <></>
-            </BackgroundComponent>
+            </ProgressiveBackgroundLoader>
           </Suspense>
           <section
             className="relative z-10 w-full py-20 pt-32"
@@ -398,46 +290,8 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-4 sm:flex-row">
-                    <Button
-                      variant="neon"
-                      size="xl"
-                      className="focus-visible-ring group"
-                      asChild
-                    >
-                      <Link
-                        href="/signup"
-                        aria-label="Start your 14-day free trial"
-                        onClick={() =>
-                          trackCTA('start_trial', 'hero_section', {
-                            position: 'primary',
-                          })
-                        }
-                      >
-                        Start Free Trial
-                        <ArrowRight
-                          className="transition-transform group-hover:translate-x-1"
-                          aria-hidden="true"
-                        />
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="xl"
-                      className="focus-visible-ring group border-white/20 hover:bg-white/10"
-                      onClick={openDemoVideo}
-                      aria-label="Watch product demo video, 2 minutes long"
-                    >
-                      <Play className="mr-2" aria-hidden="true" />
-                      Watch Demo
-                      <span
-                        className="ml-2 text-xs opacity-75"
-                        aria-hidden="true"
-                      >
-                        2 min
-                      </span>
-                    </Button>
-                  </div>
+                  {/* Progressive enhancement: CTA buttons with tracking */}
+                  <HeroCTASection />
 
                   <div className="text-sm text-muted-foreground">
                     No credit card • Setup in 5 min • Cancel anytime
@@ -676,41 +530,8 @@ export default function Home() {
                 every lead and scale without limits.
               </p>
 
-              <div className="mb-8 flex flex-col justify-center gap-4 sm:flex-row">
-                <Button
-                  variant="neon"
-                  size="xl"
-                  className="focus-visible-ring group"
-                  asChild
-                >
-                  <Link
-                    href="/signup"
-                    onClick={() =>
-                      trackCTA('start_trial', 'final_cta', {
-                        position: 'primary',
-                      })
-                    }
-                  >
-                    Start Free Trial
-                    <ArrowRight
-                      className="transition-transform group-hover:translate-x-1"
-                      aria-hidden="true"
-                    />
-                  </Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="xl"
-                  className="focus-visible-ring"
-                  onClick={() =>
-                    trackCTA('book_demo', 'final_cta', {
-                      position: 'secondary',
-                    })
-                  }
-                >
-                  Book a Demo Call
-                </Button>
-              </div>
+              {/* Progressive enhancement: Final CTA buttons with tracking */}
+              <FinalCTAButtons />
 
               <Suspense
                 fallback={
@@ -724,26 +545,8 @@ export default function Home() {
         </section>
       </main>
 
-      {/* PERFORMANCE: Demo video modal loaded on demand */}
-      <Suspense fallback={null}>
-        <DemoVideoModal
-          isOpen={isDemoVideoOpen}
-          onClose={closeDemoVideo}
-          onVideoEvent={handleVideoEvent}
-        />
-      </Suspense>
-
-      {/* PERSUASION: Scarcity banner */}
-      {showScarcityBanner && (
-        <ScarcityBanner
-          type="social_proof"
-          message="🔥 47 people signed up in the last hour"
-          ctaText="Join Now"
-          ctaLink="/signup"
-          autoHide={true}
-          duration={30000}
-        />
-      )}
+      {/* Progressive enhancement: Scarcity banner */}
+      <ScarcityBannerProvider />
 
       {/* PERSUASION: Exit intent modal */}
       <ExitIntentModal
