@@ -201,7 +201,7 @@ export async function createAssistantAction(
             provider: 'azure',
             voiceId: 'andrew',
           },
-          serverUrl: `${appUrl}/api/vapi-webhook`,
+          serverUrl: `${appUrl}/api/webhooks/vapi`,
           serverUrlSecret: vapiWebhookSecret,
         }),
       });
