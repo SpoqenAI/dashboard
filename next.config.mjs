@@ -7,14 +7,41 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // PERFORMANCE CRITICAL: Enable image optimization for Core Web Vitals
   images: {
-    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'localhost',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+      // Add other domains as needed for production
+      {
+        protocol: 'https',
+        hostname: 'spoqen.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'myapp.netlify.app',
+      },
+    ],
+    formats: ['image/webp', 'image/avif'],
+    minimumCacheTTL: 60,
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+  },
+  // PERFORMANCE: Enable compiler optimizations
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
   },
   experimental: {
-    // Add support for ngrok and other development origins (validated strings only)
-    allowedDevOrigins: process.env.NEXT_PUBLIC_APP_URL
-      ? [process.env.NEXT_PUBLIC_APP_URL]
-      : ['http://localhost:3000'],
+    // PERFORMANCE: Enable modern CSS
+    optimizeCss: true,
+    // PERFORMANCE: Enable memory optimization
+    esmExternals: true,
   },
 
   // Enhanced security headers with proper CORS for development
@@ -34,6 +61,29 @@ const nextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
+          },
+        ],
+      },
+      // Cache JS/CSS chunks but keep other routes fresh to avoid stale builds
+      {
+        source: '/_next/static/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value:
+              process.env.NODE_ENV === 'production'
+                ? 'public, max-age=31536000, immutable'
+                : 'no-store',
+          },
+        ],
+      },
+      // PERFORMANCE: Optimize static assets caching
+      {
+        source: '/static/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },
@@ -63,12 +113,31 @@ const nextConfig = {
     return headers;
   },
 
-  // Webpack configuration for better development experience
+  // Webpack configuration for better performance
   webpack: (config, { dev, isServer }) => {
     if (dev && !isServer) {
       // Enable source maps for better debugging
       config.devtool = 'eval-source-map';
     }
+
+    // PERFORMANCE: Optimize bundle splitting
+    if (!dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          ...config.optimization.splitChunks,
+          cacheGroups: {
+            ...config.optimization.splitChunks.cacheGroups,
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
+            },
+          },
+        },
+      };
+    }
+
     return config;
   },
 
