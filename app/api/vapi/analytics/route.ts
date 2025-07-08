@@ -186,12 +186,17 @@ export async function GET(request: NextRequest) {
               totalCalls: recentCalls.length,
               callsWithDbAnalysis: analysisData.length,
               callsWithSentiment: recentCalls.filter(c => c.sentiment).length,
-              callsWithLeadQuality: recentCalls.filter(c => c.leadQuality).length,
+              callsWithLeadQuality: recentCalls.filter(c => c.leadQuality)
+                .length,
             });
           }
         }
       } catch (dbError) {
-        logger.error('ANALYTICS', 'Failed to enrich calls with database analysis', dbError as Error);
+        logger.error(
+          'ANALYTICS',
+          'Failed to enrich calls with database analysis',
+          dbError as Error
+        );
       }
     }
 

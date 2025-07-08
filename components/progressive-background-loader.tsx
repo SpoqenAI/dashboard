@@ -11,7 +11,7 @@ const OptimizedInteractiveBackground = dynamic(
     })),
   {
     loading: () => (
-      <div className="min-h-screen bg-[radial-gradient(ellipse_60%_80%_at_20%_40%,rgba(139,92,246,0.1),transparent)] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(29,155,240,0.1),rgba(255,255,255,0))] bg-background" />
+      <div className="min-h-screen bg-background bg-[radial-gradient(ellipse_60%_80%_at_20%_40%,rgba(139,92,246,0.1),transparent)] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(29,155,240,0.1),rgba(255,255,255,0))]" />
     ),
     ssr: false,
   }

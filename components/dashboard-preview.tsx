@@ -172,7 +172,15 @@ const RECENT_ACTIVITY: ActivityData[] = [
 ];
 
 // StatCard component without memo to ensure proper re-rendering
-const StatCard = ({ stat, index, isDark }: { stat: StatData; index: number; isDark: boolean }) => {
+const StatCard = ({
+  stat,
+  index,
+  isDark,
+}: {
+  stat: StatData;
+  index: number;
+  isDark: boolean;
+}) => {
   const theme = THEME_VARIANTS[stat.variant];
 
   return (
@@ -193,48 +201,66 @@ const StatCard = ({ stat, index, isDark }: { stat: StatData; index: number; isDa
   );
 };
 
-const CallItem = memo(({ call, index, isDark }: { call: CallData; index: number; isDark: boolean }) => (
-  <div className="flex items-center justify-between rounded-lg p-3 transition-colors bg-muted/50">
-    <div className="flex items-center space-x-3">
-      <div
-        className={`flex h-6 w-6 items-center justify-center rounded-full ${
-          call.status === 'qualified'
-            ? 'bg-green-500/20 text-green-400'
-            : 'bg-red-500/20 text-red-400'
-        }`}
+const CallItem = memo(
+  ({
+    call,
+    index,
+    isDark,
+  }: {
+    call: CallData;
+    index: number;
+    isDark: boolean;
+  }) => (
+    <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3 transition-colors">
+      <div className="flex items-center space-x-3">
+        <div
+          className={`flex h-6 w-6 items-center justify-center rounded-full ${
+            call.status === 'qualified'
+              ? 'bg-green-500/20 text-green-400'
+              : 'bg-red-500/20 text-red-400'
+          }`}
+        >
+          {call.status === 'qualified' ? (
+            <CheckCircle className="h-3 w-3" />
+          ) : (
+            <XCircle className="h-3 w-3" />
+          )}
+        </div>
+        <div>
+          <p className="text-sm font-medium text-foreground">{call.lead}</p>
+          <p className="text-xs text-muted-foreground">{call.company}</p>
+        </div>
+      </div>
+
+      <div className="text-right">
+        <p className="text-sm font-medium text-foreground">{call.value}</p>
+        <p className="text-xs text-muted-foreground">{call.time}</p>
+      </div>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 hover:bg-muted/30"
+        aria-label={`View details for ${call.lead}`}
       >
-        {call.status === 'qualified' ? (
-          <CheckCircle className="h-3 w-3" />
-        ) : (
-          <XCircle className="h-3 w-3" />
-        )}
-      </div>
-      <div>
-        <p className="text-sm font-medium text-foreground">{call.lead}</p>
-        <p className="text-xs text-muted-foreground">{call.company}</p>
-      </div>
+        <MoreVertical className="h-4 w-4" />
+      </Button>
     </div>
-
-    <div className="text-right">
-      <p className="text-sm font-medium text-foreground">{call.value}</p>
-      <p className="text-xs text-muted-foreground">{call.time}</p>
-    </div>
-
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-8 w-8 hover:bg-muted/30"
-      aria-label={`View details for ${call.lead}`}
-    >
-      <MoreVertical className="h-4 w-4" />
-    </Button>
-  </div>
-));
+  )
+);
 
 CallItem.displayName = 'CallItem';
 
 const ActivityItem = memo(
-  ({ activity, index, isDark }: { activity: ActivityData; index: number; isDark: boolean }) => {
+  ({
+    activity,
+    index,
+    isDark,
+  }: {
+    activity: ActivityData;
+    index: number;
+    isDark: boolean;
+  }) => {
     const theme = THEME_VARIANTS[activity.variant];
 
     return (
@@ -276,7 +302,7 @@ export const DashboardPreview = memo(() => {
   // Theme awareness
   const { theme, resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
-  
+
   // Centralized state management
   const [currentSection, setCurrentSection] = useState(0);
   const [componentState, setComponentState] = useState<ComponentState>('idle');
@@ -361,7 +387,9 @@ export const DashboardPreview = memo(() => {
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                    <span className="text-xs text-muted-foreground">Online</span>
+                    <span className="text-xs text-muted-foreground">
+                      Online
+                    </span>
                   </div>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
@@ -426,11 +454,15 @@ export const DashboardPreview = memo(() => {
                   </div>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Avg. Duration</span>
+                      <span className="text-muted-foreground">
+                        Avg. Duration
+                      </span>
                       <span className="text-foreground">4:23</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Satisfaction</span>
+                      <span className="text-muted-foreground">
+                        Satisfaction
+                      </span>
                       <span className="text-foreground">4.8/5</span>
                     </div>
                   </div>
@@ -665,7 +697,10 @@ export const DashboardPreview = memo(() => {
   // Error boundaries
   if (sections.length === 0) {
     return (
-      <div className="rounded-2xl border border-border bg-card/60 p-6 shadow-lg backdrop-blur-sm" suppressHydrationWarning>
+      <div
+        className="rounded-2xl border border-border bg-card/60 p-6 shadow-lg backdrop-blur-sm"
+        suppressHydrationWarning
+      >
         <p className="text-center text-muted-foreground">
           Dashboard loading...
         </p>
@@ -675,7 +710,10 @@ export const DashboardPreview = memo(() => {
 
   if (!currentSectionData) {
     return (
-      <div className="rounded-2xl border border-border bg-card/60 p-6 shadow-lg backdrop-blur-sm" suppressHydrationWarning>
+      <div
+        className="rounded-2xl border border-border bg-card/60 p-6 shadow-lg backdrop-blur-sm"
+        suppressHydrationWarning
+      >
         <p className="text-center text-muted-foreground">Loading section...</p>
       </div>
     );
@@ -690,7 +728,6 @@ export const DashboardPreview = memo(() => {
       aria-live="polite"
       suppressHydrationWarning
     >
-
       {/* Section title with smooth transitions */}
       <div className="mb-4 overflow-hidden">
         <h3

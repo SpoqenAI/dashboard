@@ -1,4 +1,3 @@
-
 interface OnboardingLayoutProps {
   children: React.ReactNode;
 }

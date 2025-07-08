@@ -15,6 +15,7 @@ This document tracks the current work focus, recent changes, next steps, and imp
 ## Recent Changes ✅
 
 ### **Sentiment & Lead Quality Display Fix**
+
 - **Updated `mapVapiCallToFrontend` function** to extract:
   - `sentiment` from `vapiCall.analysis?.structuredData?.sentiment`
   - `leadQuality` from `vapiCall.analysis?.structuredData?.leadQuality`
@@ -23,7 +24,8 @@ This document tracks the current work focus, recent changes, next steps, and imp
 - **Added proper TypeScript typing** for sentiment and leadQuality fields
 
 ### **VAPI Native Analysis Integration**
-- **Replaced hardcoded analysis** in `/app/api/vapi/action-points/route.ts` 
+
+- **Replaced hardcoded analysis** in `/app/api/vapi/action-points/route.ts`
 - **Updated bulk analysis** in `/app/api/vapi/bulk-analyze/route.ts`
 - **Now properly leverages VAPI's three analysis features:**
   1. `call.analysis.summary` - AI-generated call summary
@@ -33,8 +35,9 @@ This document tracks the current work focus, recent changes, next steps, and imp
 ## Expected Results
 
 Users should now see:
+
 - **Sentiment badges** (Positive/Neutral/Negative) in the Sentiment column
-- **Lead Quality badges** (Hot/Warm/Cold) in the Lead Quality column  
+- **Lead Quality badges** (Hot/Warm/Cold) in the Lead Quality column
 - **Proper filtering** by sentiment and lead quality
 - **Accurate analytics charts** showing real sentiment/lead distributions
 - **Consistent data** between dashboard and action points analysis

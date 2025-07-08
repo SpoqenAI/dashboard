@@ -204,8 +204,6 @@ export default function Home() {
       {/* Client-side analytics tracking */}
       <AnalyticsTracker page="landing_page" />
 
-
-
       <main id="main-content" className="flex-1" role="main">
         <div className="relative flex min-h-screen w-full items-center justify-center bg-background">
           <Suspense
@@ -215,7 +213,7 @@ export default function Home() {
           >
             <ProgressiveBackgroundLoader
               variant="hero"
-              className="absolute inset-0 z-0 h-full w-full bg-[radial-gradient(ellipse_60%_80%_at_20%_40%,rgba(139,92,246,0.1),transparent)] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(29,155,240,0.1),rgba(255,255,255,0))] bg-background"
+              className="absolute inset-0 z-0 h-full w-full bg-background bg-[radial-gradient(ellipse_60%_80%_at_20%_40%,rgba(139,92,246,0.1),transparent)] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(29,155,240,0.1),rgba(255,255,255,0))]"
               fallbackStyle={{
                 background:
                   'linear-gradient(to bottom, hsl(var(--background)), hsl(var(--card))',
