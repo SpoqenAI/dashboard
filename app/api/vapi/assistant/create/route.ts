@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
           provider: 'deepgram',
           voiceId: 'luna',
         },
-        serverUrl: `${appUrl}/api/vapi-webhook`,
+        serverUrl: `${appUrl}/api/webhooks/vapi`,
         serverUrlSecret: vapiWebhookSecret,
       }),
     });
