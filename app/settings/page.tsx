@@ -29,7 +29,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardShell } from '@/components/dashboard-shell';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { Camera, Bell, Shield, User } from 'lucide-react';
@@ -1126,7 +1125,6 @@ function SettingsContent() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <DashboardHeader />
       <DashboardShell>
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">Settings</h2>

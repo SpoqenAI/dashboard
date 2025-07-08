@@ -191,13 +191,13 @@ export const ExitIntentModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex animate-fade-in items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex animate-fade-in items-center justify-center bg-black/50 backdrop-blur-sm dark:bg-black/70"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby="exit-intent-title"
     >
-      <Card className="relative mx-4 w-full max-w-md animate-slide-up border border-white/10 bg-card/20 backdrop-blur-glass">
+      <Card className="relative mx-4 w-full max-w-md animate-slide-up border border-border bg-card backdrop-blur-glass shadow-2xl">
         <Button
           variant="ghost"
           size="sm"

@@ -78,7 +78,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardShell } from '@/components/dashboard-shell';
 import { ModernStatsCard } from '@/components/modern-stats-card';
 import { useActionPoints } from '@/hooks/use-action-points';
@@ -569,8 +568,7 @@ export default function DashboardPage() {
   if (error) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gradient-dark">
-          <DashboardHeader />
+        <div className="min-h-screen bg-background">
           <DashboardShell>
             <Card>
               <CardContent className="pt-6">
@@ -591,8 +589,7 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-dark">
-        <DashboardHeader />
+      <div className="min-h-screen bg-background">
         <DashboardShell>
           {/* Header */}
           <div className="flex animate-fade-in items-center justify-between">

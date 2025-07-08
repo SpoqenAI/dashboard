@@ -9,10 +9,11 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'rounded-lg border border-white/10 bg-card/20 text-card-foreground shadow-glass backdrop-blur-glass transition-all duration-300 hover:bg-card/30',
+      'rounded-lg border border-border bg-card text-card-foreground shadow-glass backdrop-blur-glass transition-all duration-300',
       className
     )}
     {...props}
+    suppressHydrationWarning
   />
 ));
 Card.displayName = 'Card';

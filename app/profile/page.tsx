@@ -13,7 +13,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardShell } from '@/components/dashboard-shell';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera, Save, Loader2 } from 'lucide-react';
@@ -368,7 +367,6 @@ function ProfilePageContent() {
   if (loading && !dataLoaded) {
     return (
       <div className="flex min-h-screen flex-col">
-        <DashboardHeader />
         <DashboardShell>
           <div className="flex min-h-[400px] items-center justify-center">
             <div className="flex flex-col items-center space-y-4">
@@ -385,7 +383,6 @@ function ProfilePageContent() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <DashboardHeader />
       <DashboardShell>
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">Profile</h2>

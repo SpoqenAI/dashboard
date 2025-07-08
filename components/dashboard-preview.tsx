@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, memo, useRef, useMemo } from 'react';
+import { useTheme } from 'next-themes';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -171,11 +172,11 @@ const RECENT_ACTIVITY: ActivityData[] = [
 ];
 
 // StatCard component without memo to ensure proper re-rendering
-const StatCard = ({ stat, index }: { stat: StatData; index: number }) => {
+const StatCard = ({ stat, index, isDark }: { stat: StatData; index: number; isDark: boolean }) => {
   const theme = THEME_VARIANTS[stat.variant];
 
   return (
-    <Card className="dashboard-preview-card border-white/10 bg-card/30 p-3 backdrop-blur-sm transition-all duration-300 hover:bg-card/40">
+    <Card className="dashboard-preview-card p-3 backdrop-blur-sm transition-all duration-300">
       <div className="mb-2 flex items-center justify-between">
         <div className={`card-icon-bg rounded-lg p-2 ${theme.bg}`}>
           <stat.icon className={`h-4 w-4 ${theme.text}`} />
@@ -192,8 +193,8 @@ const StatCard = ({ stat, index }: { stat: StatData; index: number }) => {
   );
 };
 
-const CallItem = memo(({ call, index }: { call: CallData; index: number }) => (
-  <div className="flex items-center justify-between rounded-lg bg-card/20 p-3 transition-colors hover:bg-card/30">
+const CallItem = memo(({ call, index, isDark }: { call: CallData; index: number; isDark: boolean }) => (
+  <div className="flex items-center justify-between rounded-lg p-3 transition-colors bg-muted/50">
     <div className="flex items-center space-x-3">
       <div
         className={`flex h-6 w-6 items-center justify-center rounded-full ${
@@ -222,7 +223,7 @@ const CallItem = memo(({ call, index }: { call: CallData; index: number }) => (
     <Button
       variant="ghost"
       size="icon"
-      className="h-8 w-8 hover:bg-white/10"
+      className="h-8 w-8 hover:bg-muted/30"
       aria-label={`View details for ${call.lead}`}
     >
       <MoreVertical className="h-4 w-4" />
@@ -233,11 +234,11 @@ const CallItem = memo(({ call, index }: { call: CallData; index: number }) => (
 CallItem.displayName = 'CallItem';
 
 const ActivityItem = memo(
-  ({ activity, index }: { activity: ActivityData; index: number }) => {
+  ({ activity, index, isDark }: { activity: ActivityData; index: number; isDark: boolean }) => {
     const theme = THEME_VARIANTS[activity.variant];
 
     return (
-      <div className="flex items-center space-x-3 rounded-lg p-2 transition-colors hover:bg-card/20">
+      <div className="flex items-center space-x-3 rounded-lg p-2 transition-colors hover:bg-muted/30">
         <div className={`h-2 w-2 ${theme.dot} rounded-full`}></div>
         <Clock className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
@@ -272,6 +273,10 @@ ProgressBar.displayName = 'ProgressBar';
 type ComponentState = 'idle' | 'transitioning';
 
 export const DashboardPreview = memo(() => {
+  // Theme awareness
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  
   // Centralized state management
   const [currentSection, setCurrentSection] = useState(0);
   const [componentState, setComponentState] = useState<ComponentState>('idle');
@@ -321,12 +326,13 @@ export const DashboardPreview = memo(() => {
                   key={`${stat.label}-${overviewRefreshKey}`}
                   stat={stat}
                   index={index}
+                  isDark={isDark}
                 />
               ))}
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <Card className="col-span-2 border-white/10 bg-card/30 p-4 backdrop-blur-sm">
+              <Card className="col-span-2 p-4 backdrop-blur-sm">
                 <h3 className="mb-3 text-sm font-semibold text-foreground">
                   Today's Overview
                 </h3>
@@ -348,16 +354,22 @@ export const DashboardPreview = memo(() => {
                 </div>
               </Card>
 
-              <Card className="border-white/10 bg-card/30 p-4 backdrop-blur-sm">
+              <Card className="p-4 backdrop-blur-sm">
                 <h3 className="mb-3 text-sm font-semibold text-foreground">
                   AI Status
                 </h3>
-                <div className="mb-2 flex items-center space-x-2">
-                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                  <span className="text-xs text-green-500">Online</span>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Processing calls in real-time
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                    <span className="text-xs text-muted-foreground">Online</span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Utilization</span>
+                      <span className="text-green-400">94%</span>
+                    </div>
+                    <ProgressBar progress={94} />
+                  </div>
                 </div>
               </Card>
             </div>
@@ -369,23 +381,17 @@ export const DashboardPreview = memo(() => {
         title: 'Recent Calls',
         content: (
           <div className="origin-top scale-75 space-y-4 will-change-transform">
-            <Card className="border-white/10 bg-card/30 p-4 backdrop-blur-sm">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-foreground">
-                  Recent Calls
-                </h3>
-                <div className="flex items-center space-x-1">
-                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                  <span className="text-xs text-green-500">Live</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
+            <Card className="p-4 backdrop-blur-sm">
+              <h3 className="mb-4 text-sm font-semibold text-foreground">
+                Recent Calls
+              </h3>
+              <div className="space-y-3">
                 {RECENT_CALLS.map((call, index) => (
                   <CallItem
-                    key={`${call.lead}-${call.time}`}
+                    key={`${call.lead}-${index}`}
                     call={call}
                     index={index}
+                    isDark={isDark}
                   />
                 ))}
               </div>
@@ -394,112 +400,107 @@ export const DashboardPreview = memo(() => {
         ),
       },
       {
-        id: 'performance',
-        title: 'Performance Analytics',
+        id: 'analytics',
+        title: 'Analytics Dashboard',
         content: (
           <div className="origin-top scale-75 space-y-4 will-change-transform">
-            <Card className="border-white/10 bg-card/30 p-4 backdrop-blur-sm">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-foreground">
-                  Today's Performance
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="p-4 backdrop-blur-sm">
+                <h3 className="mb-3 text-sm font-semibold text-foreground">
+                  Performance
                 </h3>
-                <div className="flex items-center space-x-1">
-                  <TrendingUp className="h-3 w-3 text-green-400" />
-                  <span className="text-xs text-green-400">+18%</span>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <div className="mb-1 flex justify-between text-xs">
-                    <span className="text-muted-foreground">
-                      Call Success Rate
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      Success Rate
                     </span>
-                    <span className="font-medium text-foreground">87%</span>
-                  </div>
-                  <ProgressBar progress={87} />
-                </div>
-
-                <div>
-                  <div className="mb-1 flex justify-between text-xs">
-                    <span className="text-muted-foreground">Lead Quality</span>
-                    <span className="font-medium text-foreground">73%</span>
-                  </div>
-                  <ProgressBar progress={73} />
-                </div>
-
-                <div>
-                  <div className="mb-1 flex justify-between text-xs">
-                    <span className="text-muted-foreground">Response Time</span>
-                    <span className="font-medium text-foreground">
-                      1.2s avg
+                    <span className="text-xs font-medium text-emerald-500">
+                      87%
                     </span>
                   </div>
-                  <ProgressBar progress={94} />
-                </div>
-
-                <div className="mt-3 rounded-lg border border-pink-500/20 bg-pink-500/10 p-3">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 flex-shrink-0 text-pink-500" />
-                    <div>
-                      <div className="text-xs font-medium text-pink-500">
-                        AI Insight
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Peak hours: 10 AM - 2 PM
-                      </div>
+                  <div className="h-2 w-full rounded-full bg-muted/50">
+                    <div
+                      className="h-2 w-[87%] rounded-full bg-emerald-500"
+                      style={{ width: '87%' }}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Avg. Duration</span>
+                      <span className="text-foreground">4:23</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Satisfaction</span>
+                      <span className="text-foreground">4.8/5</span>
                     </div>
                   </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+
+              <Card className="p-4 backdrop-blur-sm">
+                <h3 className="mb-3 text-sm font-semibold text-foreground">
+                  Revenue Impact
+                </h3>
+                <div className="space-y-2">
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-emerald-500">
+                      $2,847
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Generated Today
+                    </div>
+                  </div>
+                  <div className="flex justify-center">
+                    <div className="rounded-full bg-emerald-500/20 p-2">
+                      <TrendingUp className="h-4 w-4 text-emerald-500" />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
           </div>
         ),
       },
       {
         id: 'activity',
-        title: 'Recent Activity',
+        title: 'Activity Stream',
         content: (
           <div className="origin-top scale-75 space-y-4 will-change-transform">
-            <Card className="border-white/10 bg-card/30 p-4 backdrop-blur-sm">
-              <h3 className="mb-4 text-sm font-semibold text-foreground">
-                Recent Activity
-              </h3>
-
-              <div className="space-y-3">
-                {RECENT_ACTIVITY.map((activity, idx) => (
+            <Card className="p-4 backdrop-blur-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Live Activity
+                </h3>
+                <div className="flex items-center space-x-1">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
+                  <span className="text-xs text-muted-foreground">Live</span>
+                </div>
+              </div>
+              <div className="space-y-2 border-t border-border pt-3">
+                {RECENT_ACTIVITY.map((activity, index) => (
                   <ActivityItem
-                    key={`${activity.type}-${idx}`}
+                    key={`${activity.type}-${index}`}
                     activity={activity}
-                    index={idx}
+                    index={index}
+                    isDark={isDark}
                   />
                 ))}
               </div>
-
-              <div className="mt-4 border-t border-white/10 pt-3">
-                <h4 className="mb-2 text-xs font-semibold text-foreground">
-                  Quick Actions
-                </h4>
-                <div className="space-y-1">
-                  {QUICK_ACTIONS.map(action => (
-                    <Button
-                      key={action.label}
-                      variant="ghost"
-                      className="h-8 w-full justify-start text-xs text-foreground hover:bg-card/20"
-                      aria-label={action.label}
-                    >
-                      <action.icon className="mr-2 h-3 w-3" />
-                      {action.label}
-                    </Button>
-                  ))}
-                </div>
+              <div className="mt-3 text-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs hover:bg-muted/30"
+                >
+                  View All Activity
+                </Button>
               </div>
             </Card>
           </div>
         ),
       },
     ],
-    [overviewRefreshKey]
+    [isDark, overviewRefreshKey]
   );
 
   // Atomic cleanup function - ensures complete state reset
@@ -664,7 +665,7 @@ export const DashboardPreview = memo(() => {
   // Error boundaries
   if (sections.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-card/20 p-6 shadow-lg backdrop-blur-sm">
+      <div className="rounded-2xl border border-border bg-card/60 p-6 shadow-lg backdrop-blur-sm" suppressHydrationWarning>
         <p className="text-center text-muted-foreground">
           Dashboard loading...
         </p>
@@ -674,7 +675,7 @@ export const DashboardPreview = memo(() => {
 
   if (!currentSectionData) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-card/20 p-6 shadow-lg backdrop-blur-sm">
+      <div className="rounded-2xl border border-border bg-card/60 p-6 shadow-lg backdrop-blur-sm" suppressHydrationWarning>
         <p className="text-center text-muted-foreground">Loading section...</p>
       </div>
     );
@@ -682,37 +683,13 @@ export const DashboardPreview = memo(() => {
 
   return (
     <div
-      className="relative max-w-4xl overflow-hidden rounded-2xl border border-white/10 bg-card/20 p-6 shadow-lg backdrop-blur-sm will-change-transform"
+      className="relative max-w-4xl overflow-hidden rounded-2xl border border-border bg-card/60 p-6 shadow-lg backdrop-blur-sm will-change-transform"
       style={{ contain: 'layout style paint' }}
       role="region"
       aria-label="Dashboard Preview"
       aria-live="polite"
+      suppressHydrationWarning
     >
-      {/* Browser header */}
-      <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
-        <div className="flex items-center space-x-2">
-          <div className="flex space-x-2" role="presentation">
-            <div
-              className="h-3 w-3 rounded-full bg-red-500"
-              aria-label="Close"
-            ></div>
-            <div
-              className="h-3 w-3 rounded-full bg-yellow-500"
-              aria-label="Minimize"
-            ></div>
-            <div
-              className="h-3 w-3 rounded-full bg-green-500"
-              aria-label="Live"
-            ></div>
-          </div>
-          <span className="ml-4 text-xs text-muted-foreground">
-            spoqen.com/dashboard
-          </span>
-        </div>
-        <div className="rounded-full bg-blue-500/20 px-2 py-1 text-xs text-blue-500">
-          Live Dashboard
-        </div>
-      </div>
 
       {/* Section title with smooth transitions */}
       <div className="mb-4 overflow-hidden">

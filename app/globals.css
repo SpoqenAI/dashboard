@@ -12,17 +12,17 @@
 
 @layer base {
   :root {
-    /* Dark Background System */
-    --background: 222 24% 4%;
-    --foreground: 210 40% 98%;
+    /* Light Background System */
+    --background: 0 0% 100%;
+    --foreground: 222 24% 4%;
 
-    /* Glass Cards */
-    --card: 222 24% 6%;
-    --card-foreground: 210 40% 98%;
+    /* Light Glass Cards */
+    --card: 0 0% 100%;
+    --card-foreground: 222 24% 4%;
 
-    /* Popover/Modal */
-    --popover: 222 24% 8%;
-    --popover-foreground: 210 40% 98%;
+    /* Light Popover/Modal */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 24% 4%;
 
     /* Brand Magenta Primary */
     --primary: 315 100% 50%;
@@ -30,11 +30,11 @@
 
     /* Brand Cyan Secondary */
     --secondary: 180 100% 50%;
-    --secondary-foreground: 222 24% 4%;
+    --secondary-foreground: 0 0% 100%;
 
-    /* Muted Dark */
-    --muted: 222 24% 12%;
-    --muted-foreground: 215 20% 65%;
+    /* Light Muted */
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
     /* Brand Purple Accent */
     --accent: 270 100% 60%;
@@ -44,9 +44,9 @@
     --destructive: 0 85% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    /* Subtle borders */
-    --border: 222 24% 16%;
-    --input: 222 24% 16%;
+    /* Light borders */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
     --ring: 315 100% 50%;
 
     /* Charts */
@@ -59,14 +59,14 @@
     /* Rounded corners */
     --radius: 1rem;
 
-    /* Sidebar */
-    --sidebar-background: 222 24% 4%;
-    --sidebar-foreground: 210 40% 98%;
+    /* Light Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 24% 4%;
     --sidebar-primary: 315 100% 50%;
     --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 222 24% 12%;
-    --sidebar-accent-foreground: 215 20% 65%;
-    --sidebar-border: 222 24% 16%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 215 16% 47%;
+    --sidebar-border: 214 32% 91%;
     --sidebar-ring: 315 100% 50%;
 
     /* Brand Gradients - Matching Logo */
@@ -103,30 +103,49 @@
   }
 
   .dark {
+    /* Dark Background System */
     --background: 222 24% 4%;
     --foreground: 210 40% 98%;
+
+    /* Dark Glass Cards */
     --card: 222 24% 6%;
     --card-foreground: 210 40% 98%;
+
+    /* Dark Popover/Modal */
     --popover: 222 24% 8%;
     --popover-foreground: 210 40% 98%;
+
+    /* Brand Colors (same in both themes) */
     --primary: 315 100% 50%;
     --primary-foreground: 210 40% 98%;
     --secondary: 180 100% 50%;
     --secondary-foreground: 222 24% 4%;
+
+    /* Dark Muted */
     --muted: 222 24% 12%;
     --muted-foreground: 215 20% 65%;
+
+    /* Brand Purple Accent */
     --accent: 270 100% 60%;
     --accent-foreground: 210 40% 98%;
+
+    /* Red Destructive */
     --destructive: 0 85% 60%;
     --destructive-foreground: 210 40% 98%;
+
+    /* Dark borders */
     --border: 222 24% 16%;
     --input: 222 24% 16%;
     --ring: 315 100% 50%;
+
+    /* Charts */
     --chart-1: 315 100% 50%;
     --chart-2: 180 100% 50%;
     --chart-3: 270 100% 60%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    /* Dark Sidebar */
     --sidebar-background: 222 24% 4%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 315 100% 50%;
@@ -143,7 +162,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
     font-family:
       'Inter',
       -apple-system,

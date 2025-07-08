@@ -39,7 +39,7 @@ const InteractiveBackground = dynamic(
       default: mod.InteractiveBackground,
     })),
   {
-    loading: () => <div className="min-h-screen bg-gradient-dark" />,
+    loading: () => <div className="min-h-screen bg-background" />,
   }
 );
 
@@ -204,43 +204,18 @@ export default function Home() {
       {/* Client-side analytics tracking */}
       <AnalyticsTracker page="landing_page" />
 
-      {/* ACCESSIBILITY: Skip link for keyboard navigation */}
-      <a href="#main-content" className="skip-link">
-        Skip to main content
-      </a>
 
-      <header
-        className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-card/20 backdrop-blur-glass"
-        role="banner"
-      >
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2 text-xl font-bold">
-            <Logo width={140} height={48} />
-          </div>
-          <nav className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-            >
-              Login
-            </Link>
-            <Button variant="neon" asChild>
-              <Link href="/signup">Start Free Trial</Link>
-            </Button>
-          </nav>
-        </div>
-      </header>
 
       <main id="main-content" className="flex-1" role="main">
-        <div className="relative flex min-h-screen w-full items-center justify-center bg-gradient-dark">
+        <div className="relative flex min-h-screen w-full items-center justify-center bg-background">
           <Suspense
             fallback={
-              <div className="absolute inset-0 z-0 min-h-screen bg-gradient-dark" />
+              <div className="absolute inset-0 z-0 min-h-screen bg-background" />
             }
           >
             <ProgressiveBackgroundLoader
               variant="hero"
-              className="absolute inset-0 z-0 h-full w-full bg-[radial-gradient(ellipse_60%_80%_at_20%_40%,rgba(139,92,246,0.1),transparent)] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(29,155,240,0.1),rgba(255,255,255,0))] bg-gradient-dark"
+              className="absolute inset-0 z-0 h-full w-full bg-[radial-gradient(ellipse_60%_80%_at_20%_40%,rgba(139,92,246,0.1),transparent)] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(29,155,240,0.1),rgba(255,255,255,0))] bg-background"
               fallbackStyle={{
                 background:
                   'linear-gradient(to bottom, hsl(var(--background)), hsl(var(--card))',

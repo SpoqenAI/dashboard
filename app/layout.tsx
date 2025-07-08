@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/toaster';
 import { AuthProvider } from '@/hooks/use-auth';
+import { GlobalHeader } from '@/components/global-header';
+import { ThemeProvider } from '@/components/theme-provider';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
@@ -25,16 +27,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head />
       <body>
-        <AuthProvider>
-          {children}
-          <Toaster />
-          {/* Vercel Analytics & Speed Insights */}
-          <Analytics />
-          <SpeedInsights />
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <GlobalHeader />
+            {children}
+            <Toaster />
+            {/* Vercel Analytics & Speed Insights */}
+            <Analytics />
+            <SpeedInsights />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

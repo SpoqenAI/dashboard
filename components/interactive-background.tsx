@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, memo, useMemo } from 'react';
+import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 
 interface InteractiveBackgroundProps {
@@ -32,41 +33,48 @@ interface VariantConfig {
   gpuAcceleration: boolean;
 }
 
-const VARIANT_CONFIGS: Record<string, VariantConfig> = {
-  hero: {
-    orbs: [
-      { size: 384, opacity: 0.25, blur: 'blur-3xl', color: 'bg-primary/25' },
-      { size: 320, opacity: 0.2, blur: 'blur-3xl', color: 'bg-secondary/20' },
-      { size: 288, opacity: 0.15, blur: 'blur-2xl', color: 'bg-accent/15' },
-    ],
-    particleCount: 6,
-    animationIntensity: 1,
-    gpuAcceleration: true,
-  },
-  features: {
-    orbs: [
-      { size: 256, opacity: 0.15, blur: 'blur-2xl', color: 'bg-primary/15' },
-      { size: 192, opacity: 0.12, blur: 'blur-xl', color: 'bg-accent/12' },
-    ],
-    particleCount: 0,
-    animationIntensity: 0.5,
-    gpuAcceleration: true,
-  },
-  dashboard: {
-    orbs: [
-      { size: 128, opacity: 0.08, blur: 'blur-xl', color: 'bg-primary/8' },
-    ],
-    particleCount: 0,
-    animationIntensity: 0.2,
-    gpuAcceleration: false,
-  },
-  minimal: {
-    orbs: [],
-    particleCount: 0,
-    animationIntensity: 0.1,
-    gpuAcceleration: false,
-  },
-} as const;
+// Theme-aware variant configs - we'll generate these dynamically
+const getVariantConfigs = (isDark: boolean): Record<string, VariantConfig> => {
+  const primaryOpacity = isDark ? 0.25 : 0.15;
+  const secondaryOpacity = isDark ? 0.2 : 0.12;
+  const accentOpacity = isDark ? 0.15 : 0.08;
+  
+  return {
+    hero: {
+      orbs: [
+        { size: 384, opacity: primaryOpacity, blur: 'blur-3xl', color: '' }, // We'll use inline styles
+        { size: 320, opacity: secondaryOpacity, blur: 'blur-3xl', color: '' },
+        { size: 288, opacity: accentOpacity, blur: 'blur-2xl', color: '' },
+      ],
+      particleCount: 6,
+      animationIntensity: 1,
+      gpuAcceleration: true,
+    },
+    features: {
+      orbs: [
+        { size: 256, opacity: isDark ? 0.15 : 0.08, blur: 'blur-2xl', color: '' },
+        { size: 192, opacity: isDark ? 0.12 : 0.06, blur: 'blur-xl', color: '' },
+      ],
+      particleCount: 0,
+      animationIntensity: 0.5,
+      gpuAcceleration: true,
+    },
+    dashboard: {
+      orbs: [
+        { size: 128, opacity: isDark ? 0.08 : 0.04, blur: 'blur-xl', color: '' },
+      ],
+      particleCount: 0,
+      animationIntensity: 0.2,
+      gpuAcceleration: false,
+    },
+    minimal: {
+      orbs: [],
+      particleCount: 0,
+      animationIntensity: 0.1,
+      gpuAcceleration: false,
+    },
+  };
+};
 
 // Custom hook for RAF-based throttling
 function useRAFThrottle<T extends (...args: any[]) => void>(
@@ -179,6 +187,7 @@ const BackgroundOrb = memo<{
   scrollY: number;
   animationIntensity: number;
   isVisible: boolean;
+  isDark: boolean;
 }>(props => {
   const {
     config,
@@ -187,7 +196,18 @@ const BackgroundOrb = memo<{
     scrollY,
     animationIntensity,
     isVisible,
+    isDark,
   } = props;
+
+  // Get the appropriate color based on orb index and theme
+  const getOrbColor = (orbIndex: number) => {
+    const colors = [
+      'hsl(315 100% 50%)', // primary - magenta
+      'hsl(180 100% 50%)', // secondary - cyan  
+      'hsl(270 100% 60%)', // accent - purple
+    ];
+    return colors[orbIndex % colors.length];
+  };
 
   const style = useMemo(() => {
     if (!isVisible) return { display: 'none' };
@@ -203,24 +223,26 @@ const BackgroundOrb = memo<{
         ? mousePosition.y * mouseSensitivity
         : (100 - mousePosition.y) * mouseSensitivity * 0.5;
 
+    const orbColor = getOrbColor(index);
+    
     return {
       width: config.size,
       height: config.size,
       left: `calc(${offsetX}% - ${config.size / 2}px)`,
       top: `calc(${offsetY + scrollY * scrollSensitivity}% - ${config.size / 2}px)`,
       opacity: config.opacity,
+      backgroundColor: orbColor,
       transform: 'translate3d(0, 0, 0)', // GPU acceleration
       willChange: 'transform, opacity',
       contain: 'layout style paint',
     } as React.CSSProperties;
-  }, [config, index, mousePosition, scrollY, animationIntensity, isVisible]);
+  }, [config, index, mousePosition, scrollY, animationIntensity, isVisible, isDark]);
 
   return (
     <div
       className={cn(
         'pointer-events-none absolute rounded-full transition-all duration-1000 ease-out',
-        config.blur,
-        config.color
+        config.blur
       )}
       style={style}
     />
@@ -257,8 +279,11 @@ const Particle = memo<{
 
   return (
     <div
-      className="pointer-events-none absolute h-2 w-2 rounded-full bg-primary/30 blur-sm"
-      style={style}
+      className="pointer-events-none absolute h-2 w-2 rounded-full blur-sm"
+      style={{
+        ...style,
+        backgroundColor: 'hsl(315 100% 50% / 0.3)', // primary color with opacity
+      }}
     />
   );
 });
@@ -274,6 +299,7 @@ export const InteractiveBackground = memo<InteractiveBackgroundProps>(props => {
   const { mousePosition, scrollY } = useMouseAndScroll();
 
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Check for reduced motion preference
   useEffect(() => {
@@ -290,24 +316,39 @@ export const InteractiveBackground = memo<InteractiveBackgroundProps>(props => {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  const config = VARIANT_CONFIGS[variant];
-  const shouldAnimate = isVisible && !prefersReducedMotion;
+  // Handle mounting to prevent hydration issues
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  // Memoized gradient for minimal variant
+  const { theme, resolvedTheme } = useTheme();
+  // Improve theme detection with better fallbacks
+  const isDark = mounted ? (resolvedTheme === 'dark' || (!resolvedTheme && theme === 'dark')) : false;
+  
+  const shouldAnimate = isVisible && !prefersReducedMotion;
+  const config = getVariantConfigs(isDark)[variant];
+
+  // Memoized gradient for minimal variant - theme aware
   const gradientStyle = useMemo(() => {
     if (variant !== 'minimal' || !shouldAnimate) return {};
 
+    const opacity = isDark ? 0.05 : 0.03;
     return {
       background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, 
-        hsl(315 100% 50% / 0.05) 0%, 
+        hsl(315 100% 50% / ${opacity}) 0%, 
         transparent 50%)`,
     };
-  }, [variant, mousePosition.x, mousePosition.y, shouldAnimate]);
+  }, [variant, mousePosition.x, mousePosition.y, shouldAnimate, isDark]);
 
   return (
     <div
       ref={containerRef}
-      className={cn('relative overflow-hidden', className)}
+      className={cn(
+        'relative overflow-hidden transition-colors duration-300',
+        // Use CSS variables that properly respond to theme changes
+        'bg-background',
+        className
+      )}
       style={{
         transform: 'translate3d(0, 0, 0)', // GPU acceleration
         contain: 'layout style paint',
@@ -315,54 +356,59 @@ export const InteractiveBackground = memo<InteractiveBackgroundProps>(props => {
     >
       {/* Background Elements */}
       <div className="pointer-events-none absolute inset-0">
-        {variant === 'minimal' ? (
-          <div
-            className="duration-2000 pointer-events-none absolute inset-0 transition-all"
-            style={gradientStyle}
-          />
-        ) : (
-          <>
-            {/* Render orbs */}
-            {config.orbs.map((orbConfig, index) => (
-              <BackgroundOrb
-                key={index}
-                config={orbConfig}
-                index={index}
-                mousePosition={mousePosition}
-                scrollY={scrollY}
-                animationIntensity={config.animationIntensity}
-                isVisible={shouldAnimate}
-              />
-            ))}
-
-            {/* Render particles for hero variant */}
-            {variant === 'hero' &&
-              config.particleCount > 0 &&
-              shouldAnimate &&
-              Array.from({ length: config.particleCount }, (_, index) => (
-                <Particle
+        {/* Only render background effects after mounting to prevent hydration issues */}
+        {!mounted && <div className="absolute inset-0" />}
+        {mounted && (
+          variant === 'minimal' ? (
+            <div
+              className="duration-2000 pointer-events-none absolute inset-0 transition-all"
+              style={gradientStyle}
+            />
+          ) : (
+            <>
+              {/* Render orbs */}
+              {config.orbs.map((orbConfig, index) => (
+                <BackgroundOrb
                   key={index}
+                  config={orbConfig}
                   index={index}
                   mousePosition={mousePosition}
                   scrollY={scrollY}
+                  animationIntensity={config.animationIntensity}
                   isVisible={shouldAnimate}
+                  isDark={isDark}
                 />
               ))}
 
-            {/* Interactive gradient overlay for hero */}
-            {variant === 'hero' && shouldAnimate && (
-              <div
-                className="pointer-events-none absolute inset-0 opacity-30 transition-all duration-1000"
-                style={{
-                  background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, 
-                    hsl(315 100% 50% / 0.08) 0%, 
-                    hsl(270 100% 60% / 0.04) 30%, 
-                    hsl(180 100% 50% / 0.02) 60%, 
-                    transparent 100%)`,
-                }}
-              />
-            )}
-          </>
+              {/* Render particles for hero variant */}
+              {variant === 'hero' &&
+                config.particleCount > 0 &&
+                shouldAnimate &&
+                Array.from({ length: config.particleCount }, (_, index) => (
+                  <Particle
+                    key={index}
+                    index={index}
+                    mousePosition={mousePosition}
+                    scrollY={scrollY}
+                    isVisible={shouldAnimate}
+                  />
+                ))}
+
+              {/* Interactive gradient overlay for hero - theme aware */}
+              {variant === 'hero' && shouldAnimate && (
+                <div
+                  className="pointer-events-none absolute inset-0 opacity-30 transition-all duration-1000"
+                  style={{
+                    background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, 
+                      hsl(315 100% 50% / ${isDark ? 0.08 : 0.04}) 0%, 
+                      hsl(270 100% 60% / ${isDark ? 0.04 : 0.02}) 30%, 
+                      hsl(180 100% 50% / ${isDark ? 0.02 : 0.01}) 60%, 
+                      transparent 100%)`,
+                  }}
+                />
+              )}
+            </>
+          )
         )}
       </div>
 

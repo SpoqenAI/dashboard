@@ -204,20 +204,6 @@ function LoginForm() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2 text-xl font-bold">
-            <Link href="/">
-              <Logo width={140} height={48} />
-            </Link>
-          </div>
-          <nav className="flex items-center gap-4">
-            <Link href="/signup" className="text-sm font-medium">
-              Sign Up
-            </Link>
-          </nav>
-        </div>
-      </header>
       <main className="flex flex-1 items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <form onSubmit={handleSubmit}>
