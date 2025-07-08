@@ -27,3 +27,4 @@ yarn-error.log*
 next-env.d.ts
 # Sentry Config File
 .env.sentry-build-plugin
+.amazonq/rules/Bylaws.md
