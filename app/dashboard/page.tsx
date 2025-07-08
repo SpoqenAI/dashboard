@@ -791,7 +791,29 @@ export default function DashboardPage() {
                       </SelectContent>
                     </Select>
 
-                    {/* Sort By */}
+                    {/* Smart Sort Buttons */}
+                    <div className="flex gap-2">
+                      <Button
+                        variant={sortBy === 'leadQuality' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setSortBy('leadQuality')}
+                        className="flex items-center gap-2"
+                      >
+                        <Flame className="h-4 w-4" />
+                        Hot First
+                      </Button>
+                      <Button
+                        variant={sortBy === 'sentiment' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setSortBy('sentiment')}
+                        className="flex items-center gap-2"
+                      >
+                        <Smile className="h-4 w-4" />
+                        Positive First
+                      </Button>
+                    </div>
+
+                    {/* Sort By Dropdown */}
                     <Select value={sortBy} onValueChange={setSortBy}>
                       <SelectTrigger className="w-40">
                         <SelectValue placeholder="Sort by" />
@@ -852,20 +874,38 @@ export default function DashboardPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {filteredCalls.map(call => (
-                            <TableRow
-                              key={call.id}
-                              className={`cursor-pointer`}
-                              onClick={() => openCallDetail(call)}
-                            >
-                              <TableCell className="font-medium">
-                                <div className="flex items-center gap-2">
-                                  <Phone className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-foreground">
-                                    {call.phoneNumber || 'Unknown'}
-                                  </span>
-                                </div>
-                              </TableCell>
+                          {filteredCalls.map(call => {
+                            // Determine row highlighting based on lead quality - deep underglow effect for Hot and Warm only
+                            let rowClassName = 'cursor-pointer transition-all duration-300 hover:bg-muted/50';
+                            
+                            if (call.leadQuality === 'hot') {
+                              rowClassName += ' bg-gradient-to-r from-red-500/10 via-red-600/5 to-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.2)] border-l-2 border-l-red-500/40';
+                            } else if (call.leadQuality === 'warm') {
+                              rowClassName += ' bg-gradient-to-r from-orange-500/10 via-orange-600/5 to-orange-500/10 shadow-[0_0_15px_rgba(249,115,22,0.15)] border-l-2 border-l-orange-500/40';
+                            }
+
+                            // Determine phone number color based on lead quality - only for Hot and Warm
+                            let phoneNumberColor = 'text-foreground';
+                            if (call.leadQuality === 'hot') {
+                              phoneNumberColor = 'text-red-700 font-semibold';
+                            } else if (call.leadQuality === 'warm') {
+                              phoneNumberColor = 'text-orange-700 font-medium';
+                            }
+
+                            return (
+                              <TableRow
+                                key={call.id}
+                                className={rowClassName}
+                                onClick={() => openCallDetail(call)}
+                              >
+                                <TableCell className="font-medium">
+                                  <div className="flex items-center gap-2">
+                                    <Phone className="h-4 w-4 text-muted-foreground" />
+                                    <span className={phoneNumberColor}>
+                                      {call.phoneNumber || 'Unknown'}
+                                    </span>
+                                  </div>
+                                </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-2">
                                   <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -907,10 +947,11 @@ export default function DashboardPage() {
                                 >
                                   <FileText className="mr-1 h-3 w-3" />
                                   View Details
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </div>
