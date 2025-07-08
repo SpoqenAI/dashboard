@@ -380,7 +380,7 @@ function SettingsContent() {
 
     // Business names: alphanumeric, single spaces, limited punctuation
     BUSINESS_NAME_PATTERN:
-      /^(?:[A-Za-z0-9](?:[A-Za-z0-9\s\-'.&,()]*[A-Za-z0-9])?)$/,
+      /^(?!.* {2})(?!.*--)(?!.*\.{2})(?!.*,{2})(?!.*'')(?!.*&&)(?!.*\(\()(?!.*\)\))[A-Za-z0-9](?:[A-Za-z0-9\s\-'.&,()]*[A-Za-z0-9.)])?$/,
 
     // Email pattern supporting RFC-5322 compliant characters including '+' in local part
     // Allows letters, numbers, dots, underscores, hyphens, and plus signs in local part

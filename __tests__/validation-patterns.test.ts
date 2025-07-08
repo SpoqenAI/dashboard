@@ -6,7 +6,7 @@
 const VALIDATION_PATTERNS = {
   NAME_PATTERN: /^[a-zA-Z](?:[a-zA-Z\s\-'.])*[a-zA-Z]$|^[a-zA-Z]$/,
   BUSINESS_NAME_PATTERN:
-    /^[a-zA-Z0-9](?:[a-zA-Z0-9\s\-'.,&()]*[a-zA-Z0-9.)])?$/,
+    /^(?!.* {2})(?!.*--)(?!.*\.{2})(?!.*,{2})(?!.*'')(?!.*&&)(?!.*\(\()(?!.*\)\))[a-zA-Z0-9](?:[a-zA-Z0-9\s\-'.,&()]*[a-zA-Z0-9.)])?$/,
 };
 
 // Simple test runner

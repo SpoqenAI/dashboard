@@ -446,7 +446,7 @@ export default function DashboardPage() {
   const VALIDATION_PATTERNS = {
     NAME_PATTERN: /^[\p{L}](?:[\p{L}\s\-'.])*[\p{L}]$|^[\p{L}]$/u,
     BUSINESS_NAME_PATTERN:
-      /^[a-zA-Z0-9](?:[a-zA-Z0-9\s\-'.,&()]*[a-zA-Z0-9.)])?$/,
+      /^(?!.* {2})(?!.*--)(?!.*\.{2})(?!.*,{2})(?!.*'')(?!.*&&)(?!.*\(\()(?!.*\)\))[a-zA-Z0-9](?:[a-zA-Z0-9\s\-'.,&()]*[a-zA-Z0-9.)])?$/,
   };
 
   const validateContent = (field: string, value: string): string | null => {
