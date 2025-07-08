@@ -1,159 +1,562 @@
 import Link from 'next/link';
+import { memo, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, PhoneCall, User } from 'lucide-react';
+import {
+  ArrowRight,
+  CheckCircle,
+  PhoneCall,
+  User,
+  Play,
+  Zap,
+  TrendingUp,
+  Shield,
+  Clock,
+  Target,
+} from 'lucide-react';
 import { PricingCard } from '@/components/pricing-card';
+import { ProblemBanner } from '@/components/ui/problem-banner';
 import Logo from '@/components/ui/logo';
+import {
+  TestimonialsSection,
+  MicroTestimonial,
+  TestimonialStrip,
+} from '@/components/testimonials-section';
+import { ExitIntentModal } from '@/components/ui/exit-intent-modal';
+import { DashboardPreview } from '@/components/dashboard-preview';
 
+// Client components for progressive enhancement
+import { AnalyticsTracker } from '@/components/analytics-tracker';
+import { ProgressiveBackgroundLoader } from '@/components/progressive-background-loader';
+import { ScarcityBannerProvider } from '@/components/scarcity-banner-provider';
+import { HeroCTASection } from '@/components/hero-cta-section';
+import { FinalCTAButtons } from '@/components/final-cta-buttons';
+
+// PERFORMANCE: Dynamic imports with lazy loading for heavy components
+const InteractiveBackground = dynamic(
+  () =>
+    import('@/components/interactive-background').then(mod => ({
+      default: mod.InteractiveBackground,
+    })),
+  {
+    loading: () => <div className="min-h-screen bg-gradient-dark" />,
+  }
+);
+
+const DynamicTestimonialsSection = dynamic(
+  () =>
+    import('@/components/testimonials-section').then(mod => ({
+      default: mod.TestimonialsSection,
+    })),
+  {
+    loading: () => <div className="h-96 animate-pulse rounded-lg bg-card/20" />,
+  }
+);
+
+const TrustIndicators = dynamic(
+  () =>
+    import('@/components/trust-indicators').then(mod => ({
+      default: mod.TrustIndicators,
+    })),
+  {
+    loading: () => <div className="h-32 animate-pulse rounded-lg bg-card/20" />,
+  }
+);
+
+const TrustBadges = dynamic(
+  () =>
+    import('@/components/trust-indicators').then(mod => ({
+      default: mod.TrustBadges,
+    })),
+  {
+    loading: () => <div className="h-16 animate-pulse rounded-lg bg-card/20" />,
+  }
+);
+
+const ROICalculator = dynamic(
+  () =>
+    import('@/components/roi-calculator').then(mod => ({
+      default: mod.ROICalculator,
+    })),
+  {
+    loading: () => <div className="h-96 animate-pulse rounded-lg bg-card/20" />,
+  }
+);
+
+const IntegrationsShowcase = dynamic(
+  () =>
+    import('@/components/integrations-showcase').then(mod => ({
+      default: mod.IntegrationsShowcase,
+    })),
+  {
+    loading: () => <div className="h-96 animate-pulse rounded-lg bg-card/20" />,
+  }
+);
+
+// PERFORMANCE: Heavy interactive components loaded on demand
+const InteractiveDemo = dynamic(
+  () =>
+    import('@/components/interactive-demo').then(mod => ({
+      default: mod.InteractiveDemo,
+    })),
+  {
+    loading: () => <div className="h-96 animate-pulse rounded-lg bg-card/20" />,
+  }
+);
+
+// PERFORMANCE: Memoized components to prevent unnecessary re-renders
+const MemoizedFeatureCard = memo(
+  ({
+    icon,
+    title,
+    description,
+    bullets,
+    delay = '0s',
+  }: {
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+    bullets?: string[];
+    delay?: string;
+  }) => (
+    <div
+      className="hover:shadow-glow-primary/20 group flex animate-slide-up flex-col space-y-6 rounded-xl border border-white/10 bg-card/20 p-6 text-left backdrop-blur-glass transition-all duration-300 hover:scale-105 hover:bg-card/30"
+      style={{ animationDelay: delay }}
+    >
+      <div className="flex items-start space-x-4">
+        <div className="inline-flex flex-shrink-0 rounded-xl bg-gradient-to-r from-card/50 to-card/80 p-3 text-primary transition-transform duration-300 group-hover:scale-110">
+          {icon}
+        </div>
+        <div className="flex-1">
+          <h3 className="mb-2 text-xl font-semibold">{title}</h3>
+          <p className="leading-relaxed text-muted-foreground">{description}</p>
+        </div>
+      </div>
+
+      {bullets && bullets.length > 0 && (
+        <ul className="space-y-2 pl-4">
+          {bullets.slice(0, 4).map((bullet, index) => (
+            <li key={index} className="flex items-start space-x-2 text-sm">
+              <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+              <span className="text-muted-foreground">{bullet}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+);
+
+MemoizedFeatureCard.displayName = 'MemoizedFeatureCard';
+
+const MemoizedTechSpec = memo(
+  ({
+    icon,
+    title,
+    description,
+  }: {
+    icon: string;
+    title: string;
+    description: string;
+  }) => (
+    <div className="rounded-lg border border-white/10 bg-card/20 p-4 backdrop-blur-glass">
+      <div className="font-semibold text-primary">
+        {icon} {title}
+      </div>
+      <div className="text-sm text-muted-foreground">{description}</div>
+    </div>
+  )
+);
+
+MemoizedTechSpec.displayName = 'MemoizedTechSpec';
+
+// PERFORMANCE: Memoized TrustLogoStrip component
+const TrustLogoStrip = memo(() => (
+  <div className="flex flex-col items-center space-y-3 pt-6">
+    <p className="text-sm text-muted-foreground">
+      Trusted by 50+ growing businesses
+    </p>
+    <div className="flex items-center justify-center space-x-6 opacity-60">
+      <div className="flex items-center space-x-1 text-xs font-medium text-muted-foreground">
+        <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
+        <span>TechFlow Digital</span>
+      </div>
+      <div className="h-4 w-px bg-white/20"></div>
+      <div className="flex items-center space-x-1 text-xs font-medium text-muted-foreground">
+        <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
+        <span>CryptoConsult Pro</span>
+      </div>
+      <div className="h-4 w-px bg-white/20"></div>
+      <div className="flex items-center space-x-1 text-xs font-medium text-muted-foreground">
+        <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
+        <span>GrowthHack Labs</span>
+      </div>
+    </div>
+  </div>
+));
+
+TrustLogoStrip.displayName = 'TrustLogoStrip';
+
+// Server Component - No client-side hooks
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {/* Client-side analytics tracking */}
+      <AnalyticsTracker page="landing_page" />
+
+      {/* ACCESSIBILITY: Skip link for keyboard navigation */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+
+      <header
+        className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-card/20 backdrop-blur-glass"
+        role="banner"
+      >
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2 text-xl font-bold">
             <Logo width={140} height={48} />
           </div>
           <nav className="flex items-center gap-4">
-            <Link href="/login" className="text-sm font-medium">
+            <Link
+              href="/login"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+            >
               Login
             </Link>
-            <Button asChild>
-              <Link href="/signup">Sign Up</Link>
+            <Button variant="neon" asChild>
+              <Link href="/signup">Start Free Trial</Link>
             </Button>
           </nav>
         </div>
       </header>
-      <main className="flex-1">
-        <section className="w-full bg-gradient-to-br from-purple-900/30 via-background to-blue-900/30 py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
-              <div className="flex flex-col justify-center space-y-4">
-                <div className="space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                    Never Miss a Lead Again
+
+      <main id="main-content" className="flex-1" role="main">
+        <div className="relative flex min-h-screen w-full items-center justify-center bg-gradient-dark">
+          <Suspense
+            fallback={
+              <div className="absolute inset-0 z-0 min-h-screen bg-gradient-dark" />
+            }
+          >
+            <ProgressiveBackgroundLoader
+              variant="hero"
+              className="absolute inset-0 z-0 h-full w-full bg-[radial-gradient(ellipse_60%_80%_at_20%_40%,rgba(139,92,246,0.1),transparent)] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(29,155,240,0.1),rgba(255,255,255,0))] bg-gradient-dark"
+              fallbackStyle={{
+                background:
+                  'linear-gradient(to bottom, hsl(var(--background)), hsl(var(--card))',
+              }}
+            >
+              <></>
+            </ProgressiveBackgroundLoader>
+          </Suspense>
+          <section
+            className="relative z-10 w-full py-20 pt-32"
+            aria-label="Hero section"
+          >
+            <div className="container px-6">
+              <div className="grid items-center gap-12 lg:grid-cols-2">
+                {/* Left Content */}
+                <div className="animate-fade-in space-y-8">
+                  <div className="inline-flex items-center rounded-full border border-white/10 bg-card/20 px-4 py-2 backdrop-blur-glass">
+                    <span className="text-sm text-muted-foreground">
+                      🚀 Join 2,847+ Founders Using AI
+                    </span>
+                  </div>
+
+                  <h1 className="text-5xl font-bold leading-tight lg:text-7xl">
+                    <span className="bg-gradient-primary bg-clip-text py-[6px] leading-[1.2] text-transparent">
+                      Never Miss Another Call.
+                    </span>
                   </h1>
-                  <p className="max-w-[600px] text-gray-500 dark:text-gray-400 md:text-xl">
-                    Spoqen is your AI receptionist that answers calls, qualifies
-                    leads, and emails you summaries—so you can focus on closing
-                    deals.
+
+                  <p className="max-w-lg text-xl leading-relaxed text-muted-foreground">
+                    AI receptionist that captures leads 24/7, qualifies
+                    prospects instantly, and syncs with your CRM—so you never
+                    lose revenue to missed calls again.
+                  </p>
+
+                  <div className="mb-6 flex flex-wrap gap-2">
+                    <div className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/20 px-3 py-1 text-sm backdrop-blur-glass">
+                      <Zap className="h-4 w-4 text-primary" />
+                      <span>24/7 Lead Capture</span>
+                    </div>
+                    <div className="flex items-center gap-1 rounded-full border border-accent/30 bg-accent/20 px-3 py-1 text-sm backdrop-blur-glass">
+                      <TrendingUp className="h-4 w-4 text-accent" />
+                      <span>10X ROI Guarantee</span>
+                    </div>
+                    <div className="flex items-center gap-1 rounded-full border border-secondary/30 bg-secondary/20 px-3 py-1 text-sm backdrop-blur-glass">
+                      <Shield className="h-4 w-4 text-secondary" />
+                      <span>API-First Integration</span>
+                    </div>
+                  </div>
+
+                  {/* Progressive enhancement: CTA buttons with tracking */}
+                  <HeroCTASection />
+
+                  <div className="text-sm text-muted-foreground">
+                    No credit card • Setup in 5 min • Cancel anytime
+                  </div>
+
+                  <TrustLogoStrip />
+
+                  <div className="flex items-center space-x-8 pt-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">
+                        340%
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Avg ROI
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-accent">24/7</div>
+                      <div className="text-sm text-muted-foreground">
+                        Available
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-secondary">
+                        99.9%
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Uptime
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Content - Live Dashboard Preview */}
+                <div
+                  className="relative animate-slide-up"
+                  style={{ animationDelay: '0.3s' }}
+                >
+                  <DashboardPreview />
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* PERFORMANCE: Lazy load below-the-fold sections */}
+        <Suspense fallback={<div className="h-32 animate-pulse bg-card/20" />}>
+          <TrustIndicators />
+        </Suspense>
+
+        <Suspense fallback={<div className="h-96 animate-pulse bg-card/20" />}>
+          <DynamicTestimonialsSection />
+        </Suspense>
+
+        <Suspense fallback={<div className="h-96 animate-pulse bg-card/20" />}>
+          <InteractiveDemo />
+        </Suspense>
+
+        {/* Micro-testimonial after Interactive Demo */}
+        <div className="py-8">
+          <div className="container px-6">
+            <div className="mx-auto max-w-2xl">
+              <MicroTestimonial index={2} />
+            </div>
+          </div>
+        </div>
+
+        <Suspense
+          fallback={
+            <div className="min-h-screen bg-gradient-to-b from-background to-card/30" />
+          }
+        >
+          <InteractiveBackground
+            variant="features"
+            className="bg-gradient-to-b from-background to-card/30 py-20"
+          >
+            <section className="w-full">
+              <div className="container px-6">
+                {/* Problem Banner */}
+                <div className="mb-16 animate-fade-in">
+                  <ProblemBanner />
+                </div>
+
+                <div className="mb-16 animate-fade-in text-center">
+                  <h2 className="mb-6 text-4xl font-bold lg:text-5xl">
+                    Stop Losing Revenue to
+                    <span className="bg-gradient-primary bg-clip-text text-transparent">
+                      {' '}
+                      Missed Opportunities
+                    </span>
+                  </h2>
+                  <p className="mx-auto max-w-3xl text-xl text-muted-foreground">
+                    Spoqen captures every call, qualifies every prospect, and
+                    converts every opportunity— so you never lose another deal
+                    to poor timing or availability.
                   </p>
                 </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Button
-                    size="lg"
-                    asChild
-                    className="border-0 bg-spoqen-gradient text-white hover:opacity-90"
-                  >
-                    <Link href="/signup">
-                      Get Started <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <Button size="lg" variant="outline" asChild>
-                    <Link href="/demo">See Demo</Link>
-                  </Button>
-                </div>
-              </div>
-              <div className="flex items-center justify-center">
-                <div className="relative aspect-video w-full max-w-[500px] overflow-hidden rounded-xl border bg-background shadow-xl">
-                  <img
-                    src="/Spoqen-full.png"
-                    alt="Spoqen Logo"
-                    className="h-full w-full object-contain"
+
+                <div className="mx-auto mb-16 grid max-w-6xl gap-8 lg:grid-cols-2">
+                  <MemoizedFeatureCard
+                    icon={<Target className="h-7 w-7" />}
+                    title="Know Why They Called—Before Calling Back"
+                    description="Stop playing phone tag. Get instant call summaries with intent, budget, timeline, and next steps."
+                    bullets={[
+                      'Lead qualification in real-time during the call',
+                      'Complete conversation summary sent instantly',
+                      'Priority scoring so you call hot leads first',
+                      'Integration with your existing CRM workflow',
+                    ]}
+                  />
+                  <MemoizedFeatureCard
+                    icon={<Clock className="h-7 w-7" />}
+                    title="Turn Missed Calls Into Closed Deals"
+                    description="Never lose a prospect to timing. Our AI handles objections, books appointments, and nurtures leads 24/7."
+                    bullets={[
+                      'Professional call handling that builds trust',
+                      'Appointment booking directly to your calendar',
+                      "Follow-up sequences for prospects who aren't ready",
+                      'Escalation protocols for high-value opportunities',
+                    ]}
+                    delay="0.1s"
+                  />
+                  <MemoizedFeatureCard
+                    icon={<Zap className="h-7 w-7" />}
+                    title="Get Notified The Moment Opportunities Hit"
+                    description="Hot leads don't wait. Get instant notifications with complete context so you can strike while interest is high."
+                    bullets={[
+                      'Real-time Slack/email alerts for qualified leads',
+                      'Lead scoring based on buying signals',
+                      'Automatic CRM updates with conversation data',
+                      'Custom triggers for your specific business',
+                    ]}
+                    delay="0.2s"
+                  />
+                  <MemoizedFeatureCard
+                    icon={<TrendingUp className="h-7 w-7" />}
+                    title="Scale Revenue Without Scaling Headcount"
+                    description="Handle 10X more calls without hiring more staff. Perfect call handling, every time, at any volume."
+                    bullets={[
+                      'Unlimited concurrent call capacity',
+                      'Consistent qualification process for every lead',
+                      'No sick days, breaks, or training costs',
+                      'Scales instantly during marketing campaigns',
+                    ]}
+                    delay="0.3s"
                   />
                 </div>
+
+                {/* Technical Specs for Tech Founders */}
+                <div className="text-center">
+                  <h3 className="mb-8 text-2xl font-bold">
+                    Effortless Business Integration:
+                  </h3>
+                  <div className="mx-auto grid max-w-4xl gap-4 md:grid-cols-2 lg:grid-cols-5">
+                    <MemoizedTechSpec
+                      icon="🔗"
+                      title="Instant Setup"
+                      description="Connect in minutes"
+                    />
+                    <MemoizedTechSpec
+                      icon="⚡"
+                      title="Real-Time Alerts"
+                      description="SMS & Email"
+                    />
+                    <MemoizedTechSpec
+                      icon="🔒"
+                      title="Enterprise-Grade Security"
+                      description="SOC2 & GDPR"
+                    />
+                    <MemoizedTechSpec
+                      icon="📊"
+                      title="Actionable Insights"
+                      description="Caller trends"
+                    />
+                    <MemoizedTechSpec
+                      icon="🚀"
+                      title="Scales With You"
+                      description="Auto-scaling"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </section>
-        <section className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  How It Works
+            </section>
+          </InteractiveBackground>
+        </Suspense>
+
+        {/* More sections with lazy loading... */}
+        <Suspense fallback={<div className="h-96 animate-pulse bg-card/20" />}>
+          <ROICalculator />
+        </Suspense>
+
+        <Suspense fallback={<div className="h-96 animate-pulse bg-card/20" />}>
+          <IntegrationsShowcase />
+        </Suspense>
+
+        {/* Pricing Section */}
+        <InteractiveBackground
+          variant="minimal"
+          className="bg-gradient-to-b from-card/30 to-background py-20"
+        >
+          <section className="w-full">
+            <div className="container px-6">
+              <div className="mb-16 text-center">
+                <h2 className="mb-6 text-4xl font-bold lg:text-5xl">
+                  Simple Pricing,
+                  <span className="bg-gradient-primary bg-clip-text text-transparent">
+                    {' '}
+                    Maximum ROI
+                  </span>
                 </h2>
-                <p className="max-w-[900px] text-gray-500 dark:text-gray-400 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Spoqen seamlessly integrates with your existing workflow to
-                  capture and qualify leads when you're unavailable.
+                <p className="mx-auto max-w-3xl text-xl text-muted-foreground">
+                  Built for founders who understand the value of time. One plan,
+                  unlimited possibilities.
                 </p>
+              </div>
+
+              <div className="flex justify-center">
+                <PricingCard />
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl items-center gap-6 py-12 lg:grid-cols-3 lg:gap-12">
-              <div className="flex flex-col items-center space-y-4 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                  <PhoneCall className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold">1. Call Answering</h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  When you're unavailable, Spoqen answers calls with your
-                  personalized greeting.
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-4 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                  <User className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold">2. Lead Qualification</h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  Your AI assistant asks your customized qualification questions
-                  to gather important details.
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-4 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                  <CheckCircle className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold">3. Instant Summaries</h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  Within 60 seconds, you receive a detailed email summary with
-                  all the lead information.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-        <section className="w-full bg-muted/30 py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  Ready to Never Miss a Lead?
-                </h2>
-              </div>
-              <PricingCard />
+          </section>
+        </InteractiveBackground>
+
+        {/* Testimonial Strip after Pricing */}
+        <TestimonialStrip />
+
+        {/* Final CTA */}
+        <section className="w-full bg-gradient-to-b from-background to-card/30 py-20">
+          <div className="container px-6">
+            <div className="mx-auto max-w-4xl text-center">
+              <h2 className="mb-6 text-4xl font-bold lg:text-5xl">
+                Ready to Scale Your Revenue?
+              </h2>
+              <p className="mb-8 text-xl text-muted-foreground">
+                Join 2,847+ founders who are already using Spoqen to capture
+                every lead and scale without limits.
+              </p>
+
+              {/* Progressive enhancement: Final CTA buttons with tracking */}
+              <FinalCTAButtons />
+
+              <Suspense
+                fallback={
+                  <div className="h-16 animate-pulse rounded-lg bg-card/20" />
+                }
+              >
+                <TrustBadges />
+              </Suspense>
             </div>
           </div>
         </section>
       </main>
-      <footer className="w-full border-t py-6">
-        <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
-          <div className="flex items-center gap-2 font-semibold">
-            <Logo width={100} height={30} />
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            © 2025 Spoqen. All rights reserved.
-          </p>
-          <nav className="flex gap-4 text-sm">
-            <Link
-              href="/terms"
-              className="text-gray-500 hover:underline dark:text-gray-400"
-            >
-              Terms
-            </Link>
-            <Link
-              href="/privacy"
-              className="text-gray-500 hover:underline dark:text-gray-400"
-            >
-              Privacy
-            </Link>
-            <Link
-              href="/contact"
-              className="text-gray-500 hover:underline dark:text-gray-400"
-            >
-              Contact
-            </Link>
-          </nav>
-        </div>
-      </footer>
+
+      {/* Progressive enhancement: Scarcity banner */}
+      <ScarcityBannerProvider />
+
+      {/* PERSUASION: Exit intent modal */}
+      <ExitIntentModal
+        title="Wait! Don't Miss Out"
+        subtitle="Before you go, grab this exclusive offer"
+        offer="50% OFF"
+        ctaText="Claim My Discount"
+        ctaLink="/signup?discount=50"
+        incentive="Join 2,847+ founders already using Spoqen"
+      />
     </div>
   );
 }
