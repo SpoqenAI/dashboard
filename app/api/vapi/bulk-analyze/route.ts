@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch calls from VAPI - use same limit as analytics API
-    const fetchLimit = Math.max(limit * 3, 100); // Match analytics API limit
+    const fetchLimit = Math.max(limit * 3, 100);
     const vapiUrl = `${baseUrl}/call?limit=${fetchLimit}`;
 
     logger.info('BULK_ANALYZE', 'Fetching calls from VAPI', {
@@ -124,29 +124,34 @@ export async function POST(request: NextRequest) {
 
     // Debug: Log some sample calls to understand their structure
     if (userCalls.length > 0) {
+      const sampleCall = userCalls[0];
       logger.info('BULK_ANALYZE', 'Sample call structure', {
         sampleCall: {
-          id: userCalls[0].id,
-          durationSeconds: userCalls[0].durationSeconds,
-          endedReason: userCalls[0].endedReason,
-          hasTranscript: !!userCalls[0].transcript,
-          hasSummary: !!userCalls[0].summary,
-          hasMessages: !!userCalls[0].messages,
-          transcriptLength: userCalls[0].transcript?.length || 0,
-          summaryLength: userCalls[0].summary?.length || 0,
-          messagesCount: userCalls[0].messages?.length || 0,
+          id: sampleCall.id,
+          durationSeconds: sampleCall.durationSeconds,
+          endedReason: sampleCall.endedReason,
+          hasTranscript: !!sampleCall.transcript,
+          hasSummary: !!sampleCall.summary,
+          hasMessages: !!sampleCall.messages,
+          hasAnalysis: !!sampleCall.analysis,
+          hasAnalysisStructuredData: !!sampleCall.analysis?.structuredData,
+          analysisFields: sampleCall.analysis ? Object.keys(sampleCall.analysis) : null,
+          transcriptLength: sampleCall.transcript?.length || 0,
+          summaryLength: sampleCall.summary?.length || 0,
+          messagesCount: sampleCall.messages?.length || 0,
         },
       });
     }
 
     // Use the EXACT same filtering logic as analytics API
-    // Analytics counts ALL user calls (64), so we should process ALL user calls
+    // Analytics counts ALL user calls, so we should process ALL user calls
     const answeredCalls = userCalls.filter((call: any) => {
-      // Include all calls that have any content to analyze
+      // Include all calls that have any content to analyze OR have VAPI analysis
       const hasTranscript = call.transcript && call.transcript.trim();
       const hasSummary = call.summary && call.summary.trim();
       const hasMessages = call.messages && call.messages.length > 0;
-      const hasContent = hasTranscript || hasSummary || hasMessages;
+      const hasVapiAnalysis = call.analysis && (call.analysis.summary || call.analysis.structuredData);
+      const hasContent = hasTranscript || hasSummary || hasMessages || hasVapiAnalysis;
 
       if (hasContent) {
         return true;
@@ -201,20 +206,14 @@ export async function POST(request: NextRequest) {
 
     for (const call of callsToProcess) {
       try {
-        // Get call content for analysis
-        let content =
-          call.transcript ||
-          call.messages
-            ?.map((m: any) => `${m.role}: ${m.message}`)
-            .join('\n') ||
-          call.summary ||
-          '';
-
-        // If no content in the basic call data, try to fetch detailed call info
-        if (!content.trim()) {
+        // Check if we need to fetch detailed call info
+        let detailedCall = call;
+        
+        // If no VAPI analysis in the basic call data, try to fetch detailed call info
+        if (!call.analysis?.structuredData && !call.analysis?.summary) {
           logger.info(
             'BULK_ANALYZE',
-            'No content in call, fetching detailed info',
+            'No VAPI analysis in call, fetching detailed info',
             { callId: call.id }
           );
 
@@ -227,19 +226,13 @@ export async function POST(request: NextRequest) {
             });
 
             if (detailResponse.ok) {
-              const detailData = await detailResponse.json();
-              content =
-                detailData.transcript ||
-                detailData.messages
-                  ?.map((m: any) => `${m.role}: ${m.message}`)
-                  .join('\n') ||
-                detailData.summary ||
-                '';
-
-              logger.info('BULK_ANALYZE', 'Fetched detailed call content', {
+              detailedCall = await detailResponse.json();
+              
+              logger.info('BULK_ANALYZE', 'Fetched detailed call info', {
                 callId: call.id,
-                hasDetailedContent: !!content.trim(),
-                contentLength: content.length,
+                hasDetailedAnalysis: !!detailedCall.analysis,
+                hasDetailedStructuredData: !!detailedCall.analysis?.structuredData,
+                hasDetailedSummary: !!detailedCall.analysis?.summary,
               });
             }
           } catch (fetchError) {
@@ -250,31 +243,15 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        if (!content.trim()) {
-          logger.warn(
-            'BULK_ANALYZE',
-            'Call has no content to analyze even after detailed fetch',
-            {
-              callId: call.id,
-              durationSeconds: call.durationSeconds,
-              endedReason: call.endedReason,
-            }
-          );
+        // Extract analysis using VAPI's native data
+        const analysisResult = extractAnalysisFromVapiCall(detailedCall);
 
-          // Create a basic analysis for calls without content
-          content = `Call lasted ${call.durationSeconds} seconds. Ended with reason: ${call.endedReason || 'unknown'}.`;
-        }
-
-        const sentiment = getSentiment(content);
-        const leadQuality = getLeadQuality(content);
-        const callPurpose = getCallPurpose(content);
-
-        logger.info('BULK_ANALYZE', 'Analyzing call', {
+        logger.info('BULK_ANALYZE', 'Analyzing call with VAPI data', {
           callId: call.id,
-          sentiment,
-          leadQuality,
-          callPurpose,
-          contentLength: content.length,
+          source: analysisResult.source,
+          sentiment: analysisResult.sentiment,
+          leadQuality: analysisResult.leadQuality,
+          callPurpose: analysisResult.callPurpose,
         });
 
         const { error: insertError } = await supabase
@@ -283,18 +260,16 @@ export async function POST(request: NextRequest) {
             {
               user_id: user.id,
               vapi_call_id: call.id,
-              sentiment,
-              call_purpose: callPurpose,
-              lead_quality: leadQuality,
-              key_points: extractKeyPoints(content),
-              follow_up_items: extractFollowUpItems(content),
-              urgent_concerns: extractUrgentConcerns(content),
-              property_interest: extractPropertyInterest(content),
-              timeline: extractTimeline(content),
-              contact_preference: extractContactPreference(content),
-              appointment_requested:
-                content.toLowerCase().includes('appointment') ||
-                content.toLowerCase().includes('showing'),
+              sentiment: analysisResult.sentiment,
+              call_purpose: analysisResult.callPurpose,
+              lead_quality: analysisResult.leadQuality,
+              key_points: analysisResult.keyPoints,
+              follow_up_items: analysisResult.followUpItems,
+              urgent_concerns: analysisResult.urgentConcerns,
+              property_interest: analysisResult.businessInterest,
+              timeline: analysisResult.timeline,
+              contact_preference: analysisResult.contactPreference,
+              appointment_requested: analysisResult.appointmentRequested,
               analyzed_at: new Date().toISOString(),
             },
             {
@@ -345,234 +320,241 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function getSentiment(content: string): 'positive' | 'negative' | 'neutral' {
-  const lower = content.toLowerCase();
-  const positive = [
-    'great',
-    'excellent',
-    'love',
-    'perfect',
-    'amazing',
-    'wonderful',
-    'interested',
-    'excited',
-  ].some(word => lower.includes(word));
-  const negative = [
-    'terrible',
-    'awful',
-    'hate',
-    'problem',
-    'issue',
-    'disappointed',
-    'frustrated',
-    'angry',
-  ].some(word => lower.includes(word));
+/**
+ * Extract analysis from VAPI call using native analysis data
+ * This replaces all the hardcoded real estate functions
+ */
+function extractAnalysisFromVapiCall(call: any) {
+  const analysis = call.analysis || {};
+  const structuredData = analysis.structuredData || {};
+  const summary = analysis.summary || '';
+  
+  // Fallback content for calls without VAPI analysis
+  const fallbackContent = 
+    call.transcript ||
+    call.messages?.map((m: any) => `${m.role}: ${m.message}`).join('\n') ||
+    summary ||
+    `Call lasted ${call.durationSeconds || 0} seconds. Ended with reason: ${call.endedReason || 'unknown'}.`;
 
-  if (positive && !negative) return 'positive';
-  if (negative && !positive) return 'negative';
+  let source = 'VAPI_NATIVE_ANALYSIS';
+  
+  // Try to extract from VAPI's structured data first
+  let sentiment = structuredData.sentiment;
+  let callPurpose = structuredData.callPurpose || structuredData.purpose;
+  let keyPoints = structuredData.keyPoints || structuredData.key_points;
+  let followUpItems = structuredData.followUpItems || structuredData.follow_up_items || structuredData.followUp;
+  let urgentConcerns = structuredData.urgentConcerns || structuredData.urgent_concerns || structuredData.urgent;
+  let leadQuality = structuredData.leadQuality || structuredData.lead_quality;
+  let timeline = structuredData.timeline || structuredData.timeframe;
+  let contactPreference = structuredData.contactPreference || structuredData.contact_preference || structuredData.preferredContact;
+  let appointmentRequested = structuredData.appointmentRequested || structuredData.appointment_requested || structuredData.appointment;
+  let businessInterest = structuredData.businessInterest || structuredData.business_interest || structuredData.serviceInterest || structuredData.productInterest;
+
+  // If no structured data, try to extract from summary
+  if (!sentiment && summary) {
+    sentiment = extractSentimentFromText(summary);
+    source = 'VAPI_SUMMARY_ANALYSIS';
+  }
+  
+  if (!callPurpose && summary) {
+    callPurpose = extractCallPurposeFromText(summary);
+    source = source.includes('SUMMARY') ? source : 'VAPI_SUMMARY_ANALYSIS';
+  }
+  
+  if (!keyPoints && summary) {
+    keyPoints = extractKeyPointsFromText(summary);
+    source = source.includes('SUMMARY') ? source : 'VAPI_SUMMARY_ANALYSIS';
+  }
+
+  // If still no data, fallback to basic content analysis
+  if (!sentiment) {
+    sentiment = extractSentimentFromText(fallbackContent);
+    source = 'FALLBACK_CONTENT_ANALYSIS';
+  }
+  
+  if (!callPurpose) {
+    callPurpose = extractCallPurposeFromText(fallbackContent);
+    source = source.includes('FALLBACK') ? source : 'FALLBACK_CONTENT_ANALYSIS';
+  }
+  
+  if (!keyPoints) {
+    keyPoints = extractKeyPointsFromText(fallbackContent);
+    source = source.includes('FALLBACK') ? source : 'FALLBACK_CONTENT_ANALYSIS';
+  }
+
+  // Set defaults
+  sentiment = sentiment || 'neutral';
+  callPurpose = callPurpose || 'General inquiry';
+  keyPoints = Array.isArray(keyPoints) ? keyPoints : (keyPoints ? [keyPoints] : ['Standard inquiry']);
+  followUpItems = Array.isArray(followUpItems) ? followUpItems : (followUpItems ? [followUpItems] : []);
+  urgentConcerns = Array.isArray(urgentConcerns) ? urgentConcerns : (urgentConcerns ? [urgentConcerns] : []);
+  leadQuality = leadQuality || determineLeadQualityFromContent(summary || fallbackContent, urgentConcerns);
+  timeline = timeline || extractTimelineFromText(summary || fallbackContent);
+  contactPreference = contactPreference || extractContactPreferenceFromText(summary || fallbackContent);
+  appointmentRequested = appointmentRequested !== undefined ? appointmentRequested : 
+    (summary || fallbackContent).toLowerCase().includes('appointment') ||
+    (summary || fallbackContent).toLowerCase().includes('meeting');
+  businessInterest = businessInterest || extractBusinessInterestFromText(summary || fallbackContent);
+
+  return {
+    source,
+    sentiment: sentiment as 'positive' | 'negative' | 'neutral',
+    callPurpose,
+    leadQuality: leadQuality as 'hot' | 'warm' | 'cold',
+    keyPoints,
+    followUpItems,
+    urgentConcerns,
+    timeline,
+    contactPreference,
+    appointmentRequested,
+    businessInterest,
+  };
+}
+
+/**
+ * Industry-agnostic helper functions for extracting data from text
+ * These replace the hardcoded real estate functions
+ */
+
+function extractSentimentFromText(content: string): string {
+  const lower = content.toLowerCase();
+  
+  const positiveWords = ['great', 'excellent', 'love', 'perfect', 'amazing', 'wonderful', 'interested', 'excited', 'impressed', 'satisfied', 'happy'];
+  const negativeWords = ['terrible', 'awful', 'hate', 'disappointed', 'frustrated', 'angry', 'problem', 'issue', 'complaint', 'dissatisfied'];
+  
+  const positiveCount = positiveWords.filter(word => lower.includes(word)).length;
+  const negativeCount = negativeWords.filter(word => lower.includes(word)).length;
+  
+  if (positiveCount > negativeCount) return 'positive';
+  if (negativeCount > positiveCount) return 'negative';
   return 'neutral';
 }
 
-function getLeadQuality(content: string): 'hot' | 'warm' | 'cold' {
+function extractCallPurposeFromText(content: string): string {
   const lower = content.toLowerCase();
-
-  // Hot leads: urgent, ready to move
-  if (
-    lower.includes('urgent') ||
-    lower.includes('asap') ||
-    lower.includes('immediately') ||
-    lower.includes('cash buyer') ||
-    lower.includes('pre-approved')
-  ) {
-    return 'hot';
-  }
-
-  // Warm leads: interested but not urgent
-  if (
-    lower.includes('interested') ||
-    lower.includes('looking') ||
-    lower.includes('considering') ||
-    lower.includes('appointment') ||
-    lower.includes('showing') ||
-    lower.includes('visit')
-  ) {
-    return 'warm';
-  }
-
-  // Cold leads: just browsing or general inquiry
-  return 'cold';
-}
-
-function getCallPurpose(content: string): string {
-  const lower = content.toLowerCase();
-
-  if (lower.includes('buy') || lower.includes('purchase'))
-    return 'Buyer inquiry';
-  if (lower.includes('sell') || lower.includes('list')) return 'Seller inquiry';
-  if (lower.includes('rent') || lower.includes('lease'))
-    return 'Rental inquiry';
-  if (lower.includes('invest') || lower.includes('investment'))
-    return 'Investment inquiry';
-  if (lower.includes('appraisal') || lower.includes('valuation'))
-    return 'Property valuation';
-
+  
+  // General business purposes (industry-agnostic)
+  if (lower.includes('demo') || lower.includes('demonstration')) return 'Product demo request';
+  if (lower.includes('quote') || lower.includes('pricing') || lower.includes('cost')) return 'Pricing inquiry';
+  if (lower.includes('support') || lower.includes('help') || lower.includes('issue')) return 'Support request';
+  if (lower.includes('partnership') || lower.includes('collaboration')) return 'Partnership inquiry';
+  if (lower.includes('investment') || lower.includes('funding')) return 'Investment inquiry';
+  if (lower.includes('job') || lower.includes('career') || lower.includes('hiring')) return 'Career inquiry';
+  if (lower.includes('integration') || lower.includes('api')) return 'Technical integration';
+  if (lower.includes('trial') || lower.includes('test')) return 'Trial request';
+  
   return 'General inquiry';
 }
 
-function extractKeyPoints(content: string): string[] {
+function extractKeyPointsFromText(content: string): string[] {
   const points: string[] = [];
   const lower = content.toLowerCase();
-
-  if (
-    lower.includes('budget') ||
-    lower.includes('price') ||
-    lower.includes('afford')
-  ) {
+  
+  // Generic business discussion points
+  if (lower.includes('budget') || lower.includes('price') || lower.includes('cost')) {
     points.push('Budget and pricing discussed');
   }
-  if (
-    lower.includes('location') ||
-    lower.includes('area') ||
-    lower.includes('neighborhood')
-  ) {
-    points.push('Location preferences mentioned');
-  }
-  if (
-    lower.includes('bedrooms') ||
-    lower.includes('bathrooms') ||
-    lower.includes('square feet')
-  ) {
-    points.push('Property specifications discussed');
-  }
-  if (
-    lower.includes('timeline') ||
-    lower.includes('when') ||
-    lower.includes('by')
-  ) {
+  if (lower.includes('timeline') || lower.includes('when') || lower.includes('schedule')) {
     points.push('Timeline requirements mentioned');
   }
-
+  if (lower.includes('feature') || lower.includes('capability') || lower.includes('functionality')) {
+    points.push('Product features discussed');
+  }
+  if (lower.includes('team') || lower.includes('company') || lower.includes('organization')) {
+    points.push('Team or company details shared');
+  }
+  if (lower.includes('integration') || lower.includes('api') || lower.includes('technical')) {
+    points.push('Technical requirements discussed');
+  }
+  if (lower.includes('security') || lower.includes('compliance') || lower.includes('privacy')) {
+    points.push('Security and compliance topics');
+  }
+  
   return points.length > 0 ? points : ['Standard inquiry'];
 }
 
-function extractFollowUpItems(content: string): string[] {
-  const items: string[] = [];
+function extractTimelineFromText(content: string): string {
   const lower = content.toLowerCase();
-
-  if (
-    lower.includes('appointment') ||
-    lower.includes('showing') ||
-    lower.includes('visit')
-  ) {
-    items.push('Schedule property showing');
-  }
-  if (
-    lower.includes('send') ||
-    lower.includes('email') ||
-    lower.includes('info')
-  ) {
-    items.push('Send property information');
-  }
-  if (lower.includes('call back') || lower.includes('follow up')) {
-    items.push('Follow up call required');
-  }
-
-  return items;
-}
-
-function extractUrgentConcerns(content: string): string[] {
-  const concerns: string[] = [];
-  const lower = content.toLowerCase();
-
-  if (
-    lower.includes('urgent') ||
-    lower.includes('asap') ||
-    lower.includes('immediately')
-  ) {
-    concerns.push('Urgent timeline - immediate attention required');
-  }
-  if (
-    lower.includes('other agent') ||
-    lower.includes('competitor') ||
-    lower.includes('looking elsewhere')
-  ) {
-    concerns.push('Considering other agents - risk of losing lead');
-  }
-  if (lower.includes('price increase') || lower.includes('market moving')) {
-    concerns.push('Market timing concerns mentioned');
-  }
-
-  return concerns;
-}
-
-function extractPropertyInterest(content: string): string {
-  const lower = content.toLowerCase();
-
-  if (lower.includes('condo') || lower.includes('condominium'))
-    return 'Condominium';
-  if (
-    lower.includes('house') ||
-    lower.includes('home') ||
-    lower.includes('single family')
-  )
-    return 'Single Family Home';
-  if (lower.includes('townhouse') || lower.includes('townhome'))
-    return 'Townhouse';
-  if (lower.includes('apartment')) return 'Apartment';
-  if (
-    lower.includes('commercial') ||
-    lower.includes('office') ||
-    lower.includes('retail')
-  )
-    return 'Commercial';
-  if (lower.includes('land') || lower.includes('lot')) return 'Land/Lot';
-
-  return 'Not specified';
-}
-
-function extractTimeline(content: string): string {
-  const lower = content.toLowerCase();
-
-  if (
-    lower.includes('immediately') ||
-    lower.includes('asap') ||
-    lower.includes('urgent')
-  )
+  
+  if (lower.includes('immediately') || lower.includes('asap') || lower.includes('urgent')) {
     return 'Immediate (ASAP)';
-  if (lower.includes('this month') || lower.includes('30 days'))
+  }
+  if (lower.includes('this week') || lower.includes('7 days')) {
+    return 'Within 1 week';
+  }
+  if (lower.includes('this month') || lower.includes('30 days')) {
     return 'Within 1 month';
-  if (
-    lower.includes('few months') ||
-    lower.includes('3 months') ||
-    lower.includes('quarter')
-  )
+  }
+  if (lower.includes('quarter') || lower.includes('3 months')) {
     return 'Within 3 months';
-  if (lower.includes('6 months') || lower.includes('half year'))
+  }
+  if (lower.includes('6 months') || lower.includes('half year')) {
     return 'Within 6 months';
-  if (lower.includes('year') || lower.includes('12 months'))
-    return 'Within 1 year';
-  if (
-    lower.includes('just looking') ||
-    lower.includes('browsing') ||
-    lower.includes('no rush')
-  )
+  }
+  if (lower.includes('no rush') || lower.includes('just exploring') || lower.includes('research')) {
     return 'No specific timeline';
-
+  }
+  
   return 'Not specified';
 }
 
-function extractContactPreference(content: string): string {
+function extractContactPreferenceFromText(content: string): string {
   const lower = content.toLowerCase();
-
-  if (lower.includes('email') || lower.includes('e-mail')) return 'Email';
-  if (
-    lower.includes('text') ||
-    lower.includes('sms') ||
-    lower.includes('message')
-  )
-    return 'Text/SMS';
+  
+  if (lower.includes('email')) return 'Email';
+  if (lower.includes('text') || lower.includes('sms')) return 'Text/SMS';
+  if (lower.includes('slack') || lower.includes('teams') || lower.includes('discord')) return 'Team chat';
+  if (lower.includes('video call') || lower.includes('zoom') || lower.includes('meet')) return 'Video call';
   if (lower.includes('call') || lower.includes('phone')) return 'Phone call';
-  if (lower.includes('whatsapp')) return 'WhatsApp';
-
+  
   return 'Phone call'; // Default
+}
+
+function extractBusinessInterestFromText(content: string): string {
+  const lower = content.toLowerCase();
+  
+  // Tech/SaaS focused categories (aligned with current target audience)
+  if (lower.includes('saas') || lower.includes('software as a service')) return 'SaaS Solution';
+  if (lower.includes('api') || lower.includes('integration') || lower.includes('webhook')) return 'API/Integration';
+  if (lower.includes('analytics') || lower.includes('data') || lower.includes('reporting')) return 'Analytics/Data';
+  if (lower.includes('automation') || lower.includes('workflow') || lower.includes('process')) return 'Automation';
+  if (lower.includes('ai') || lower.includes('artificial intelligence') || lower.includes('machine learning')) return 'AI Solution';
+  if (lower.includes('marketing') || lower.includes('growth') || lower.includes('lead generation')) return 'Marketing/Growth';
+  if (lower.includes('security') || lower.includes('compliance') || lower.includes('privacy')) return 'Security/Compliance';
+  if (lower.includes('infrastructure') || lower.includes('hosting') || lower.includes('cloud')) return 'Infrastructure';
+  if (lower.includes('crm') || lower.includes('customer management')) return 'CRM/Customer Management';
+  if (lower.includes('communication') || lower.includes('chat') || lower.includes('messaging')) return 'Communication Tools';
+  
+  return 'Not specified';
+}
+
+function determineLeadQualityFromContent(content: string, urgentConcerns: string[]): string {
+  const lower = content.toLowerCase();
+  
+  // Hot leads: urgent, budget confirmed, decision maker
+  if (
+    urgentConcerns.length > 0 ||
+    lower.includes('budget approved') ||
+    lower.includes('decision maker') ||
+    lower.includes('ready to purchase') ||
+    lower.includes('need it asap') ||
+    lower.includes('urgent')
+  ) {
+    return 'hot';
+  }
+  
+  // Warm leads: interested, timeline defined, engaged
+  if (
+    lower.includes('interested') ||
+    lower.includes('timeline') ||
+    lower.includes('demo') ||
+    lower.includes('proposal') ||
+    lower.includes('next steps') ||
+    lower.includes('trial')
+  ) {
+    return 'warm';
+  }
+  
+  // Cold leads: just browsing or general inquiry
+  return 'cold';
 }

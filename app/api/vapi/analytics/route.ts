@@ -149,6 +149,52 @@ export async function GET(request: NextRequest) {
     // Map ALL calls to frontend format FIRST (this calculates durationSeconds from timestamps)
     const mappedUserCalls = userFilteredCalls.map(mapVapiCallToFrontend);
 
+    // After line 163, before calculateMetrics, we need to enrich the mapped calls with database analysis data
+    // Get recent calls for display (already mapped and date-filtered)
+    // Note: mappedUserCalls are already filtered by date range and user, so we use them directly
+    let recentCalls = mappedUserCalls.slice(0, 100);
+
+    // Enrich calls with database analysis data if user is authenticated
+    if (user?.id && supabase) {
+      try {
+        const callIds = recentCalls.map(call => call.id);
+        if (callIds.length > 0) {
+          const { data: analysisData, error: analysisError } = await supabase
+            .from('call_analysis')
+            .select('vapi_call_id, sentiment, lead_quality')
+            .eq('user_id', user.id)
+            .in('vapi_call_id', callIds);
+
+          if (!analysisError && analysisData) {
+            // Create a map for quick lookup
+            const analysisMap = new Map(
+              analysisData.map(item => [item.vapi_call_id, item])
+            );
+
+            // Enrich the calls with database analysis data
+            recentCalls = recentCalls.map(call => {
+              const dbAnalysis = analysisMap.get(call.id);
+              return {
+                ...call,
+                // Prioritize database analysis over VAPI analysis if available
+                sentiment: dbAnalysis?.sentiment || call.sentiment,
+                leadQuality: dbAnalysis?.lead_quality || call.leadQuality,
+              };
+            });
+
+            logger.info('ANALYTICS', 'Enriched calls with database analysis', {
+              totalCalls: recentCalls.length,
+              callsWithDbAnalysis: analysisData.length,
+              callsWithSentiment: recentCalls.filter(c => c.sentiment).length,
+              callsWithLeadQuality: recentCalls.filter(c => c.leadQuality).length,
+            });
+          }
+        }
+      } catch (dbError) {
+        logger.error('ANALYTICS', 'Failed to enrich calls with database analysis', dbError as Error);
+      }
+    }
+
     // Calculate metrics with real sentiment data (using properly mapped calls)
     const metrics = await calculateMetrics(
       mappedUserCalls,
@@ -157,10 +203,6 @@ export async function GET(request: NextRequest) {
       days
     );
     const trends = calculateTrends(mappedUserCalls, days);
-
-    // Get recent calls for display (already mapped and date-filtered)
-    // Note: mappedUserCalls are already filtered by date range and user, so we use them directly
-    const recentCalls = mappedUserCalls.slice(0, 100);
 
     // Add specific logging to verify filtering is working
     if (userFilteredCalls.length > 0) {
@@ -810,6 +852,10 @@ function mapVapiCallToFrontend(vapiCall: any) {
       ?.map((msg: any) => `${msg.role}: ${msg.message}`)
       .join('\n') || undefined;
 
+  // Extract sentiment and lead quality from VAPI's analysis data
+  const sentiment = vapiCall.analysis?.structuredData?.sentiment;
+  const leadQuality = vapiCall.analysis?.structuredData?.leadQuality;
+
   return {
     id: vapiCall.id,
     phoneNumber,
@@ -824,5 +870,7 @@ function mapVapiCallToFrontend(vapiCall: any) {
     cost: vapiCall.cost,
     transcript,
     summary: vapiCall.analysis?.summary,
+    sentiment: sentiment as 'positive' | 'neutral' | 'negative' | undefined,
+    leadQuality: leadQuality as 'hot' | 'warm' | 'cold' | undefined,
   };
 }
