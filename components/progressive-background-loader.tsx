@@ -77,7 +77,7 @@ export function ProgressiveBackgroundLoader({
         : {
             style: fallbackStyle || {
               background:
-                'linear-gradient(to bottom, hsl(var(--background)), hsl(var(--card))',
+                'linear-gradient(to bottom, hsl(var(--background)), hsl(var(--card)))',
             },
           })}
     >
