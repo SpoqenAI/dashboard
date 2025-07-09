@@ -2,26 +2,13 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '@/lib/logger';
+import { createSupabaseAdmin } from '../supabase/admin';
 import {
   searchAvailableNumbers,
   provisionPhoneNumber,
   deletePhoneNumber,
 } from '../twilio/provision-number';
 import { isActiveSubscription } from '../paddle';
-
-// Function to create admin Supabase client using service role key for RLS bypass
-function createSupabaseAdmin() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error(
-      'Missing required Supabase environment variables for admin client'
-    );
-  }
-
-  return createClient(supabaseUrl, serviceRoleKey);
-}
 
 export async function provisionAssistant(userId: string): Promise<void> {
   'use server';
