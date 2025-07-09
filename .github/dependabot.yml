@@ -1,29 +1,29 @@
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     allow:
-      - dependency-type: "all"
+      - dependency-type: 'all'
     commit-message:
-      prefix: "chore(deps)"
+      prefix: 'chore(deps)'
     open-pull-requests-limit: 5
     versioning-strategy: increase
     groups:
       packageManager:
         patterns:
-          - "packageManager"
+          - 'packageManager'
       engines:
         patterns:
-          - "engines"
+          - 'engines'
     labels:
-      - "dependencies"
+      - 'dependencies'
     ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     auto-merge: true
     # Custom: Notify on major version bumps
     reviewers:
-      - "@veskoportev"
-    # Note: Dependabot does not natively support custom fields, but this will monitor package.json changes including packageManager and engines. 
+      - '@veskoportev'
+    # Note: Dependabot does not natively support custom fields, but this will monitor package.json changes including packageManager and engines.

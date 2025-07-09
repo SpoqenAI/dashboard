@@ -213,12 +213,14 @@ This project uses [Dependabot](https://docs.github.com/en/code-security/dependab
 - Any other version-locked fields
 
 **How it works:**
+
 - Dependabot checks for new releases weekly.
 - Minor and patch updates are auto-merged if all CI checks pass.
 - Major version updates will open a PR and notify maintainers for manual review.
 - All updates are validated by the full CI pipeline (see `.github/workflows/ci.yml` and `pr-validation.yml`).
 
 **Maintainer Actions:**
+
 - Review and merge major version PRs as needed.
 - Monitor PRs for any breaking changes or required manual intervention.
 
