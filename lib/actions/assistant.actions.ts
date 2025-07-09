@@ -2,6 +2,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '@/lib/logger';
+import { searchAvailableNumbers, provisionPhoneNumber, deletePhoneNumber } from '../twilio/provision-number';
+import { isActiveSubscription } from '../paddle';
 
 // Function to create admin Supabase client using service role key for RLS bypass
 function createSupabaseAdmin() {
@@ -30,6 +32,30 @@ export async function provisionAssistant(userId: string): Promise<void> {
     return;
   }
 
+  // Check for active subscription before provisioning
+  const { data: subscription, error: subError } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('current_period_start_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (subError) {
+    logger.error(loggerPrefix, 'Failed to fetch subscription', subError, {
+      userId: logger.maskUserId(userId),
+    });
+    return;
+  }
+
+  if (!subscription || !isActiveSubscription(subscription)) {
+    logger.info(loggerPrefix, 'No active subscription, skipping phone provisioning', {
+      userId: logger.maskUserId(userId),
+      subscriptionStatus: subscription?.status,
+    });
+    return;
+  }
+
   // 1️⃣  If user already has an active number, skip
   const { data: existingNumber } = await supabase
     .from('phone_numbers')
@@ -45,38 +71,28 @@ export async function provisionAssistant(userId: string): Promise<void> {
     return;
   }
 
-  // 2️⃣  Provision Twilio number
-  const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
-  const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
-
-  if (!twilioAccountSid || !twilioAuthToken) {
-    logger.error(loggerPrefix, 'Missing Twilio env vars');
-    return;
-  }
-
-  const { default: twilio } = await import('twilio');
-  const client = twilio(twilioAccountSid, twilioAuthToken);
-
+  // 2️⃣  Provision Twilio number using REST API utility
   const isDev = process.env.NODE_ENV === 'development';
   let provisioned;
-  if (isDev) {
-    provisioned = await client.incomingPhoneNumbers.create({
-      phoneNumber: '+15005550006',
-      voiceUrl: 'http://demo.twilio.com/docs/voice.xml',
-    });
-  } else {
-    const available = await client
-      .availablePhoneNumbers('US')
-      .local.list({ voiceEnabled: true, limit: 1 });
-
-    if (!available.length) {
-      logger.error(loggerPrefix, 'No Twilio numbers available');
-      return;
+  try {
+    if (isDev) {
+      provisioned = await provisionPhoneNumber(
+        '+15005550006',
+        'http://demo.twilio.com/docs/voice.xml'
+      );
+    } else {
+      const available = await searchAvailableNumbers();
+      if (!available) {
+        logger.error(loggerPrefix, 'No Twilio numbers available');
+        return;
+      }
+      provisioned = await provisionPhoneNumber(available.phone_number);
     }
-
-    provisioned = await client.incomingPhoneNumbers.create({
-      phoneNumber: available[0].phoneNumber,
+  } catch (err) {
+    logger.error(loggerPrefix, 'Failed to provision Twilio number', err as Error, {
+      userId: logger.maskUserId(userId),
     });
+    return;
   }
 
   // 3️⃣  Upsert phone_numbers
@@ -85,7 +101,7 @@ export async function provisionAssistant(userId: string): Promise<void> {
       user_id: userId,
       provider: 'twilio',
       provider_number_id: provisioned.sid,
-      e164_number: provisioned.phoneNumber,
+      e164_number: provisioned.phone_number || provisioned.phoneNumber,
       status: 'active',
     },
     { onConflict: 'user_id' }
@@ -100,7 +116,7 @@ export async function provisionAssistant(userId: string): Promise<void> {
 
   logger.info(loggerPrefix, 'Provisioned phone number', {
     userId: logger.maskUserId(userId),
-    number: provisioned.phoneNumber,
+    number: provisioned.phone_number || provisioned.phoneNumber,
   });
 }
 
@@ -207,5 +223,61 @@ export async function syncVapiAssistant(
       userId: logger.maskUserId(userId),
     });
     // Swallow error so caller does not fail
+  }
+}
+
+export async function deleteTwilioNumberForUser(userId: string): Promise<void> {
+  'use server';
+  const loggerPrefix = 'PHONE_DELETE';
+  let supabase;
+  try {
+    supabase = createSupabaseAdmin();
+  } catch (err) {
+    logger.error(loggerPrefix, 'Failed to init supabase admin', err as Error);
+    return;
+  }
+  // Find active Twilio number for user
+  const { data: phoneRow, error: phoneError } = await supabase
+    .from('phone_numbers')
+    .select('id, provider_number_id')
+    .eq('user_id', userId)
+    .eq('provider', 'twilio')
+    .eq('status', 'active')
+    .maybeSingle();
+  if (phoneError) {
+    logger.error(loggerPrefix, 'Failed to fetch phone number', phoneError, {
+      userId: logger.maskUserId(userId),
+    });
+    return;
+  }
+  if (!phoneRow) {
+    logger.info(loggerPrefix, 'No active Twilio number to delete', {
+      userId: logger.maskUserId(userId),
+    });
+    return;
+  }
+  try {
+    await deletePhoneNumber(phoneRow.provider_number_id);
+    // Mark as released in DB
+    const { error: updateError } = await supabase
+      .from('phone_numbers')
+      .update({ status: 'released', released_at: new Date().toISOString() })
+      .eq('id', phoneRow.id);
+    if (updateError) {
+      logger.error(loggerPrefix, 'Failed to update phone_numbers after deletion', updateError, {
+        userId: logger.maskUserId(userId),
+        phoneId: phoneRow.id,
+      });
+      return;
+    }
+    logger.info(loggerPrefix, 'Twilio number deleted and marked as released', {
+      userId: logger.maskUserId(userId),
+      phoneId: phoneRow.id,
+    });
+  } catch (err) {
+    logger.error(loggerPrefix, 'Failed to delete Twilio number', err as Error, {
+      userId: logger.maskUserId(userId),
+      phoneId: phoneRow.id,
+    });
   }
 }

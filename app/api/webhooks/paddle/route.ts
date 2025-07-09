@@ -383,6 +383,48 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Trigger Twilio number deletion if subscription is canceled, deleted, or past_due
+    if (
+      subscriptionData.status === 'canceled' ||
+      subscriptionData.status === 'deleted' ||
+      subscriptionData.status === 'past_due'
+    ) {
+      try {
+        const { deleteTwilioNumberForUser } = await import(
+          '@/lib/actions/assistant.actions'
+        );
+        deleteTwilioNumberForUser(userId).catch(deleteError => {
+          logger.error(
+            'PADDLE_WEBHOOK',
+            'Failed to delete Twilio number after subscription cancellation',
+            deleteError instanceof Error
+              ? deleteError
+              : new Error(String(deleteError)),
+            {
+              userId: logger.maskUserId(userId),
+              subscriptionId: subscriptionData.id,
+            }
+          );
+        });
+        logger.info('PADDLE_WEBHOOK', 'Twilio number deletion triggered', {
+          userId: logger.maskUserId(userId),
+          subscriptionId: subscriptionData.id,
+        });
+      } catch (importError) {
+        logger.error(
+          'PADDLE_WEBHOOK',
+          'Failed to import Twilio number deletion function',
+          importError instanceof Error
+            ? importError
+            : new Error(String(importError)),
+          {
+            userId: logger.maskUserId(userId),
+            subscriptionId: subscriptionData.id,
+          }
+        );
+      }
+    }
+
     return NextResponse.json(
       {
         success: true,
