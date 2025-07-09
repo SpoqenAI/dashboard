@@ -152,7 +152,8 @@ const nextConfig = {
     }
 
     if (!dev && !isServer) {
-      // Disable source maps in production to test build speed impact
+      // Disable source maps in production for faster builds and smaller output.
+      // Rationale: Source maps are not needed in production unless debugging, and disabling them significantly improves build speed and reduces output size.
       config.devtool = false;
       // PERFORMANCE: Optimize bundle splitting
       config.optimization = {

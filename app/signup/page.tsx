@@ -22,7 +22,8 @@ import { toast } from '@/components/ui/use-toast';
 import { SocialLogin } from '@/components/auth/social-login';
 import { useMask } from '@react-input/mask';
 import { Filter } from 'bad-words';
-import PasswordStrengthBar from 'react-password-strength-bar';
+import dynamic from 'next/dynamic';
+const PasswordStrengthBar = dynamic(() => import('react-password-strength-bar'), { ssr: false });
 import Logo from '@/components/ui/logo';
 import { CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
