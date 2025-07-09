@@ -50,12 +50,12 @@ export async function signUp(
     })
       .then(() => {
         logger.auth.info('Profile created successfully for user', {
-          userId: logger.maskUserId(data.user.id),
+          userId: data.user ? logger.maskUserId(data.user.id) : undefined,
         });
       })
       .catch((profileError: any) => {
         logger.auth.error('Failed to create user profile', profileError, {
-          userId: logger.maskUserId(data.user.id),
+          userId: data.user ? logger.maskUserId(data.user.id) : undefined,
           errorCode: profileError.code,
         });
 
@@ -64,8 +64,8 @@ export async function signUp(
       });
 
     logger.auth.info('Profile creation initiated (non-blocking) for user', {
-      userId: logger.maskUserId(data.user.id),
-      email: logger.maskEmail(data.user.email),
+      userId: data.user ? logger.maskUserId(data.user.id) : undefined,
+      email: data.user ? logger.maskEmail(data.user.email) : undefined,
       hasSession: !!data.session,
       sessionExpiry: data.session.expires_at,
     });
