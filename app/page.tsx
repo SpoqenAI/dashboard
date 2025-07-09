@@ -194,7 +194,10 @@ export default function Home() {
       <AnalyticsTracker page="landing_page" />
 
       <main id="main-content" className="flex-1" role="main">
-        <SimpleBackground variant="hero" className="flex min-h-screen w-full items-center justify-center">
+        <SimpleBackground
+          variant="hero"
+          className="flex min-h-screen w-full items-center justify-center"
+        >
           <div className="absolute inset-0 z-0" />
           <section
             className="relative z-10 w-full py-20 pt-32"
@@ -311,112 +314,112 @@ export default function Home() {
           className="bg-gradient-to-b from-background to-card/30 py-20"
         >
           <section className="w-full">
-              <div className="container px-6">
-                {/* Problem Banner */}
-                <div className="mb-16 animate-fade-in">
-                  <ProblemBanner />
-                </div>
+            <div className="container px-6">
+              {/* Problem Banner */}
+              <div className="mb-16 animate-fade-in">
+                <ProblemBanner />
+              </div>
 
-                <div className="mb-16 animate-fade-in text-center">
-                  <h2 className="mb-6 text-4xl font-bold lg:text-5xl">
-                    Stop Losing Revenue to
-                    <span className="bg-gradient-primary bg-clip-text text-transparent">
-                      {' '}
-                      Missed Opportunities
-                    </span>
-                  </h2>
-                  <p className="mx-auto max-w-3xl text-xl text-muted-foreground">
-                    Spoqen captures every call, qualifies every prospect, and
-                    converts every opportunity— so you never lose another deal
-                    to poor timing or availability.
-                  </p>
-                </div>
+              <div className="mb-16 animate-fade-in text-center">
+                <h2 className="mb-6 text-4xl font-bold lg:text-5xl">
+                  Stop Losing Revenue to
+                  <span className="bg-gradient-primary bg-clip-text text-transparent">
+                    {' '}
+                    Missed Opportunities
+                  </span>
+                </h2>
+                <p className="mx-auto max-w-3xl text-xl text-muted-foreground">
+                  Spoqen captures every call, qualifies every prospect, and
+                  converts every opportunity— so you never lose another deal to
+                  poor timing or availability.
+                </p>
+              </div>
 
-                <div className="mx-auto mb-16 grid max-w-6xl gap-8 lg:grid-cols-2">
-                  <MemoizedFeatureCard
-                    icon={<Target className="h-7 w-7" />}
-                    title="Know Why They Called—Before Calling Back"
-                    description="Stop playing phone tag. Get instant call summaries with intent, budget, timeline, and next steps."
-                    bullets={[
-                      'Lead qualification in real-time during the call',
-                      'Complete conversation summary sent instantly',
-                      'Priority scoring so you call hot leads first',
-                      'Integration with your existing CRM workflow',
-                    ]}
-                  />
-                  <MemoizedFeatureCard
-                    icon={<Clock className="h-7 w-7" />}
-                    title="Turn Missed Calls Into Closed Deals"
-                    description="Never lose a prospect to timing. Our AI handles objections, books appointments, and nurtures leads 24/7."
-                    bullets={[
-                      'Professional call handling that builds trust',
-                      'Appointment booking directly to your calendar',
-                      "Follow-up sequences for prospects who aren't ready",
-                      'Escalation protocols for high-value opportunities',
-                    ]}
-                    delay="0.1s"
-                  />
-                  <MemoizedFeatureCard
-                    icon={<Zap className="h-7 w-7" />}
-                    title="Get Notified The Moment Opportunities Hit"
-                    description="Hot leads don't wait. Get instant notifications with complete context so you can strike while interest is high."
-                    bullets={[
-                      'Real-time Slack/email alerts for qualified leads',
-                      'Lead scoring based on buying signals',
-                      'Automatic CRM updates with conversation data',
-                      'Custom triggers for your specific business',
-                    ]}
-                    delay="0.2s"
-                  />
-                  <MemoizedFeatureCard
-                    icon={<TrendingUp className="h-7 w-7" />}
-                    title="Scale Revenue Without Scaling Headcount"
-                    description="Handle 10X more calls without hiring more staff. Perfect call handling, every time, at any volume."
-                    bullets={[
-                      'Unlimited concurrent call capacity',
-                      'Consistent qualification process for every lead',
-                      'No sick days, breaks, or training costs',
-                      'Scales instantly during marketing campaigns',
-                    ]}
-                    delay="0.3s"
-                  />
-                </div>
+              <div className="mx-auto mb-16 grid max-w-6xl gap-8 lg:grid-cols-2">
+                <MemoizedFeatureCard
+                  icon={<Target className="h-7 w-7" />}
+                  title="Know Why They Called—Before Calling Back"
+                  description="Stop playing phone tag. Get instant call summaries with intent, budget, timeline, and next steps."
+                  bullets={[
+                    'Lead qualification in real-time during the call',
+                    'Complete conversation summary sent instantly',
+                    'Priority scoring so you call hot leads first',
+                    'Integration with your existing CRM workflow',
+                  ]}
+                />
+                <MemoizedFeatureCard
+                  icon={<Clock className="h-7 w-7" />}
+                  title="Turn Missed Calls Into Closed Deals"
+                  description="Never lose a prospect to timing. Our AI handles objections, books appointments, and nurtures leads 24/7."
+                  bullets={[
+                    'Professional call handling that builds trust',
+                    'Appointment booking directly to your calendar',
+                    "Follow-up sequences for prospects who aren't ready",
+                    'Escalation protocols for high-value opportunities',
+                  ]}
+                  delay="0.1s"
+                />
+                <MemoizedFeatureCard
+                  icon={<Zap className="h-7 w-7" />}
+                  title="Get Notified The Moment Opportunities Hit"
+                  description="Hot leads don't wait. Get instant notifications with complete context so you can strike while interest is high."
+                  bullets={[
+                    'Real-time Slack/email alerts for qualified leads',
+                    'Lead scoring based on buying signals',
+                    'Automatic CRM updates with conversation data',
+                    'Custom triggers for your specific business',
+                  ]}
+                  delay="0.2s"
+                />
+                <MemoizedFeatureCard
+                  icon={<TrendingUp className="h-7 w-7" />}
+                  title="Scale Revenue Without Scaling Headcount"
+                  description="Handle 10X more calls without hiring more staff. Perfect call handling, every time, at any volume."
+                  bullets={[
+                    'Unlimited concurrent call capacity',
+                    'Consistent qualification process for every lead',
+                    'No sick days, breaks, or training costs',
+                    'Scales instantly during marketing campaigns',
+                  ]}
+                  delay="0.3s"
+                />
+              </div>
 
-                {/* Technical Specs for Tech Founders */}
-                <div className="text-center">
-                  <h3 className="mb-8 text-2xl font-bold">
-                    Effortless Business Integration:
-                  </h3>
-                  <div className="mx-auto grid max-w-4xl gap-4 md:grid-cols-2 lg:grid-cols-5">
-                    <MemoizedTechSpec
-                      icon="🔗"
-                      title="Instant Setup"
-                      description="Connect in minutes"
-                    />
-                    <MemoizedTechSpec
-                      icon="⚡"
-                      title="Real-Time Alerts"
-                      description="SMS & Email"
-                    />
-                    <MemoizedTechSpec
-                      icon="🔒"
-                      title="Enterprise-Grade Security"
-                      description="SOC2 & GDPR"
-                    />
-                    <MemoizedTechSpec
-                      icon="📊"
-                      title="Actionable Insights"
-                      description="Caller trends"
-                    />
-                    <MemoizedTechSpec
-                      icon="🚀"
-                      title="Scales With You"
-                      description="Auto-scaling"
-                    />
-                  </div>
+              {/* Technical Specs for Tech Founders */}
+              <div className="text-center">
+                <h3 className="mb-8 text-2xl font-bold">
+                  Effortless Business Integration:
+                </h3>
+                <div className="mx-auto grid max-w-4xl gap-4 md:grid-cols-2 lg:grid-cols-5">
+                  <MemoizedTechSpec
+                    icon="🔗"
+                    title="Instant Setup"
+                    description="Connect in minutes"
+                  />
+                  <MemoizedTechSpec
+                    icon="⚡"
+                    title="Real-Time Alerts"
+                    description="SMS & Email"
+                  />
+                  <MemoizedTechSpec
+                    icon="🔒"
+                    title="Enterprise-Grade Security"
+                    description="SOC2 & GDPR"
+                  />
+                  <MemoizedTechSpec
+                    icon="📊"
+                    title="Actionable Insights"
+                    description="Caller trends"
+                  />
+                  <MemoizedTechSpec
+                    icon="🚀"
+                    title="Scales With You"
+                    description="Auto-scaling"
+                  />
                 </div>
               </div>
-            </section>
+            </div>
+          </section>
         </SimpleBackground>
 
         {/* More sections with lazy loading... */}
