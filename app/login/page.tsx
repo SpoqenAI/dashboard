@@ -250,10 +250,14 @@ function LoginForm() {
               </Button>
 
               {showResendVerification && (
-                <div className="my-4 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded">
+                <div className="my-4 rounded border-l-4 border-yellow-500 bg-yellow-100 p-4 text-yellow-800">
                   <p className="mb-2 font-semibold">Email not verified</p>
                   <p className="mb-2">Please confirm your email to log in.</p>
-                  <Button onClick={handleResendVerification} disabled={isLoading} className="w-full">
+                  <Button
+                    onClick={handleResendVerification}
+                    disabled={isLoading}
+                    className="w-full"
+                  >
                     Resend Email
                   </Button>
                 </div>

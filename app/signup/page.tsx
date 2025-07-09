@@ -274,7 +274,8 @@ export default function SignupPage() {
 
       toast({
         title: 'Account created successfully!',
-        description: 'Check your email and click the link to activate your account.',
+        description:
+          'Check your email and click the link to activate your account.',
       });
       router.push('/signup/confirmation');
     } catch (error: any) {

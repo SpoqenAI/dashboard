@@ -38,7 +38,7 @@ const getVariantConfigs = (isDark: boolean): Record<string, VariantConfig> => {
   const primaryOpacity = isDark ? 0.25 : 0.15;
   const secondaryOpacity = isDark ? 0.2 : 0.12;
   const accentOpacity = isDark ? 0.15 : 0.08;
-  
+
   return {
     hero: {
       orbs: [
@@ -52,8 +52,18 @@ const getVariantConfigs = (isDark: boolean): Record<string, VariantConfig> => {
     },
     features: {
       orbs: [
-        { size: 256, opacity: isDark ? 0.15 : 0.08, blur: 'blur-2xl', color: '' },
-        { size: 192, opacity: isDark ? 0.12 : 0.06, blur: 'blur-xl', color: '' },
+        {
+          size: 256,
+          opacity: isDark ? 0.15 : 0.08,
+          blur: 'blur-2xl',
+          color: '',
+        },
+        {
+          size: 192,
+          opacity: isDark ? 0.12 : 0.06,
+          blur: 'blur-xl',
+          color: '',
+        },
       ],
       particleCount: 0,
       animationIntensity: 0.5,
@@ -61,7 +71,12 @@ const getVariantConfigs = (isDark: boolean): Record<string, VariantConfig> => {
     },
     dashboard: {
       orbs: [
-        { size: 128, opacity: isDark ? 0.08 : 0.04, blur: 'blur-xl', color: '' },
+        {
+          size: 128,
+          opacity: isDark ? 0.08 : 0.04,
+          blur: 'blur-xl',
+          color: '',
+        },
       ],
       particleCount: 0,
       animationIntensity: 0.2,
@@ -203,7 +218,7 @@ const BackgroundOrb = memo<{
   const getOrbColor = (orbIndex: number) => {
     const colors = [
       'hsl(315 100% 50%)', // primary - magenta
-      'hsl(180 100% 50%)', // secondary - cyan  
+      'hsl(180 100% 50%)', // secondary - cyan
       'hsl(270 100% 60%)', // accent - purple
     ];
     return colors[orbIndex % colors.length];
@@ -224,7 +239,7 @@ const BackgroundOrb = memo<{
         : (100 - mousePosition.y) * mouseSensitivity * 0.5;
 
     const orbColor = getOrbColor(index);
-    
+
     return {
       width: config.size,
       height: config.size,
@@ -236,7 +251,15 @@ const BackgroundOrb = memo<{
       willChange: 'transform, opacity',
       contain: 'layout style paint',
     } as React.CSSProperties;
-  }, [config, index, mousePosition, scrollY, animationIntensity, isVisible, isDark]);
+  }, [
+    config,
+    index,
+    mousePosition,
+    scrollY,
+    animationIntensity,
+    isVisible,
+    isDark,
+  ]);
 
   return (
     <div
@@ -323,8 +346,10 @@ export const InteractiveBackground = memo<InteractiveBackgroundProps>(props => {
 
   const { theme, resolvedTheme } = useTheme();
   // Improve theme detection with better fallbacks
-  const isDark = mounted ? (resolvedTheme === 'dark' || (!resolvedTheme && theme === 'dark')) : false;
-  
+  const isDark = mounted
+    ? resolvedTheme === 'dark' || (!resolvedTheme && theme === 'dark')
+    : false;
+
   const shouldAnimate = isVisible && !prefersReducedMotion;
   const config = getVariantConfigs(isDark)[variant];
 
@@ -358,8 +383,8 @@ export const InteractiveBackground = memo<InteractiveBackgroundProps>(props => {
       <div className="pointer-events-none absolute inset-0">
         {/* Only render background effects after mounting to prevent hydration issues */}
         {!mounted && <div className="absolute inset-0" />}
-        {mounted && (
-          variant === 'minimal' ? (
+        {mounted &&
+          (variant === 'minimal' ? (
             <div
               className="duration-2000 pointer-events-none absolute inset-0 transition-all"
               style={gradientStyle}
@@ -408,8 +433,7 @@ export const InteractiveBackground = memo<InteractiveBackgroundProps>(props => {
                 />
               )}
             </>
-          )
-        )}
+          ))}
       </div>
 
       {/* Content */}
