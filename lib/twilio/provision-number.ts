@@ -9,7 +9,9 @@ if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
 }
 
 function getAuthHeader() {
-  const creds = Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64');
+  const creds = Buffer.from(
+    `${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`
+  ).toString('base64');
   return `Basic ${creds}`;
 }
 
@@ -27,14 +29,20 @@ export async function searchAvailableNumbers(areaCode?: string) {
     },
   });
   if (!res.ok) {
-    logger.error('TWILIO', `Failed to search available numbers: ${res.status} ${res.statusText}`);
+    logger.error(
+      'TWILIO',
+      `Failed to search available numbers: ${res.status} ${res.statusText}`
+    );
     throw new Error('Failed to search available numbers');
   }
   const data = await res.json();
   return data.available_phone_numbers?.[0] || null;
 }
 
-export async function provisionPhoneNumber(phoneNumber: string, voiceUrl?: string) {
+export async function provisionPhoneNumber(
+  phoneNumber: string,
+  voiceUrl?: string
+) {
   const params = new URLSearchParams({
     PhoneNumber: phoneNumber,
   });
@@ -49,7 +57,10 @@ export async function provisionPhoneNumber(phoneNumber: string, voiceUrl?: strin
     body: params.toString(),
   });
   if (!res.ok) {
-    logger.error('TWILIO', `Failed to provision phone number: ${res.status} ${res.statusText}`);
+    logger.error(
+      'TWILIO',
+      `Failed to provision phone number: ${res.status} ${res.statusText}`
+    );
     throw new Error('Failed to provision phone number');
   }
   const data = await res.json();
@@ -65,8 +76,11 @@ export async function deletePhoneNumber(incomingPhoneNumberSid: string) {
     },
   });
   if (!res.ok) {
-    logger.error('TWILIO', `Failed to delete phone number: ${res.status} ${res.statusText}`);
+    logger.error(
+      'TWILIO',
+      `Failed to delete phone number: ${res.status} ${res.statusText}`
+    );
     throw new Error('Failed to delete phone number');
   }
   return true;
-} 
+}

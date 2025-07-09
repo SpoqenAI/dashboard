@@ -2,7 +2,11 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '@/lib/logger';
-import { searchAvailableNumbers, provisionPhoneNumber, deletePhoneNumber } from '../twilio/provision-number';
+import {
+  searchAvailableNumbers,
+  provisionPhoneNumber,
+  deletePhoneNumber,
+} from '../twilio/provision-number';
 import { isActiveSubscription } from '../paddle';
 
 // Function to create admin Supabase client using service role key for RLS bypass
@@ -49,10 +53,14 @@ export async function provisionAssistant(userId: string): Promise<void> {
   }
 
   if (!subscription || !isActiveSubscription(subscription)) {
-    logger.info(loggerPrefix, 'No active subscription, skipping phone provisioning', {
-      userId: logger.maskUserId(userId),
-      subscriptionStatus: subscription?.status,
-    });
+    logger.info(
+      loggerPrefix,
+      'No active subscription, skipping phone provisioning',
+      {
+        userId: logger.maskUserId(userId),
+        subscriptionStatus: subscription?.status,
+      }
+    );
     return;
   }
 
@@ -89,9 +97,14 @@ export async function provisionAssistant(userId: string): Promise<void> {
       provisioned = await provisionPhoneNumber(available.phone_number);
     }
   } catch (err) {
-    logger.error(loggerPrefix, 'Failed to provision Twilio number', err as Error, {
-      userId: logger.maskUserId(userId),
-    });
+    logger.error(
+      loggerPrefix,
+      'Failed to provision Twilio number',
+      err as Error,
+      {
+        userId: logger.maskUserId(userId),
+      }
+    );
     return;
   }
 
@@ -264,10 +277,15 @@ export async function deleteTwilioNumberForUser(userId: string): Promise<void> {
       .update({ status: 'released', released_at: new Date().toISOString() })
       .eq('id', phoneRow.id);
     if (updateError) {
-      logger.error(loggerPrefix, 'Failed to update phone_numbers after deletion', updateError, {
-        userId: logger.maskUserId(userId),
-        phoneId: phoneRow.id,
-      });
+      logger.error(
+        loggerPrefix,
+        'Failed to update phone_numbers after deletion',
+        updateError,
+        {
+          userId: logger.maskUserId(userId),
+          phoneId: phoneRow.id,
+        }
+      );
       return;
     }
     logger.info(loggerPrefix, 'Twilio number deleted and marked as released', {
