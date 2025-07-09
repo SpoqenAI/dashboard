@@ -1,0 +1,29 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    allow:
+      - dependency-type: "all"
+    commit-message:
+      prefix: "chore(deps)"
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
+    groups:
+      packageManager:
+        patterns:
+          - "packageManager"
+      engines:
+        patterns:
+          - "engines"
+    labels:
+      - "dependencies"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    auto-merge: true
+    # Custom: Notify on major version bumps
+    reviewers:
+      - "@veskoportev"
+    # Note: Dependabot does not natively support custom fields, but this will monitor package.json changes including packageManager and engines. 
