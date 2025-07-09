@@ -1,4 +1,25 @@
+/*
+  Next.js Build & Webpack Optimizations
+  -------------------------------------
+  - Filesystem cache enabled for faster rebuilds (dev & prod)
+  - Source maps: fast in dev, minimized in prod
+  - Bundle splitting for vendor code
+  - (Optional) Bundle Analyzer: see instructions below
+  - Unused features (i18n, rewrites, redirects) are not present
+
+  Bundle Analyzer Integration:
+    1. Install: pnpm add -D @next/bundle-analyzer
+    2. Add to this file:
+        import withBundleAnalyzer from '@next/bundle-analyzer';
+        const withBundleAnalyzer = require('@next/bundle-analyzer')({ enabled: process.env.ANALYZE === 'true' });
+        export default withBundleAnalyzer(withSentryConfig(nextConfig, ...));
+    3. Run with ANALYZE=true pnpm build
+
+  For more info, see: https://www.npmjs.com/package/@next/bundle-analyzer
+*/
 import { withSentryConfig } from '@sentry/nextjs';
+import withBundleAnalyzer from '@next/bundle-analyzer';
+import { fileURLToPath } from 'url';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
@@ -115,13 +136,25 @@ const nextConfig = {
 
   // Webpack configuration for better performance
   webpack: (config, { dev, isServer }) => {
+    // Enable persistent filesystem cache for faster rebuilds in both development and production
+    // Use import.meta.url for ESM compatibility (instead of __filename)
+    const filename = fileURLToPath(import.meta.url);
+    config.cache = {
+      type: 'filesystem',
+      buildDependencies: {
+        config: [filename],
+      },
+    };
+
     if (dev && !isServer) {
-      // Enable source maps for better debugging
+      // Enable fast source maps for better debugging in development
       config.devtool = 'eval-source-map';
     }
 
-    // PERFORMANCE: Optimize bundle splitting
     if (!dev && !isServer) {
+      // Disable source maps in production to test build speed impact
+      config.devtool = false;
+      // PERFORMANCE: Optimize bundle splitting
       config.optimization = {
         ...config.optimization,
         splitChunks: {
@@ -138,6 +171,10 @@ const nextConfig = {
       };
     }
 
+    // (Optional) Bundle Analyzer integration can be added here
+    // See documentation below for instructions
+    // https://www.npmjs.com/package/@next/bundle-analyzer
+
     return config;
   },
 
@@ -149,7 +186,10 @@ const nextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+const withAnalyzer = withBundleAnalyzer({ enabled: process.env.ANALYZE === 'true' });
+
+// Wrap config with bundle analyzer (enabled via ANALYZE env var), then Sentry
+export default withAnalyzer(withSentryConfig(nextConfig, {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
@@ -179,4 +219,4 @@ export default withSentryConfig(nextConfig, {
   // https://docs.sentry.io/product/crons/
   // https://vercel.com/docs/cron-jobs
   automaticVercelMonitors: true,
-});
+}));
