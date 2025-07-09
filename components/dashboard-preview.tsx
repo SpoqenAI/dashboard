@@ -202,15 +202,7 @@ const StatCard = ({
 };
 
 const CallItem = memo(
-  ({
-    call,
-    index,
-    isDark,
-  }: {
-    call: CallData;
-    index: number;
-    isDark: boolean;
-  }) => (
+  ({ call }: { call: CallData }) => (
     <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3 transition-colors">
       <div className="flex items-center space-x-3">
         <div
@@ -418,8 +410,6 @@ export const DashboardPreview = memo(() => {
                   <CallItem
                     key={`${call.lead}-${index}`}
                     call={call}
-                    index={index}
-                    isDark={isDark}
                   />
                 ))}
               </div>
