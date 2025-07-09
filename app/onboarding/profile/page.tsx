@@ -56,7 +56,7 @@ async function getProfile() {
 }
 
 interface ProfileSetupPageProps {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<any>;
 }
 
 export default async function ProfileSetupPage({
