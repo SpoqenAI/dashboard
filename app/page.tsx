@@ -215,14 +215,14 @@ export default function Home() {
 
                   <h1 className="text-5xl font-bold leading-tight lg:text-7xl">
                     <span className="bg-gradient-primary bg-clip-text py-[6px] leading-[1.2] text-transparent">
-                      Never Miss Another Call.
+                      Never Miss Another Call with Your Personal AI Agent.
                     </span>
                   </h1>
 
                   <p className="max-w-lg text-xl leading-relaxed text-muted-foreground">
-                    AI receptionist that captures leads 24/7, qualifies
-                    prospects instantly, and syncs with your CRM—so you never
-                    lose revenue to missed calls again.
+                    AI receptionist and personal AI agent that captures leads
+                    24/7, qualifies prospects instantly, and syncs with your
+                    CRM—so you never lose revenue to missed calls again.
                   </p>
 
                   <div className="mb-6 flex flex-wrap gap-2">
@@ -313,7 +313,7 @@ export default function Home() {
           variant="features"
           className="bg-gradient-to-b from-background to-card/30 py-20"
         >
-          <section className="w-full">
+          <section id="features" className="w-full">
             <div className="container px-6">
               {/* Problem Banner */}
               <div className="mb-16 animate-fade-in">
@@ -436,7 +436,7 @@ export default function Home() {
           variant="minimal"
           className="bg-gradient-to-b from-card/30 to-background py-20"
         >
-          <section className="w-full">
+          <section id="pricing" className="w-full">
             <div className="container px-6">
               <div className="mb-16 text-center">
                 <h2 className="mb-6 text-4xl font-bold lg:text-5xl">
