@@ -55,8 +55,13 @@ async function getProfile() {
   return profile;
 }
 
+interface OnboardingProfileSearchParams {
+  error?: string;
+  [key: string]: string | string[] | undefined;
+}
+
 interface ProfileSetupPageProps {
-  searchParams: Promise<any>;
+  searchParams: Promise<OnboardingProfileSearchParams>;
 }
 
 export default async function ProfileSetupPage({
