@@ -244,15 +244,7 @@ const CallItem = memo(
 CallItem.displayName = 'CallItem';
 
 const ActivityItem = memo(
-  ({
-    activity,
-    index,
-    isDark,
-  }: {
-    activity: ActivityData;
-    index: number;
-    isDark: boolean;
-  }) => {
+  ({ activity }: { activity: ActivityData }) => {
     const theme = THEME_VARIANTS[activity.variant];
 
     return (
@@ -503,8 +495,6 @@ export const DashboardPreview = memo(() => {
                   <ActivityItem
                     key={`${activity.type}-${index}`}
                     activity={activity}
-                    index={index}
-                    isDark={isDark}
                   />
                 ))}
               </div>
