@@ -20,7 +20,10 @@ import { ArrowLeft } from 'lucide-react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import dynamic from 'next/dynamic';
-const PasswordStrengthBar = dynamic(() => import('react-password-strength-bar'), { ssr: false });
+const PasswordStrengthBar = dynamic(
+  () => import('react-password-strength-bar'),
+  { ssr: false }
+);
 import Logo from '@/components/ui/logo';
 
 function ResetPasswordForm() {

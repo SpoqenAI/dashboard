@@ -18,4 +18,4 @@ export default [
       '@next/next/no-img-element': 'warn',
     },
   }),
-]; 
+];
