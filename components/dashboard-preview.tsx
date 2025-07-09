@@ -201,66 +201,62 @@ const StatCard = ({
   );
 };
 
-const CallItem = memo(
-  ({ call }: { call: CallData }) => (
-    <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3 transition-colors">
-      <div className="flex items-center space-x-3">
-        <div
-          className={`flex h-6 w-6 items-center justify-center rounded-full ${
-            call.status === 'qualified'
-              ? 'bg-green-500/20 text-green-400'
-              : 'bg-red-500/20 text-red-400'
-          }`}
-        >
-          {call.status === 'qualified' ? (
-            <CheckCircle className="h-3 w-3" />
-          ) : (
-            <XCircle className="h-3 w-3" />
-          )}
-        </div>
-        <div>
-          <p className="text-sm font-medium text-foreground">{call.lead}</p>
-          <p className="text-xs text-muted-foreground">{call.company}</p>
-        </div>
-      </div>
-
-      <div className="text-right">
-        <p className="text-sm font-medium text-foreground">{call.value}</p>
-        <p className="text-xs text-muted-foreground">{call.time}</p>
-      </div>
-
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 hover:bg-muted/30"
-        aria-label={`View details for ${call.lead}`}
+const CallItem = memo(({ call }: { call: CallData }) => (
+  <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3 transition-colors">
+    <div className="flex items-center space-x-3">
+      <div
+        className={`flex h-6 w-6 items-center justify-center rounded-full ${
+          call.status === 'qualified'
+            ? 'bg-green-500/20 text-green-400'
+            : 'bg-red-500/20 text-red-400'
+        }`}
       >
-        <MoreVertical className="h-4 w-4" />
-      </Button>
+        {call.status === 'qualified' ? (
+          <CheckCircle className="h-3 w-3" />
+        ) : (
+          <XCircle className="h-3 w-3" />
+        )}
+      </div>
+      <div>
+        <p className="text-sm font-medium text-foreground">{call.lead}</p>
+        <p className="text-xs text-muted-foreground">{call.company}</p>
+      </div>
     </div>
-  )
-);
+
+    <div className="text-right">
+      <p className="text-sm font-medium text-foreground">{call.value}</p>
+      <p className="text-xs text-muted-foreground">{call.time}</p>
+    </div>
+
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8 hover:bg-muted/30"
+      aria-label={`View details for ${call.lead}`}
+    >
+      <MoreVertical className="h-4 w-4" />
+    </Button>
+  </div>
+));
 
 CallItem.displayName = 'CallItem';
 
-const ActivityItem = memo(
-  ({ activity }: { activity: ActivityData }) => {
-    const theme = THEME_VARIANTS[activity.variant];
+const ActivityItem = memo(({ activity }: { activity: ActivityData }) => {
+  const theme = THEME_VARIANTS[activity.variant];
 
-    return (
-      <div className="flex items-center space-x-3 rounded-lg p-2 transition-colors hover:bg-muted/30">
-        <div className={`h-2 w-2 ${theme.dot} rounded-full`}></div>
-        <Clock className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-xs text-foreground">{activity.message}</p>
-        </div>
-        <span className="flex-shrink-0 text-xs text-muted-foreground">
-          {activity.time}
-        </span>
+  return (
+    <div className="flex items-center space-x-3 rounded-lg p-2 transition-colors hover:bg-muted/30">
+      <div className={`h-2 w-2 ${theme.dot} rounded-full`}></div>
+      <Clock className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs text-foreground">{activity.message}</p>
       </div>
-    );
-  }
-);
+      <span className="flex-shrink-0 text-xs text-muted-foreground">
+        {activity.time}
+      </span>
+    </div>
+  );
+});
 
 ActivityItem.displayName = 'ActivityItem';
 
@@ -399,10 +395,7 @@ export const DashboardPreview = memo(() => {
               </h3>
               <div className="space-y-3">
                 {RECENT_CALLS.map((call, index) => (
-                  <CallItem
-                    key={`${call.lead}-${index}`}
-                    call={call}
-                  />
+                  <CallItem key={`${call.lead}-${index}`} call={call} />
                 ))}
               </div>
             </Card>
