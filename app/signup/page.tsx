@@ -22,7 +22,11 @@ import { toast } from '@/components/ui/use-toast';
 import { SocialLogin } from '@/components/auth/social-login';
 import { useMask } from '@react-input/mask';
 import { Filter } from 'bad-words';
-import PasswordStrengthBar from 'react-password-strength-bar';
+import dynamic from 'next/dynamic';
+const PasswordStrengthBar = dynamic(
+  () => import('react-password-strength-bar'),
+  { ssr: false }
+);
 import Logo from '@/components/ui/logo';
 import { CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
@@ -274,7 +278,8 @@ export default function SignupPage() {
 
       toast({
         title: 'Account created successfully!',
-        description: 'Please check your email to verify your account.',
+        description:
+          'Check your email and click the link to activate your account.',
       });
       router.push('/signup/confirmation');
     } catch (error: any) {

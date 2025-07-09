@@ -203,3 +203,25 @@ chore: update dependencies
   - Ensure your code adheres to the linting rules.
   - It's recommended to set up your editor to auto-format on save.
   - You can typically run `pnpm lint` and `pnpm format` (if a format script is defined in `package.json`) to check and fix issues.
+
+## Automated Dependency & Tooling Updates
+
+This project uses [Dependabot](https://docs.github.com/en/code-security/dependabot) to automatically monitor and update version-locked fields in `package.json`, including:
+
+- `packageManager` (e.g., `pnpm@8.17.0`)
+- `engines` (e.g., Node.js version)
+- Any other version-locked fields
+
+**How it works:**
+
+- Dependabot checks for new releases weekly.
+- Minor and patch updates are auto-merged if all CI checks pass.
+- Major version updates will open a PR and notify maintainers for manual review.
+- All updates are validated by the full CI pipeline (see `.github/workflows/ci.yml` and `pr-validation.yml`).
+
+**Maintainer Actions:**
+
+- Review and merge major version PRs as needed.
+- Monitor PRs for any breaking changes or required manual intervention.
+
+See `.github/dependabot.yml` for configuration details.

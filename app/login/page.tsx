@@ -119,8 +119,7 @@ function LoginForm() {
           error.message.includes('email_not_confirmed')
         ) {
           title = 'Email not verified';
-          description =
-            "Please check your email and click the verification link before logging in. Check your spam folder if you don't see the email.";
+          description = 'Please confirm your email to log in.';
           setShowResendVerification(true);
         } else if (error.message.includes('Invalid login credentials')) {
           description =
@@ -251,15 +250,17 @@ function LoginForm() {
               </Button>
 
               {showResendVerification && (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleResendVerification}
-                  disabled={isLoading}
-                  type="button"
-                >
-                  {isLoading ? 'Sending...' : 'Resend verification email'}
-                </Button>
+                <div className="my-4 rounded border-l-4 border-yellow-500 bg-yellow-100 p-4 text-yellow-800">
+                  <p className="mb-2 font-semibold">Email not verified</p>
+                  <p className="mb-2">Please confirm your email to log in.</p>
+                  <Button
+                    onClick={handleResendVerification}
+                    disabled={isLoading}
+                    className="w-full"
+                  >
+                    Resend Email
+                  </Button>
+                </div>
               )}
 
               <SocialLogin mode="login" />

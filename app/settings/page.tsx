@@ -50,7 +50,11 @@ import {
   isActiveSubscription,
   formatSubscriptionDate,
 } from '@/lib/paddle';
-import PasswordStrengthBar from 'react-password-strength-bar';
+import dynamic from 'next/dynamic';
+const PasswordStrengthBar = dynamic(
+  () => import('react-password-strength-bar'),
+  { ssr: false }
+);
 import { logger } from '@/lib/logger';
 
 // Initialize content filter outside component to prevent recreation on every render
