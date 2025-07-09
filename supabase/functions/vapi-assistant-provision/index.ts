@@ -31,7 +31,9 @@ Deno.serve(async (req: Request) => {
     // Check x-webhook-secret header
     const secret = req.headers.get('x-webhook-secret');
     if (!WEBHOOK_SECRET || secret !== WEBHOOK_SECRET) {
-      console.error('Unauthorized: missing or invalid webhook secret', { secret });
+      console.error('Unauthorized: missing or invalid webhook secret', {
+        secret,
+      });
       return new Response(
         JSON.stringify({
           error: 'Unauthorized: missing or invalid webhook secret',
@@ -47,9 +49,12 @@ Deno.serve(async (req: Request) => {
       console.log('Parsed payload:', payload);
     } catch (e) {
       console.error('Invalid JSON payload', e);
-      return new Response(JSON.stringify({ error: 'Invalid JSON payload', details: String(e) }), {
-        status: 400,
-      });
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON payload', details: String(e) }),
+        {
+          status: 400,
+        }
+      );
     }
 
     // Extract new row data (Supabase webhook format)
@@ -59,7 +64,10 @@ Deno.serve(async (req: Request) => {
     if (!id || !user_id || !email) {
       console.error('Missing required row data', { id, user_id, email });
       return new Response(
-        JSON.stringify({ error: 'Missing required row data', details: { id, user_id, email } }),
+        JSON.stringify({
+          error: 'Missing required row data',
+          details: { id, user_id, email },
+        }),
         { status: 400 }
       );
     }
@@ -88,7 +96,11 @@ Deno.serve(async (req: Request) => {
           .update({ processed_at: new Date().toISOString() })
           .eq('id', id);
       } catch (e) {
-        console.error('Error updating processed_at for already provisioned user:', e, { id });
+        console.error(
+          'Error updating processed_at for already provisioned user:',
+          e,
+          { id }
+        );
       }
       return new Response(JSON.stringify({ message: 'Already provisioned' }), {
         status: 200,
@@ -127,10 +139,15 @@ Deno.serve(async (req: Request) => {
       }
       const vapiData = await vapiRes.json();
       vapiAssistantId = vapiData.id;
-      if (!vapiAssistantId) throw new Error('No assistant ID returned from VAPI');
+      if (!vapiAssistantId)
+        throw new Error('No assistant ID returned from VAPI');
       console.log('VAPI assistant created:', vapiAssistantId);
     } catch (e) {
-      console.error('Failed to provision VAPI assistant:', e, { id, user_id, email });
+      console.error('Failed to provision VAPI assistant:', e, {
+        id,
+        user_id,
+        email,
+      });
       await supabase
         .from('pending_vapi_provision')
         .update({ error: String(e) })
@@ -150,7 +167,10 @@ Deno.serve(async (req: Request) => {
       .update({ vapi_assistant_id: vapiAssistantId })
       .eq('id', user_id);
     if (updateError) {
-      console.error('Failed to update user_settings:', updateError, { user_id, vapiAssistantId });
+      console.error('Failed to update user_settings:', updateError, {
+        user_id,
+        vapiAssistantId,
+      });
       await supabase
         .from('pending_vapi_provision')
         .update({ error: updateError.message })
@@ -172,7 +192,11 @@ Deno.serve(async (req: Request) => {
         .eq('id', id);
       console.log('Provisioning complete for row:', id);
     } catch (e) {
-      console.error('Error updating processed_at after successful provisioning:', e, { id });
+      console.error(
+        'Error updating processed_at after successful provisioning:',
+        e,
+        { id }
+      );
     }
 
     return new Response(
