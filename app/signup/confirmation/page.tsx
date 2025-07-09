@@ -19,7 +19,7 @@ export default function SignupConfirmationPage() {
           <CardHeader>
             <CardTitle>Check your email</CardTitle>
             <CardDescription>
-              We've sent you a verification link to complete your registration
+              Check your email and click the link to activate your account.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -30,11 +30,7 @@ export default function SignupConfirmationPage() {
             </div>
             <div className="space-y-2 text-center">
               <p className="text-sm text-muted-foreground">
-                Please check your email inbox and click the verification link to
-                activate your account.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                If you don't see the email, check your spam folder.
+                Check your email and click the link to activate your account.
               </p>
             </div>
           </CardContent>
