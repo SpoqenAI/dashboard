@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
       hasSummary: !!callData.analysis?.summary,
       hasStructuredData: !!callData.analysis?.structuredData,
       hasSuccessEvaluation: !!callData.analysis?.successEvaluation,
-      structuredDataFields: callData.analysis?.structuredData 
-        ? Object.keys(callData.analysis.structuredData) 
+      structuredDataFields: callData.analysis?.structuredData
+        ? Object.keys(callData.analysis.structuredData)
         : null,
     });
 
@@ -86,10 +86,13 @@ export async function POST(request: NextRequest) {
               key_points: actionPoints.keyPoints,
               follow_up_items: actionPoints.followUpItems,
               urgent_concerns: actionPoints.urgentConcerns,
-              property_interest: actionPoints.callAnalysis?.propertyInterest || null,
+              property_interest:
+                actionPoints.callAnalysis?.propertyInterest || null,
               timeline: actionPoints.callAnalysis?.timeline || null,
-              contact_preference: actionPoints.callAnalysis?.contactPreference || null,
-              appointment_requested: actionPoints.callAnalysis?.appointmentRequested || false,
+              contact_preference:
+                actionPoints.callAnalysis?.contactPreference || null,
+              appointment_requested:
+                actionPoints.callAnalysis?.appointmentRequested || false,
               analyzed_at: new Date().toISOString(),
             },
             {
@@ -158,64 +161,66 @@ function extractActionPointsFromVapiAnalysis(callData: any): ActionPoints {
   });
 
   // Extract data from VAPI's structured data if available
-  const callPurpose = 
-    structuredData.callPurpose || 
-    structuredData.purpose || 
-    extractCallPurposeFromSummary(summary) || 
+  const callPurpose =
+    structuredData.callPurpose ||
+    structuredData.purpose ||
+    extractCallPurposeFromSummary(summary) ||
     'General inquiry';
 
-  const sentiment = 
-    structuredData.sentiment || 
-    extractSentimentFromSummary(summary) || 
+  const sentiment =
+    structuredData.sentiment ||
+    extractSentimentFromSummary(summary) ||
     'neutral';
 
-  const keyPoints = 
-    structuredData.keyPoints || 
+  const keyPoints = structuredData.keyPoints ||
     structuredData.key_points ||
-    extractKeyPointsFromSummary(summary) || 
-    ['Standard inquiry'];
+    extractKeyPointsFromSummary(summary) || ['Standard inquiry'];
 
-  const followUpItems = 
-    structuredData.followUpItems || 
+  const followUpItems =
+    structuredData.followUpItems ||
     structuredData.follow_up_items ||
     structuredData.followUp ||
-    extractFollowUpFromSummary(summary) || 
+    extractFollowUpFromSummary(summary) ||
     [];
 
-  const urgentConcerns = 
-    structuredData.urgentConcerns || 
+  const urgentConcerns =
+    structuredData.urgentConcerns ||
     structuredData.urgent_concerns ||
     structuredData.urgent ||
-    extractUrgentFromSummary(summary) || 
+    extractUrgentFromSummary(summary) ||
     [];
 
   // Enhanced lead quality determination
-  const leadQuality = determineLeadQuality(structuredData, summary, urgentConcerns);
+  const leadQuality = determineLeadQuality(
+    structuredData,
+    summary,
+    urgentConcerns
+  );
 
   // Extract additional analysis from structured data
-  const appointmentRequested = 
-    structuredData.appointmentRequested || 
+  const appointmentRequested =
+    structuredData.appointmentRequested ||
     structuredData.appointment_requested ||
     structuredData.appointment ||
     summary.toLowerCase().includes('appointment') ||
     summary.toLowerCase().includes('meeting') ||
     false;
 
-  const timeline = 
-    structuredData.timeline || 
+  const timeline =
+    structuredData.timeline ||
     structuredData.timeframe ||
     extractTimelineFromSummary(summary) ||
     'Not specified';
 
-  const contactPreference = 
-    structuredData.contactPreference || 
+  const contactPreference =
+    structuredData.contactPreference ||
     structuredData.contact_preference ||
     structuredData.preferredContact ||
     extractContactPreferenceFromSummary(summary) ||
     'Phone call';
 
   // For business interests (replacing property_interest from real estate focus)
-  const businessInterest = 
+  const businessInterest =
     structuredData.businessInterest ||
     structuredData.business_interest ||
     structuredData.serviceInterest ||
@@ -246,27 +251,62 @@ function extractActionPointsFromVapiAnalysis(callData: any): ActionPoints {
 
 function extractCallPurposeFromSummary(summary: string): string {
   const lower = summary.toLowerCase();
-  
+
   // General business purposes (not real estate specific)
-  if (lower.includes('demo') || lower.includes('demonstration')) return 'Product demo request';
-  if (lower.includes('quote') || lower.includes('pricing')) return 'Pricing inquiry';
-  if (lower.includes('support') || lower.includes('help')) return 'Support request';
-  if (lower.includes('partnership') || lower.includes('collaboration')) return 'Partnership inquiry';
-  if (lower.includes('investment') || lower.includes('funding')) return 'Investment inquiry';
-  if (lower.includes('job') || lower.includes('career') || lower.includes('hiring')) return 'Career inquiry';
-  
+  if (lower.includes('demo') || lower.includes('demonstration'))
+    return 'Product demo request';
+  if (lower.includes('quote') || lower.includes('pricing'))
+    return 'Pricing inquiry';
+  if (lower.includes('support') || lower.includes('help'))
+    return 'Support request';
+  if (lower.includes('partnership') || lower.includes('collaboration'))
+    return 'Partnership inquiry';
+  if (lower.includes('investment') || lower.includes('funding'))
+    return 'Investment inquiry';
+  if (
+    lower.includes('job') ||
+    lower.includes('career') ||
+    lower.includes('hiring')
+  )
+    return 'Career inquiry';
+
   return 'General inquiry';
 }
 
 function extractSentimentFromSummary(summary: string): string {
   const lower = summary.toLowerCase();
-  
-  const positiveWords = ['great', 'excellent', 'love', 'perfect', 'amazing', 'wonderful', 'interested', 'excited', 'impressed', 'satisfied'];
-  const negativeWords = ['terrible', 'awful', 'hate', 'disappointed', 'frustrated', 'angry', 'problem', 'issue', 'complaint'];
-  
-  const positiveCount = positiveWords.filter(word => lower.includes(word)).length;
-  const negativeCount = negativeWords.filter(word => lower.includes(word)).length;
-  
+
+  const positiveWords = [
+    'great',
+    'excellent',
+    'love',
+    'perfect',
+    'amazing',
+    'wonderful',
+    'interested',
+    'excited',
+    'impressed',
+    'satisfied',
+  ];
+  const negativeWords = [
+    'terrible',
+    'awful',
+    'hate',
+    'disappointed',
+    'frustrated',
+    'angry',
+    'problem',
+    'issue',
+    'complaint',
+  ];
+
+  const positiveCount = positiveWords.filter(word =>
+    lower.includes(word)
+  ).length;
+  const negativeCount = negativeWords.filter(word =>
+    lower.includes(word)
+  ).length;
+
   if (positiveCount > negativeCount) return 'positive';
   if (negativeCount > positiveCount) return 'negative';
   return 'neutral';
@@ -275,32 +315,52 @@ function extractSentimentFromSummary(summary: string): string {
 function extractKeyPointsFromSummary(summary: string): string[] {
   const points: string[] = [];
   const lower = summary.toLowerCase();
-  
+
   // Generic business discussion points
-  if (lower.includes('budget') || lower.includes('price') || lower.includes('cost')) {
+  if (
+    lower.includes('budget') ||
+    lower.includes('price') ||
+    lower.includes('cost')
+  ) {
     points.push('Budget and pricing discussed');
   }
-  if (lower.includes('timeline') || lower.includes('when') || lower.includes('schedule')) {
+  if (
+    lower.includes('timeline') ||
+    lower.includes('when') ||
+    lower.includes('schedule')
+  ) {
     points.push('Timeline requirements mentioned');
   }
-  if (lower.includes('feature') || lower.includes('capability') || lower.includes('functionality')) {
+  if (
+    lower.includes('feature') ||
+    lower.includes('capability') ||
+    lower.includes('functionality')
+  ) {
     points.push('Product features discussed');
   }
-  if (lower.includes('team') || lower.includes('company') || lower.includes('organization')) {
+  if (
+    lower.includes('team') ||
+    lower.includes('company') ||
+    lower.includes('organization')
+  ) {
     points.push('Team or company details shared');
   }
-  
+
   return points.length > 0 ? points : ['Standard inquiry'];
 }
 
 function extractFollowUpFromSummary(summary: string): string[] {
   const items: string[] = [];
   const lower = summary.toLowerCase();
-  
+
   if (lower.includes('demo') || lower.includes('presentation')) {
     items.push('Schedule product demo');
   }
-  if (lower.includes('send') || lower.includes('email') || lower.includes('information')) {
+  if (
+    lower.includes('send') ||
+    lower.includes('email') ||
+    lower.includes('information')
+  ) {
     items.push('Send additional information');
   }
   if (lower.includes('call back') || lower.includes('follow up')) {
@@ -309,31 +369,43 @@ function extractFollowUpFromSummary(summary: string): string[] {
   if (lower.includes('proposal') || lower.includes('quote')) {
     items.push('Prepare proposal or quote');
   }
-  
+
   return items;
 }
 
 function extractUrgentFromSummary(summary: string): string[] {
   const concerns: string[] = [];
   const lower = summary.toLowerCase();
-  
-  if (lower.includes('urgent') || lower.includes('asap') || lower.includes('immediately')) {
+
+  if (
+    lower.includes('urgent') ||
+    lower.includes('asap') ||
+    lower.includes('immediately')
+  ) {
     concerns.push('Urgent timeline - immediate attention required');
   }
-  if (lower.includes('competitor') || lower.includes('alternative') || lower.includes('other option')) {
+  if (
+    lower.includes('competitor') ||
+    lower.includes('alternative') ||
+    lower.includes('other option')
+  ) {
     concerns.push('Considering alternatives - risk of losing lead');
   }
   if (lower.includes('deadline') || lower.includes('time sensitive')) {
     concerns.push('Time-sensitive decision mentioned');
   }
-  
+
   return concerns;
 }
 
 function extractTimelineFromSummary(summary: string): string {
   const lower = summary.toLowerCase();
-  
-  if (lower.includes('immediately') || lower.includes('asap') || lower.includes('urgent')) {
+
+  if (
+    lower.includes('immediately') ||
+    lower.includes('asap') ||
+    lower.includes('urgent')
+  ) {
     return 'Immediate (ASAP)';
   }
   if (lower.includes('this week') || lower.includes('7 days')) {
@@ -351,46 +423,59 @@ function extractTimelineFromSummary(summary: string): string {
   if (lower.includes('no rush') || lower.includes('just exploring')) {
     return 'No specific timeline';
   }
-  
+
   return 'Not specified';
 }
 
 function extractContactPreferenceFromSummary(summary: string): string {
   const lower = summary.toLowerCase();
-  
+
   if (lower.includes('email')) return 'Email';
   if (lower.includes('text') || lower.includes('sms')) return 'Text/SMS';
   if (lower.includes('slack') || lower.includes('teams')) return 'Team chat';
-  if (lower.includes('video call') || lower.includes('zoom')) return 'Video call';
+  if (lower.includes('video call') || lower.includes('zoom'))
+    return 'Video call';
   if (lower.includes('call') || lower.includes('phone')) return 'Phone call';
-  
+
   return 'Phone call'; // Default
 }
 
 function extractBusinessInterestFromSummary(summary: string): string {
   const lower = summary.toLowerCase();
-  
+
   // Tech/SaaS focused categories (aligned with current target audience)
-  if (lower.includes('saas') || lower.includes('software')) return 'SaaS Solution';
-  if (lower.includes('api') || lower.includes('integration')) return 'API/Integration';
-  if (lower.includes('analytics') || lower.includes('data')) return 'Analytics/Data';
-  if (lower.includes('automation') || lower.includes('workflow')) return 'Automation';
-  if (lower.includes('ai') || lower.includes('artificial intelligence')) return 'AI Solution';
-  if (lower.includes('marketing') || lower.includes('growth')) return 'Marketing/Growth';
-  if (lower.includes('security') || lower.includes('compliance')) return 'Security/Compliance';
-  if (lower.includes('infrastructure') || lower.includes('hosting')) return 'Infrastructure';
-  
+  if (lower.includes('saas') || lower.includes('software'))
+    return 'SaaS Solution';
+  if (lower.includes('api') || lower.includes('integration'))
+    return 'API/Integration';
+  if (lower.includes('analytics') || lower.includes('data'))
+    return 'Analytics/Data';
+  if (lower.includes('automation') || lower.includes('workflow'))
+    return 'Automation';
+  if (lower.includes('ai') || lower.includes('artificial intelligence'))
+    return 'AI Solution';
+  if (lower.includes('marketing') || lower.includes('growth'))
+    return 'Marketing/Growth';
+  if (lower.includes('security') || lower.includes('compliance'))
+    return 'Security/Compliance';
+  if (lower.includes('infrastructure') || lower.includes('hosting'))
+    return 'Infrastructure';
+
   return 'Not specified';
 }
 
-function determineLeadQuality(structuredData: any, summary: string, urgentConcerns: string[]): string {
+function determineLeadQuality(
+  structuredData: any,
+  summary: string,
+  urgentConcerns: string[]
+): string {
   // Check if VAPI already determined lead quality
   if (structuredData.leadQuality || structuredData.lead_quality) {
     return structuredData.leadQuality || structuredData.lead_quality;
   }
-  
+
   const lower = summary.toLowerCase();
-  
+
   // Hot leads: urgent, budget confirmed, decision maker
   if (
     urgentConcerns.length > 0 ||
@@ -401,7 +486,7 @@ function determineLeadQuality(structuredData: any, summary: string, urgentConcer
   ) {
     return 'hot';
   }
-  
+
   // Warm leads: interested, timeline defined, engaged
   if (
     lower.includes('interested') ||
@@ -412,7 +497,7 @@ function determineLeadQuality(structuredData: any, summary: string, urgentConcer
   ) {
     return 'warm';
   }
-  
+
   // Cold leads: just browsing or general inquiry
   return 'cold';
 }

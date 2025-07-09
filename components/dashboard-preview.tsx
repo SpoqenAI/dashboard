@@ -172,7 +172,15 @@ const RECENT_ACTIVITY: ActivityData[] = [
 ];
 
 // StatCard component without memo to ensure proper re-rendering
-const StatCard = ({ stat, index, isDark }: { stat: StatData; index: number; isDark: boolean }) => {
+const StatCard = ({
+  stat,
+  _index,
+  _isDark,
+}: {
+  stat: StatData;
+  _index: number;
+  _isDark: boolean;
+}) => {
   const theme = THEME_VARIANTS[stat.variant];
 
   return (
@@ -193,8 +201,8 @@ const StatCard = ({ stat, index, isDark }: { stat: StatData; index: number; isDa
   );
 };
 
-const CallItem = memo(({ call, index, isDark }: { call: CallData; index: number; isDark: boolean }) => (
-  <div className="flex items-center justify-between rounded-lg p-3 transition-colors bg-muted/50">
+const CallItem = memo(({ call }: { call: CallData }) => (
+  <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3 transition-colors">
     <div className="flex items-center space-x-3">
       <div
         className={`flex h-6 w-6 items-center justify-center rounded-full ${
@@ -233,24 +241,22 @@ const CallItem = memo(({ call, index, isDark }: { call: CallData; index: number;
 
 CallItem.displayName = 'CallItem';
 
-const ActivityItem = memo(
-  ({ activity, index, isDark }: { activity: ActivityData; index: number; isDark: boolean }) => {
-    const theme = THEME_VARIANTS[activity.variant];
+const ActivityItem = memo(({ activity }: { activity: ActivityData }) => {
+  const theme = THEME_VARIANTS[activity.variant];
 
-    return (
-      <div className="flex items-center space-x-3 rounded-lg p-2 transition-colors hover:bg-muted/30">
-        <div className={`h-2 w-2 ${theme.dot} rounded-full`}></div>
-        <Clock className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-xs text-foreground">{activity.message}</p>
-        </div>
-        <span className="flex-shrink-0 text-xs text-muted-foreground">
-          {activity.time}
-        </span>
+  return (
+    <div className="flex items-center space-x-3 rounded-lg p-2 transition-colors hover:bg-muted/30">
+      <div className={`h-2 w-2 ${theme.dot} rounded-full`}></div>
+      <Clock className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs text-foreground">{activity.message}</p>
       </div>
-    );
-  }
-);
+      <span className="flex-shrink-0 text-xs text-muted-foreground">
+        {activity.time}
+      </span>
+    </div>
+  );
+});
 
 ActivityItem.displayName = 'ActivityItem';
 
@@ -276,7 +282,7 @@ export const DashboardPreview = memo(() => {
   // Theme awareness
   const { theme, resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
-  
+
   // Centralized state management
   const [currentSection, setCurrentSection] = useState(0);
   const [componentState, setComponentState] = useState<ComponentState>('idle');
@@ -325,8 +331,8 @@ export const DashboardPreview = memo(() => {
                 <StatCard
                   key={`${stat.label}-${overviewRefreshKey}`}
                   stat={stat}
-                  index={index}
-                  isDark={isDark}
+                  _index={index}
+                  _isDark={isDark}
                 />
               ))}
             </div>
@@ -361,7 +367,9 @@ export const DashboardPreview = memo(() => {
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                    <span className="text-xs text-muted-foreground">Online</span>
+                    <span className="text-xs text-muted-foreground">
+                      Online
+                    </span>
                   </div>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
@@ -387,12 +395,7 @@ export const DashboardPreview = memo(() => {
               </h3>
               <div className="space-y-3">
                 {RECENT_CALLS.map((call, index) => (
-                  <CallItem
-                    key={`${call.lead}-${index}`}
-                    call={call}
-                    index={index}
-                    isDark={isDark}
-                  />
+                  <CallItem key={`${call.lead}-${index}`} call={call} />
                 ))}
               </div>
             </Card>
@@ -426,11 +429,15 @@ export const DashboardPreview = memo(() => {
                   </div>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Avg. Duration</span>
+                      <span className="text-muted-foreground">
+                        Avg. Duration
+                      </span>
                       <span className="text-foreground">4:23</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Satisfaction</span>
+                      <span className="text-muted-foreground">
+                        Satisfaction
+                      </span>
                       <span className="text-foreground">4.8/5</span>
                     </div>
                   </div>
@@ -481,8 +488,6 @@ export const DashboardPreview = memo(() => {
                   <ActivityItem
                     key={`${activity.type}-${index}`}
                     activity={activity}
-                    index={index}
-                    isDark={isDark}
                   />
                 ))}
               </div>
@@ -665,7 +670,10 @@ export const DashboardPreview = memo(() => {
   // Error boundaries
   if (sections.length === 0) {
     return (
-      <div className="rounded-2xl border border-border bg-card/60 p-6 shadow-lg backdrop-blur-sm" suppressHydrationWarning>
+      <div
+        className="rounded-2xl border border-border bg-card/60 p-6 shadow-lg backdrop-blur-sm"
+        suppressHydrationWarning
+      >
         <p className="text-center text-muted-foreground">
           Dashboard loading...
         </p>
@@ -675,7 +683,10 @@ export const DashboardPreview = memo(() => {
 
   if (!currentSectionData) {
     return (
-      <div className="rounded-2xl border border-border bg-card/60 p-6 shadow-lg backdrop-blur-sm" suppressHydrationWarning>
+      <div
+        className="rounded-2xl border border-border bg-card/60 p-6 shadow-lg backdrop-blur-sm"
+        suppressHydrationWarning
+      >
         <p className="text-center text-muted-foreground">Loading section...</p>
       </div>
     );
@@ -690,7 +701,6 @@ export const DashboardPreview = memo(() => {
       aria-live="polite"
       suppressHydrationWarning
     >
-
       {/* Section title with smooth transitions */}
       <div className="mb-4 overflow-hidden">
         <h3

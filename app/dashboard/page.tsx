@@ -791,7 +791,9 @@ export default function DashboardPage() {
                     {/* Smart Sort Buttons */}
                     <div className="flex gap-2">
                       <Button
-                        variant={sortBy === 'leadQuality' ? 'default' : 'outline'}
+                        variant={
+                          sortBy === 'leadQuality' ? 'default' : 'outline'
+                        }
                         size="sm"
                         onClick={() => setSortBy('leadQuality')}
                         className="flex items-center gap-2"
@@ -873,12 +875,15 @@ export default function DashboardPage() {
                         <TableBody>
                           {filteredCalls.map(call => {
                             // Determine row highlighting based on lead quality - deep underglow effect for Hot and Warm only
-                            let rowClassName = 'cursor-pointer transition-all duration-300 hover:bg-muted/50';
-                            
+                            let rowClassName =
+                              'cursor-pointer transition-all duration-300 hover:bg-muted/50';
+
                             if (call.leadQuality === 'hot') {
-                              rowClassName += ' bg-gradient-to-r from-red-500/10 via-red-600/5 to-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.2)] border-l-2 border-l-red-500/40';
+                              rowClassName +=
+                                ' bg-gradient-to-r from-red-500/10 via-red-600/5 to-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.2)] border-l-2 border-l-red-500/40';
                             } else if (call.leadQuality === 'warm') {
-                              rowClassName += ' bg-gradient-to-r from-orange-500/10 via-orange-600/5 to-orange-500/10 shadow-[0_0_15px_rgba(249,115,22,0.15)] border-l-2 border-l-orange-500/40';
+                              rowClassName +=
+                                ' bg-gradient-to-r from-orange-500/10 via-orange-600/5 to-orange-500/10 shadow-[0_0_15px_rgba(249,115,22,0.15)] border-l-2 border-l-orange-500/40';
                             }
 
                             // Determine phone number color based on lead quality - only for Hot and Warm
@@ -903,47 +908,49 @@ export default function DashboardPage() {
                                     </span>
                                   </div>
                                 </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-foreground">
+                                      {formatDate(
+                                        call.createdAt || call.startedAt || ''
+                                      )}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="h-4 w-4 text-muted-foreground" />
+                                    <span className="font-mono text-foreground">
+                                      {formatDuration(call.durationSeconds)}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  {getStatusBadge(call.endedReason)}
+                                </TableCell>
+                                <TableCell>
+                                  {getSentimentBadge(call.sentiment)}
+                                </TableCell>
+                                <TableCell>
+                                  {getLeadQualityBadge(call.leadQuality)}
+                                </TableCell>
+                                <TableCell>
                                   <span className="text-foreground">
-                                    {formatDate(
-                                      call.createdAt || call.startedAt || ''
-                                    )}
+                                    {call.cost
+                                      ? `$${call.cost.toFixed(3)}`
+                                      : '-'}
                                   </span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Clock className="h-4 w-4 text-muted-foreground" />
-                                  <span className="font-mono text-foreground">
-                                    {formatDuration(call.durationSeconds)}
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {getStatusBadge(call.endedReason)}
-                              </TableCell>
-                              <TableCell>
-                                {getSentimentBadge(call.sentiment)}
-                              </TableCell>
-                              <TableCell>
-                                {getLeadQualityBadge(call.leadQuality)}
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-foreground">
-                                  {call.cost ? `$${call.cost.toFixed(3)}` : '-'}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openCallDetail(call)}
-                                  className="text-xs"
-                                >
-                                  <FileText className="mr-1 h-3 w-3" />
-                                  View Details
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openCallDetail(call)}
+                                    className="text-xs"
+                                  >
+                                    <FileText className="mr-1 h-3 w-3" />
+                                    View Details
                                   </Button>
                                 </TableCell>
                               </TableRow>

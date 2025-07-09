@@ -197,7 +197,7 @@ export const ExitIntentModal = ({
       aria-modal="true"
       aria-labelledby="exit-intent-title"
     >
-      <Card className="relative mx-4 w-full max-w-md animate-slide-up border border-border bg-card backdrop-blur-glass shadow-2xl">
+      <Card className="relative mx-4 w-full max-w-md animate-slide-up border border-border bg-card shadow-2xl backdrop-blur-glass">
         <Button
           variant="ghost"
           size="sm"

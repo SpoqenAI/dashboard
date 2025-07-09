@@ -8,21 +8,17 @@ import { UserNav } from '@/components/user-nav';
 import Logo from '@/components/ui/logo';
 import { useAuth } from '@/hooks/use-auth';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { 
-  LayoutDashboard, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Settings,
   BarChart3,
   CreditCard,
   HelpCircle,
   Menu,
-  User
+  User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const navigationItems = [
   {
@@ -55,19 +51,23 @@ export function GlobalHeader() {
   const pathname = usePathname();
   const { user, loading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+
   // Don't show navigation on onboarding pages
   const isOnboarding = pathname?.startsWith('/onboarding');
   const isLandingPage = pathname === '/';
-  const isAuthPage = pathname?.includes('/login') || pathname?.includes('/signup') || pathname?.includes('/forgot-password') || pathname?.includes('/reset-password');
+  const isAuthPage =
+    pathname?.includes('/login') ||
+    pathname?.includes('/signup') ||
+    pathname?.includes('/forgot-password') ||
+    pathname?.includes('/reset-password');
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-card/20 backdrop-blur-glass">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <div className="flex items-center">
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="flex items-center transition-transform duration-300 hover:scale-105"
           >
             <Logo width={140} height={48} />
@@ -76,20 +76,18 @@ export function GlobalHeader() {
 
         {/* Navigation - only show if user is authenticated and not on onboarding */}
         {user && !isOnboarding && !loading && (
-          <nav className="hidden md:flex items-center space-x-6">
-            {navigationItems.map((item) => {
+          <nav className="hidden items-center space-x-6 md:flex">
+            {navigationItems.map(item => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
-              
+
               return (
                 <Link
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary",
-                    isActive 
-                      ? "text-primary" 
-                      : "text-muted-foreground"
+                    'flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary',
+                    isActive ? 'text-primary' : 'text-muted-foreground'
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -111,20 +109,20 @@ export function GlobalHeader() {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <nav className="flex flex-col space-y-4">
-                {navigationItems.map((item) => {
+                {navigationItems.map(item => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
-                  
+
                   return (
                     <Link
                       key={item.name}
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
                       className={cn(
-                        "flex items-center space-x-3 text-lg font-medium transition-colors hover:text-primary p-2 rounded-md",
-                        isActive 
-                          ? "text-primary bg-primary/10" 
-                          : "text-muted-foreground hover:bg-muted"
+                        'flex items-center space-x-3 rounded-md p-2 text-lg font-medium transition-colors hover:text-primary',
+                        isActive
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-muted-foreground hover:bg-muted'
                       )}
                     >
                       <Icon className="h-5 w-5" />
@@ -132,11 +130,11 @@ export function GlobalHeader() {
                     </Link>
                   );
                 })}
-                <div className="pt-4 border-t">
+                <div className="border-t pt-4">
                   <Link
                     href="/contact"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center space-x-3 text-lg font-medium text-muted-foreground hover:text-primary transition-colors p-2 rounded-md hover:bg-muted"
+                    className="flex items-center space-x-3 rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
                   >
                     <HelpCircle className="h-5 w-5" />
                     <span>Help & Support</span>
@@ -151,7 +149,7 @@ export function GlobalHeader() {
         <div className="flex items-center gap-4">
           {/* Theme toggle - always visible */}
           <ThemeToggle />
-          
+
           {loading ? (
             <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
           ) : user ? (
@@ -159,7 +157,7 @@ export function GlobalHeader() {
               {/* Help/Support link for authenticated users */}
               <Link
                 href="/contact"
-                className="hidden sm:flex items-center space-x-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                className="hidden items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary sm:flex"
               >
                 <HelpCircle className="h-4 w-4" />
                 <span>Help</span>
@@ -170,7 +168,10 @@ export function GlobalHeader() {
             /* Show login/signup for non-authenticated users */
             !isAuthPage && (
               <nav className="flex items-center gap-4">
-                <Link href="/login" className="text-sm font-medium hover:text-primary transition-colors">
+                <Link
+                  href="/login"
+                  className="text-sm font-medium transition-colors hover:text-primary"
+                >
                   Login
                 </Link>
                 <Button asChild size="sm">
