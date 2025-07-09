@@ -84,17 +84,15 @@ export async function provisionAssistant(userId: string): Promise<void> {
   let provisioned;
   try {
     if (isDev) {
-      provisioned = await provisionPhoneNumber(
-        '+15005550006',
-        'http://demo.twilio.com/docs/voice.xml'
-      );
+      provisioned = await provisionPhoneNumber('+15005550006');
     } else {
-      const available = await searchAvailableNumbers();
-      if (!available) {
+      const available = await searchAvailableNumbers('415');
+      const firstNumber = available.available_phone_numbers?.[0];
+      if (!firstNumber) {
         logger.error(loggerPrefix, 'No Twilio numbers available');
         return;
       }
-      provisioned = await provisionPhoneNumber(available.phone_number);
+      provisioned = await provisionPhoneNumber(firstNumber.phone_number);
     }
   } catch (err) {
     logger.error(
