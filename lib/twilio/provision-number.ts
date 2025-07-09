@@ -8,7 +8,9 @@ function getAuthHeader() {
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
     throw new Error('Twilio credentials are not set in environment variables');
   }
-  const creds = Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64');
+  const creds = Buffer.from(
+    `${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`
+  ).toString('base64');
   return `Basic ${creds}`;
 }
 
@@ -24,7 +26,10 @@ export async function searchAvailableNumbers(areaCode: string) {
     },
   });
   if (!res.ok) {
-    logger.error('TWILIO', `Failed to search available numbers: ${res.status} ${res.statusText}`);
+    logger.error(
+      'TWILIO',
+      `Failed to search available numbers: ${res.status} ${res.statusText}`
+    );
     throw new Error('Failed to search available numbers');
   }
   return res.json();
@@ -50,7 +55,10 @@ export async function provisionPhoneNumber(phoneNumber: string) {
     body,
   });
   if (!res.ok) {
-    logger.error('TWILIO', `Failed to provision phone number: ${res.status} ${res.statusText}`);
+    logger.error(
+      'TWILIO',
+      `Failed to provision phone number: ${res.status} ${res.statusText}`
+    );
     throw new Error('Failed to provision phone number');
   }
   return res.json();
@@ -69,7 +77,10 @@ export async function deletePhoneNumber(providerNumberId: string) {
     },
   });
   if (!res.ok) {
-    logger.error('TWILIO', `Failed to delete phone number: ${res.status} ${res.statusText}`);
+    logger.error(
+      'TWILIO',
+      `Failed to delete phone number: ${res.status} ${res.statusText}`
+    );
     throw new Error('Failed to delete phone number');
   }
   return true;
