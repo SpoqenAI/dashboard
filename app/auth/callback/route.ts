@@ -114,7 +114,8 @@ export async function GET(request: NextRequest) {
           hasUserMetadata: !!data.user.user_metadata,
         });
 
-        await ensureUserProfile(data.user);
+        // Pass the JWT-initialized Supabase client so that auth.uid() in Postgres resolves to the correct user (RLS)
+        await ensureUserProfile(data.user, supabase);
         logger.info(
           'AUTH',
           'Auth callback: Profile ensured successfully for user',

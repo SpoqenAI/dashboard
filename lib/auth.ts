@@ -39,6 +39,7 @@ export async function signUp(
   // Try to create profile if user was created and we have a session
   if (data.user && data.session && !error) {
     // Fire-and-forget profile creation to avoid blocking the signup flow
+    // This is a client-side context; the Supabase client already has the user's JWT
     createUserProfile({
       id: data.user.id,
       email: data.user.email!,
