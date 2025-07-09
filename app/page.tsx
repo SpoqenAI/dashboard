@@ -27,21 +27,10 @@ import { DashboardPreview } from '@/components/dashboard-preview';
 
 // Client components for progressive enhancement
 import { AnalyticsTracker } from '@/components/analytics-tracker';
-import { ProgressiveBackgroundLoader } from '@/components/progressive-background-loader';
+import { SimpleBackground } from '@/components/simple-background';
 import { ScarcityBannerProvider } from '@/components/scarcity-banner-provider';
 import { HeroCTASection } from '@/components/hero-cta-section';
 import { FinalCTAButtons } from '@/components/final-cta-buttons';
-
-// PERFORMANCE: Dynamic imports with lazy loading for heavy components
-const InteractiveBackground = dynamic(
-  () =>
-    import('@/components/interactive-background').then(mod => ({
-      default: mod.InteractiveBackground,
-    })),
-  {
-    loading: () => <div className="min-h-screen bg-background" />,
-  }
-);
 
 const DynamicTestimonialsSection = dynamic(
   () =>
@@ -205,23 +194,8 @@ export default function Home() {
       <AnalyticsTracker page="landing_page" />
 
       <main id="main-content" className="flex-1" role="main">
-        <div className="relative flex min-h-screen w-full items-center justify-center bg-background">
-          <Suspense
-            fallback={
-              <div className="absolute inset-0 z-0 min-h-screen bg-background" />
-            }
-          >
-            <ProgressiveBackgroundLoader
-              variant="hero"
-              className="absolute inset-0 z-0 h-full w-full bg-background bg-[radial-gradient(ellipse_60%_80%_at_20%_40%,rgba(139,92,246,0.1),transparent)] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(29,155,240,0.1),rgba(255,255,255,0))]"
-              fallbackStyle={{
-                background:
-                  'linear-gradient(to bottom, hsl(var(--background)), hsl(var(--card))',
-              }}
-            >
-              <></>
-            </ProgressiveBackgroundLoader>
-          </Suspense>
+        <SimpleBackground variant="hero" className="flex min-h-screen w-full items-center justify-center">
+          <div className="absolute inset-0 z-0" />
           <section
             className="relative z-10 w-full py-20 pt-32"
             aria-label="Hero section"
@@ -308,7 +282,7 @@ export default function Home() {
               </div>
             </div>
           </section>
-        </div>
+        </SimpleBackground>
 
         {/* PERFORMANCE: Lazy load below-the-fold sections */}
         <Suspense fallback={<div className="h-32 animate-pulse bg-card/20" />}>
@@ -332,16 +306,11 @@ export default function Home() {
           </div>
         </div>
 
-        <Suspense
-          fallback={
-            <div className="min-h-screen bg-gradient-to-b from-background to-card/30" />
-          }
+        <SimpleBackground
+          variant="features"
+          className="bg-gradient-to-b from-background to-card/30 py-20"
         >
-          <InteractiveBackground
-            variant="features"
-            className="bg-gradient-to-b from-background to-card/30 py-20"
-          >
-            <section className="w-full">
+          <section className="w-full">
               <div className="container px-6">
                 {/* Problem Banner */}
                 <div className="mb-16 animate-fade-in">
@@ -448,8 +417,7 @@ export default function Home() {
                 </div>
               </div>
             </section>
-          </InteractiveBackground>
-        </Suspense>
+        </SimpleBackground>
 
         {/* More sections with lazy loading... */}
         <Suspense fallback={<div className="h-96 animate-pulse bg-card/20" />}>
@@ -461,7 +429,7 @@ export default function Home() {
         </Suspense>
 
         {/* Pricing Section */}
-        <InteractiveBackground
+        <SimpleBackground
           variant="minimal"
           className="bg-gradient-to-b from-card/30 to-background py-20"
         >
@@ -486,7 +454,7 @@ export default function Home() {
               </div>
             </div>
           </section>
-        </InteractiveBackground>
+        </SimpleBackground>
 
         {/* Testimonial Strip after Pricing */}
         <TestimonialStrip />

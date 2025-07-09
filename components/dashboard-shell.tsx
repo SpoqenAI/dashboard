@@ -1,5 +1,5 @@
 import type React from 'react';
-import { InteractiveBackground } from '@/components/interactive-background';
+import { SimpleBackground } from '@/components/simple-background';
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -7,8 +7,8 @@ interface DashboardShellProps {
 
 export function DashboardShell({ children }: DashboardShellProps) {
   return (
-    <InteractiveBackground variant="dashboard" className="flex-1">
+    <SimpleBackground variant="minimal" className="flex-1">
       <div className="space-y-4 p-8 pt-6">{children}</div>
-    </InteractiveBackground>
+    </SimpleBackground>
   );
 }
