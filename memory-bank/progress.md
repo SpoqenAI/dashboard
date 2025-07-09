@@ -456,3 +456,13 @@ With all core conversion optimization complete, future enhancements could includ
 6. **Multi-variant Testing**: Price points, offer structures, messaging
 
 The landing page is now production-ready with enterprise-level conversion optimization and analytics tracking.
+
+## ✅ COMPLETED: Automated VAPI Assistant Provisioning (July 2025)
+
+- Implemented a robust, idempotent system to provision a VAPI assistant for users upon email verification.
+- Added a `pending_vapi_provision` queue table and a Postgres trigger on `auth.users` for email verification events.
+- Deployed a Supabase Edge Function that polls the queue, provisions the assistant via the VAPI API, updates `user_settings.vapi_assistant_id`, and marks the row as processed or errored.
+- Tested the full flow: all test users with verified emails were processed, assistants were created, and no duplicates occurred.
+- All architectural and implementation decisions are documented in the memory bank.
+
+---
