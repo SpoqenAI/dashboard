@@ -135,7 +135,7 @@ const nextConfig = {
   },
 
   // Webpack configuration for better performance
-  webpack: (config, { dev, isServer }) => {
+  webpack: (config, { dev, isServer, webpack }) => {
     // Enable persistent filesystem cache for faster rebuilds in both development and production
     // Use import.meta.url for ESM compatibility (instead of __filename)
     const filename = fileURLToPath(import.meta.url);
@@ -175,6 +175,16 @@ const nextConfig = {
     // (Optional) Bundle Analyzer integration can be added here
     // See documentation below for instructions
     // https://www.npmjs.com/package/@next/bundle-analyzer
+
+    config.plugins.push(
+      new webpack.DefinePlugin({
+        __SENTRY_DEBUG__: false,
+        __SENTRY_TRACING__: false, // Set to true if you use Sentry performance monitoring
+        __RRWEB_EXCLUDE_IFRAME__: true,
+        __RRWEB_EXCLUDE_SHADOW_DOM__: true,
+        __SENTRY_EXCLUDE_REPLAY_WORKER__: true,
+      })
+    );
 
     return config;
   },
