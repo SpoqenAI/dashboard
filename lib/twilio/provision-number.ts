@@ -28,7 +28,8 @@ export async function searchAvailableNumbers(areaCode: string) {
   if (!res.ok) {
     logger.error(
       'TWILIO',
-      `Failed to search available numbers: ${res.status} ${res.statusText}`
+      `Failed to search available numbers: ${res.status} ${res.statusText}`,
+      new Error(`Failed to search available numbers: ${res.status} ${res.statusText}`)
     );
     throw new Error('Failed to search available numbers');
   }
@@ -57,7 +58,8 @@ export async function provisionPhoneNumber(phoneNumber: string) {
   if (!res.ok) {
     logger.error(
       'TWILIO',
-      `Failed to provision phone number: ${res.status} ${res.statusText}`
+      `Failed to provision phone number: ${res.status} ${res.statusText}`,
+      new Error(`Failed to provision phone number: ${res.status} ${res.statusText}`)
     );
     throw new Error('Failed to provision phone number');
   }
@@ -79,7 +81,8 @@ export async function deletePhoneNumber(providerNumberId: string) {
   if (!res.ok) {
     logger.error(
       'TWILIO',
-      `Failed to delete phone number: ${res.status} ${res.statusText}`
+      `Failed to delete phone number: ${res.status} ${res.statusText}`,
+      new Error(`Failed to delete phone number: ${res.status} ${res.statusText}`)
     );
     throw new Error('Failed to delete phone number');
   }
