@@ -174,12 +174,12 @@ const RECENT_ACTIVITY: ActivityData[] = [
 // StatCard component without memo to ensure proper re-rendering
 const StatCard = ({
   stat,
-  index,
-  isDark,
+  _index,
+  _isDark,
 }: {
   stat: StatData;
-  index: number;
-  isDark: boolean;
+  _index: number;
+  _isDark: boolean;
 }) => {
   const theme = THEME_VARIANTS[stat.variant];
 
@@ -351,8 +351,8 @@ export const DashboardPreview = memo(() => {
                 <StatCard
                   key={`${stat.label}-${overviewRefreshKey}`}
                   stat={stat}
-                  index={index}
-                  isDark={isDark}
+                  _index={index}
+                  _isDark={isDark}
                 />
               ))}
             </div>
