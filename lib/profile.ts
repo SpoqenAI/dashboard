@@ -172,10 +172,7 @@ export async function createUserProfile(
  * @param user - The Supabase Auth user object
  * @param supabaseClientOverride - (Optional) Pass a Supabase client initialized with the user's JWT for backend/server contexts. Required for RLS/auth.uid() to work in Postgres functions.
  */
-export async function createProfileFromAuthUser(
-  user: User,
-  supabaseClientOverride?: any
-) {
+export async function createProfileFromAuthUser(user: User, supabaseClientOverride?: any) {
   // Guard against null/undefined email (common with some OAuth providers like Apple)
   if (!user.email) {
     throw new Error(
@@ -269,10 +266,7 @@ export async function checkProfileExists(userId: string): Promise<boolean> {
  * @param user - The Supabase Auth user object
  * @param supabaseClientOverride - (Optional) Pass a Supabase client initialized with the user's JWT for backend/server contexts. Required for RLS/auth.uid() to work in Postgres functions.
  */
-export async function ensureUserProfile(
-  user: User,
-  supabaseClientOverride?: any
-) {
+export async function ensureUserProfile(user: User, supabaseClientOverride?: any) {
   try {
     // Directly attempt profile creation - the stored procedure handles
     // conflicts gracefully with ON CONFLICT DO UPDATE clauses
