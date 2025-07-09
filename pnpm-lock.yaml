@@ -210,6 +210,9 @@ importers:
         specifier: ^4.4.2
         version: 4.4.2
     devDependencies:
+      '@eslint/eslintrc':
+        specifier: ^3.3.1
+        version: 3.3.1
       '@types/acorn':
         specifier: ^4.0.6
         version: 4.0.6
@@ -246,6 +249,12 @@ importers:
       eslint-config-next:
         specifier: 15.4.0-canary.51
         version: 15.4.0-canary.51(eslint@9.27.0(jiti@1.21.7))(typescript@5.0.2)
+      eslint-plugin-react:
+        specifier: ^7.37.5
+        version: 7.37.5(eslint@9.27.0(jiti@1.21.7))
+      eslint-plugin-react-hooks:
+        specifier: ^5.2.0
+        version: 5.2.0(eslint@9.27.0(jiti@1.21.7))
       postcss:
         specifier: ^8
         version: 8.0.0
