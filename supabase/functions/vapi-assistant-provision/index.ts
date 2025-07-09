@@ -16,7 +16,8 @@ if (
   !SUPABASE_SERVICE_ROLE_KEY ||
   !VAPI_API_KEY ||
   !VAPI_WEBHOOK_SECRET ||
-  !APP_URL
+  !APP_URL ||
+  !WEBHOOK_SECRET
 ) {
   throw new Error('Missing required environment variables');
 }
@@ -60,8 +61,9 @@ Deno.serve(async (req: Request) => {
     .from('user_settings')
     .select('vapi_assistant_id')
     .eq('id', user_id)
-    .single();
+    .maybeSingle();
   if (userSettingsError) {
+    console.error('userSettingsError:', userSettingsError);
     return new Response(
       JSON.stringify({
         error: 'Failed to fetch user_settings',
@@ -70,7 +72,7 @@ Deno.serve(async (req: Request) => {
       { status: 500 }
     );
   }
-  if (userSettings && userSettings.vapi_assistant_id) {
+  if (userSettings?.vapi_assistant_id) {
     // Already provisioned, mark as processed
     await supabase
       .from('pending_vapi_provision')
