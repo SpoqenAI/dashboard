@@ -128,6 +128,8 @@ export default function SignupPage() {
     firstName: true, // Optional field, defaults to valid
   });
 
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
   const [score, setScore] = useState(0);
 
   // Profanity/content filter
@@ -257,13 +259,12 @@ export default function SignupPage() {
 
   // CONVERSION OPTIMIZATION: Check if form is valid for submission
   const isFormValid = () => {
-    const requiredFields: FormFieldName[] = [
-      'email',
-      'password',
-      'confirmPassword',
-    ];
-    return requiredFields.every(
-      field => fieldValidStates[field] && formData[field]
+    return (
+      fieldValidStates.email &&
+      fieldValidStates.password &&
+      fieldValidStates.confirmPassword &&
+      acceptedTerms &&
+      !isLoading
     );
   };
 
@@ -525,6 +526,40 @@ export default function SignupPage() {
               </CardContent>
 
               <CardFooter className="flex flex-col space-y-4">
+                {/* Terms checkbox */}
+                <div className="flex items-start space-x-3">
+                  <input
+                    id="terms"
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={e => setAcceptedTerms(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <label
+                    htmlFor="terms"
+                    className="text-sm text-muted-foreground"
+                  >
+                    I agree to the{' '}
+                    <Link
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      Terms of Service
+                    </Link>{' '}
+                    and{' '}
+                    <Link
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      Privacy Policy
+                    </Link>
+                  </label>
+                </div>
+
                 <div className="w-full">
                   <Button
                     className="w-full"
@@ -549,20 +584,6 @@ export default function SignupPage() {
                   Already have an account?{' '}
                   <Link href="/login" className="text-primary hover:underline">
                     Sign in
-                  </Link>
-                </div>
-
-                <div className="text-center text-xs text-muted-foreground">
-                  By creating an account, you agree to our{' '}
-                  <Link href="/terms" className="text-primary hover:underline">
-                    Terms of Service
-                  </Link>{' '}
-                  and{' '}
-                  <Link
-                    href="/privacy"
-                    className="text-primary hover:underline"
-                  >
-                    Privacy Policy
                   </Link>
                 </div>
               </CardFooter>
