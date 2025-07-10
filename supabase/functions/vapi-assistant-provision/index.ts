@@ -31,7 +31,9 @@ Deno.serve(async (req: Request) => {
     // Only allow POST requests
     if (req.method !== 'POST') {
       return new Response(
-        JSON.stringify({ error: 'Method Not Allowed. Only POST requests are supported.' }),
+        JSON.stringify({
+          error: 'Method Not Allowed. Only POST requests are supported.',
+        }),
         { status: 405, headers: { 'Content-Type': 'application/json' } }
       );
     }
