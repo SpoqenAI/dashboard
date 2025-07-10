@@ -119,9 +119,7 @@ export function SocialLogin({ mode = 'login', className }: SocialLoginProps) {
           ) : (
             <GoogleIcon />
           )}
-          <span className="ml-2 whitespace-nowrap">
-            {actionText} with Google
-          </span>
+          <span className="ml-2 whitespace-nowrap">Google</span>
         </Button>
 
         <Button
@@ -135,9 +133,7 @@ export function SocialLogin({ mode = 'login', className }: SocialLoginProps) {
           ) : (
             <LinkedInIcon />
           )}
-          <span className="ml-2 whitespace-nowrap">
-            {actionText} with LinkedIn
-          </span>
+          <span className="ml-2 whitespace-nowrap">LinkedIn</span>
         </Button>
       </div>
     </div>
