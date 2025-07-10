@@ -159,12 +159,12 @@ function ProcessingPageContent() {
         return false;
       }
 
-      // Check for any subscription (prioritize active status)
+      // Check for current subscription (current=true)
       const { data: subscription, error } = await supabase
         .from('subscriptions')
         .select('status')
         .eq('user_id', user.id)
-        .in('status', ['active', 'pending_webhook'])
+        .eq('current', true)
         .order('created_at', { ascending: false })
         .maybeSingle();
 

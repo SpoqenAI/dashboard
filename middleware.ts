@@ -233,11 +233,12 @@ export async function middleware(request: NextRequest) {
       let cacheHit = hasValidSubscription !== null;
 
       if (!cacheHit) {
-        // Check if user has an active or pending subscription
+        // Check if user has an active or pending current subscription
         const { data: subscription, error } = await supabase
           .from('subscriptions')
           .select('status')
           .eq('user_id', user.id)
+          .eq('current', true)
           .in('status', ['active', 'pending_webhook'])
           .maybeSingle();
 
