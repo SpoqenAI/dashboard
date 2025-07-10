@@ -97,6 +97,9 @@ export async function signInWithProvider(provider: Provider) {
     provider,
     options: {
       redirectTo: `${siteUrl}/auth/callback`,
+      queryParams: {
+        prompt: 'select_account',
+      },
     },
   });
 
