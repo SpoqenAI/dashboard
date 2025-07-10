@@ -107,6 +107,10 @@ export async function signInWithGoogle() {
   return signInWithProvider('google');
 }
 
+export async function signInWithLinkedIn() {
+  return signInWithProvider('linkedin_oidc');
+}
+
 export async function resetPassword(email: string) {
   const supabase = getSupabaseClient();
   const siteUrl = getSiteUrl();

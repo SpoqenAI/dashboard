@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { signInWithGoogle } from '@/lib/auth';
+import { signInWithLinkedIn } from '@/lib/auth';
 
 // Google provider icon as SVG component
 const GoogleIcon = () => (
@@ -27,25 +28,31 @@ const GoogleIcon = () => (
   </svg>
 );
 
+const LinkedInIcon = () => (
+  <svg className="h-4 w-4" viewBox="0 0 448 512">
+    <path
+      fill="currentColor"
+      d="M100.28 448H7.4V148.9h92.88zm-46.44-338a53.69 53.69 0 1 1 53.69-53.69 53.69 53.69 0 0 1-53.69 53.7zM447.9 448h-92.68V302.4c0-34.7-.7-79.3-48.3-79.3-48.3 0-55.7 37.8-55.7 76.9V448h-92.7V148.9h89.05v40.8h1.3c12.4-23.6 42.6-48.3 87.6-48.3 93.7 0 111 61.7 111 141.7V448z"
+    />
+  </svg>
+);
+
 interface SocialLoginProps {
   mode?: 'login' | 'signup';
   className?: string;
 }
 
 export function SocialLogin({ mode = 'login', className }: SocialLoginProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isLinkedInLoading, setIsLinkedInLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true);
-
+    setIsGoogleLoading(true);
     try {
       const result = await signInWithGoogle();
-
       if (result.error) {
         throw result.error;
       }
-
-      // The redirect will happen automatically via Supabase OAuth flow
       toast({
         title: 'Redirecting...',
         description: 'Redirecting to Google for authentication.',
@@ -58,7 +65,30 @@ export function SocialLogin({ mode = 'login', className }: SocialLoginProps) {
         variant: 'destructive',
       });
     } finally {
-      setIsLoading(false);
+      setIsGoogleLoading(false);
+    }
+  };
+
+  const handleLinkedInLogin = async () => {
+    setIsLinkedInLoading(true);
+    try {
+      const result = await signInWithLinkedIn();
+      if (result.error) {
+        throw result.error;
+      }
+      toast({
+        title: 'Redirecting...',
+        description: 'Redirecting to LinkedIn for authentication.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Authentication failed',
+        description:
+          error.message || `Failed to ${mode} with LinkedIn. Please try again.`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLinkedInLoading(false);
     }
   };
 
@@ -77,19 +107,39 @@ export function SocialLogin({ mode = 'login', className }: SocialLoginProps) {
         </div>
       </div>
 
-      <Button
-        variant="outline"
-        onClick={handleGoogleLogin}
-        disabled={isLoading}
-        className="w-full"
-      >
-        {isLoading ? (
-          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
-        ) : (
-          <GoogleIcon />
-        )}
-        <span className="ml-2">{actionText} with Google</span>
-      </Button>
+      <div className="flex flex-col space-y-2 sm:flex-row sm:space-x-2 sm:space-y-0">
+        <Button
+          variant="outline"
+          onClick={handleGoogleLogin}
+          disabled={isGoogleLoading || isLinkedInLoading}
+          className="w-full flex-1 sm:w-auto"
+        >
+          {isGoogleLoading ? (
+            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+          ) : (
+            <GoogleIcon />
+          )}
+          <span className="ml-2 whitespace-nowrap">
+            {actionText} with Google
+          </span>
+        </Button>
+
+        <Button
+          variant="outline"
+          onClick={handleLinkedInLogin}
+          disabled={isGoogleLoading || isLinkedInLoading}
+          className="w-full flex-1 sm:w-auto"
+        >
+          {isLinkedInLoading ? (
+            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+          ) : (
+            <LinkedInIcon />
+          )}
+          <span className="ml-2 whitespace-nowrap">
+            {actionText} with LinkedIn
+          </span>
+        </Button>
+      </div>
     </div>
   );
 }
