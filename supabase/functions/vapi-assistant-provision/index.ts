@@ -58,9 +58,9 @@ Deno.serve(async (req: Request) => {
       payload = await req.json();
       console.log('Parsed payload:', payload);
     } catch (e) {
-      console.error('Invalid JSON payload', e);
+      console.error('Invalid JSON payload:', e);
       return new Response(
-        JSON.stringify({ error: 'Invalid JSON payload', details: String(e) }),
+        JSON.stringify({ error: 'Invalid JSON payload' }),
         {
           status: 400,
         }
