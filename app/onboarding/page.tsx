@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
 export default function OnboardingPage() {
-  // Redirect to the new onboarding flow
-  redirect('/onboarding/profile');
+  // Onboarding is deprecated; always redirect to dashboard
+  redirect('/dashboard');
 }

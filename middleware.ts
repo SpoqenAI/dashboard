@@ -236,14 +236,14 @@ export async function middleware(request: NextRequest) {
       const { data: userSettings, error: userSettingsError } = await supabase
         .from('user_settings')
         .select('welcome_completed')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .maybeSingle();
       if (userSettingsError) {
         if (securityConfig.logErrors) {
           logger.error(
             'MIDDLEWARE',
             'Error fetching user_settings',
-            userSettingsError instanceof Error ? userSettingsError : new Error(String(userSettingsError)),
+            new Error(JSON.stringify(userSettingsError)),
             {
               userId: logger.maskUserId(user.id),
               requestPath: request.nextUrl.pathname,
@@ -402,14 +402,9 @@ export async function middleware(request: NextRequest) {
 
       // --- Onboarding Pages ---
       if (isOnboardingPage) {
-        // If user has valid subscription, redirect away from onboarding to dashboard
-        if (hasValidSubscription) {
-          logPerformanceMetrics();
-          return NextResponse.redirect(new URL('/dashboard', request.url));
-        }
-        // Allow onboarding for free users
+        // Legacy onboarding is deprecated; always redirect to /dashboard
         logPerformanceMetrics();
-        return response;
+        return NextResponse.redirect(new URL('/dashboard', request.url));
       }
 
       // --- All Other Protected Routes ---

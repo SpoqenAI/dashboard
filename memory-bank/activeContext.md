@@ -29,6 +29,15 @@ This document tracks the current work focus, recent changes, next steps, and imp
 - Consider scheduling the Edge Function or triggering it via webhook for real-time processing.
 - Add alerting/monitoring for failed provisions if needed.
 
+## 2025-07-13: Onboarding Replaced by Welcome Screen
+- The multi-step onboarding flow has been fully replaced by a single /welcome page.
+- /welcome explains free tier features and upgrade path, with 'Skip for now' and 'Subscribe now' buttons.
+- Both buttons call a robust server action to set welcome_completed=true in user_settings, then redirect appropriately.
+- Middleware enforces that /welcome is only accessible if welcome_completed is false/null, and all protected routes require welcome_completed=true.
+- All legacy onboarding pages (/onboarding/profile, /onboarding/assistant, /onboarding/subscribe, /onboarding/processing) have been removed and /onboarding now redirects to /dashboard.
+- All logic branches are commented for clarity.
+- Next step: Test the new flow for new, returning, and legacy users, including edge cases (missing user_settings, direct navigation, server action errors).
+
 ## Technical Notes
 
 - The Edge Function uses the Supabase service role key and VAPI API key from environment variables.
