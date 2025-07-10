@@ -60,7 +60,10 @@ Deno.serve(async (req: Request) => {
     } catch (e) {
       console.error('Invalid JSON payload:', e);
       return new Response(
-        JSON.stringify({ error: 'Invalid JSON payload', details: 'An unexpected error occurred' }),
+        JSON.stringify({
+          error: 'Invalid JSON payload',
+          details: 'An unexpected error occurred',
+        }),
         {
           status: 400,
         }
@@ -285,7 +288,10 @@ Deno.serve(async (req: Request) => {
     // Catch any unexpected errors
     console.error('Unexpected error in vapi-assistant-provision function:', e);
     return new Response(
-      JSON.stringify({ error: 'Unexpected error', details: 'An unexpected error occurred' }),
+      JSON.stringify({
+        error: 'Unexpected error',
+        details: 'An unexpected error occurred',
+      }),
       { status: 500 }
     );
   }
