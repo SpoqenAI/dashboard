@@ -60,7 +60,7 @@ Deno.serve(async (req: Request) => {
     } catch (e) {
       console.error('Invalid JSON payload:', e);
       return new Response(
-        JSON.stringify({ error: 'Invalid JSON payload' }),
+        JSON.stringify({ error: 'Invalid JSON payload', details: 'An unexpected error occurred' }),
         {
           status: 400,
         }
@@ -122,7 +122,7 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({
           error: 'Failed to fetch user_settings',
-          details: userSettingsError.message,
+          details: 'An unexpected error occurred',
         }),
         { status: 500 }
       );
@@ -225,12 +225,12 @@ Deno.serve(async (req: Request) => {
       });
       await supabase
         .from('pending_vapi_provision')
-        .update({ error: String(e) })
+        .update({ error: 'An unexpected error occurred' })
         .eq('id', id);
       return new Response(
         JSON.stringify({
           error: 'Failed to provision VAPI assistant',
-          details: String(e),
+          details: 'An unexpected error occurred',
         }),
         { status: 500 }
       );
@@ -248,12 +248,12 @@ Deno.serve(async (req: Request) => {
       });
       await supabase
         .from('pending_vapi_provision')
-        .update({ error: updateError.message })
+        .update({ error: 'An unexpected error occurred' })
         .eq('id', id);
       return new Response(
         JSON.stringify({
           error: 'Failed to update user_settings',
-          details: updateError.message,
+          details: 'An unexpected error occurred',
         }),
         { status: 500 }
       );
@@ -285,7 +285,7 @@ Deno.serve(async (req: Request) => {
     // Catch any unexpected errors
     console.error('Unexpected error in vapi-assistant-provision function:', e);
     return new Response(
-      JSON.stringify({ error: 'Unexpected error', details: String(e) }),
+      JSON.stringify({ error: 'Unexpected error', details: 'An unexpected error occurred' }),
       { status: 500 }
     );
   }
