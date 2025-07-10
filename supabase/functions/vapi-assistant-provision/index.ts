@@ -28,6 +28,14 @@ Deno.serve(async (req: Request) => {
       headers: Object.fromEntries(req.headers.entries()),
     });
 
+    // Only allow POST requests
+    if (req.method !== 'POST') {
+      return new Response(
+        JSON.stringify({ error: 'Method Not Allowed. Only POST requests are supported.' }),
+        { status: 405, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Check x-webhook-secret header
     const secret = req.headers.get('x-webhook-secret');
     if (!WEBHOOK_SECRET || secret !== WEBHOOK_SECRET) {
