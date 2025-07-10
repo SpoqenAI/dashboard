@@ -97,6 +97,9 @@ export async function signInWithProvider(provider: Provider) {
     provider,
     options: {
       redirectTo: `${siteUrl}/auth/callback`,
+      queryParams: {
+        prompt: 'select_account',
+      },
     },
   });
 
@@ -105,6 +108,10 @@ export async function signInWithProvider(provider: Provider) {
 
 export async function signInWithGoogle() {
   return signInWithProvider('google');
+}
+
+export async function signInWithLinkedIn() {
+  return signInWithProvider('linkedin_oidc');
 }
 
 export async function resetPassword(email: string) {
