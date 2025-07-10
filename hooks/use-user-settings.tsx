@@ -334,7 +334,6 @@ export function useUserSettings() {
             },
             {
               onConflict: 'id',
-              updateColumns: Object.keys(profileUpdates),
             }
           )
           .select()
@@ -533,7 +532,6 @@ export function useUserSettings() {
             },
             {
               onConflict: 'id',
-              updateColumns: Object.keys(profileUpdates),
             }
           )
           .select()
@@ -581,7 +579,6 @@ export function useUserSettings() {
             },
             {
               onConflict: 'id',
-              updateColumns: Object.keys(profileUpdates),
             }
           )
           .select()

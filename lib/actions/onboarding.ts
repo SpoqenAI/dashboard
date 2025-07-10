@@ -79,6 +79,7 @@ export async function updateProfileAction(prevState: any, formData: FormData) {
 
   try {
     // Update the user's profile
+    // This is a server action using a JWT-initialized Supabase client; RLS/auth.uid() is satisfied
     const { error } = await supabase
       .from('profiles')
       .update({

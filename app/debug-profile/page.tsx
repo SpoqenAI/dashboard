@@ -137,6 +137,7 @@ export default function DebugProfilePage() {
       if (!profileExists) {
         addResult('🔄 Attempting to create profile...');
         try {
+          // This is a client-side context; the Supabase client already has the user's JWT
           await createUserProfile({
             id: user.id,
             email: user.email!,

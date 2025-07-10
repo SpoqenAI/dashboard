@@ -168,6 +168,22 @@ export function GlobalHeader() {
             /* Show login/signup for non-authenticated users */
             !isAuthPage && (
               <nav className="flex items-center gap-4">
+                {isLandingPage && (
+                  <>
+                    <Link
+                      href="#features"
+                      className="text-sm font-medium transition-colors hover:text-primary"
+                    >
+                      Features
+                    </Link>
+                    <Link
+                      href="#pricing"
+                      className="text-sm font-medium transition-colors hover:text-primary"
+                    >
+                      Pricing
+                    </Link>
+                  </>
+                )}
                 <Link
                   href="/login"
                   className="text-sm font-medium transition-colors hover:text-primary"

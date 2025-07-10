@@ -4,66 +4,36 @@ This document tracks the current work focus, recent changes, next steps, and imp
 
 ## Current Focus
 
-**✅ COMPLETED: Sentiment & Lead Quality Display Fix (January 2025)** - Fixed the dashboard columns to properly show sentiment and lead quality data from VAPI's native analysis.
+**✅ COMPLETED: VAPI Assistant Provisioning via Supabase Edge Function (July 2025)**
 
-**Root Issue**: The `mapVapiCallToFrontend` function was extracting `summary` from VAPI analysis data but completely ignoring `sentiment` and `leadQuality` from `call.analysis.structuredData`. Dashboard columns were showing empty dashes (-) instead of the actual analysis data.
+**Root Issue**: The system needed to provision a VAPI assistant for a user only after their email was verified, requiring an external API call and robust, idempotent backend logic.
 
-**🚀 CRITICAL FIX COMPLETED: Leveraged VAPI Native Analysis (January 2025)** - Completely replaced flawed hardcoded real estate analysis logic with VAPI's native AI-powered analysis capabilities. The system now properly uses `call.analysis.structuredData`, `call.analysis.summary`, and `call.analysis.successEvaluation` instead of hardcoded pattern matching.
+**🚀 FEATURE IMPLEMENTED: Automated VAPI Assistant Provisioning**
 
-**Original Root Issue**: The call analysis system was using hardcoded real estate-specific logic (looking for "buy", "sell", "appointment", "showing") and defaulting to "Standard real estate inquiry" despite the business model pivot to tech/startup audience.
+- **Database Layer:**
+  - Added `pending_vapi_provision` table to queue users whose email has just been verified.
+  - Added a Postgres trigger/function on `auth.users` that inserts into this table when `email_confirmed_at` transitions from NULL to a timestamp.
+- **Supabase Edge Function Layer:**
+  - Implemented `vapi-assistant-provision` Edge Function (Deno/TypeScript) that polls the queue, provisions a VAPI assistant via the VAPI API, updates `user_settings.vapi_assistant_id`, and marks the row as processed or errored.
+  - Ensured idempotency: checks if a user already has a VAPI assistant before provisioning.
+  - Handles errors robustly and logs failures to the queue table.
+- **Integration & Testing:**
+  - Deployed the Edge Function to Supabase.
+  - Simulated email verification by inserting into `pending_vapi_provision`.
+  - Confirmed that a VAPI assistant is created and its ID is stored in `user_settings` for the user, with no duplicates.
+  - All test users with verified emails were processed as expected.
 
-## Recent Changes ✅
+**Next Steps:**
 
-### **Sentiment & Lead Quality Display Fix**
-
-- **Updated `mapVapiCallToFrontend` function** to extract:
-  - `sentiment` from `vapiCall.analysis?.structuredData?.sentiment`
-  - `leadQuality` from `vapiCall.analysis?.structuredData?.leadQuality`
-- **Enhanced call data enrichment** to pull from database `call_analysis` table when available
-- **Prioritized database analysis** over VAPI analysis for consistency
-- **Added proper TypeScript typing** for sentiment and leadQuality fields
-
-### **VAPI Native Analysis Integration**
-
-- **Replaced hardcoded analysis** in `/app/api/vapi/action-points/route.ts`
-- **Updated bulk analysis** in `/app/api/vapi/bulk-analyze/route.ts`
-- **Now properly leverages VAPI's three analysis features:**
-  1. `call.analysis.summary` - AI-generated call summary
-  2. `call.analysis.successEvaluation` - AI success assessment
-  3. `call.analysis.structuredData` - Structured data extraction (sentiment, leadQuality, callPurpose, etc.)
-
-## Expected Results
-
-Users should now see:
-
-- **Sentiment badges** (Positive/Neutral/Negative) in the Sentiment column
-- **Lead Quality badges** (Hot/Warm/Cold) in the Lead Quality column
-- **Proper filtering** by sentiment and lead quality
-- **Accurate analytics charts** showing real sentiment/lead distributions
-- **Consistent data** between dashboard and action points analysis
-
-## Data Flow Overview
-
-```
-VAPI Call → Analysis (AI) → Structured Data → Database Storage → Dashboard Display
-                ↓                 ↓                    ↓               ↓
-         AI Analysis    sentiment/leadQuality    call_analysis   Dashboard Columns
-```
-
-## Next Steps
-
-1. **Test the dashboard** to verify sentiment and lead quality columns are populated
-2. **Run bulk analysis** to backfill any missing analysis data
-3. **Monitor logs** to ensure VAPI analysis data is being extracted correctly
-4. **Validate filtering** works properly with new data
+- Monitor logs and error fields in `pending_vapi_provision` for any failures.
+- Consider scheduling the Edge Function or triggering it via webhook for real-time processing.
+- Add alerting/monitoring for failed provisions if needed.
 
 ## Technical Notes
 
-- The system now properly extracts from `call.analysis.structuredData` per VAPI documentation
-- Database analysis takes precedence over live VAPI analysis for consistency
-- All sentiment/lead quality data flows through the same structured pipeline
-- Fixed variable redeclaration errors in analytics route
+- The Edge Function uses the Supabase service role key and VAPI API key from environment variables.
+- Logic for VAPI API calls and user_settings update is reused from the existing API route.
+- The function is idempotent and safe to run repeatedly.
+- All changes are documented in the memory bank and tracked in TODOs.
 
-## Business Context
-
-This fix aligns the dashboard display with the new business model targeting tech/startup founders instead of real estate professionals. The analysis now shows generic business sentiment and lead quality rather than real estate-specific categories.
+---
