@@ -191,6 +191,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Route classification
   const isAuthPage = [
     '/login',
     '/signup',
@@ -203,6 +204,11 @@ export async function middleware(request: NextRequest) {
   );
   const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
   const isOnboardingPage = request.nextUrl.pathname.startsWith('/onboarding');
+  const isSettingsPage = request.nextUrl.pathname.startsWith('/settings');
+  const isWelcomePage = request.nextUrl.pathname.startsWith('/welcome');
+  const isDashboardPage = request.nextUrl.pathname.startsWith('/dashboard');
+  const isDashboardAISettingsTab =
+    isDashboardPage && request.nextUrl.searchParams.get('tab') === 'ai';
 
   // Allow public pages, API routes, and auth pages without authentication
   if (isPublicPage || isApiRoute || (isAuthPage && !user)) {
@@ -216,7 +222,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // If user is authenticated, check subscription status for protected routes
+  // If user is authenticated, check subscription status and welcome flow for protected routes
   if (user) {
     // Allow auth pages for authenticated users (they'll be redirected by ProtectedRoute component)
     if (isAuthPage) {
@@ -224,6 +230,69 @@ export async function middleware(request: NextRequest) {
       return response;
     }
 
+    // Fetch user_settings.welcome_completed
+    let welcomeCompleted: boolean | null = null;
+    try {
+      const { data: userSettings, error: userSettingsError } = await supabase
+        .from('user_settings')
+        .select('welcome_completed')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (userSettingsError) {
+        if (securityConfig.logErrors) {
+          logger.error(
+            'MIDDLEWARE',
+            'Error fetching user_settings',
+            userSettingsError instanceof Error ? userSettingsError : new Error(String(userSettingsError)),
+            {
+              userId: logger.maskUserId(user.id),
+              requestPath: request.nextUrl.pathname,
+            }
+          );
+        }
+        // Treat as not completed if error
+        welcomeCompleted = null;
+      } else {
+        welcomeCompleted = userSettings?.welcome_completed ?? null;
+      }
+    } catch (err) {
+      if (securityConfig.logErrors) {
+        logger.error(
+          'MIDDLEWARE',
+          'Unexpected error fetching user_settings',
+          err instanceof Error ? err : new Error(String(err)),
+          {
+            userId: logger.maskUserId(user.id),
+            requestPath: request.nextUrl.pathname,
+          }
+        );
+      }
+      welcomeCompleted = null;
+    }
+
+    // --- Welcome Flow Logic ---
+    // For all protected routes (except /welcome, /settings, /login, /signup, /api/, and public pages):
+    // If welcome_completed is false or null, redirect to /welcome
+    const isProtectedRoute =
+      !isPublicPage &&
+      !isApiRoute &&
+      !isAuthPage &&
+      !isSettingsPage &&
+      !isWelcomePage;
+
+    if (isProtectedRoute && (welcomeCompleted === false || welcomeCompleted === null)) {
+      // User has not completed welcome, redirect to /welcome
+      logPerformanceMetrics();
+      return NextResponse.redirect(new URL('/welcome', request.url));
+    }
+
+    // /welcome should only be accessible if welcome_completed is false/null; otherwise, redirect to /dashboard
+    if (isWelcomePage && welcomeCompleted === true) {
+      logPerformanceMetrics();
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    // --- Subscription Logic ---
     try {
       // Check cache first for performance optimization
       let hasValidSubscription = getCachedSubscriptionStatus(
@@ -312,41 +381,47 @@ export async function middleware(request: NextRequest) {
         setCachedSubscriptionStatus(user.id, hasValidSubscription, cacheConfig);
       }
 
-      // Performance logging with cache metrics
-      const processingTime = Date.now() - startTime;
-      if (securityConfig.logErrors && processingTime > 100) {
-        logger.warn('MIDDLEWARE_PERF', 'Slow middleware response', {
-          userId: logger.maskUserId(user.id),
-          processingTimeMs: processingTime,
-          cacheHit,
-          requestPath: request.nextUrl.pathname,
-        });
+      // --- /dashboard Logic ---
+      if (isDashboardPage) {
+        // AI settings tab is always allowed
+        if (isDashboardAISettingsTab) {
+          logPerformanceMetrics();
+          return response;
+        }
+        // If user has valid subscription, allow full dashboard
+        if (hasValidSubscription) {
+          logPerformanceMetrics();
+          return response;
+        }
+        // If user is free, allow but set locked=true in search params
+        const url = request.nextUrl.clone();
+        url.searchParams.set('locked', 'true');
+        logPerformanceMetrics();
+        return NextResponse.rewrite(url);
       }
 
-      // If user has valid subscription (active or pending webhook)
-      if (hasValidSubscription) {
-        // Redirect away from onboarding pages to main dashboard
-        if (isOnboardingPage) {
+      // --- Onboarding Pages ---
+      if (isOnboardingPage) {
+        // If user has valid subscription, redirect away from onboarding to dashboard
+        if (hasValidSubscription) {
           logPerformanceMetrics();
           return NextResponse.redirect(new URL('/dashboard', request.url));
         }
-        // Allow access to all other pages
+        // Allow onboarding for free users
         logPerformanceMetrics();
         return response;
       }
 
-      // If user doesn't have valid subscription (new user)
-      if (!hasValidSubscription) {
-        // Allow access to onboarding pages
-        if (isOnboardingPage) {
+      // --- All Other Protected Routes ---
+      if (isProtectedRoute) {
+        // If user has valid subscription, allow
+        if (hasValidSubscription) {
           logPerformanceMetrics();
           return response;
         }
-        // Redirect to onboarding for all other protected routes
+        // If user is free, redirect to onboarding/profile (legacy fallback)
         logPerformanceMetrics();
-        return NextResponse.redirect(
-          new URL('/onboarding/profile', request.url)
-        );
+        return NextResponse.redirect(new URL('/onboarding/profile', request.url));
       }
     } catch (error) {
       const errorMessage = `Middleware error: ${error instanceof Error ? error.message : 'Unknown error'}`;
