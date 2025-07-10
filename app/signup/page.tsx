@@ -29,6 +29,7 @@ const PasswordStrengthBar = dynamic(
 );
 import Logo from '@/components/ui/logo';
 import { CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // CONVERSION OPTIMIZATION: Reduced form fields for better conversion
 type FormFieldName = 'email' | 'password' | 'confirmPassword' | 'firstName';
@@ -549,13 +550,13 @@ export default function SignupPage() {
 
               <CardFooter className="flex flex-col space-y-4">
                 {/* Terms checkbox */}
-                <div className="flex items-start space-x-3">
-                  <input
+                <div className="flex items-center space-x-3">
+                  <Checkbox
                     id="terms"
-                    type="checkbox"
                     checked={acceptedTerms}
-                    onChange={e => setAcceptedTerms(e.target.checked)}
-                    className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    onCheckedChange={v => setAcceptedTerms(!!v)}
+                    aria-label="Accept Terms of Service and Privacy Policy"
+                    className="rounded-[2px]"
                   />
                   <label
                     htmlFor="terms"
