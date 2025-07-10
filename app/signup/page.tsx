@@ -2,7 +2,7 @@
 
 import type React from 'react';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ProtectedRoute } from '@/components/protected-route';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -119,6 +119,9 @@ export default function SignupPage() {
     firstName: false,
   });
 
+  // Keep the latest password value for confirm-password comparison
+  const latestPasswordRef = useRef('');
+
   const [fieldValidStates, setFieldValidStates] = useState<
     Record<FormFieldName, boolean>
   >({
@@ -206,7 +209,8 @@ export default function SignupPage() {
       }
       case 'confirmPassword': {
         if (!value) return 'Please confirm your password';
-        if (value !== formData.password) return 'Passwords do not match';
+        if (value !== latestPasswordRef.current)
+          return 'Passwords do not match';
         return null;
       }
       default:
@@ -214,29 +218,32 @@ export default function SignupPage() {
     }
   };
 
-  // CONVERSION OPTIMIZATION: Debounced real-time validation
-  useEffect(() => {
-    const validateWithDelay = async (field: FormFieldName, value: string) => {
-      if (!touchedFields[field]) return;
+  // Debounced per-field validation (runs only on the field being edited)
+  // Store timers so each field has its own debounce instance
+  const validationTimers = useRef<Record<FormFieldName, NodeJS.Timeout | null>>(
+    {
+      email: null,
+      password: null,
+      confirmPassword: null,
+      firstName: null,
+    }
+  );
 
-      setIsValidating(prev => ({ ...prev, [field]: true }));
+  const triggerValidation = (field: FormFieldName, value: string) => {
+    // Clear any existing timer for this field
+    if (validationTimers.current[field]) {
+      clearTimeout(validationTimers.current[field] as NodeJS.Timeout);
+    }
 
-      // Debounce validation
-      setTimeout(async () => {
-        const error = await validateField(field, value);
-        setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
-        setFieldValidStates(prev => ({ ...prev, [field]: !error }));
-        setIsValidating(prev => ({ ...prev, [field]: false }));
-      }, 300);
-    };
+    setIsValidating(prev => ({ ...prev, [field]: true }));
 
-    Object.keys(formData).forEach(field => {
-      validateWithDelay(
-        field as FormFieldName,
-        formData[field as FormFieldName]
-      );
-    });
-  }, [formData, touchedFields]);
+    validationTimers.current[field] = setTimeout(async () => {
+      const error = await validateField(field, value);
+      setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
+      setFieldValidStates(prev => ({ ...prev, [field]: !error }));
+      setIsValidating(prev => ({ ...prev, [field]: false }));
+    }, 300);
+  };
 
   const handleFieldBlur = (field: FormFieldName) => {
     setTouchedFields(prev => ({ ...prev, [field]: true }));
@@ -254,7 +261,22 @@ export default function SignupPage() {
       processedValue = value.slice(0, 128); // Limit length
     }
 
+    // Update latest password ref before validations
+    if (field === 'password') {
+      latestPasswordRef.current = processedValue;
+    }
+
+    // Mark field as touched as soon as user edits
+    setTouchedFields(prev => ({ ...prev, [field]: true }));
+
     setFormData(prev => ({ ...prev, [field]: processedValue }));
+
+    triggerValidation(field, processedValue);
+
+    // If password changed, re-validate confirmPassword to keep them in sync
+    if (field === 'password' && touchedFields.confirmPassword) {
+      triggerValidation('confirmPassword', formData.confirmPassword);
+    }
   };
 
   // CONVERSION OPTIMIZATION: Check if form is valid for submission
