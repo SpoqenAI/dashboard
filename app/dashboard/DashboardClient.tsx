@@ -269,8 +269,10 @@ export default function DashboardClient() {
         setSelectedCall({
           ...call,
           recordingUrl: recordingUrl || call.recordingUrl,
+          // Preserve original analysis but enrich it with sentiment and flattened action points for backward-compat
           analysis: {
             ...call.analysis,
+            sentiment: actionPoints?.sentiment || call.analysis?.sentiment,
             actionPoints: actionPoints
               ? [
                   ...(actionPoints.keyPoints || []),
@@ -279,6 +281,8 @@ export default function DashboardClient() {
                 ]
               : call.analysis?.actionPoints || [],
           },
+          // Attach full structured action points for detailed modal rendering
+          actionPoints: actionPoints || call.actionPoints,
         });
       } catch (err) {
         logger.error('DASHBOARD', 'Error fetching call details', err as Error);

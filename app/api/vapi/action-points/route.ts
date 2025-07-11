@@ -14,6 +14,64 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // --- PERFORMANCE OPTIMIZATION --------------------------------------------------
+    // Check if we already have a comprehensive analysis stored. If so, return it to
+    // avoid hitting VAPI and re-processing the same call every time the user opens
+    // the modal. This dramatically speeds up subsequent openings and reduces API
+    // cost / latency.
+
+    // NOTE: We consider the analysis "complete" if we have at least key_points OR
+    // follow_up_items OR urgent_concerns stored. Adjust this heuristic as needed.
+
+    try {
+      const supabase = await createClient();
+      const {
+        data: existing,
+        error: existingErr,
+      } = await supabase
+        .from('call_analysis')
+        .select(
+          `call_purpose, sentiment, key_points, follow_up_items, urgent_concerns, lead_quality, appointment_requested, property_interest, timeline, contact_preference`
+        )
+        .eq('vapi_call_id', callId)
+        .single();
+
+      if (!existingErr && existing) {
+        const alreadyHasPoints =
+          (existing.key_points && existing.key_points.length > 0) ||
+          (existing.follow_up_items && existing.follow_up_items.length > 0) ||
+          (existing.urgent_concerns && existing.urgent_concerns.length > 0);
+
+        if (alreadyHasPoints) {
+          const cached: ActionPoints = {
+            callPurpose: existing.call_purpose || undefined,
+            sentiment: existing.sentiment || undefined,
+            keyPoints: existing.key_points || [],
+            followUpItems: existing.follow_up_items || [],
+            urgentConcerns: existing.urgent_concerns || [],
+            callAnalysis: {
+              leadQuality: (existing.lead_quality || 'cold') as any,
+              appointmentRequested: existing.appointment_requested || false,
+              propertyInterest: existing.property_interest || undefined,
+              timeline: existing.timeline || undefined,
+              contactPreference: existing.contact_preference || undefined,
+            },
+          };
+
+          logger.info('ACTION_POINTS', 'Returning cached analysis', {
+            callId,
+          });
+
+          return NextResponse.json({ actionPoints: cached });
+        }
+      }
+    } catch (cacheErr) {
+      logger.error('ACTION_POINTS', 'Cache check failed', cacheErr as Error);
+      // Continue to full analysis path if cache fails
+    }
+
+    // ------------------------------------------------------------------------------
+
     // First, fetch the call details from VAPI
     const vapiResponse = await fetch(
       `${process.env.VAPI_API_URL || 'https://api.vapi.ai'}/call/${callId}`,
