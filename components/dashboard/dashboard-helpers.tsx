@@ -40,17 +40,16 @@ export const calculateAndFormatCallDuration = (
 };
 
 export const formatDate = (dateString: string): string => {
-  // Always show both date and time for clarity in analytics
+  // Compact format for table views - date only
   return new Date(dateString).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
   });
 };
 
 export const formatDateDetailed = (dateString: string): string => {
+  // Detailed format for modals and detailed views - date and time
   return new Date(dateString).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
