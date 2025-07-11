@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
@@ -32,6 +32,9 @@ export function SubscriptionForm({
   const [isLoading, setIsLoading] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [checkoutInProgress, setCheckoutInProgress] = useState(false);
+  const [pollingStopped, setPollingStopped] = useState(false);
+  const pollingAttemptsRef = useRef(0);
+  const MAX_POLLING_ATTEMPTS = 30; // 30 attempts * 4s = 2 minutes
 
   useEffect(() => {
     const initPaddle = async () => {
@@ -153,7 +156,9 @@ export function SubscriptionForm({
 
   // Subscription status polling using SWR (auto-pauses in background tabs)
   const { data: activeSubscription } = useSWR(
-    checkoutInProgress ? ['subscription_status', userId] : null,
+    checkoutInProgress && !pollingStopped
+      ? ['subscription_status', userId]
+      : null,
     async () => {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
@@ -168,8 +173,28 @@ export function SubscriptionForm({
     {
       refreshInterval: 4000,
       refreshWhenHidden: false,
+      onSuccess: () => {
+        pollingAttemptsRef.current += 1;
+        if (pollingAttemptsRef.current >= MAX_POLLING_ATTEMPTS) {
+          setPollingStopped(true);
+        }
+      },
+      onError: () => {
+        pollingAttemptsRef.current += 1;
+        if (pollingAttemptsRef.current >= MAX_POLLING_ATTEMPTS) {
+          setPollingStopped(true);
+        }
+      },
     }
   );
+
+  // Reset polling state when checkout starts again
+  useEffect(() => {
+    if (checkoutInProgress) {
+      pollingAttemptsRef.current = 0;
+      setPollingStopped(false);
+    }
+  }, [checkoutInProgress]);
 
   useEffect(() => {
     if (activeSubscription) {
@@ -177,6 +202,8 @@ export function SubscriptionForm({
         userId: logger.maskUserId(userId),
       });
       setCheckoutInProgress(false);
+      setPollingStopped(false);
+      pollingAttemptsRef.current = 0;
       router.push('/onboarding/processing?payment=success');
     }
   }, [activeSubscription, router, userId]);
@@ -334,6 +361,35 @@ export function SubscriptionForm({
                 <p className="mt-2 text-sm text-red-600">
                   Please refresh the page to try again. If the problem persists,
                   contact support.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Polling Timeout Message */}
+        {pollingStopped && checkoutInProgress && (
+          <div className="mt-4 rounded-md border border-yellow-200 bg-yellow-50 p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-5 w-5 text-yellow-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10A8 8 0 11.001 10 8 8 0 0118 10zm-8 3a1 1 0 100-2 1 1 0 000 2zm.75-7a.75.75 0 00-1.5 0v4a.75.75 0 001.5 0V6z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h4 className="text-sm font-medium text-yellow-800">
+                  Subscription not detected
+                </h4>
+                <p className="mt-1 text-sm text-yellow-700">
+                  We couldn't confirm your subscription within 2 minutes. If you
+                  completed payment, please refresh the page or contact support.
                 </p>
               </div>
             </div>
