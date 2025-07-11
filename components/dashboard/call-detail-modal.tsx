@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   formatDateDetailed,
+  formatDuration,
   getSentimentBadge as GetSentimentBadge,
 } from './dashboard-helpers';
 import { VapiCall } from '@/lib/types';
@@ -48,26 +49,8 @@ export const CallDetailModal = memo(
           )
         : 0);
 
-    const formatDuration = (seconds: number): string => {
-      const minutes = Math.floor(seconds / 60);
-      const remainingSeconds = seconds % 60;
-      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-    };
-
-    // Parse key points, follow-up items, and urgent concerns from action points
-    // Note: VapiCall analysis doesn't have structured keyPoints, followUpItems, urgentConcerns
-    const structuredKeyPoints: string[] = [];
-    const followUpItems: string[] = [];
-    const urgentConcerns: string[] = [];
-
-    // If no structured data, try to parse from actionPoints array
-    const allActionPoints = call.analysis?.actionPoints || [];
-    const keyPoints =
-      structuredKeyPoints.length > 0
-        ? structuredKeyPoints
-        : followUpItems.length === 0 && allActionPoints.length > 0
-          ? allActionPoints
-          : structuredKeyPoints;
+    // Use action points directly from call analysis
+    const keyPoints = call.analysis?.actionPoints || [];
 
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -105,7 +88,14 @@ export const CallDetailModal = memo(
                 <CardContent className="flex flex-col items-center justify-center p-6">
                   <CheckSquare className="mb-2 h-8 w-8 text-green-500" />
                   <div className="text-lg font-semibold text-green-600">
-                    Completed
+                    {call.status
+                      ? call.status
+                          .split('-')
+                          .map(
+                            word => word.charAt(0).toUpperCase() + word.slice(1)
+                          )
+                          .join(' ')
+                      : 'Unknown'}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     Call Status
@@ -158,9 +148,7 @@ export const CallDetailModal = memo(
             )}
 
             {/* AI-Generated Action Points */}
-            {(call.analysis?.sentiment ||
-              keyPoints.length > 0 ||
-              followUpItems.length > 0) && (
+            {(call.analysis?.sentiment || keyPoints.length > 0) && (
               <Card>
                 <CardContent className="p-6">
                   <div className="mb-6 flex items-center gap-2">
@@ -195,48 +183,6 @@ export const CallDetailModal = memo(
                             <div key={index} className="flex items-start gap-2">
                               <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
                               <p className="text-sm">{point}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Follow-up Actions */}
-                    {followUpItems.length > 0 && (
-                      <div>
-                        <div className="mb-3 flex items-center gap-2">
-                          <CheckSquare className="h-4 w-4 text-green-600" />
-                          <h4 className="font-semibold text-green-700">
-                            Follow-up Actions ({followUpItems.length})
-                          </h4>
-                        </div>
-                        <div className="space-y-2">
-                          {followUpItems.map((item, index) => (
-                            <div key={index} className="flex items-start gap-2">
-                              <CheckSquare className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
-                              <p className="text-sm">{item}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Urgent Concerns */}
-                    {urgentConcerns.length > 0 && (
-                      <div>
-                        <div className="mb-3 flex items-center gap-2">
-                          <Badge variant="destructive" className="text-xs">
-                            !
-                          </Badge>
-                          <h4 className="font-semibold text-red-700">
-                            Urgent Concerns ({urgentConcerns.length})
-                          </h4>
-                        </div>
-                        <div className="space-y-2">
-                          {urgentConcerns.map((concern, index) => (
-                            <div key={index} className="flex items-start gap-2">
-                              <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-red-500" />
-                              <p className="text-sm text-red-700">{concern}</p>
                             </div>
                           ))}
                         </div>
