@@ -324,7 +324,7 @@ export default function DashboardClient() {
                       </div>
                     </div>
                     <Button asChild>
-                      <a href="/billing">
+                      <a href="/settings?tab=billing">
                         <ArrowUp className="mr-2 h-4 w-4" /> Upgrade Now
                       </a>
                     </Button>

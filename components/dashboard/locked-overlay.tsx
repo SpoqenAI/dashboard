@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 interface LockedOverlayProps {
   /**
-   * Destination for the CTA button. Defaults to `/billing`.
+   * Destination for the CTA button. Defaults to `/settings?tab=billing`.
    */
   upgradeHref?: string;
   /**
@@ -21,7 +21,7 @@ interface LockedOverlayProps {
  * still allowing overall site navigation (e.g., switching tabs).
  */
 export const LockedOverlay: React.FC<LockedOverlayProps> = ({
-  upgradeHref = '/billing',
+  upgradeHref = '/settings?tab=billing',
   className = '',
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
