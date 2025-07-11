@@ -20,6 +20,10 @@ import { useUserSettings } from '@/hooks/use-user-settings';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import dynamic from 'next/dynamic';
+const VapiWidget = dynamic(() => import('@/components/vapi-widget'), {
+  ssr: false,
+});
 
 interface AISettingsTabProps {
   isUserFree: boolean;
@@ -392,6 +396,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     );
   }
 
+  const assistantId = assistantData?.id ?? settings?.vapi_assistant_id ?? null;
+  const vapiPublicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY ?? '';
+
   return (
     <div className="space-y-6">
       {/* Info alert for free users */}
@@ -540,6 +547,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
           </div>
         </CardContent>
       </Card>
+      {assistantId && vapiPublicKey && (
+        <VapiWidget apiKey={vapiPublicKey} assistantId={assistantId} inline />
+      )}
     </div>
   );
 });
