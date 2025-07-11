@@ -448,7 +448,7 @@ export default function DashboardPage() {
                   <AnalyticsTab
                     analytics={analytics}
                     isLoading={isLoading}
-                    error={error}
+                    error={error ? (error as Error).message : null}
                     timeRange={timeRange}
                     onTimeRangeChange={setTimeRange}
                     isUserFree={isUserFree}
@@ -456,7 +456,7 @@ export default function DashboardPage() {
                     isBulkAnalyzing={isBulkAnalyzing}
                     calls={filteredAndPaginatedCalls.calls}
                     callsLoading={isLoading}
-                    callsError={error}
+                    callsError={error ? (error as Error).message : null}
                     searchTerm={searchTerm}
                     onSearchChange={handleSearchChange}
                     sentimentFilter={sentimentFilter}

@@ -6,7 +6,6 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
 import { logger } from '@/lib/logger';
 import { mutate } from 'swr';
-import { cleanupAnalytics } from '@/lib/analytics-tracking';
 
 interface AuthContextType {
   user: User | null;
@@ -45,9 +44,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Clear any other potential user-specific localStorage items
         // Note: We're being selective to avoid clearing theme preferences, etc.
-
-        // Cleanup analytics tracking instance and localStorage
-        cleanupAnalytics();
 
         logger.auth.info(
           'All SWR caches and user-specific localStorage cleared for security'

@@ -26,7 +26,6 @@ import { ExitIntentModal } from '@/components/ui/exit-intent-modal';
 import { DashboardPreview } from '@/components/dashboard-preview';
 
 // Client components for progressive enhancement
-import { AnalyticsTracker } from '@/components/analytics-tracker';
 import { SimpleBackground } from '@/components/simple-background';
 import { ScarcityBannerProvider } from '@/components/scarcity-banner-provider';
 import { HeroCTASection } from '@/components/hero-cta-section';
@@ -190,9 +189,6 @@ TrustLogoStrip.displayName = 'TrustLogoStrip';
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Client-side analytics tracking */}
-      <AnalyticsTracker page="landing_page" />
-
       <main id="main-content" className="flex-1" role="main">
         <SimpleBackground
           variant="hero"

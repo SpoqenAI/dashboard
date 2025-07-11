@@ -3,7 +3,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '@/lib/logger';
-import { analytics, performance } from '@/lib/analytics';
 import { randomUUID } from 'crypto';
 import { provisionAssistant } from '@/lib/actions/assistant.actions';
 
@@ -193,15 +192,7 @@ export async function GET(request: NextRequest) {
     transactionId = validateTransactionId(rawTransactionId);
     subscriptionId = validateSubscriptionId(rawSubscriptionId);
 
-    // Track payment completion event
-    if (userId) {
-      await analytics.trackPaymentEvent('payment_completed', {
-        userId,
-        transactionId: transactionId || undefined,
-        subscriptionId: subscriptionId || undefined,
-        timestamp: startTime,
-      });
-    }
+    // No analytics
 
     logger.info('PADDLE_SUCCESS', 'Payment success callback received', {
       userId: userId ? logger.maskUserId(userId) : 'invalid',
@@ -389,56 +380,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Track onboarding completion
-    try {
-      await analytics.trackOnboardingComplete(userId, Date.now() - startTime, {
-        subscriptionId: subscriptionId || generateSecureSubscriptionId(),
-        processingTimeMs: Date.now() - startTime,
-        funnelStage: 'subscription_created',
-      });
-    } catch (analyticsError) {
-      logger.error(
-        'PADDLE_SUCCESS',
-        'Analytics tracking (onboarding completion) failed',
-        analyticsError as Error,
-        {
-          userId: logger.maskUserId(userId),
-        }
-      );
-    }
+    //
 
     // Log performance metrics
-    try {
-      await analytics.trackPerformance(
-        'subscription_creation_time',
-        Date.now() - startTime,
-        'ms',
-        {
-          userId,
-          critical: true,
-        }
-      );
-
-      await analytics.trackPerformance(
-        'api_response_time',
-        Date.now() - startTime,
-        'ms',
-        {
-          endpoint: '/api/paddle/success',
-          success: true,
-          statusCode: 200,
-        }
-      );
-    } catch (perfError) {
-      logger.error(
-        'PADDLE_SUCCESS',
-        'Analytics performance tracking failed',
-        perfError as Error,
-        {
-          userId: logger.maskUserId(userId),
-        }
-      );
-    }
+    //
 
     logger.info('PADDLE_SUCCESS', 'Success callback performance', {
       userId: logger.maskUserId(userId),
@@ -474,11 +419,7 @@ export async function GET(request: NextRequest) {
 
     // Track the error for monitoring
     if (userId) {
-      await analytics.trackError('payment_success_callback_failed', {
-        userId,
-        error: errorObj.message,
-        timestamp: Date.now(),
-      });
+      //
     }
 
     // Redirect to error page with recovery options

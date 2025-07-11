@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { X, Gift, Clock, ArrowRight } from 'lucide-react';
 import { Button } from './button';
 import { Card, CardContent, CardHeader, CardTitle } from './card';
-import { trackEvent } from '@/lib/analytics-tracking';
 
 interface ExitIntentModalProps {
   title?: string;
@@ -49,13 +48,6 @@ export const ExitIntentModal = ({
       ) {
         setIsVisible(true);
         setHasShown(true);
-        trackEvent('exit_intent_triggered', {
-          timeOnPage: (Date.now() - (window as any).pageLoadTime) / 1000,
-          scrollDepth:
-            (window.pageYOffset /
-              (document.documentElement.scrollHeight - window.innerHeight)) *
-            100,
-        });
       }
     },
     [hasShown]
@@ -77,10 +69,6 @@ export const ExitIntentModal = ({
     ) {
       setIsVisible(true);
       setHasShown(true);
-      trackEvent('exit_intent_triggered_mobile', {
-        scrollPercent,
-        trigger: 'scroll_up',
-      });
     }
 
     (window as any).lastScrollPosition = window.pageYOffset;
@@ -105,7 +93,6 @@ export const ExitIntentModal = ({
         if (!hasShown && window.pageYOffset > 200) {
           setIsVisible(true);
           setHasShown(true);
-          trackEvent('exit_intent_triggered', { trigger: 'time_based' });
         }
       }, 60000); // 1 minute
 
@@ -117,7 +104,6 @@ export const ExitIntentModal = ({
           if (!hasShown && window.pageYOffset > 200) {
             setIsVisible(true);
             setHasShown(true);
-            trackEvent('exit_intent_triggered', { trigger: 'idle_timeout' });
           }
         }, 30000);
       };
@@ -131,7 +117,6 @@ export const ExitIntentModal = ({
         if (document.hidden && !hasShown) {
           setIsVisible(true);
           setHasShown(true);
-          trackEvent('exit_intent_triggered', { trigger: 'tab_switch' });
         }
       };
       document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -154,16 +139,10 @@ export const ExitIntentModal = ({
 
   const handleClose = useCallback(() => {
     setIsVisible(false);
-    trackEvent('exit_intent_closed', { action: 'manual_close' });
     onClose?.();
   }, [onClose]);
 
   const handleCTAClick = useCallback(() => {
-    trackEvent('exit_intent_cta_clicked', {
-      offer,
-      ctaText,
-      timeVisible: Date.now() - (window as any).exitIntentShowTime,
-    });
   }, [offer, ctaText]);
 
   const handleBackdropClick = useCallback(
