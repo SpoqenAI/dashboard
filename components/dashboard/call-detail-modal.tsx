@@ -173,7 +173,7 @@ export const CallDetailModal = memo(
                     {/* Call Purpose */}
                     {ap?.callPurpose && (
                       <div>
-                        <h4 className="mb-2 font-semibold flex items-center gap-2">
+                        <h4 className="mb-2 flex items-center gap-2 font-semibold">
                           <Lightbulb className="h-4 w-4" /> Call Purpose
                         </h4>
                         <p className="text-sm leading-relaxed">
@@ -184,11 +184,13 @@ export const CallDetailModal = memo(
                     {/* Call Sentiment */}
                     {(ap?.sentiment || call.analysis?.sentiment) && (
                       <div>
-                        <h4 className="mb-2 font-semibold flex items-center gap-2">
+                        <h4 className="mb-2 flex items-center gap-2 font-semibold">
                           <Smile className="h-4 w-4" /> Call Sentiment
                         </h4>
                         <GetSentimentBadge
-                          sentiment={(ap?.sentiment || call.analysis?.sentiment) as any}
+                          sentiment={
+                            (ap?.sentiment || call.analysis?.sentiment) as any
+                          }
                         />
                       </div>
                     )}

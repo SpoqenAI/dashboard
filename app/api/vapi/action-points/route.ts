@@ -25,10 +25,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const supabase = await createClient();
-      const {
-        data: existing,
-        error: existingErr,
-      } = await supabase
+      const { data: existing, error: existingErr } = await supabase
         .from('call_analysis')
         .select(
           `call_purpose, sentiment, key_points, follow_up_items, urgent_concerns, lead_quality, appointment_requested, property_interest, timeline, contact_preference`
