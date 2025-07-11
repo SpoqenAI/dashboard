@@ -101,7 +101,7 @@ async function processVapiWebhook(envelope: any) {
 
     const supabase = createSupabaseAdmin();
 
-    // Refactored: Single query to fetch both id and email_notifications
+    // Single query to fetch both id and email_notifications
     const { data: settingsRow, error: settingsErr } = await supabase
       .from('user_settings')
       .select('id, email_notifications')
@@ -113,6 +113,7 @@ async function processVapiWebhook(envelope: any) {
     const userId = settingsRow.id;
     const emailNotifications: boolean = settingsRow.email_notifications ?? true;
 
+    // Now, get the email from profiles
     const { data: profile } = await supabase
       .from('profiles')
       .select('email')
