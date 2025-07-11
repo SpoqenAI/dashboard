@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { X, Gift, Clock, ArrowRight } from 'lucide-react';
 import { Button } from './button';
 import { Card, CardContent, CardHeader, CardTitle } from './card';
-import debounce from 'lodash-es/debounce';
+import { trackEvent } from '@/lib/analytics-tracking';
 
 interface ExitIntentModalProps {
   title?: string;
@@ -27,11 +27,11 @@ export const ExitIntentModal = ({
 }: ExitIntentModalProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [hasShown, setHasShown] = useState(false);
-  // NOTE: Removed continuous mousemove state updates – they produced hundreds of
-  // React state changes per second and were only used for debugging. Exit‐intent
-  // detection does not require tracking the cursor position in real-time.
-  const handleMouseMove = useCallback(() => {
-    /* no-op – kept only to qualify as “activity” for the idle timer */
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  // PERFORMANCE: Debounced mouse tracking
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    setMousePosition({ x: e.clientX, y: e.clientY });
   }, []);
 
   // Exit intent detection
@@ -49,6 +49,13 @@ export const ExitIntentModal = ({
       ) {
         setIsVisible(true);
         setHasShown(true);
+        trackEvent('exit_intent_triggered', {
+          timeOnPage: (Date.now() - (window as any).pageLoadTime) / 1000,
+          scrollDepth:
+            (window.pageYOffset /
+              (document.documentElement.scrollHeight - window.innerHeight)) *
+            100,
+        });
       }
     },
     [hasShown]
@@ -70,6 +77,10 @@ export const ExitIntentModal = ({
     ) {
       setIsVisible(true);
       setHasShown(true);
+      trackEvent('exit_intent_triggered_mobile', {
+        scrollPercent,
+        trigger: 'scroll_up',
+      });
     }
 
     (window as any).lastScrollPosition = window.pageYOffset;
@@ -83,15 +94,8 @@ export const ExitIntentModal = ({
     // Only add listeners if not already shown
     if (!hasShown) {
       // Desktop exit intent
-      document.addEventListener('mouseleave', handleMouseLeave, {
-        passive: true,
-      });
-
-      // We keep a lightweight no-op mousemove listener solely to reset the idle
-      // debouncer; it no longer triggers React renders.
-      document.addEventListener('mousemove', handleMouseMove, {
-        passive: true,
-      });
+      document.addEventListener('mouseleave', handleMouseLeave);
+      document.addEventListener('mousemove', handleMouseMove);
 
       // Mobile scroll-based intent
       window.addEventListener('scroll', handleScroll, { passive: true });
@@ -101,32 +105,33 @@ export const ExitIntentModal = ({
         if (!hasShown && window.pageYOffset > 200) {
           setIsVisible(true);
           setHasShown(true);
+          trackEvent('exit_intent_triggered', { trigger: 'time_based' });
         }
       }, 60000); // 1 minute
 
-      // Inactivity trigger – fire once after 30 s of no interaction
-      const debouncedIdleTrigger = debounce(() => {
-        if (!hasShown && window.pageYOffset > 200) {
-          setIsVisible(true);
-          setHasShown(true);
-        }
-      }, 30000);
-
+      // Inactivity trigger – 30 s of no interaction after some scroll
+      let idleTimer: NodeJS.Timeout;
+      const resetIdleTimer = () => {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+          if (!hasShown && window.pageYOffset > 200) {
+            setIsVisible(true);
+            setHasShown(true);
+            trackEvent('exit_intent_triggered', { trigger: 'idle_timeout' });
+          }
+        }, 30000);
+      };
       // Consider scroll & mouse movement as activity
-      document.addEventListener('mousemove', debouncedIdleTrigger, {
-        passive: true,
-      });
-      window.addEventListener('scroll', debouncedIdleTrigger, {
-        passive: true,
-      });
-      // Kick-off timer immediately
-      debouncedIdleTrigger();
+      document.addEventListener('mousemove', resetIdleTimer);
+      window.addEventListener('scroll', resetIdleTimer);
+      resetIdleTimer();
 
       // Visibility change (tab switching)
       const handleVisibilityChange = () => {
         if (document.hidden && !hasShown) {
           setIsVisible(true);
           setHasShown(true);
+          trackEvent('exit_intent_triggered', { trigger: 'tab_switch' });
         }
       };
       document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -136,9 +141,9 @@ export const ExitIntentModal = ({
         document.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('scroll', handleScroll);
         clearTimeout(fallbackTimer);
-        document.removeEventListener('mousemove', debouncedIdleTrigger);
-        window.removeEventListener('scroll', debouncedIdleTrigger);
-        debouncedIdleTrigger.cancel();
+        clearTimeout(idleTimer);
+        document.removeEventListener('mousemove', resetIdleTimer);
+        window.removeEventListener('scroll', resetIdleTimer);
         document.removeEventListener(
           'visibilitychange',
           handleVisibilityChange
@@ -149,10 +154,17 @@ export const ExitIntentModal = ({
 
   const handleClose = useCallback(() => {
     setIsVisible(false);
+    trackEvent('exit_intent_closed', { action: 'manual_close' });
     onClose?.();
   }, [onClose]);
 
-  const handleCTAClick = useCallback(() => {}, [offer, ctaText]);
+  const handleCTAClick = useCallback(() => {
+    trackEvent('exit_intent_cta_clicked', {
+      offer,
+      ctaText,
+      timeVisible: Date.now() - (window as any).exitIntentShowTime,
+    });
+  }, [offer, ctaText]);
 
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent) => {

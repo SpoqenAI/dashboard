@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Clock, TrendingUp } from 'lucide-react';
 import { Button } from './button';
+import { trackEvent } from '@/lib/analytics-tracking';
 
 interface ScarcityBannerProps {
   type?: 'limited_time' | 'social_proof' | 'countdown';
@@ -40,10 +41,11 @@ export const ScarcityBanner = ({
 
   const handleClose = () => {
     setIsVisible(false);
+    trackEvent('scarcity_banner_closed', { type, manual: true });
   };
 
   const handleCTAClick = () => {
-    /* noop */
+    trackEvent('scarcity_banner_cta_clicked', { type, ctaText });
   };
 
   if (!isVisible) return null;

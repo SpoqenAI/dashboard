@@ -280,10 +280,17 @@ export async function POST(request: NextRequest) {
       trial_start_at: subscriptionData.trial_start || null,
       trial_end_at: subscriptionData.trial_end || null,
       updated_at: new Date().toISOString(),
-      tier_type: 'paid', // Always set paid for Paddle events
     };
 
-    // No more deleting rows for state transitions; upsert_subscription handles archiving and fallback
+    // If we used fallback user lookup, we need to handle potential ID mismatch
+    // Delete any temporary subscriptions for this user before inserting the real one
+    if (subscriptionData.id.startsWith('sub_')) {
+      await supabase
+        .from('subscriptions')
+        .delete()
+        .eq('user_id', userId)
+        .like('id', 'pending_%');
+    }
 
     // Use atomic upsert function to handle webhook updates
     const { data: upsertResult, error: upsertError } = await supabase.rpc(
@@ -334,7 +341,47 @@ export async function POST(request: NextRequest) {
       status: subscriptionData.status,
     });
 
-    // Remove assistant provisioning logic here. Do not call provisionAssistant or trigger assistant provisioning in this webhook.
+    // Trigger assistant provisioning if subscription is now active
+    if (subscriptionData.status === 'active') {
+      try {
+        // Import assistant provisioning function dynamically to avoid circular imports
+        const { provisionAssistant } = await import(
+          '@/lib/actions/assistant.actions'
+        );
+
+        // Provision assistant in background (don't await to avoid blocking webhook response)
+        provisionAssistant(userId).catch(provisionError => {
+          logger.error(
+            'PADDLE_WEBHOOK',
+            'Failed to provision assistant after subscription activation',
+            provisionError instanceof Error
+              ? provisionError
+              : new Error(String(provisionError)),
+            {
+              userId: logger.maskUserId(userId),
+              subscriptionId: subscriptionData.id,
+            }
+          );
+        });
+
+        logger.info('PADDLE_WEBHOOK', 'Assistant provisioning triggered', {
+          userId: logger.maskUserId(userId),
+          subscriptionId: subscriptionData.id,
+        });
+      } catch (importError) {
+        logger.error(
+          'PADDLE_WEBHOOK',
+          'Failed to import assistant provisioning function',
+          importError instanceof Error
+            ? importError
+            : new Error(String(importError)),
+          {
+            userId: logger.maskUserId(userId),
+            subscriptionId: subscriptionData.id,
+          }
+        );
+      }
+    }
 
     // Trigger Twilio number deletion if subscription is canceled, deleted, or past_due
     if (

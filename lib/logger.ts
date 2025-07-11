@@ -8,19 +8,7 @@
  * - Structured logging with consistent formatting
  */
 
-// Lazy-loaded Sentry reference (browser bundle weight optimisation)
-let sentryInstance: typeof import('@sentry/nextjs') | null = null;
-
-async function getSentry() {
-  if (sentryInstance) return sentryInstance;
-  try {
-    sentryInstance = await import('@sentry/nextjs');
-  } catch (e) {
-    // Sentry failed to load (e.g. network issues or package missing). Ignore.
-    sentryInstance = null;
-  }
-  return sentryInstance;
-}
+import * as Sentry from '@sentry/nextjs';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -107,7 +95,7 @@ class Logger {
   /**
    * Send logs to external service in production
    */
-  private async sendToExternalService(
+  private sendToExternalService(
     level: LogLevel,
     message: string,
     context?: LogContext,
@@ -117,13 +105,12 @@ class Logger {
 
     // Sentry integration - now active!
     try {
-      const Sentry = await getSentry();
-      if (Sentry && level === 'error' && error) {
+      if (level === 'error' && error) {
         Sentry.captureException(error, {
           extra: context,
           tags: { component: 'logger' },
         });
-      } else if (Sentry) {
+      } else {
         Sentry.addBreadcrumb({
           message,
           level: level as any,

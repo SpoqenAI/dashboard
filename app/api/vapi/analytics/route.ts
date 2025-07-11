@@ -3,89 +3,6 @@ import { logger } from '@/lib/logger';
 import { CallMetrics, DashboardAnalytics } from '@/lib/types';
 import { createClient } from '@/lib/supabase/server';
 
-/**
- * @swagger
- * /api/vapi/analytics:
- *   get:
- *     summary: Get call analytics data
- *     description: Returns analytics data including metrics, recent calls, and trends
- *     parameters:
- *       - in: query
- *         name: days
- *         schema:
- *           type: integer
- *           default: 30
- *         description: Number of days to include in analytics
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 100
- *         description: Maximum number of recent calls to return
- *     responses:
- *       200:
- *         description: Analytics data
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 metrics:
- *                   $ref: '#/components/schemas/CallMetrics'
- *                 recentCalls:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/CallData'
- *                 trends:
- *                   $ref: '#/components/schemas/Trends'
- *
- * components:
- *   schemas:
- *     CallData:
- *       type: object
- *       properties:
- *         id:
- *           type: string
- *         phoneNumber:
- *           type: object
- *           properties:
- *             number:
- *               type: string
- *         callerName:
- *           type: string
- *         status:
- *           type: string
- *         endedReason:
- *           type: string
- *         durationSeconds:
- *           type: number
- *         createdAt:
- *           type: string
- *           format: date-time
- *         startedAt:
- *           type: string
- *           format: date-time
- *         endedAt:
- *           type: string
- *           format: date-time
- *         cost:
- *           type: number
- *         transcript:
- *           type: string
- *         summary:
- *           type: string
- *         analysis:
- *           type: object
- *           properties:
- *             sentiment:
- *               type: string
- *               enum: [positive, neutral, negative]
- *               description: Call sentiment analysis result
- *             leadQuality:
- *               type: string
- *               enum: [hot, warm, cold]
- *               description: Lead quality assessment
- */
 export async function GET(request: NextRequest) {
   const apiKey = process.env.VAPI_PRIVATE_KEY;
   const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
@@ -156,7 +73,7 @@ export async function GET(request: NextRequest) {
       return callDate >= cutoffDate;
     });
 
-    // Get authenticated user and their assistant ID in a single optimized query
+    // Get authenticated user and their assistant ID
     const supabase = await createClient();
     const {
       data: { user },
@@ -164,21 +81,12 @@ export async function GET(request: NextRequest) {
 
     let userAssistantId: string | null = null;
     if (user) {
-      // Optimized query with proper error handling and caching hint
-      const { data: userSettings, error: settingsError } = await supabase
+      // Get the user's VAPI assistant ID from user_settings
+      const { data: userSettings } = await supabase
         .from('user_settings')
         .select('vapi_assistant_id')
         .eq('id', user.id)
         .single();
-
-      if (settingsError) {
-        logger.error(
-          'ANALYTICS',
-          'Failed to fetch user settings',
-          settingsError
-        );
-        // Continue with null assistant ID rather than failing completely
-      }
 
       userAssistantId = userSettings?.vapi_assistant_id || null;
     }
@@ -247,96 +155,41 @@ export async function GET(request: NextRequest) {
     let recentCalls = mappedUserCalls.slice(0, 100);
 
     // Enrich calls with database analysis data if user is authenticated
-    if (user?.id && supabase && recentCalls.length > 0) {
+    if (user?.id && supabase) {
       try {
         const callIds = recentCalls.map(call => call.id);
-
-        // Optimize for large datasets - batch process if too many IDs
-        const MAX_IDS_PER_QUERY = 100; // Prevent PostgreSQL IN clause performance issues
-        let analysisData: any[] = [];
-
-        if (callIds.length <= MAX_IDS_PER_QUERY) {
-          // Single query for small datasets
-          const { data, error: analysisError } = await supabase
+        if (callIds.length > 0) {
+          const { data: analysisData, error: analysisError } = await supabase
             .from('call_analysis')
             .select('vapi_call_id, sentiment, lead_quality')
             .eq('user_id', user.id)
-            .in('vapi_call_id', callIds)
-            .limit(MAX_IDS_PER_QUERY); // Additional safety limit
+            .in('vapi_call_id', callIds);
 
-          if (analysisError) {
-            logger.error(
-              'ANALYTICS',
-              'Database analysis query failed',
-              analysisError
+          if (!analysisError && analysisData) {
+            // Create a map for quick lookup
+            const analysisMap = new Map(
+              analysisData.map(item => [item.vapi_call_id, item])
             );
-          } else {
-            analysisData = data || [];
+
+            // Enrich the calls with database analysis data
+            recentCalls = recentCalls.map(call => {
+              const dbAnalysis = analysisMap.get(call.id);
+              return {
+                ...call,
+                // Prioritize database analysis over VAPI analysis if available
+                sentiment: dbAnalysis?.sentiment || call.sentiment,
+                leadQuality: dbAnalysis?.lead_quality || call.leadQuality,
+              };
+            });
+
+            logger.info('ANALYTICS', 'Enriched calls with database analysis', {
+              totalCalls: recentCalls.length,
+              callsWithDbAnalysis: analysisData.length,
+              callsWithSentiment: recentCalls.filter(c => c.sentiment).length,
+              callsWithLeadQuality: recentCalls.filter(c => c.leadQuality)
+                .length,
+            });
           }
-        } else {
-          // Batch queries for large datasets to maintain performance
-          logger.info(
-            'ANALYTICS',
-            'Using batched queries for large call dataset',
-            {
-              totalCallIds: callIds.length,
-              batchSize: MAX_IDS_PER_QUERY,
-            }
-          );
-
-          for (let i = 0; i < callIds.length; i += MAX_IDS_PER_QUERY) {
-            const batchIds = callIds.slice(i, i + MAX_IDS_PER_QUERY);
-            const { data, error: batchError } = await supabase
-              .from('call_analysis')
-              .select('vapi_call_id, sentiment, lead_quality')
-              .eq('user_id', user.id)
-              .in('vapi_call_id', batchIds);
-
-            if (batchError) {
-              logger.error(
-                'ANALYTICS',
-                `Batch query failed for calls ${i}-${i + batchIds.length}`,
-                batchError
-              );
-            } else {
-              analysisData.push(...(data || []));
-            }
-          }
-        }
-
-        if (analysisData.length > 0) {
-          // Create a map for efficient O(1) lookup
-          const analysisMap = new Map(
-            analysisData.map((item: any) => [item.vapi_call_id, item])
-          );
-
-          // Enrich the calls with database analysis data
-          // IMPORTANT: Maintains nested structure with sentiment and leadQuality under analysis
-          recentCalls = recentCalls.map(call => {
-            const dbAnalysis = analysisMap.get(call.id);
-            return {
-              ...call,
-              // Prioritize database analysis over VAPI analysis if available
-              // Keep sentiment and leadQuality nested under analysis object per OpenAPI spec
-              analysis: {
-                ...call.analysis,
-                sentiment: dbAnalysis?.sentiment || call.analysis?.sentiment,
-                leadQuality:
-                  dbAnalysis?.lead_quality || call.analysis?.leadQuality,
-              },
-            };
-          });
-
-          logger.info('ANALYTICS', 'Enriched calls with database analysis', {
-            totalCalls: recentCalls.length,
-            callsWithDbAnalysis: analysisData.length,
-            enrichmentRate: `${Math.round((analysisData.length / recentCalls.length) * 100)}%`,
-            callsWithSentiment: recentCalls.filter(c => c.analysis?.sentiment)
-              .length,
-            callsWithLeadQuality: recentCalls.filter(
-              c => c.analysis?.leadQuality
-            ).length,
-          });
         }
       } catch (dbError) {
         logger.error(
@@ -344,7 +197,6 @@ export async function GET(request: NextRequest) {
           'Failed to enrich calls with database analysis',
           dbError as Error
         );
-        // Continue without enrichment rather than failing the entire request
       }
     }
 
@@ -394,35 +246,7 @@ export async function GET(request: NextRequest) {
       cutoffDate: cutoffDate.toISOString(),
     });
 
-    // Calculate appropriate cache duration based on time range
-    // Shorter time ranges need more frequent updates, longer ranges can cache longer
-    let cacheMaxAge: number;
-    if (days <= 7) {
-      cacheMaxAge = 120; // 2 minutes for recent data
-    } else if (days <= 30) {
-      cacheMaxAge = 300; // 5 minutes for medium-term data
-    } else {
-      cacheMaxAge = 600; // 10 minutes for historical data
-    }
-
-    // Create response with caching headers
-    const response = NextResponse.json(analytics);
-
-    // HTTP caching headers for better performance
-    response.headers.set(
-      'Cache-Control',
-      `public, max-age=${cacheMaxAge}, stale-while-revalidate=${cacheMaxAge * 2}`
-    );
-    response.headers.set(
-      'ETag',
-      `"analytics-${user?.id || 'anon'}-${days}-${Date.now().toString(36)}"`
-    );
-    response.headers.set('Vary', 'Authorization');
-
-    // Performance monitoring header
-    response.headers.set('X-Cache-Duration', `${cacheMaxAge}s`);
-
-    return response;
+    return NextResponse.json(analytics);
   } catch (error) {
     logger.error('ANALYTICS', 'Analytics calculation failed', error as Error);
     return NextResponse.json(
@@ -1008,20 +832,11 @@ function calculateTrends(
   };
 }
 
-/**
- * Maps a VAPI call object to the frontend CallData format
- * Ensures sentiment and leadQuality are properly nested under analysis object
- *
- * @param vapiCall - Raw call data from VAPI API
- * @returns CallData object with standardized structure
- */
 function mapVapiCallToFrontend(vapiCall: any) {
-  const phoneNumber = {
-    number:
-      vapiCall.customer?.number ||
-      vapiCall.destination?.number ||
-      vapiCall.phoneNumber?.number,
-  };
+  const phoneNumber =
+    vapiCall.customer?.number ||
+    vapiCall.destination?.number ||
+    vapiCall.phoneNumber?.number;
 
   const durationSeconds =
     vapiCall.endedAt && vapiCall.startedAt
@@ -1060,11 +875,7 @@ function mapVapiCallToFrontend(vapiCall: any) {
     cost: vapiCall.cost,
     transcript,
     summary: vapiCall.analysis?.summary,
-    // IMPORTANT: sentiment and leadQuality are nested under analysis object
-    // This structure matches the OpenAPI documentation and frontend expectations
-    analysis: {
-      sentiment: sentiment as 'positive' | 'neutral' | 'negative' | undefined,
-      leadQuality: leadQuality as 'hot' | 'warm' | 'cold' | undefined,
-    },
+    sentiment: sentiment as 'positive' | 'neutral' | 'negative' | undefined,
+    leadQuality: leadQuality as 'hot' | 'warm' | 'cold' | undefined,
   };
 }

@@ -101,19 +101,6 @@ export default function RootLayout({
             <GlobalHeader />
             {children}
             <Toaster />
-            {/* PERF: mark animations done after initial scroll to stop heavy keyframes */}
-            <Script id="motion-done-script" strategy="afterInteractive">
-              {`
-                (function () {
-                  if (typeof window === 'undefined') return;
-                  const onFirstScroll = () => {
-                    document.documentElement.classList.add('motion-done');
-                    window.removeEventListener('scroll', onFirstScroll);
-                  };
-                  window.addEventListener('scroll', onFirstScroll, { passive: true, once: true });
-                })();
-              `}
-            </Script>
             {/* Vercel Analytics & Speed Insights */}
             <Analytics />
             <SpeedInsights />

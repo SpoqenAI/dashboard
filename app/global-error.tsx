@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import NextError from 'next/error';
 import { useEffect } from 'react';
 
@@ -9,10 +10,7 @@ export default function GlobalError({
   error: Error & { digest?: string };
 }) {
   useEffect(() => {
-    // Defer Sentry import until component mounts (only runs on error pages)
-    import('@sentry/nextjs').then(({ captureException }) => {
-      captureException(error);
-    });
+    Sentry.captureException(error);
   }, [error]);
 
   return (

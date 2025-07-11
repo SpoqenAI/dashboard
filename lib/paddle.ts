@@ -22,7 +22,6 @@ export interface PaddleSubscription {
   canceled_at: string | null;
   trial_start_at: string | null;
   trial_end_at: string | null;
-  tier_type: 'free' | 'paid';
 }
 
 export interface PaddleCheckoutConfig {
@@ -91,16 +90,6 @@ export const isActiveSubscription = (
   subscription: PaddleSubscription
 ): boolean => {
   return subscription.status === 'active' || subscription.status === 'trialing';
-};
-
-export const isFreeUser = (
-  subscription: PaddleSubscription | null
-): boolean => {
-  // If no subscription at all, they're definitely free
-  if (!subscription) return true;
-
-  // Check tier_type field - if it's 'free', user is on free tier
-  return subscription.tier_type === 'free';
 };
 
 export const isTrialSubscription = (
