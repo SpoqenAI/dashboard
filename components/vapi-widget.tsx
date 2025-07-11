@@ -53,22 +53,22 @@ function VapiWidgetInner({
     const instance = new VapiClient(apiKey, config);
     vapiRef.current = instance;
 
-    // Event listeners
-    instance.on('call-start', () =>
-      setIsConnected(prev => (prev ? prev : true))
-    );
-    instance.on('call-end', () => {
-      setIsConnected(prev => (prev ? false : prev));
+    // Define handlers
+    const handleCallStart = () => setIsConnected(true);
+    const handleCallEnd = () => {
+      setIsConnected(false);
       setIsSpeaking(false);
-    });
-    instance.on('speech-start', () =>
-      setIsSpeaking(prev => (prev ? prev : true))
-    );
-    instance.on('speech-end', () =>
-      setIsSpeaking(prev => (prev ? false : prev))
-    );
-    // Skip live transcript updates for performance (they fire very frequently)
-    instance.on('error', (err: any) => console.error('Vapi error:', err));
+    };
+    const handleSpeechStart = () => setIsSpeaking(true);
+    const handleSpeechEnd = () => setIsSpeaking(false);
+    const handleError = (err: any) => console.error('Vapi error:', err);
+
+    // Attach
+    instance.on('call-start', handleCallStart);
+    instance.on('call-end', handleCallEnd);
+    instance.on('speech-start', handleSpeechStart);
+    instance.on('speech-end', handleSpeechEnd);
+    instance.on('error', handleError);
 
     // Aggressive cleanup – stop calls when tab hidden or on unmount
     const handleVisibilityChange = () => {
@@ -84,6 +84,11 @@ function VapiWidgetInner({
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
+      instance.off('call-start', handleCallStart);
+      instance.off('call-end', handleCallEnd);
+      instance.off('speech-start', handleSpeechStart);
+      instance.off('speech-end', handleSpeechEnd);
+      instance.off('error', handleError);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       instance.stop();
@@ -114,6 +119,7 @@ function VapiWidgetInner({
       {!isConnected ? (
         <button
           onClick={startCall}
+          aria-label="Start a voice conversation with your AI assistant"
           className="rounded-full bg-teal-600 px-6 py-4 text-base font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl focus:outline-none"
         >
           🎤 Talk to Assistant
@@ -131,7 +137,8 @@ function VapiWidgetInner({
             </div>
             <button
               onClick={endCall}
-              className="rounded-md bg-red-500 px-3 py-1 text-xs text-white hover:bg-red-600"
+              aria-label="End the current voice call with your AI assistant"
+              className="rounded-md bg-red-500 px-3 py-1 text-xs text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2"
             >
               End Call
             </button>
