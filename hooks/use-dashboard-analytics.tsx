@@ -70,7 +70,8 @@ export function useDashboardAnalytics(
     {
       // Stale-while-revalidate configuration
       refreshInterval: refetchInterval, // Respect consumer's refresh interval preference
-      revalidateOnFocus: true, // Enable focus revalidation to catch new calls
+      // We'll implement our own smarter visibility logic below
+      revalidateOnFocus: false,
       revalidateOnReconnect: true, // Revalidate when connection is restored
       dedupingInterval: dedupingInterval, // Reduce deduping to 5 seconds
 
@@ -130,6 +131,31 @@ export function useDashboardAnalytics(
   // Manual refetch function
   const refetch = useCallback(() => {
     return mutate();
+  }, [mutate]);
+
+  // QUICK WIN – Custom visibilitychange revalidation
+  const hiddenAtRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    function onVisibilityChange() {
+      if (document.visibilityState === 'hidden') {
+        hiddenAtRef.current = Date.now();
+      } else if (document.visibilityState === 'visible') {
+        const hiddenFor = hiddenAtRef.current
+          ? Date.now() - hiddenAtRef.current
+          : 0;
+        hiddenAtRef.current = null;
+        // If tab was hidden for >15s, revalidate immediately
+        if (hiddenFor > 15_000) {
+          mutate();
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [mutate]);
 
   return {
