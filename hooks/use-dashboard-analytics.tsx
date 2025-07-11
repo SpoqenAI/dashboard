@@ -83,6 +83,8 @@ export function useDashboardAnalytics(
       errorRetryInterval: 5000,
 
       // Performance optimizations
+      // Keep previous data while revalidating to prevent UI from going blank
+      keepPreviousData: true,
       onSuccess: data => {
         logger.info(
           'DASHBOARD_ANALYTICS_SWR',
@@ -103,8 +105,10 @@ export function useDashboardAnalytics(
 
   // CRITICAL SECURITY FIX: Clear cache when user changes
   useEffect(() => {
-    if (!user) {
-      // User logged out - immediately clear all cached data
+    // We only clear cache when the user is explicitly null (logged out),
+    // not when it's undefined during the initial Auth load. This avoids
+    // wiping analytics data during quick route changes or reloads.
+    if (user === null) {
       mutate(undefined, false); // Clear cache without triggering revalidation
       logger.info(
         'DASHBOARD_ANALYTICS_SWR',
