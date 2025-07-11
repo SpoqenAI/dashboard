@@ -204,6 +204,9 @@ export async function createAssistantAction(
           },
           serverUrl: `${appUrl}/api/webhooks/vapi`,
           serverUrlSecret: vapiWebhookSecret,
+          // Limit webhooks to the single event we actually consume to avoid
+          // overwhelming our API route and hitting provider rate limits.
+          events: ['end-of-call-report'],
         }),
       });
 
