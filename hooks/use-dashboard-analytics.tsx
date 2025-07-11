@@ -1,7 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import useSWR from 'swr';
 import { DashboardAnalytics } from '@/lib/types';
 import { logger } from '@/lib/logger';
+import { useAuth } from '@/hooks/use-auth';
 
 interface UseDashboardAnalyticsOptions {
   days?: number;
@@ -36,6 +37,7 @@ const analyticsFetcher = async (url: string): Promise<DashboardAnalytics> => {
 export function useDashboardAnalytics(
   options: UseDashboardAnalyticsOptions = {}
 ) {
+  const { user } = useAuth();
   const {
     days = 30,
     limit = 100,
@@ -43,13 +45,15 @@ export function useDashboardAnalytics(
     enabled = true,
   } = options;
 
-  // Build the URL for SWR key
-  const url = enabled
-    ? `/api/vapi/analytics?${new URLSearchParams({
-        days: days.toString(),
-        limit: limit.toString(),
-      }).toString()}`
-    : null;
+  // Build the URL for SWR key - CRITICAL: Include user ID to ensure cache isolation
+  const url =
+    enabled && user
+      ? `/api/vapi/analytics?${new URLSearchParams({
+          days: days.toString(),
+          limit: limit.toString(),
+          userId: user.id, // Include user ID in key to isolate cache by user
+        }).toString()}`
+      : null;
 
   // SWR configuration for better performance
   const {
@@ -59,7 +63,7 @@ export function useDashboardAnalytics(
     isValidating,
     mutate,
   } = useSWR(
-    url, // SWR key - null when disabled
+    url, // SWR key - null when disabled or no user
     analyticsFetcher,
     {
       // Stale-while-revalidate configuration
@@ -78,7 +82,7 @@ export function useDashboardAnalytics(
       errorRetryInterval: 5000,
 
       // Performance optimizations
-      keepPreviousData: true, // Keep previous data while loading new data
+      keepPreviousData: false, // CRITICAL: Don't keep previous user's data
 
       onSuccess: data => {
         logger.info(
@@ -97,6 +101,18 @@ export function useDashboardAnalytics(
       },
     }
   );
+
+  // CRITICAL SECURITY FIX: Clear cache when user changes
+  useEffect(() => {
+    if (!user) {
+      // User logged out - immediately clear all cached data
+      mutate(undefined, false); // Clear cache without triggering revalidation
+      logger.info(
+        'DASHBOARD_ANALYTICS_SWR',
+        'Cache cleared due to user logout'
+      );
+    }
+  }, [user, mutate]);
 
   // Manual refetch function
   const refetch = useCallback(() => {

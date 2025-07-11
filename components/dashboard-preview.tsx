@@ -290,6 +290,28 @@ export const DashboardPreview = memo(() => {
   const [isMounted, setIsMounted] = useState(false);
   const [overviewRefreshKey, setOverviewRefreshKey] = useState(0);
 
+  // --------------------------------------------------------------
+  // Visibility tracking (perf02_viewport_pause_preview)
+  // --------------------------------------------------------------
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
+
+  // Observe viewport visibility
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.2 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   // Single source of truth for all timer management
   const timerRef = useRef<{
     slideTimer: NodeJS.Timeout | null;
@@ -524,13 +546,20 @@ export const DashboardPreview = memo(() => {
     timerRef.current = {
       slideTimer: null,
       progressAnimation: null,
-      cycleId: timerRef.current.cycleId + 1, // Increment to invalidate any pending callbacks
+      cycleId: timerRef.current.cycleId + 1, // Invalidate pending callbacks
       isActive: false,
     };
 
-    // Reset progress immediately
+    // Ensure progress bar resets immediately
     setProgressWidth(0);
   }, []);
+
+  // Stop timers whenever preview leaves the viewport
+  useEffect(() => {
+    if (!isVisible) {
+      stopAllTimers();
+    }
+  }, [isVisible, stopAllTimers]);
 
   // Robust slide cycling with atomic state management
   const startSlideCycle = useCallback(() => {
@@ -604,9 +633,9 @@ export const DashboardPreview = memo(() => {
     CONSTANTS.TRANSITION_DURATION,
   ]);
 
-  // Start cycling when component becomes idle and is mounted
+  // Start cycling when component becomes idle, mounted, and visible
   useEffect(() => {
-    if (componentState === 'idle' && isMounted) {
+    if (componentState === 'idle' && isMounted && isVisible) {
       // Small delay to ensure state is settled
       const initTimer = setTimeout(() => {
         startSlideCycle();
@@ -620,6 +649,7 @@ export const DashboardPreview = memo(() => {
     componentState,
     currentSection,
     isMounted,
+    isVisible,
     startSlideCycle,
     stopAllTimers,
   ]);
@@ -694,6 +724,7 @@ export const DashboardPreview = memo(() => {
 
   return (
     <div
+      ref={containerRef}
       className="relative max-w-4xl overflow-hidden rounded-2xl border border-border bg-card/60 p-6 shadow-lg backdrop-blur-sm will-change-transform"
       style={{ contain: 'layout style paint' }}
       role="region"

@@ -63,6 +63,17 @@ const nextConfig = {
     optimizeCss: true,
     // PERFORMANCE: Enable memory optimization
     esmExternals: true,
+    // Note: memoryLimit is not a valid Turbopack option (will trigger warnings)
+  },
+
+  // -------------------------------------------------------------
+  // Turbopack configuration (perf05_turbopack_memory_limit)
+  // -------------------------------------------------------------
+  turbopack: {
+    // Alias heavier lodash -> lightweight lodash-es in browser bundles
+    resolveAlias: {
+      lodash: 'lodash-es',
+    },
   },
 
   // Enhanced security headers with proper CORS for development
@@ -135,59 +146,63 @@ const nextConfig = {
   },
 
   // Webpack configuration for better performance
-  webpack: (config, { dev, isServer, webpack }) => {
-    // Enable persistent filesystem cache for faster rebuilds in both development and production
-    // Use import.meta.url for ESM compatibility (instead of __filename)
-    const filename = fileURLToPath(import.meta.url);
-    config.cache = {
-      type: 'filesystem',
-      buildDependencies: {
-        config: [filename],
-      },
-    };
-
-    if (dev && !isServer) {
-      // Enable fast source maps for better debugging in development
-      config.devtool = 'eval-source-map';
-    }
-
-    if (!dev && !isServer) {
-      // Disable source maps in production for faster builds and smaller output.
-      // Rationale: Source maps are not needed in production unless debugging, and disabling them significantly improves build speed and reduces output size.
-      config.devtool = false;
-      // PERFORMANCE: Optimize bundle splitting
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          ...config.optimization.splitChunks,
-          cacheGroups: {
-            ...config.optimization.splitChunks.cacheGroups,
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              chunks: 'all',
-            },
-          },
+  // Define Webpack config only for legacy builds; Turbopack will ignore it entirely if not present.
+  // Turbopack sets the env var TURBOPACK=1 when running via `next dev --turbo`.
+  ...(!process.env.TURBOPACK && {
+    webpack(config, { dev, isServer, webpack }) {
+      // Enable persistent filesystem cache for faster rebuilds in both development and production
+      // Use import.meta.url for ESM compatibility (instead of __filename)
+      const filename = fileURLToPath(import.meta.url);
+      config.cache = {
+        type: 'filesystem',
+        buildDependencies: {
+          config: [filename],
         },
       };
-    }
 
-    // (Optional) Bundle Analyzer integration can be added here
-    // See documentation below for instructions
-    // https://www.npmjs.com/package/@next/bundle-analyzer
+      if (dev && !isServer) {
+        // Enable fast source maps for better debugging in development
+        config.devtool = 'eval-source-map';
+      }
 
-    config.plugins.push(
-      new webpack.DefinePlugin({
-        __SENTRY_DEBUG__: false,
-        __SENTRY_TRACING__: false, // Set to true if you use Sentry performance monitoring
-        __RRWEB_EXCLUDE_IFRAME__: true,
-        __RRWEB_EXCLUDE_SHADOW_DOM__: true,
-        __SENTRY_EXCLUDE_REPLAY_WORKER__: true,
-      })
-    );
+      if (!dev && !isServer) {
+        // Disable source maps in production for faster builds and smaller output.
+        // Rationale: Source maps are not needed in production unless debugging, and disabling them significantly improves build speed and reduces output size.
+        config.devtool = false;
+        // PERFORMANCE: Optimize bundle splitting
+        config.optimization = {
+          ...config.optimization,
+          splitChunks: {
+            ...config.optimization.splitChunks,
+            cacheGroups: {
+              ...config.optimization.splitChunks.cacheGroups,
+              vendor: {
+                test: /[\\/]node_modules[\\/]/,
+                name: 'vendors',
+                chunks: 'all',
+              },
+            },
+          },
+        };
+      }
 
-    return config;
-  },
+      // (Optional) Bundle Analyzer integration can be added here
+      // See documentation below for instructions
+      // https://www.npmjs.com/package/@next/bundle-analyzer
+
+      config.plugins.push(
+        new webpack.DefinePlugin({
+          __SENTRY_DEBUG__: false,
+          __SENTRY_TRACING__: false, // Set to true if you use Sentry performance monitoring
+          __RRWEB_EXCLUDE_IFRAME__: true,
+          __RRWEB_EXCLUDE_SHADOW_DOM__: true,
+          __SENTRY_EXCLUDE_REPLAY_WORKER__: true,
+        })
+      );
+
+      return config;
+    },
+  }),
 
   // Environment variable validation
   env: {
@@ -197,41 +212,26 @@ const nextConfig = {
   },
 };
 
+// Remove webpack config when Turbopack is active to silence warnings
+if (process.env.TURBOPACK) {
+  // Turbopack ignores Webpack config; deleting prevents noisy warning
+  delete nextConfig.webpack;
+}
+
 const withAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 });
 
-// Wrap config with bundle analyzer (enabled via ANALYZE env var), then Sentry
-export default withAnalyzer(
-  withSentryConfig(nextConfig, {
-    // For all available options, see:
-    // https://www.npmjs.com/package/@sentry/webpack-plugin#options
+const finalConfig = process.env.TURBOPACK
+  ? nextConfig // Turbopack: skip webpack/analyzer plugins to avoid warning
+  : withAnalyzer(
+      withSentryConfig(nextConfig, {
+        org: process.env.SENTRY_ORG || 'spoqen',
+        project: process.env.SENTRY_PROJECT || 'javascript-nextjs',
+        silent: !process.env.CI,
+        widenClientFileUpload: true,
+        automaticVercelMonitors: true,
+      })
+    );
 
-    org: process.env.SENTRY_ORG || 'spoqen',
-    project: process.env.SENTRY_PROJECT || 'javascript-nextjs',
-
-    // Only print logs for uploading source maps in CI
-    silent: !process.env.CI,
-
-    // For all available options, see:
-    // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
-
-    // Upload a larger set of source maps for prettier stack traces (increases build time)
-    widenClientFileUpload: true,
-
-    // Uncomment to route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
-    // This can increase your server load as well as your hosting bill.
-    // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
-    // side errors will fail.
-    // tunnelRoute: "/monitoring",
-
-    // Automatically tree-shake Sentry logger statements to reduce bundle size
-    disableLogger: true,
-
-    // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
-    // See the following for more information:
-    // https://docs.sentry.io/product/crons/
-    // https://vercel.com/docs/cron-jobs
-    automaticVercelMonitors: true,
-  })
-);
+export default finalConfig;

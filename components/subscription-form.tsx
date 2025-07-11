@@ -12,6 +12,7 @@ import {
   CheckoutOpenOptions,
 } from '@paddle/paddle-js';
 import { logger } from '@/lib/logger';
+import useSWR from 'swr';
 
 interface SubscriptionFormProps {
   userEmail: string;
@@ -150,44 +151,35 @@ export function SubscriptionForm({
     };
   }, [checkoutInProgress, userId, router]);
 
-  // Interval polling while checkout is in progress to make flow fool-proof
+  // Subscription status polling using SWR (auto-pauses in background tabs)
+  const { data: activeSubscription } = useSWR(
+    checkoutInProgress ? ['subscription_status', userId] : null,
+    async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('subscriptions')
+        .select('status')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .maybeSingle();
+      return data;
+    },
+    {
+      refreshInterval: 4000,
+      refreshWhenHidden: false,
+    }
+  );
+
   useEffect(() => {
-    if (!checkoutInProgress) return;
-
-    const supabaseImportPromise = import('@/lib/supabase/client');
-
-    const poll = async () => {
-      try {
-        const { createClient } = await supabaseImportPromise;
-        const supabase = createClient();
-        const { data: subscription } = await supabase
-          .from('subscriptions')
-          .select('status')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        if (subscription) {
-          logger.info(
-            'SUBSCRIPTION_FORM',
-            'Subscription detected via polling',
-            {
-              userId: logger.maskUserId(userId),
-            }
-          );
-          setCheckoutInProgress(false);
-          router.push('/onboarding/processing?payment=success');
-        }
-      } catch (error) {
-        logger.error('SUBSCRIPTION_FORM', 'Polling error', error as Error, {
-          userId: logger.maskUserId(userId),
-        });
-      }
-    };
-
-    const intervalId = setInterval(poll, 4000); // poll every 4s
-    return () => clearInterval(intervalId);
-  }, [checkoutInProgress, userId, router]);
+    if (activeSubscription) {
+      logger.info('SUBSCRIPTION_FORM', 'Subscription detected via SWR', {
+        userId: logger.maskUserId(userId),
+      });
+      setCheckoutInProgress(false);
+      router.push('/onboarding/processing?payment=success');
+    }
+  }, [activeSubscription, router, userId]);
 
   const handleSubscribe = async () => {
     if (!paddle) {

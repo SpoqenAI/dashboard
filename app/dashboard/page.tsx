@@ -1,6 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useReducer,
+  startTransition,
+  Suspense,
+} from 'react';
+import dynamic from 'next/dynamic';
 import { ProtectedRoute } from '@/components/protected-route';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,10 +25,22 @@ import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
 import { VapiCall } from '@/lib/types';
 
-// Import dashboard components
-import { AnalyticsTab } from '@/components/dashboard/analytics-tab';
+// Lazy-load heavy dashboard tabs to trim initial JS (perf optim)
+const AnalyticsTab = dynamic(
+  () =>
+    import('@/components/dashboard/analytics-tab').then(m => m.AnalyticsTab),
+  { ssr: false, loading: () => <div className="p-6">Loading analytics…</div> }
+);
+
+const AISettingsTab = dynamic(
+  () =>
+    import('@/components/dashboard/ai-settings-simple').then(
+      m => m.AISettingsTab
+    ),
+  { ssr: false, loading: () => <div className="p-6">Loading settings…</div> }
+);
+
 import { CallDetailModal } from '@/components/dashboard/call-detail-modal';
-import { AISettingsTab } from '@/components/dashboard/ai-settings-simple';
 
 // Import icons
 import { BarChart3, Settings, AlertCircle, ArrowUp } from 'lucide-react';
@@ -52,19 +73,66 @@ interface AnalyticsData {
 
 const ITEMS_PER_PAGE = 20;
 
+// --------------------------------------------------
+// Reducer for filters + pagination (single source of truth)
+// --------------------------------------------------
+interface FilterState {
+  currentPage: number;
+  searchTerm: string;
+  sentiment: string;
+  leadQuality: string;
+  status: string;
+}
+
+type FilterAction =
+  | { type: 'SET_PAGE'; page: number }
+  | { type: 'SET_SEARCH'; term: string }
+  | { type: 'SET_SENTIMENT'; value: string }
+  | { type: 'SET_LEAD'; value: string }
+  | { type: 'SET_STATUS'; value: string };
+
+const initialFilters: FilterState = {
+  currentPage: 1,
+  searchTerm: '',
+  sentiment: 'all',
+  leadQuality: 'all',
+  status: 'all',
+};
+
+function filterReducer(state: FilterState, action: FilterAction): FilterState {
+  switch (action.type) {
+    case 'SET_PAGE':
+      return { ...state, currentPage: action.page };
+    case 'SET_SEARCH':
+      return { ...state, searchTerm: action.term, currentPage: 1 };
+    case 'SET_SENTIMENT':
+      return { ...state, sentiment: action.value, currentPage: 1 };
+    case 'SET_LEAD':
+      return { ...state, leadQuality: action.value, currentPage: 1 };
+    case 'SET_STATUS':
+      return { ...state, status: action.value, currentPage: 1 };
+    default:
+      return state;
+  }
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const { subscription, loading: subscriptionLoading } = useSubscription();
 
-  // Analytics and call data
+  // Analytics time range
   const [timeRange, setTimeRange] = useState('30');
 
-  // Pagination and filtering
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sentimentFilter, setSentimentFilter] = useState('all');
-  const [leadQualityFilter, setLeadQualityFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  // Unified filter state
+  const [filters, dispatchFilters] = useReducer(filterReducer, initialFilters);
+
+  const {
+    currentPage,
+    searchTerm,
+    sentiment: sentimentFilter,
+    leadQuality: leadQualityFilter,
+    status: statusFilter,
+  } = filters;
 
   // UI state
   const [selectedCall, setSelectedCall] = useState<CallData | null>(null);
@@ -77,7 +145,7 @@ export default function DashboardPage() {
   const { analytics, isLoading, error, refetch } = useDashboardAnalytics({
     days: Number(timeRange),
     refetchInterval: 30000,
-    enabled: !!user && !isBulkAnalyzing,
+    enabled: !!user && !isBulkAnalyzing && !isCallDetailOpen,
   });
 
   // Action points hook
@@ -273,19 +341,23 @@ export default function DashboardPage() {
 
   // Handle page change
   const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page);
+    dispatchFilters({ type: 'SET_PAGE', page });
   }, []);
 
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
-    debouncedSearchTerm,
-    sentimentFilter,
-    leadQualityFilter,
-    statusFilter,
-    timeRange,
-  ]);
+  // Reset page when filters change now handled in reducer
+
+  // Search change with startTransition
+  const handleSearchChange = (val: string) => {
+    startTransition(() => dispatchFilters({ type: 'SET_SEARCH', term: val }));
+  };
+
+  // Handlers for other filters
+  const handleSentimentChange = (v: string) =>
+    dispatchFilters({ type: 'SET_SENTIMENT', value: v });
+  const handleLeadChange = (v: string) =>
+    dispatchFilters({ type: 'SET_LEAD', value: v });
+  const handleStatusChange = (v: string) =>
+    dispatchFilters({ type: 'SET_STATUS', value: v });
 
   if (!user) {
     return (
@@ -361,32 +433,36 @@ export default function DashboardPage() {
 
               {/* Analytics Tab */}
               <TabsContent value="analytics" className="space-y-6">
-                <AnalyticsTab
-                  analytics={analytics}
-                  isLoading={isLoading}
-                  error={error}
-                  timeRange={timeRange}
-                  onTimeRangeChange={setTimeRange}
-                  isUserFree={isUserFree}
-                  onBulkAnalyze={handleBulkAnalyze}
-                  isBulkAnalyzing={isBulkAnalyzing}
-                  calls={filteredAndPaginatedCalls.calls}
-                  callsLoading={isLoading}
-                  callsError={error}
-                  searchTerm={searchTerm}
-                  onSearchChange={setSearchTerm}
-                  sentimentFilter={sentimentFilter}
-                  onSentimentFilterChange={setSentimentFilter}
-                  leadQualityFilter={leadQualityFilter}
-                  onLeadQualityFilterChange={setLeadQualityFilter}
-                  statusFilter={statusFilter}
-                  onStatusFilterChange={setStatusFilter}
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                  selectedCallId={selectedCall?.id || null}
-                  onCallSelect={handleCallSelect}
-                />
+                <Suspense
+                  fallback={<div className="p-6">Loading analytics…</div>}
+                >
+                  <AnalyticsTab
+                    analytics={analytics}
+                    isLoading={isLoading}
+                    error={error}
+                    timeRange={timeRange}
+                    onTimeRangeChange={setTimeRange}
+                    isUserFree={isUserFree}
+                    onBulkAnalyze={handleBulkAnalyze}
+                    isBulkAnalyzing={isBulkAnalyzing}
+                    calls={filteredAndPaginatedCalls.calls}
+                    callsLoading={isLoading}
+                    callsError={error}
+                    searchTerm={searchTerm}
+                    onSearchChange={handleSearchChange}
+                    sentimentFilter={sentimentFilter}
+                    onSentimentFilterChange={handleSentimentChange}
+                    leadQualityFilter={leadQualityFilter}
+                    onLeadQualityFilterChange={handleLeadChange}
+                    statusFilter={statusFilter}
+                    onStatusFilterChange={handleStatusChange}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                    selectedCallId={selectedCall?.id || null}
+                    onCallSelect={handleCallSelect}
+                  />
+                </Suspense>
               </TabsContent>
 
               {/* AI Settings Tab */}
