@@ -363,3 +363,6 @@ export {
   ChartLegendContent,
   ChartStyle,
 };
+
+// Default export for convenience when using dynamic import wrappers.
+export default ChartContainer;

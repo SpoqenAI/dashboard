@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -213,10 +213,21 @@ const LeadDataDisplay = memo(({ leadData }: { leadData: LeadData }) => (
 LeadDataDisplay.displayName = 'LeadDataDisplay';
 
 export const InteractiveDemo = memo(() => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [leadData, setLeadData] = useState<LeadData>({});
   const [analysisData, setAnalysisData] = useState<AnalysisData>({});
+
+  // Observe viewport visibility to pause/play demo
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      setIsVisible(entry.isIntersecting);
+    });
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // PERFORMANCE: Memoized callbacks to prevent re-renders
   const startDemo = useCallback(() => {
@@ -241,7 +252,7 @@ export const InteractiveDemo = memo(() => {
   useEffect(() => {
     let timerId: NodeJS.Timeout | null = null;
 
-    if (isPlaying && currentStep < conversationFlow.length) {
+    if (isPlaying && isVisible && currentStep < conversationFlow.length) {
       timerId = setTimeout(() => {
         const step = conversationFlow[currentStep];
 
@@ -265,10 +276,13 @@ export const InteractiveDemo = memo(() => {
         clearTimeout(timerId);
       }
     };
-  }, [isPlaying, currentStep]);
+  }, [isPlaying, currentStep, isVisible]);
 
   return (
-    <section className="w-full bg-gradient-to-b from-background to-card/30 py-20">
+    <section
+      ref={containerRef}
+      className="w-full bg-gradient-to-b from-background to-card/30 py-20"
+    >
       <div className="container px-6">
         <div className="mb-12 text-center">
           <h2 className="mb-6 text-4xl font-bold lg:text-5xl">

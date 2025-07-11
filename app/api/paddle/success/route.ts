@@ -3,7 +3,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '@/lib/logger';
-import { analytics, performance } from '@/lib/analytics';
 import { randomUUID } from 'crypto';
 import { provisionAssistant } from '@/lib/actions/assistant.actions';
 
@@ -193,15 +192,7 @@ export async function GET(request: NextRequest) {
     transactionId = validateTransactionId(rawTransactionId);
     subscriptionId = validateSubscriptionId(rawSubscriptionId);
 
-    // Track payment completion event
-    if (userId) {
-      await analytics.trackPaymentEvent('payment_completed', {
-        userId,
-        transactionId: transactionId || undefined,
-        subscriptionId: subscriptionId || undefined,
-        timestamp: startTime,
-      });
-    }
+    // No analytics
 
     logger.info('PADDLE_SUCCESS', 'Payment success callback received', {
       userId: userId ? logger.maskUserId(userId) : 'invalid',
@@ -365,49 +356,8 @@ export async function GET(request: NextRequest) {
     });
 
     // 4. Trigger assistant provisioning in background (with enhanced error handling)
-    try {
-      await triggerAssistantProvisioning(
-        userId,
-        subscriptionId || generateSecureSubscriptionId()
-      );
-    } catch (provisioningError: any) {
-      // Don't fail the entire success flow if assistant provisioning fails
-      // This ensures users can still complete onboarding even if there are temporary issues
-      logger.warn(
-        'PADDLE_SUCCESS',
-        'Assistant provisioning failed, but continuing success flow',
-        {
-          userId: logger.maskUserId(userId),
-          subscriptionId: subscriptionId || generateSecureSubscriptionId(),
-          error: provisioningError.message,
-        }
-      );
-
-      // Track the provisioning failure for monitoring
-      await analytics.trackError('assistant_provisioning_failed', {
-        userId,
-        subscriptionId: subscriptionId || generateSecureSubscriptionId(),
-        error: provisioningError.message,
-        timestamp: Date.now(),
-      });
-
-      // Update user settings to indicate manual provisioning may be needed
-      try {
-        await supabase
-          .from('user_settings')
-          .update({
-            assistant_provisioning_status: 'failed',
-            assistant_provisioning_error: provisioningError.message,
-          })
-          .eq('id', userId);
-      } catch (updateError) {
-        logger.error(
-          'PADDLE_SUCCESS',
-          'Failed to update user settings with provisioning error',
-          updateError as Error
-        );
-      }
-    }
+    // Remove all assistant provisioning logic here. Do not call triggerAssistantProvisioning or provisionAssistant in this route.
+    // Continue with the rest of the success flow as normal.
 
     // 5. Mark onboarding as completed
     try {
@@ -430,56 +380,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Track onboarding completion
-    try {
-      await analytics.trackOnboardingComplete(userId, Date.now() - startTime, {
-        subscriptionId: subscriptionId || generateSecureSubscriptionId(),
-        processingTimeMs: Date.now() - startTime,
-        funnelStage: 'subscription_created',
-      });
-    } catch (analyticsError) {
-      logger.error(
-        'PADDLE_SUCCESS',
-        'Analytics tracking (onboarding completion) failed',
-        analyticsError as Error,
-        {
-          userId: logger.maskUserId(userId),
-        }
-      );
-    }
+    //
 
     // Log performance metrics
-    try {
-      await analytics.trackPerformance(
-        'subscription_creation_time',
-        Date.now() - startTime,
-        'ms',
-        {
-          userId,
-          critical: true,
-        }
-      );
-
-      await analytics.trackPerformance(
-        'api_response_time',
-        Date.now() - startTime,
-        'ms',
-        {
-          endpoint: '/api/paddle/success',
-          success: true,
-          statusCode: 200,
-        }
-      );
-    } catch (perfError) {
-      logger.error(
-        'PADDLE_SUCCESS',
-        'Analytics performance tracking failed',
-        perfError as Error,
-        {
-          userId: logger.maskUserId(userId),
-        }
-      );
-    }
+    //
 
     logger.info('PADDLE_SUCCESS', 'Success callback performance', {
       userId: logger.maskUserId(userId),
@@ -515,11 +419,7 @@ export async function GET(request: NextRequest) {
 
     // Track the error for monitoring
     if (userId) {
-      await analytics.trackError('payment_success_callback_failed', {
-        userId,
-        error: errorObj.message,
-        timestamp: Date.now(),
-      });
+      //
     }
 
     // Redirect to error page with recovery options
@@ -544,7 +444,6 @@ function determineRedirectUrl(
     // Get the base URL from the request
     const requestUrl = new URL(request.url);
     let baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
-
     // If behind a proxy like ngrok/Vercel, prefer the forwarded host header
     const forwardedHost = request.headers.get('x-forwarded-host');
     if (forwardedHost) {
@@ -553,15 +452,12 @@ function determineRedirectUrl(
         requestUrl.protocol.replace(':', '');
       baseUrl = `${forwardedProto}://${forwardedHost}`;
     }
-
     const configuredUrl =
       process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
-
     // If we detect localhost but we have a configured public URL (ngrok / prod), prefer it
     if (baseUrl.includes('localhost') && configuredUrl) {
       return new URL(fallbackPath, configuredUrl).toString();
     }
-
     // Validate that we're not redirecting to localhost in production
     if (
       process.env.NODE_ENV === 'production' &&
@@ -582,7 +478,6 @@ function determineRedirectUrl(
       }
       return new URL(fallbackPath, configuredUrl).toString();
     }
-
     // Create the redirect URL when baseUrl is acceptable
     const redirectUrl = new URL(fallbackPath, baseUrl);
     logger.debug('PADDLE_SUCCESS', 'Redirect URL determined', {

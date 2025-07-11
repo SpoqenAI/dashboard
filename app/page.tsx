@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { memo, Suspense } from 'react';
 import dynamic from 'next/dynamic';
+import { LazyMount } from '@/components/lazy-mount';
 import { Button } from '@/components/ui/button';
 import {
   ArrowRight,
@@ -22,11 +23,10 @@ import {
   MicroTestimonial,
   TestimonialStrip,
 } from '@/components/testimonials-section';
-import { ExitIntentModal } from '@/components/ui/exit-intent-modal';
+import ExitIntentModalLoader from '@/components/ui/exit-intent-modal-loader';
 import { DashboardPreview } from '@/components/dashboard-preview';
 
 // Client components for progressive enhancement
-import { AnalyticsTracker } from '@/components/analytics-tracker';
 import { SimpleBackground } from '@/components/simple-background';
 import { ScarcityBannerProvider } from '@/components/scarcity-banner-provider';
 import { HeroCTASection } from '@/components/hero-cta-section';
@@ -190,9 +190,6 @@ TrustLogoStrip.displayName = 'TrustLogoStrip';
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Client-side analytics tracking */}
-      <AnalyticsTracker page="landing_page" />
-
       <main id="main-content" className="flex-1" role="main">
         <SimpleBackground
           variant="hero"
@@ -297,7 +294,9 @@ export default function Home() {
         </Suspense>
 
         <Suspense fallback={<div className="h-96 animate-pulse bg-card/20" />}>
-          <InteractiveDemo />
+          <LazyMount>
+            <InteractiveDemo />
+          </LazyMount>
         </Suspense>
 
         {/* Micro-testimonial after Interactive Demo */}
@@ -424,11 +423,15 @@ export default function Home() {
 
         {/* More sections with lazy loading... */}
         <Suspense fallback={<div className="h-96 animate-pulse bg-card/20" />}>
-          <ROICalculator />
+          <LazyMount>
+            <ROICalculator />
+          </LazyMount>
         </Suspense>
 
         <Suspense fallback={<div className="h-96 animate-pulse bg-card/20" />}>
-          <IntegrationsShowcase />
+          <LazyMount>
+            <IntegrationsShowcase />
+          </LazyMount>
         </Suspense>
 
         {/* Pricing Section */}
@@ -492,15 +495,8 @@ export default function Home() {
       {/* Progressive enhancement: Scarcity banner */}
       <ScarcityBannerProvider />
 
-      {/* PERSUASION: Exit intent modal */}
-      <ExitIntentModal
-        title="Wait! Don't Miss Out"
-        subtitle="Before you go, grab this exclusive offer"
-        offer="50% OFF"
-        ctaText="Claim My Discount"
-        ctaLink="/signup?discount=50"
-        incentive="Join 2,847+ founders already using Spoqen"
-      />
+      {/* PERSUASION: Exit intent modal (lazy loaded) */}
+      <ExitIntentModalLoader />
     </div>
   );
 }

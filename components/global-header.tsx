@@ -8,15 +8,7 @@ import { UserNav } from '@/components/user-nav';
 import Logo from '@/components/ui/logo';
 import { useAuth } from '@/hooks/use-auth';
 import { ThemeToggle } from '@/components/theme-toggle';
-import {
-  LayoutDashboard,
-  Settings,
-  BarChart3,
-  CreditCard,
-  HelpCircle,
-  Menu,
-  User,
-} from 'lucide-react';
+import { LayoutDashboard, Settings, HelpCircle, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
@@ -28,21 +20,9 @@ const navigationItems = [
     requiresAuth: true,
   },
   {
-    name: 'Profile',
-    href: '/profile',
-    icon: User,
-    requiresAuth: true,
-  },
-  {
     name: 'Settings',
     href: '/settings',
     icon: Settings,
-    requiresAuth: true,
-  },
-  {
-    name: 'Billing',
-    href: '/billing',
-    icon: CreditCard,
     requiresAuth: true,
   },
 ];

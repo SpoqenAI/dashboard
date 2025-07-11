@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { PhoneCall, CheckCircle, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/logger';
+import useSWR from 'swr';
 
 export function PaymentProcessing() {
   const router = useRouter();
@@ -28,101 +29,6 @@ export function PaymentProcessing() {
       timeoutIds.push(
         setTimeout(() => mounted && setStage('processing'), 1500)
       );
-
-      // Start polling for subscription after initial animations
-      timeoutIds.push(
-        setTimeout(() => {
-          if (mounted) {
-            pollForSubscription();
-          }
-        }, 2000)
-      );
-    }
-
-    async function pollForSubscription() {
-      let attempts = 0;
-      const maxAttempts = 30; // 30 seconds max wait
-
-      const checkSubscription = async () => {
-        if (!mounted) return;
-
-        try {
-          const {
-            data: { user },
-            error: authError,
-          } = await supabase.auth.getUser();
-
-          if (authError || !user) {
-            setStatusMessage('Authentication error. Redirecting to login...');
-            timeoutIds.push(setTimeout(() => router.push('/login'), 2000));
-            return;
-          }
-
-          // Check for active subscription
-          const { data: subscription } = await supabase
-            .from('subscriptions')
-            .select('status')
-            .eq('user_id', user.id)
-            .eq('status', 'active')
-            .maybeSingle();
-
-          if (subscription) {
-            // Success! Subscription found
-            setStage('complete');
-            setStatusMessage('Account setup complete! Welcome to Spoqen!');
-
-            // Small delay to show success message, then redirect to dashboard
-            timeoutIds.push(
-              setTimeout(() => {
-                if (mounted) {
-                  router.push('/dashboard?welcome=true');
-                }
-              }, 1500)
-            );
-            return;
-          }
-
-          // Continue polling if subscription not found yet
-          attempts++;
-          if (attempts >= maxAttempts) {
-            // Timeout - redirect with helpful message
-            setStatusMessage(
-              'Setup is taking longer than expected. Redirecting...'
-            );
-            timeoutIds.push(
-              setTimeout(() => {
-                if (mounted) {
-                  router.push('/dashboard?setup=pending');
-                }
-              }, 2000)
-            );
-            return;
-          }
-
-          // Update message based on time elapsed
-          if (attempts > 10) {
-            setStatusMessage('Almost ready... finalizing your account setup');
-          } else if (attempts > 5) {
-            setStatusMessage('Configuring your AI assistant...');
-          }
-
-          // Poll again in 1 second
-          timeoutIds.push(setTimeout(checkSubscription, 1000));
-        } catch (error) {
-          logger.error(
-            'PAYMENT_PROCESSING',
-            'Error checking subscription during payment processing',
-            error instanceof Error ? error : new Error(String(error)),
-            { attempts, maxAttempts }
-          );
-          setStatusMessage('Connection issue. Please check your internet...');
-
-          // Retry after a longer delay
-          timeoutIds.push(setTimeout(checkSubscription, 3000));
-        }
-      };
-
-      checkSubscription();
     }
 
     handlePaymentSuccess();
@@ -133,6 +39,82 @@ export function PaymentProcessing() {
       timeoutIds.forEach(clearTimeout);
     };
   }, [router]);
+
+  // SWR polling for subscription status (pauses when hidden) -----------------
+  const attemptsRef = useRef(0);
+  const maxAttempts = 30; // ~30 seconds at 1s interval
+
+  const { data: activeSubscription, error: subscriptionError } = useSWR(
+    stage === 'processing' ? 'payment_processing_subscription' : null,
+    async () => {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        throw new Error('AUTH_ERROR');
+      }
+
+      const { data } = await supabase
+        .from('subscriptions')
+        .select('status')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      return data;
+    },
+    {
+      refreshInterval: 1000,
+      refreshWhenHidden: false,
+      onSuccess: () => {
+        attemptsRef.current += 1;
+      },
+      onError: () => {
+        attemptsRef.current += 1;
+      },
+    }
+  );
+
+  // React to subscription status / attempts
+  useEffect(() => {
+    if (activeSubscription && stage !== 'complete') {
+      setStage('complete');
+      setStatusMessage('Account setup complete! Welcome to Spoqen!');
+
+      const id = setTimeout(() => {
+        router.push('/dashboard?welcome=true');
+      }, 1500);
+
+      return () => clearTimeout(id);
+    }
+
+    // Handle authentication issues
+    if (subscriptionError?.message === 'AUTH_ERROR') {
+      setStatusMessage('Authentication error. Redirecting to login...');
+      const id = setTimeout(() => router.push('/login'), 2000);
+      return () => clearTimeout(id);
+    }
+
+    // Update status messages dynamically
+    if (stage === 'processing') {
+      if (attemptsRef.current >= maxAttempts) {
+        setStatusMessage(
+          'Setup is taking longer than expected. Redirecting...'
+        );
+        const id = setTimeout(
+          () => router.push('/dashboard?setup=pending'),
+          2000
+        );
+        return () => clearTimeout(id);
+      } else if (attemptsRef.current > 10) {
+        setStatusMessage('Almost ready... finalizing your account setup');
+      } else if (attemptsRef.current > 5) {
+        setStatusMessage('Configuring your AI assistant...');
+      }
+    }
+  }, [activeSubscription, subscriptionError, stage, router]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-white">
