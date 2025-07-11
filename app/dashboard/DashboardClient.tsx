@@ -399,7 +399,10 @@ export default function DashboardClient() {
             <CallDetailModal
               call={selectedCall}
               isOpen={isCallDetailOpen}
-              onClose={() => setIsCallDetailOpen(false)}
+              onClose={() => {
+                setIsCallDetailOpen(false);
+                setSelectedCall(null);
+              }}
             />
           </div>
         </DashboardShell>
