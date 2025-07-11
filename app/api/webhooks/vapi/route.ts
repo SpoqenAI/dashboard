@@ -101,29 +101,22 @@ async function processVapiWebhook(envelope: any) {
 
     const supabase = createSupabaseAdmin();
 
-    const [profileRes, settingsRes] = await Promise.all([
-      supabase
-        .from('user_settings')
-        .select('id')
-        .eq('vapi_assistant_id', assistantId)
-        .maybeSingle(),
-      supabase
-        .from('user_settings')
-        .select('email_notifications')
-        .eq('vapi_assistant_id', assistantId)
-        .maybeSingle(),
-    ]);
+    // Refactored: Single query to fetch both id and email_notifications
+    const { data: settingsRow, error: settingsErr } = await supabase
+      .from('user_settings')
+      .select('id, email_notifications')
+      .eq('vapi_assistant_id', assistantId)
+      .maybeSingle();
 
-    const userRow = profileRes.data;
-    const emailNotifications: boolean =
-      settingsRes.data?.email_notifications ?? true;
+    if (settingsErr || !settingsRow) return;
 
-    if (!userRow) return;
+    const userId = settingsRow.id;
+    const emailNotifications: boolean = settingsRow.email_notifications ?? true;
 
     const { data: profile } = await supabase
       .from('profiles')
       .select('email')
-      .eq('id', userRow.id)
+      .eq('id', userId)
       .single();
 
     const email = profile?.email;
@@ -162,6 +155,13 @@ export async function POST(req: NextRequest) {
       await processVapiWebhook(envelope);
     } catch (err) {
       logger.error('VAPI_WEBHOOK', 'Async processing failed', err as Error);
+      // Enhanced: Send critical errors to Sentry for alerting
+      try {
+        const Sentry = await import('@sentry/nextjs');
+        Sentry.captureException(err);
+      } catch (sentryErr) {
+        // Fail silently if Sentry import fails
+      }
     }
   })();
 

@@ -72,7 +72,6 @@ export function useDashboardAnalytics(
       refreshInterval: refetchInterval, // Respect consumer's refresh interval preference
       revalidateOnFocus: true, // Enable focus revalidation to catch new calls
       revalidateOnReconnect: true, // Revalidate when connection is restored
-      revalidateIfStale: false, // Always fetch fresh data
       dedupingInterval: dedupingInterval, // Reduce deduping to 5 seconds
 
       // Cache configuration
@@ -84,9 +83,6 @@ export function useDashboardAnalytics(
       errorRetryInterval: 5000,
 
       // Performance optimizations
-      // Keep previous data during background revalidation so UI doesn't go blank
-      keepPreviousData: false, // Don't keep stale data - show loading state for fresh data
-
       onSuccess: data => {
         logger.info(
           'DASHBOARD_ANALYTICS_SWR',
