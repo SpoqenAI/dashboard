@@ -391,7 +391,8 @@ export default function DashboardClient() {
                 </Suspense>
               </TabsContent>
 
-              <TabsContent value="ai-settings">
+              {/* Keep the AI Settings tab mounted so it doesn’t reload every time */}
+              <TabsContent value="ai-settings" forceMount>
                 <AISettingsTab isUserFree={isUserFree} />
               </TabsContent>
             </Tabs>
