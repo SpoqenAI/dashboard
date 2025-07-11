@@ -109,9 +109,10 @@ export async function GET(request: NextRequest) {
   });
 
   try {
-    // Fetch calls from VAPI with a consistent high limit to avoid API inconsistencies
-    // Different limits for different time ranges were causing weird filtering behavior
-    const adjustedLimit = Math.max(limit, 500); // Use consistent high limit
+    // Maximum number of calls to fetch from VAPI in a single analytics request.
+    // Chosen to balance API performance, avoid missing recent calls, and prevent excessive payloads.
+    const VAPI_ANALYTICS_FETCH_LIMIT = 500;
+    const adjustedLimit = Math.max(limit, VAPI_ANALYTICS_FETCH_LIMIT); // Use consistent high limit
 
     const url = new URL('/call', baseUrl);
     url.searchParams.set('limit', adjustedLimit.toString());
