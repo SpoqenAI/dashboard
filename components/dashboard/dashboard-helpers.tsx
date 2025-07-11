@@ -40,18 +40,16 @@ export const calculateAndFormatCallDuration = (
 };
 
 export const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInHours =
-    Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-  if (diffInHours < 24) {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-  return date.toLocaleDateString();
+  // Compact format for table views - date only
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 };
 
 export const formatDateDetailed = (dateString: string): string => {
+  // Detailed format for modals and detailed views - date and time
   return new Date(dateString).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',

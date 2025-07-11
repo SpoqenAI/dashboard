@@ -9,6 +9,7 @@ interface UseDashboardAnalyticsOptions {
   limit?: number;
   refetchInterval?: number;
   enabled?: boolean;
+  dedupingInterval?: number;
 }
 
 // Fetcher function for SWR
@@ -43,6 +44,7 @@ export function useDashboardAnalytics(
     limit = 100,
     refetchInterval = 300000, // 5 minutes instead of 1 minute
     enabled = true,
+    dedupingInterval = 30000, // 30 seconds - balance between freshness and performance
   } = options;
 
   // Build the URL for SWR key - CRITICAL: Include user ID to ensure cache isolation
@@ -67,14 +69,14 @@ export function useDashboardAnalytics(
     analyticsFetcher,
     {
       // Stale-while-revalidate configuration
-      refreshInterval: refetchInterval,
-      revalidateOnFocus: false, // Disable aggressive focus revalidation
+      refreshInterval: refetchInterval, // Respect consumer's refresh interval preference
+      revalidateOnFocus: true, // Enable focus revalidation to catch new calls
       revalidateOnReconnect: true, // Revalidate when connection is restored
-      revalidateIfStale: true, // Use stale data while revalidating
-      dedupingInterval: 30000, // Dedupe requests within 30 seconds
+      revalidateIfStale: false, // Always fetch fresh data
+      dedupingInterval: dedupingInterval, // Reduce deduping to 5 seconds
 
       // Cache configuration
-      focusThrottleInterval: 60000, // Throttle focus revalidation to 1 minute
+      focusThrottleInterval: 10000, // Reduce focus throttle to 10 seconds
 
       // Error handling
       shouldRetryOnError: true,
@@ -83,7 +85,7 @@ export function useDashboardAnalytics(
 
       // Performance optimizations
       // Keep previous data during background revalidation so UI doesn't go blank
-      keepPreviousData: true,
+      keepPreviousData: false, // Don't keep stale data - show loading state for fresh data
 
       onSuccess: data => {
         logger.info(

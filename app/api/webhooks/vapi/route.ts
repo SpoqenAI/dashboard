@@ -64,6 +64,83 @@ export async function POST(req: NextRequest) {
       transcript: message.transcript ? 'Present' : 'Not available',
     });
 
+    // 2a. Persist analysis to call_analysis for dashboard metrics
+    try {
+      const callId: string | undefined = message.call?.id;
+      const assistantId: string | undefined =
+        message.assistant?.id ?? message.call?.assistantId;
+
+      if (!callId || !assistantId) {
+        logger.warn('VAPI_WEBHOOK', 'Missing callId or assistantId', {
+          callId,
+          assistantId,
+        });
+        throw new Error('Missing identifiers');
+      }
+
+      const supabase = createSupabaseAdmin();
+
+      // Resolve user_id via user_settings (reuse earlier query if available)
+      const { data: settingsRow, error: settingsErr } = await supabase
+        .from('user_settings')
+        .select('id')
+        .eq('vapi_assistant_id', assistantId)
+        .maybeSingle();
+
+      if (settingsErr || !settingsRow) {
+        logger.warn(
+          'VAPI_WEBHOOK',
+          'Could not resolve user for call analysis persistence',
+          {
+            assistantId,
+            error: settingsErr,
+          }
+        );
+        throw new Error('User resolution failed');
+      }
+
+      const userId: string = settingsRow.id;
+
+      // Extract sentiment & lead quality from VAPI structured data (if any)
+      const structured = message.analysis?.structuredData ?? {};
+      const sentiment =
+        structured.sentiment || message.analysis?.sentiment || 'neutral';
+      const leadQuality =
+        structured.leadQuality || structured.lead_quality || 'cold';
+
+      const { error: insertErr } = await supabase.from('call_analysis').upsert(
+        {
+          user_id: userId,
+          vapi_call_id: callId,
+          sentiment,
+          lead_quality: leadQuality,
+          call_purpose: structured.callPurpose || structured.purpose || null,
+          key_points: structured.keyPoints || null,
+          analyzed_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'vapi_call_id',
+        }
+      );
+
+      if (insertErr) {
+        logger.error(
+          'VAPI_WEBHOOK',
+          'Failed to upsert call_analysis from webhook',
+          insertErr,
+          { callId }
+        );
+      } else {
+        logger.info('VAPI_WEBHOOK', 'call_analysis upserted', { callId });
+      }
+    } catch (analysisPersistErr) {
+      logger.error(
+        'VAPI_WEBHOOK',
+        'Unexpected failure persisting call analysis',
+        analysisPersistErr as Error
+      );
+    }
+
     // 2a. Attempt to email the call summary to the assistant owner.
     try {
       const assistantId: string | undefined =

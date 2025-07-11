@@ -109,9 +109,9 @@ export async function GET(request: NextRequest) {
   });
 
   try {
-    // Fetch calls from VAPI with adjusted limit based on time range
-    // For longer time ranges, we need to fetch more calls to ensure we get all calls within the range
-    const adjustedLimit = Math.max(limit, days * 10); // Rough estimate: 10 calls per day max
+    // Fetch calls from VAPI with a consistent high limit to avoid API inconsistencies
+    // Different limits for different time ranges were causing weird filtering behavior
+    const adjustedLimit = Math.max(limit, 500); // Use consistent high limit
 
     const url = new URL('/call', baseUrl);
     url.searchParams.set('limit', adjustedLimit.toString());
@@ -147,6 +147,13 @@ export async function GET(request: NextRequest) {
     const callsData = await res.json();
     const calls = Array.isArray(callsData) ? callsData : [];
 
+    // Debug: Log all call IDs from VAPI for this request
+    logger.info('ANALYTICS', 'All calls from VAPI', {
+      daysFilter: days,
+      totalCallsFromVAPI: calls.length,
+      callIds: calls.map(c => c.id).slice(0, 10), // First 10 call IDs
+    });
+
     // Filter calls by date range
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
@@ -154,6 +161,14 @@ export async function GET(request: NextRequest) {
     const filteredCalls = calls.filter(call => {
       const callDate = new Date(call.createdAt || call.startedAt);
       return callDate >= cutoffDate;
+    });
+
+    // Debug: Log date-filtered call IDs
+    logger.info('ANALYTICS', 'Date-filtered calls', {
+      daysFilter: days,
+      cutoffDate: cutoffDate.toISOString(),
+      dateFilteredCount: filteredCalls.length,
+      dateFilteredCallIds: filteredCalls.map(c => c.id),
     });
 
     // Get authenticated user and their assistant ID in a single optimized query
@@ -187,6 +202,14 @@ export async function GET(request: NextRequest) {
     const userFilteredCalls = userAssistantId
       ? filteredCalls.filter(call => call.assistantId === userAssistantId)
       : [];
+
+    // Debug: Log user-filtered call IDs
+    logger.info('ANALYTICS', 'User-filtered calls', {
+      daysFilter: days,
+      userAssistantId,
+      userFilteredCount: userFilteredCalls.length,
+      userFilteredCallIds: userFilteredCalls.map(c => c.id),
+    });
 
     logger.info(
       'ANALYTICS',
@@ -238,8 +261,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Map ALL calls to frontend format FIRST (this calculates durationSeconds from timestamps)
-    const mappedUserCalls = userFilteredCalls.map(mapVapiCallToFrontend);
+    // Map ALL calls to frontend format and sort newest first to ensure we capture the most recent calls
+    // This prevents scenarios where the VAPI API returns calls in an unexpected order and newer calls get truncated when slicing.
+    const mappedUserCalls = userFilteredCalls
+      .map(mapVapiCallToFrontend)
+      .map(call => ({
+        ...call,
+        _sortTimestamp: new Date(call.createdAt).getTime(), // Precompute timestamp for efficient sorting
+      }))
+      .sort((a, b) => b._sortTimestamp - a._sortTimestamp) // Use precomputed timestamps
+      .map(({ _sortTimestamp, ...call }) => call); // Remove the temporary sorting field
 
     // After line 163, before calculateMetrics, we need to enrich the mapped calls with database analysis data
     // Get recent calls for display (already mapped and date-filtered)
