@@ -18,6 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DashboardShell } from '@/components/dashboard-shell';
 import { useAuth } from '@/hooks/use-auth';
 import { useSubscription } from '@/hooks/use-subscription';
+import { isFreeUser } from '@/lib/paddle';
+import { LockedOverlay } from '@/components/dashboard/locked-overlay';
 import { useDashboardAnalytics } from '@/hooks/use-dashboard-analytics';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useActionPoints } from '@/hooks/use-action-points';
@@ -134,6 +136,15 @@ export default function DashboardPage() {
     status: statusFilter,
   } = filters;
 
+  // --------------------------------------------------
+  // Determine if the current user should see the locked/teaser dashboard
+  // (Placed early so that subsequent hooks can rely on the value)
+  // --------------------------------------------------
+  const isUserFree = useMemo(() => {
+    if (subscriptionLoading) return false; // Wait until subscription state is known
+    return isFreeUser(subscription);
+  }, [subscriptionLoading, subscription]);
+
   // UI state
   const [selectedCall, setSelectedCall] = useState<CallData | null>(null);
   const [isCallDetailOpen, setIsCallDetailOpen] = useState(false);
@@ -145,7 +156,8 @@ export default function DashboardPage() {
   const { analytics, isLoading, error, refetch } = useDashboardAnalytics({
     days: Number(timeRange),
     refetchInterval: 30000,
-    enabled: !!user && !isBulkAnalyzing && !isCallDetailOpen,
+    // Do NOT fetch analytics from VAPI for free users to avoid unnecessary calls
+    enabled: !!user && !isBulkAnalyzing && !isCallDetailOpen && !isUserFree,
   });
 
   // Action points hook
@@ -153,12 +165,6 @@ export default function DashboardPage() {
 
   // Debounced search term for API efficiency
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
-
-  // Check if user is on free plan
-  const isUserFree = useMemo(() => {
-    if (subscriptionLoading) return false;
-    return !subscription || subscription.status !== 'active';
-  }, [subscription, subscriptionLoading]);
 
   // Client-side filtering and pagination of calls
   const filteredAndPaginatedCalls = useMemo(() => {
@@ -432,7 +438,10 @@ export default function DashboardPage() {
               </TabsList>
 
               {/* Analytics Tab */}
-              <TabsContent value="analytics" className="space-y-6">
+              <TabsContent value="analytics" className="relative space-y-6">
+                {/* Locked overlay shown only for free-tier users */}
+                {isUserFree && <LockedOverlay />}
+
                 <Suspense
                   fallback={<div className="p-6">Loading analytics…</div>}
                 >
