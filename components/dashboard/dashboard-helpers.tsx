@@ -19,8 +19,10 @@ contentFilter.addWords('scam', 'fraud', 'fake', 'illegal', 'drugs');
 
 // Move helper functions outside component for better performance
 export const formatDuration = (seconds: number): string => {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
+  // Round to the nearest second so we don’t display long fractional values like 0:36.142857…
+  const totalSeconds = Math.round(seconds);
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainingSeconds = totalSeconds % 60;
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
