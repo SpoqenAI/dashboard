@@ -122,6 +122,8 @@ export default function SignupPage() {
 
   // Keep the latest password value for confirm-password comparison
   const latestPasswordRef = useRef('');
+  // Keep the latest confirm-password value to avoid stale state during re-validation
+  const confirmPasswordRef = useRef('');
 
   const [fieldValidStates, setFieldValidStates] = useState<
     Record<FormFieldName, boolean>
@@ -262,9 +264,11 @@ export default function SignupPage() {
       processedValue = value.slice(0, 128); // Limit length
     }
 
-    // Update latest password ref before validations
+    // Update refs for latest values before validations
     if (field === 'password') {
       latestPasswordRef.current = processedValue;
+    } else if (field === 'confirmPassword') {
+      confirmPasswordRef.current = processedValue;
     }
 
     // Mark field as touched as soon as user edits
@@ -274,9 +278,9 @@ export default function SignupPage() {
 
     triggerValidation(field, processedValue);
 
-    // If password changed, re-validate confirmPassword to keep them in sync
+    // If password changed, re-validate confirmPassword with latest value to keep them in sync
     if (field === 'password' && touchedFields.confirmPassword) {
-      triggerValidation('confirmPassword', formData.confirmPassword);
+      triggerValidation('confirmPassword', confirmPasswordRef.current);
     }
   };
 
