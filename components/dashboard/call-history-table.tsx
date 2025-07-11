@@ -20,8 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  formatDate,
-  formatDuration,
+  formatDateDetailed,
   calculateAndFormatCallDuration,
   getSentimentBadge as GetSentimentBadge,
   getLeadQualityBadge as GetLeadQualityBadge,
@@ -243,7 +242,7 @@ export const CallHistoryTable = memo(
                         </TableCell>
                         <TableCell>
                           {call.startedAt
-                            ? formatDate(call.startedAt)
+                            ? formatDateDetailed(call.startedAt)
                             : 'Unknown'}
                         </TableCell>
                         <TableCell>
@@ -297,7 +296,7 @@ export const CallHistoryTable = memo(
                             </p>
                             <p className="text-sm text-muted-foreground">
                               {call.startedAt
-                                ? formatDate(call.startedAt)
+                                ? formatDateDetailed(call.startedAt)
                                 : 'Unknown'}
                             </p>
                           </div>

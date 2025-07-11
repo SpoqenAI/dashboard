@@ -15,6 +15,11 @@ import {
   DollarSign,
   CheckSquare,
   MessageSquare,
+  ListChecks,
+  AlertTriangle,
+  AlertCircle,
+  Lightbulb,
+  Smile,
 } from 'lucide-react';
 
 // Lazy load heavy components for better performance
@@ -49,8 +54,11 @@ export const CallDetailModal = memo(
           )
         : 0);
 
-    // Use action points directly from call analysis
-    const keyPoints = call.analysis?.actionPoints || [];
+    // Full structured AI action points (if available)
+    const ap = call.actionPoints;
+
+    // Fallback flattened list for backward compatibility
+    const keyPoints = ap?.keyPoints || call.analysis?.actionPoints || [];
 
     // Assign memoized component to capitalized variable for JSX usage
     const GetSentimentBadge = getSentimentBadge;
@@ -151,7 +159,7 @@ export const CallDetailModal = memo(
             )}
 
             {/* AI-Generated Action Points */}
-            {(call.analysis?.sentiment || keyPoints.length > 0) && (
+            {(ap || call.analysis?.sentiment || keyPoints.length > 0) && (
               <Card>
                 <CardContent className="p-6">
                   <div className="mb-6 flex items-center gap-2">
@@ -162,12 +170,27 @@ export const CallDetailModal = memo(
                   </div>
 
                   <div className="space-y-6">
-                    {/* Call Sentiment */}
-                    {call.analysis?.sentiment && (
+                    {/* Call Purpose */}
+                    {ap?.callPurpose && (
                       <div>
-                        <h4 className="mb-2 font-semibold">Call Sentiment</h4>
+                        <h4 className="mb-2 flex items-center gap-2 font-semibold">
+                          <Lightbulb className="h-4 w-4" /> Call Purpose
+                        </h4>
+                        <p className="text-sm leading-relaxed">
+                          {ap.callPurpose}
+                        </p>
+                      </div>
+                    )}
+                    {/* Call Sentiment */}
+                    {(ap?.sentiment || call.analysis?.sentiment) && (
+                      <div>
+                        <h4 className="mb-2 flex items-center gap-2 font-semibold">
+                          <Smile className="h-4 w-4" /> Call Sentiment
+                        </h4>
                         <GetSentimentBadge
-                          sentiment={call.analysis.sentiment}
+                          sentiment={
+                            (ap?.sentiment || call.analysis?.sentiment) as any
+                          }
                         />
                       </div>
                     )}
@@ -186,6 +209,48 @@ export const CallDetailModal = memo(
                             <div key={index} className="flex items-start gap-2">
                               <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
                               <p className="text-sm">{point}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Follow-up Actions */}
+                    {ap?.followUpItems && ap.followUpItems.length > 0 && (
+                      <div>
+                        <div className="mb-3 flex items-center gap-2">
+                          <ListChecks className="h-4 w-4 text-green-600" />
+                          <h4 className="font-semibold">
+                            Follow-up Actions ({ap.followUpItems.length})
+                          </h4>
+                        </div>
+                        <div className="space-y-2">
+                          {ap.followUpItems.map((item, idx) => (
+                            <div key={idx} className="flex items-start gap-2">
+                              <CheckSquare className="mt-0.5 h-3 w-3 flex-shrink-0 text-green-600" />
+                              <p className="text-sm">{item}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Urgent Concerns */}
+                    {ap?.urgentConcerns && ap.urgentConcerns.length > 0 && (
+                      <div>
+                        <div className="mb-3 flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4 text-red-600" />
+                          <h4 className="font-semibold text-red-600">
+                            Urgent Concerns ({ap.urgentConcerns.length})
+                          </h4>
+                        </div>
+                        <div className="space-y-2">
+                          {ap.urgentConcerns.map((concern, idx) => (
+                            <div key={idx} className="flex items-start gap-2">
+                              <AlertCircle className="mt-0.5 h-3 w-3 flex-shrink-0 text-red-600" />
+                              <p className="text-sm text-red-700 dark:text-red-400">
+                                {concern}
+                              </p>
                             </div>
                           ))}
                         </div>

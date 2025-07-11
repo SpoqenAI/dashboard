@@ -21,6 +21,11 @@ export interface VapiCall {
     leadQuality?: 'hot' | 'warm' | 'cold';
     actionPoints?: string[];
   };
+  /**
+   * Full structured AI-generated action points for this call.
+   * Populated client-side after requesting `/api/vapi/action-points`.
+   */
+  actionPoints?: ActionPoints;
 }
 
 export interface ActionPoints {
