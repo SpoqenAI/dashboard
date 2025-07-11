@@ -4,8 +4,7 @@ import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { sendCallSummaryEmail } from '@/lib/email/send-call-summary';
 
 // Run as an Edge Function (Next.js 15+) to dramatically increase concurrency and
-// avoid Vercel Node function rate-limit (HTTP 429) under Vapi webhook bursts.
-export const runtime = 'edge';
+// (Edge Runtime removed – Node runtime is required to use the SendGrid SDK.)
 
 // Process the envelope in the background so we can respond 200 ASAP and
 // release the Vercel function slot. This greatly reduces the likelihood of
