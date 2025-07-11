@@ -13,9 +13,7 @@ export function FinalCTAButtons() {
         className="focus-visible-ring group"
         asChild
       >
-        <Link href="/signup"
-          onClick={() => undefined}
-        >
+        <Link href="/signup" onClick={() => undefined}>
           Start Free Trial
           <ArrowRight
             className="transition-transform group-hover:translate-x-1"

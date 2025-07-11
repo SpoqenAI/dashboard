@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useRef, useState } from 'react';
 
@@ -48,4 +48,4 @@ export function LazyMount({ children, rootMargin = '200px' }: LazyMountProps) {
   }, [rootMargin]);
 
   return <div ref={ref}>{isVisible ? children : null}</div>;
-} 
+}

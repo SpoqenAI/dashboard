@@ -9,4 +9,4 @@ const DashboardClient = dynamic(() => import('./DashboardClient'), {
 
 export default function DashboardClientLoader() {
   return <DashboardClient />;
-} 
+}

@@ -152,8 +152,7 @@ export const ExitIntentModal = ({
     onClose?.();
   }, [onClose]);
 
-  const handleCTAClick = useCallback(() => {
-  }, [offer, ctaText]);
+  const handleCTAClick = useCallback(() => {}, [offer, ctaText]);
 
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent) => {

@@ -37,12 +37,16 @@ import { AlertCircle, ArrowUp, BarChart3, Settings } from 'lucide-react';
 
 // Lazy-load heavy dashboard tabs to trim initial JS (perf optim)
 const AnalyticsTab = dynamic(
-  () => import('@/components/dashboard/analytics-tab').then(m => m.AnalyticsTab),
+  () =>
+    import('@/components/dashboard/analytics-tab').then(m => m.AnalyticsTab),
   { ssr: false, loading: () => <div className="p-6">Loading analytics…</div> }
 );
 
 const AISettingsTab = dynamic(
-  () => import('@/components/dashboard/ai-settings-simple').then(m => m.AISettingsTab),
+  () =>
+    import('@/components/dashboard/ai-settings-simple').then(
+      m => m.AISettingsTab
+    ),
   { ssr: false, loading: () => <div className="p-6">Loading settings…</div> }
 );
 
@@ -127,7 +131,13 @@ export default function DashboardClient() {
   // Unified filter state
   const [filters, dispatchFilters] = useReducer(filterReducer, initialFilters);
 
-  const { currentPage, searchTerm, sentiment: sentimentFilter, leadQuality: leadQualityFilter, status: statusFilter } = filters;
+  const {
+    currentPage,
+    searchTerm,
+    sentiment: sentimentFilter,
+    leadQuality: leadQualityFilter,
+    status: statusFilter,
+  } = filters;
 
   // Determine if user is free tier
   const isUserFree = useMemo(() => {
@@ -170,11 +180,15 @@ export default function DashboardClient() {
     }
 
     if (sentimentFilter !== 'all') {
-      filtered = filtered.filter(call => call.analysis?.sentiment === sentimentFilter);
+      filtered = filtered.filter(
+        call => call.analysis?.sentiment === sentimentFilter
+      );
     }
 
     if (leadQualityFilter !== 'all') {
-      filtered = filtered.filter(call => call.analysis?.leadQuality === leadQualityFilter);
+      filtered = filtered.filter(
+        call => call.analysis?.leadQuality === leadQualityFilter
+      );
     }
 
     if (statusFilter !== 'all') {
@@ -183,25 +197,48 @@ export default function DashboardClient() {
 
     const totalCalls = filtered.length;
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const paginatedCalls = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    const paginatedCalls = filtered.slice(
+      startIndex,
+      startIndex + ITEMS_PER_PAGE
+    );
 
     return { calls: paginatedCalls, totalCalls };
-  }, [analytics?.recentCalls, debouncedSearchTerm, sentimentFilter, leadQualityFilter, statusFilter, currentPage]);
+  }, [
+    analytics?.recentCalls,
+    debouncedSearchTerm,
+    sentimentFilter,
+    leadQualityFilter,
+    statusFilter,
+    currentPage,
+  ]);
 
-  const totalPages = Math.ceil(filteredAndPaginatedCalls.totalCalls / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(
+    filteredAndPaginatedCalls.totalCalls / ITEMS_PER_PAGE
+  );
 
   // Bulk analyze handler
   const handleBulkAnalyze = useCallback(async () => {
     if (!user) return;
     try {
       setIsBulkAnalyzing(true);
-      const res = await fetch('/api/vapi/bulk-analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: 100 }) });
+      const res = await fetch('/api/vapi/bulk-analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: 100 }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
-      toast({ title: 'Analysis complete', description: `Analyzed ${data.processed || 0} calls.` });
+      toast({
+        title: 'Analysis complete',
+        description: `Analyzed ${data.processed || 0} calls.`,
+      });
       await refetch();
     } catch (err) {
-      toast({ title: 'Bulk analyze failed', description: err instanceof Error ? err.message : String(err), variant: 'destructive' });
+      toast({
+        title: 'Bulk analyze failed',
+        description: err instanceof Error ? err.message : String(err),
+        variant: 'destructive',
+      });
     } finally {
       setIsBulkAnalyzing(false);
     }
@@ -220,30 +257,47 @@ export default function DashboardClient() {
   }, []);
 
   // Call select handler
-  const handleCallSelect = useCallback(async (call: VapiCall) => {
-    setSelectedCall(call);
-    setIsCallDetailOpen(true);
-    try {
-      const [recordingUrl, actionPoints] = await Promise.all([fetchCallRecording(call.id), generateActionPoints(call.id)]);
-      setSelectedCall({
-        ...call,
-        recordingUrl: recordingUrl || call.recordingUrl,
-        analysis: {
-          ...call.analysis,
-          actionPoints: actionPoints ? [...(actionPoints.keyPoints || []), ...(actionPoints.followUpItems || []), ...(actionPoints.urgentConcerns || [])] : call.analysis?.actionPoints || [],
-        },
-      });
-    } catch (err) {
-      logger.error('DASHBOARD', 'Error fetching call details', err as Error);
-    }
-  }, [fetchCallRecording, generateActionPoints]);
+  const handleCallSelect = useCallback(
+    async (call: VapiCall) => {
+      setSelectedCall(call);
+      setIsCallDetailOpen(true);
+      try {
+        const [recordingUrl, actionPoints] = await Promise.all([
+          fetchCallRecording(call.id),
+          generateActionPoints(call.id),
+        ]);
+        setSelectedCall({
+          ...call,
+          recordingUrl: recordingUrl || call.recordingUrl,
+          analysis: {
+            ...call.analysis,
+            actionPoints: actionPoints
+              ? [
+                  ...(actionPoints.keyPoints || []),
+                  ...(actionPoints.followUpItems || []),
+                  ...(actionPoints.urgentConcerns || []),
+                ]
+              : call.analysis?.actionPoints || [],
+          },
+        });
+      } catch (err) {
+        logger.error('DASHBOARD', 'Error fetching call details', err as Error);
+      }
+    },
+    [fetchCallRecording, generateActionPoints]
+  );
 
   // Pagination & filter helpers
-  const handlePageChange = (p: number) => dispatchFilters({ type: 'SET_PAGE', page: p });
-  const handleSearchChange = (v: string) => startTransition(() => dispatchFilters({ type: 'SET_SEARCH', term: v }));
-  const handleSentimentChange = (v: string) => dispatchFilters({ type: 'SET_SENTIMENT', value: v });
-  const handleLeadChange = (v: string) => dispatchFilters({ type: 'SET_LEAD', value: v });
-  const handleStatusChange = (v: string) => dispatchFilters({ type: 'SET_STATUS', value: v });
+  const handlePageChange = (p: number) =>
+    dispatchFilters({ type: 'SET_PAGE', page: p });
+  const handleSearchChange = (v: string) =>
+    startTransition(() => dispatchFilters({ type: 'SET_SEARCH', term: v }));
+  const handleSentimentChange = (v: string) =>
+    dispatchFilters({ type: 'SET_SENTIMENT', value: v });
+  const handleLeadChange = (v: string) =>
+    dispatchFilters({ type: 'SET_LEAD', value: v });
+  const handleStatusChange = (v: string) =>
+    dispatchFilters({ type: 'SET_STATUS', value: v });
 
   if (!user) {
     return <div className="min-h-screen bg-background" />;
@@ -261,8 +315,12 @@ export default function DashboardClient() {
                     <div className="flex items-center gap-3">
                       <AlertCircle className="h-5 w-5 text-orange-600" />
                       <div>
-                        <h3 className="font-semibold text-orange-900">You're on the Free Plan</h3>
-                        <p className="text-sm text-orange-700">Upgrade to unlock advanced analytics.</p>
+                        <h3 className="font-semibold text-orange-900">
+                          You're on the Free Plan
+                        </h3>
+                        <p className="text-sm text-orange-700">
+                          Upgrade to unlock advanced analytics.
+                        </p>
                       </div>
                     </div>
                     <Button asChild>
@@ -275,19 +333,31 @@ export default function DashboardClient() {
               </Card>
             )}
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="space-y-6"
+            >
               <TabsList className="grid w-full grid-cols-2 lg:w-auto">
-                <TabsTrigger value="analytics" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="analytics"
+                  className="flex items-center gap-2"
+                >
                   <BarChart3 className="h-4 w-4" /> Analytics
                 </TabsTrigger>
-                <TabsTrigger value="ai-settings" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="ai-settings"
+                  className="flex items-center gap-2"
+                >
                   <Settings className="h-4 w-4" /> AI Settings
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="analytics" className="relative space-y-6">
                 {isUserFree && <LockedOverlay />}
-                <Suspense fallback={<div className="p-6">Loading analytics…</div>}>
+                <Suspense
+                  fallback={<div className="p-6">Loading analytics…</div>}
+                >
                   <AnalyticsTab
                     analytics={analytics as AnalyticsData | null}
                     isLoading={isLoading}
@@ -322,7 +392,11 @@ export default function DashboardClient() {
               </TabsContent>
             </Tabs>
 
-            <CallDetailModal call={selectedCall} isOpen={isCallDetailOpen} onClose={() => setIsCallDetailOpen(false)} />
+            <CallDetailModal
+              call={selectedCall}
+              isOpen={isCallDetailOpen}
+              onClose={() => setIsCallDetailOpen(false)}
+            />
           </div>
         </DashboardShell>
       </div>
@@ -330,4 +404,4 @@ export default function DashboardClient() {
   );
 }
 
-// END ORIGINAL IMPLEMENTATION 
+// END ORIGINAL IMPLEMENTATION

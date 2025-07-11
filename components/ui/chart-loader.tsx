@@ -23,7 +23,10 @@ export const ChartContainer = dynamic(
 );
 
 export const ChartTooltip = dynamic(
-  () => import('./chart').then(m => m.ChartTooltip as unknown as ComponentType<any>),
+  () =>
+    import('./chart').then(
+      m => m.ChartTooltip as unknown as ComponentType<any>
+    ),
   { ssr: false }
 );
 
@@ -36,7 +39,8 @@ export const ChartTooltipContent = dynamic(
 );
 
 export const ChartLegend = dynamic(
-  () => import('./chart').then(m => m.ChartLegend as unknown as ComponentType<any>),
+  () =>
+    import('./chart').then(m => m.ChartLegend as unknown as ComponentType<any>),
   { ssr: false }
 );
 
@@ -49,4 +53,4 @@ export const ChartLegendContent = dynamic(
 );
 
 // Default export: container (most common case).
-export default ChartContainer; 
+export default ChartContainer;

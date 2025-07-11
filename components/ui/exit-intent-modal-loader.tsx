@@ -2,9 +2,12 @@
 
 import dynamic from 'next/dynamic';
 
-const ExitIntentModal = dynamic(() => import('./exit-intent-modal').then(m => m.ExitIntentModal), {
-  ssr: false,
-});
+const ExitIntentModal = dynamic(
+  () => import('./exit-intent-modal').then(m => m.ExitIntentModal),
+  {
+    ssr: false,
+  }
+);
 
 export default function ExitIntentModalLoader() {
   return (
@@ -17,4 +20,4 @@ export default function ExitIntentModalLoader() {
       incentive="Join 2,847+ founders already using Spoqen"
     />
   );
-} 
+}
