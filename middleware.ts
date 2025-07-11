@@ -280,7 +280,10 @@ export async function middleware(request: NextRequest) {
       !isSettingsPage &&
       !isWelcomePage;
 
-    if (isProtectedRoute && (welcomeCompleted === false || welcomeCompleted === null)) {
+    if (
+      isProtectedRoute &&
+      (welcomeCompleted === false || welcomeCompleted === null)
+    ) {
       // User has not completed welcome, redirect to /welcome
       logPerformanceMetrics();
       return NextResponse.redirect(new URL('/welcome', request.url));
@@ -416,7 +419,9 @@ export async function middleware(request: NextRequest) {
         }
         // If user is free, redirect to onboarding/profile (legacy fallback)
         logPerformanceMetrics();
-        return NextResponse.redirect(new URL('/onboarding/profile', request.url));
+        return NextResponse.redirect(
+          new URL('/onboarding/profile', request.url)
+        );
       }
     } catch (error) {
       const errorMessage = `Middleware error: ${error instanceof Error ? error.message : 'Unknown error'}`;

@@ -89,7 +89,11 @@ export async function GET(request: NextRequest) {
         .single();
 
       if (settingsError) {
-        logger.error('ANALYTICS', 'Failed to fetch user settings', settingsError);
+        logger.error(
+          'ANALYTICS',
+          'Failed to fetch user settings',
+          settingsError
+        );
         // Continue with null assistant ID rather than failing completely
       }
 
@@ -163,7 +167,7 @@ export async function GET(request: NextRequest) {
     if (user?.id && supabase && recentCalls.length > 0) {
       try {
         const callIds = recentCalls.map(call => call.id);
-        
+
         // Optimize for large datasets - batch process if too many IDs
         const MAX_IDS_PER_QUERY = 100; // Prevent PostgreSQL IN clause performance issues
         let analysisData: any[] = [];
@@ -178,16 +182,24 @@ export async function GET(request: NextRequest) {
             .limit(MAX_IDS_PER_QUERY); // Additional safety limit
 
           if (analysisError) {
-            logger.error('ANALYTICS', 'Database analysis query failed', analysisError);
+            logger.error(
+              'ANALYTICS',
+              'Database analysis query failed',
+              analysisError
+            );
           } else {
             analysisData = data || [];
           }
         } else {
           // Batch queries for large datasets to maintain performance
-          logger.info('ANALYTICS', 'Using batched queries for large call dataset', {
-            totalCallIds: callIds.length,
-            batchSize: MAX_IDS_PER_QUERY,
-          });
+          logger.info(
+            'ANALYTICS',
+            'Using batched queries for large call dataset',
+            {
+              totalCallIds: callIds.length,
+              batchSize: MAX_IDS_PER_QUERY,
+            }
+          );
 
           for (let i = 0; i < callIds.length; i += MAX_IDS_PER_QUERY) {
             const batchIds = callIds.slice(i, i + MAX_IDS_PER_QUERY);
@@ -198,7 +210,11 @@ export async function GET(request: NextRequest) {
               .in('vapi_call_id', batchIds);
 
             if (batchError) {
-              logger.error('ANALYTICS', `Batch query failed for calls ${i}-${i + batchIds.length}`, batchError);
+              logger.error(
+                'ANALYTICS',
+                `Batch query failed for calls ${i}-${i + batchIds.length}`,
+                batchError
+              );
             } else {
               analysisData.push(...(data || []));
             }
@@ -217,8 +233,12 @@ export async function GET(request: NextRequest) {
             return {
               ...call,
               // Prioritize database analysis over VAPI analysis if available
-              sentiment: dbAnalysis?.sentiment || call.sentiment,
-              leadQuality: dbAnalysis?.lead_quality || call.leadQuality,
+              analysis: {
+                ...call.analysis,
+                sentiment: dbAnalysis?.sentiment || call.analysis?.sentiment,
+                leadQuality:
+                  dbAnalysis?.lead_quality || call.analysis?.leadQuality,
+              },
             };
           });
 
@@ -226,8 +246,11 @@ export async function GET(request: NextRequest) {
             totalCalls: recentCalls.length,
             callsWithDbAnalysis: analysisData.length,
             enrichmentRate: `${Math.round((analysisData.length / recentCalls.length) * 100)}%`,
-            callsWithSentiment: recentCalls.filter(c => c.sentiment).length,
-            callsWithLeadQuality: recentCalls.filter(c => c.leadQuality).length,
+            callsWithSentiment: recentCalls.filter(c => c.analysis?.sentiment)
+              .length,
+            callsWithLeadQuality: recentCalls.filter(
+              c => c.analysis?.leadQuality
+            ).length,
           });
         }
       } catch (dbError) {
@@ -299,12 +322,18 @@ export async function GET(request: NextRequest) {
 
     // Create response with caching headers
     const response = NextResponse.json(analytics);
-    
+
     // HTTP caching headers for better performance
-    response.headers.set('Cache-Control', `public, max-age=${cacheMaxAge}, stale-while-revalidate=${cacheMaxAge * 2}`);
-    response.headers.set('ETag', `"analytics-${user?.id || 'anon'}-${days}-${Date.now().toString(36)}"`);
+    response.headers.set(
+      'Cache-Control',
+      `public, max-age=${cacheMaxAge}, stale-while-revalidate=${cacheMaxAge * 2}`
+    );
+    response.headers.set(
+      'ETag',
+      `"analytics-${user?.id || 'anon'}-${days}-${Date.now().toString(36)}"`
+    );
     response.headers.set('Vary', 'Authorization');
-    
+
     // Performance monitoring header
     response.headers.set('X-Cache-Duration', `${cacheMaxAge}s`);
 
@@ -895,10 +924,12 @@ function calculateTrends(
 }
 
 function mapVapiCallToFrontend(vapiCall: any) {
-  const phoneNumber =
-    vapiCall.customer?.number ||
-    vapiCall.destination?.number ||
-    vapiCall.phoneNumber?.number;
+  const phoneNumber = {
+    number:
+      vapiCall.customer?.number ||
+      vapiCall.destination?.number ||
+      vapiCall.phoneNumber?.number,
+  };
 
   const durationSeconds =
     vapiCall.endedAt && vapiCall.startedAt
@@ -937,7 +968,9 @@ function mapVapiCallToFrontend(vapiCall: any) {
     cost: vapiCall.cost,
     transcript,
     summary: vapiCall.analysis?.summary,
-    sentiment: sentiment as 'positive' | 'neutral' | 'negative' | undefined,
-    leadQuality: leadQuality as 'hot' | 'warm' | 'cold' | undefined,
+    analysis: {
+      sentiment: sentiment as 'positive' | 'neutral' | 'negative' | undefined,
+      leadQuality: leadQuality as 'hot' | 'warm' | 'cold' | undefined,
+    },
   };
 }

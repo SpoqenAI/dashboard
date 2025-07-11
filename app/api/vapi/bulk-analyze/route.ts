@@ -9,7 +9,19 @@ interface BulkAnalyzeRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const { limit = 100 } = await request.json();
+    // Handle cases where no JSON body is sent
+    let limit = 100;
+    try {
+      const body = await request.json();
+      limit = body.limit || 100;
+    } catch (jsonError) {
+      // No JSON body or malformed JSON, use default limit
+      logger.info(
+        'BULK_ANALYZE',
+        'No JSON body provided, using default limit',
+        { defaultLimit: 100 }
+      );
+    }
 
     logger.info('BULK_ANALYZE', 'Starting bulk analysis', { limit });
 

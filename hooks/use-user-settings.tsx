@@ -98,7 +98,9 @@ export function useUserSettings() {
   } | null>(null);
   const [assistantData, setAssistantData] = useState<any>(null);
   const [assistantLoading, setAssistantLoading] = useState(false);
-  const [assistantLastFetch, setAssistantLastFetch] = useState<number | null>(null);
+  const [assistantLastFetch, setAssistantLastFetch] = useState<number | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,53 +112,70 @@ export function useUserSettings() {
   const ASSISTANT_CACHE_TTL = 5 * 60 * 1000;
 
   // Cached fetch for assistant data
-  const fetchAssistantData = useCallback(async (force = false) => {
-    if (!user || !settings?.vapi_assistant_id) {
-      return null;
-    }
-
-    // Check cache validity
-    const now = Date.now();
-    const cacheValid = assistantLastFetch && (now - assistantLastFetch) < ASSISTANT_CACHE_TTL;
-    
-    if (!force && cacheValid && assistantData) {
-      return assistantData;
-    }
-
-    // Prevent duplicate requests
-    if (assistantLoading) {
-      return assistantData;
-    }
-
-    try {
-      setAssistantLoading(true);
-      
-      const res = await fetch('/api/vapi/assistant/info');
-      if (res.ok) {
-        const json = await res.json();
-        if (json?.assistant) {
-          setAssistantData(json.assistant);
-          setAssistantLastFetch(now);
-          
-          // Update the legacy assistant state for backward compatibility
-          setAssistant({
-            assistant_name: json.assistant.name ?? 'Ava',
-            greeting: json.assistant.model?.messages?.find((msg: any) => msg.role === 'system')?.content ||
-                     json.assistant.firstMessage ||
-                     'Hello! Thank you for calling. How can I assist you today?',
-          });
-          
-          return json.assistant;
-        }
+  const fetchAssistantData = useCallback(
+    async (force = false) => {
+      if (!user || !settings?.vapi_assistant_id) {
+        return null;
       }
-      return null;
-    } catch (error) {
-      logger.error('USER_SETTINGS', 'Failed to fetch assistant data', error as Error);
-      return null;
-    } finally {
-      setAssistantLoading(false);
-    }
-  }, [user, settings?.vapi_assistant_id, assistantData, assistantLoading, assistantLastFetch]);
+
+      // Check cache validity
+      const now = Date.now();
+      const cacheValid =
+        assistantLastFetch && now - assistantLastFetch < ASSISTANT_CACHE_TTL;
+
+      if (!force && cacheValid && assistantData) {
+        return assistantData;
+      }
+
+      // Prevent duplicate requests
+      if (assistantLoading) {
+        return assistantData;
+      }
+
+      try {
+        setAssistantLoading(true);
+
+        const res = await fetch('/api/vapi/assistant/info');
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.assistant) {
+            setAssistantData(json.assistant);
+            setAssistantLastFetch(now);
+
+            // Update the legacy assistant state for backward compatibility
+            setAssistant({
+              assistant_name: json.assistant.name ?? 'Ava',
+              greeting:
+                json.assistant.model?.messages?.find(
+                  (msg: any) => msg.role === 'system'
+                )?.content ||
+                json.assistant.firstMessage ||
+                'Hello! Thank you for calling. How can I assist you today?',
+            });
+
+            return json.assistant;
+          }
+        }
+        return null;
+      } catch (error) {
+        logger.error(
+          'USER_SETTINGS',
+          'Failed to fetch assistant data',
+          error as Error
+        );
+        return null;
+      } finally {
+        setAssistantLoading(false);
+      }
+    },
+    [
+      user,
+      settings?.vapi_assistant_id,
+      assistantData,
+      assistantLoading,
+      assistantLastFetch,
+    ]
+  );
 
   // Fetch user settings and profile
   const fetchUserData = useCallback(

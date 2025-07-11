@@ -38,18 +38,18 @@ interface AIAssistantData {
 }
 
 export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
-  const { 
-    settings, 
-    profile, 
-    saving, 
-    updateAIReceptionistSettings, 
+  const {
+    settings,
+    profile,
+    saving,
+    updateAIReceptionistSettings,
     getAIReceptionistSettings,
     assistantData,
     assistantLoading,
     refreshAssistantData,
-    fetchAssistantData
+    fetchAssistantData,
   } = useUserSettings();
-  
+
   // Initialize local state - start empty and let useEffect populate with real data
   const [firstMessage, setFirstMessage] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
@@ -70,27 +70,37 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     if (!assistantData) {
       return {
         firstMessage: 'Hi, thank you for calling. How can I help you today?',
-        systemPrompt: 'Hello! Thank you for calling. How can I assist you today?'
+        systemPrompt:
+          'Hello! Thank you for calling. How can I assist you today?',
       };
     }
-    
+
     return {
-      firstMessage: assistantData.firstMessage || 'Hi, thank you for calling. How can I help you today?',
-      systemPrompt: assistantData.model?.messages?.find(
-        (msg: any) => msg.role === 'system'
-      )?.content || 'Hello! Thank you for calling. How can I assist you today?'
+      firstMessage:
+        assistantData.firstMessage ||
+        'Hi, thank you for calling. How can I help you today?',
+      systemPrompt:
+        assistantData.model?.messages?.find((msg: any) => msg.role === 'system')
+          ?.content ||
+        'Hello! Thank you for calling. How can I assist you today?',
     };
   }, [assistantData]);
 
   // Memoized unsaved changes detection
   const hasUnsavedChanges = useMemo(() => {
     if (isLoading || !hasInitialized) return false;
-    
+
     return (
       debouncedFirstMessage.trim() !== originalValues.firstMessage ||
       debouncedSystemPrompt.trim() !== originalValues.systemPrompt
     );
-  }, [debouncedFirstMessage, debouncedSystemPrompt, originalValues, isLoading, hasInitialized]);
+  }, [
+    debouncedFirstMessage,
+    debouncedSystemPrompt,
+    originalValues,
+    isLoading,
+    hasInitialized,
+  ]);
 
   // Memoized validation
   const validation = useMemo(() => {
@@ -99,49 +109,67 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       return {
         firstMessageValid: true,
         systemPromptValid: true,
-        isFormValid: false
+        isFormValid: false,
       };
     }
-    
+
     return {
-      firstMessageValid: debouncedFirstMessage.trim().length > 0 && debouncedFirstMessage.length <= MAX_FIRST_MESSAGE_LENGTH,
-      systemPromptValid: debouncedSystemPrompt.trim().length > 0 && debouncedSystemPrompt.length <= MAX_PROMPT_LENGTH,
-      isFormValid: debouncedFirstMessage.trim().length > 0 && 
-                   debouncedFirstMessage.length <= MAX_FIRST_MESSAGE_LENGTH &&
-                   debouncedSystemPrompt.trim().length > 0 && 
-                   debouncedSystemPrompt.length <= MAX_PROMPT_LENGTH
+      firstMessageValid:
+        debouncedFirstMessage.trim().length > 0 &&
+        debouncedFirstMessage.length <= MAX_FIRST_MESSAGE_LENGTH,
+      systemPromptValid:
+        debouncedSystemPrompt.trim().length > 0 &&
+        debouncedSystemPrompt.length <= MAX_PROMPT_LENGTH,
+      isFormValid:
+        debouncedFirstMessage.trim().length > 0 &&
+        debouncedFirstMessage.length <= MAX_FIRST_MESSAGE_LENGTH &&
+        debouncedSystemPrompt.trim().length > 0 &&
+        debouncedSystemPrompt.length <= MAX_PROMPT_LENGTH,
     };
-  }, [debouncedFirstMessage, debouncedSystemPrompt, MAX_FIRST_MESSAGE_LENGTH, MAX_PROMPT_LENGTH, hasInitialized]);
+  }, [
+    debouncedFirstMessage,
+    debouncedSystemPrompt,
+    MAX_FIRST_MESSAGE_LENGTH,
+    MAX_PROMPT_LENGTH,
+    hasInitialized,
+  ]);
 
   // Memoized templates for performance
-  const promptTemplates = useMemo(() => [
-    {
-      title: "Professional Receptionist",
-      description: "Formal business tone",
-      prompt: "You are a professional AI receptionist for a business. Be friendly, helpful, and concise. Always ask how you can assist the caller and be ready to take messages or transfer calls as needed. Maintain a warm but professional tone."
-    },
-    {
-      title: "Friendly Assistant", 
-      description: "Casual and approachable",
-      prompt: "You are a friendly AI assistant representing our company. Be conversational, helpful, and enthusiastic about helping callers. Ask clarifying questions to understand their needs and provide relevant information about our services."
-    }
-  ], []);
-
-
+  const promptTemplates = useMemo(
+    () => [
+      {
+        title: 'Professional Receptionist',
+        description: 'Formal business tone',
+        prompt:
+          'You are a professional AI receptionist for a business. Be friendly, helpful, and concise. Always ask how you can assist the caller and be ready to take messages or transfer calls as needed. Maintain a warm but professional tone.',
+      },
+      {
+        title: 'Friendly Assistant',
+        description: 'Casual and approachable',
+        prompt:
+          'You are a friendly AI assistant representing our company. Be conversational, helpful, and enthusiastic about helping callers. Ask clarifying questions to understand their needs and provide relevant information about our services.',
+      },
+    ],
+    []
+  );
 
   // Initialize data when assistant data is available or settings are loaded
   useEffect(() => {
     // Don't update local state while saving to prevent flashing of old data
     if (isSavingLocal) return;
-    
+
     if (assistantData) {
       // We have assistant data - use it
-      const newFirstMessage = assistantData.firstMessage || 'Hi, thank you for calling. How can I help you today?';
+      const newFirstMessage =
+        assistantData.firstMessage ||
+        'Hi, thank you for calling. How can I help you today?';
       const systemMessage = assistantData.model?.messages?.find(
         (msg: any) => msg.role === 'system'
       );
-      const newSystemPrompt = systemMessage?.content || 'Hello! Thank you for calling. How can I assist you today?';
-      
+      const newSystemPrompt =
+        systemMessage?.content ||
+        'Hello! Thank you for calling. How can I assist you today?';
+
       setFirstMessage(newFirstMessage);
       setSystemPrompt(newSystemPrompt);
       setIsLoading(false);
@@ -149,52 +177,64 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     } else if (settings && !hasInitialized) {
       // Settings are loaded but no assistant data yet
       const hasVapiId = Boolean(settings.vapi_assistant_id);
-      
+
       if (!hasVapiId) {
         // No VAPI assistant configured - use fallback values immediately
         const aiSettings = getAIReceptionistSettings();
         setFirstMessage('Hi, thank you for calling. How can I help you today?');
         setSystemPrompt(
-          aiSettings.greetingScript || 
-          'Hello! Thank you for calling. How can I assist you today?'
+          aiSettings.greetingScript ||
+            'Hello! Thank you for calling. How can I assist you today?'
         );
         setIsLoading(false);
         setHasInitialized(true);
       } else if (!assistantLoading) {
         // We have VAPI ID but no data and not currently loading - trigger fetch
         setHasInitialized(true); // Prevent multiple fetch attempts
-        fetchAssistantData().then((data: any) => {
-          if (data) {
-            // Data will be handled by the assistantData branch above
-            return;
-          }
-          
-          // No data available after fetch, use fallbacks
-          const aiSettings = getAIReceptionistSettings();
-          setFirstMessage('Hi, thank you for calling. How can I help you today?');
-          setSystemPrompt(
-            aiSettings.greetingScript || 
-            'Hello! Thank you for calling. How can I assist you today?'
-          );
-          setIsLoading(false);
-        }).catch(() => {
-          // Failed to fetch, use fallbacks
-          const aiSettings = getAIReceptionistSettings();
-          setFirstMessage('Hi, thank you for calling. How can I help you today?');
-          setSystemPrompt(
-            aiSettings.greetingScript || 
-            'Hello! Thank you for calling. How can I assist you today?'
-          );
-          setIsLoading(false);
-        });
+        fetchAssistantData()
+          .then((data: any) => {
+            if (data) {
+              // Data will be handled by the assistantData branch above
+              return;
+            }
+
+            // No data available after fetch, use fallbacks
+            const aiSettings = getAIReceptionistSettings();
+            setFirstMessage(
+              'Hi, thank you for calling. How can I help you today?'
+            );
+            setSystemPrompt(
+              aiSettings.greetingScript ||
+                'Hello! Thank you for calling. How can I assist you today?'
+            );
+            setIsLoading(false);
+          })
+          .catch(() => {
+            // Failed to fetch, use fallbacks
+            const aiSettings = getAIReceptionistSettings();
+            setFirstMessage(
+              'Hi, thank you for calling. How can I help you today?'
+            );
+            setSystemPrompt(
+              aiSettings.greetingScript ||
+                'Hello! Thank you for calling. How can I assist you today?'
+            );
+            setIsLoading(false);
+          });
       } else if (assistantLoading) {
         // Currently loading assistant data - keep loading state
         setIsLoading(true);
       }
     }
-  }, [assistantData, settings, assistantLoading, getAIReceptionistSettings, isSavingLocal, hasInitialized, fetchAssistantData]);
-
-
+  }, [
+    assistantData,
+    settings,
+    assistantLoading,
+    getAIReceptionistSettings,
+    isSavingLocal,
+    hasInitialized,
+    fetchAssistantData,
+  ]);
 
   // Don't reset initialization state on unmount - let cached data persist
 
@@ -207,7 +247,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         if (!validation.firstMessageValid) {
           toast({
             title: 'Validation Error',
-            description: firstMessage.trim() 
+            description: firstMessage.trim()
               ? `First message must be ${MAX_FIRST_MESSAGE_LENGTH} characters or less`
               : 'First message is required',
             variant: 'destructive',
@@ -255,54 +295,79 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
 
       // Refresh data to get latest from VAPI and update local state
       const refreshedData = await refreshAssistantData();
-      
+
       // Update local state with fresh data to prevent old values from flashing
       if (refreshedData) {
-        const newFirstMessage = refreshedData.firstMessage || firstMessage.trim();
+        const newFirstMessage =
+          refreshedData.firstMessage || firstMessage.trim();
         const systemMessage = refreshedData.model?.messages?.find(
           (msg: any) => msg.role === 'system'
         );
         const newSystemPrompt = systemMessage?.content || systemPrompt.trim();
-        
+
         setFirstMessage(newFirstMessage);
         setSystemPrompt(newSystemPrompt);
       }
-      
+
       toast({
         title: 'Settings saved!',
         description: 'Your AI assistant has been updated successfully.',
         duration: 3000,
       });
     } catch (error) {
-      logger.error('AI_SETTINGS', 'Failed to save assistant settings', error as Error);
+      logger.error(
+        'AI_SETTINGS',
+        'Failed to save assistant settings',
+        error as Error
+      );
       toast({
         title: 'Error saving settings',
-        description: error instanceof Error ? error.message : 'Failed to save settings. Please try again.',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Failed to save settings. Please try again.',
         variant: 'destructive',
       });
     } finally {
       setIsSavingLocal(false);
     }
-  }, [validation.isFormValid, validation.firstMessageValid, validation.systemPromptValid, firstMessage, systemPrompt, MAX_FIRST_MESSAGE_LENGTH, MAX_PROMPT_LENGTH, assistantData?.id, updateAIReceptionistSettings, profile?.full_name, profile?.business_name, refreshAssistantData]);
+  }, [
+    validation.isFormValid,
+    validation.firstMessageValid,
+    validation.systemPromptValid,
+    firstMessage,
+    systemPrompt,
+    MAX_FIRST_MESSAGE_LENGTH,
+    MAX_PROMPT_LENGTH,
+    assistantData?.id,
+    updateAIReceptionistSettings,
+    profile?.full_name,
+    profile?.business_name,
+    refreshAssistantData,
+  ]);
 
   // Handle refresh (memoized for performance)
   const handleRefresh = useCallback(async () => {
     try {
       setIsSavingLocal(true);
       const refreshedData = await refreshAssistantData();
-      
+
       // Update local state with fresh data
       if (refreshedData) {
-        const newFirstMessage = refreshedData.firstMessage || 'Hi, thank you for calling. How can I help you today?';
+        const newFirstMessage =
+          refreshedData.firstMessage ||
+          'Hi, thank you for calling. How can I help you today?';
         const systemMessage = refreshedData.model?.messages?.find(
           (msg: any) => msg.role === 'system'
         );
-        const newSystemPrompt = systemMessage?.content || 'Hello! Thank you for calling. How can I assist you today?';
-        
+        const newSystemPrompt =
+          systemMessage?.content ||
+          'Hello! Thank you for calling. How can I assist you today?';
+
         setFirstMessage(newFirstMessage);
         setSystemPrompt(newSystemPrompt);
       }
-      
+
       toast({
         title: 'Settings refreshed',
         description: 'Loaded latest settings from your AI assistant.',
@@ -347,7 +412,8 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            You're on the free plan. You can edit your AI assistant settings, but some advanced features may be limited.
+            You're on the free plan. You can edit your AI assistant settings,
+            but some advanced features may be limited.
           </AlertDescription>
         </Alert>
       )}
@@ -359,7 +425,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
             <CardTitle>AI Assistant Configuration</CardTitle>
             {assistantData && (
               <Badge variant="secondary" className="ml-2">
-                <CheckCircle className="h-3 w-3 mr-1" />
+                <CheckCircle className="mr-1 h-3 w-3" />
                 Connected
               </Badge>
             )}
@@ -370,7 +436,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
             onClick={handleRefresh}
             disabled={assistantLoading || saving || isSavingLocal}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${assistantLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${assistantLoading ? 'animate-spin' : ''}`}
+            />
             Refresh
           </Button>
         </CardHeader>
@@ -383,14 +451,19 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
             <Input
               id="first-message"
               value={firstMessage}
-              onChange={(e) => setFirstMessage(e.target.value)}
+              onChange={e => setFirstMessage(e.target.value)}
               placeholder="Enter the first message your assistant will say"
               maxLength={MAX_FIRST_MESSAGE_LENGTH}
               disabled={saving || isSavingLocal}
             />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>This is the greeting your AI assistant will use when answering calls</span>
-              <span className={`${firstMessage.length > MAX_FIRST_MESSAGE_LENGTH * 0.9 ? 'text-warning' : ''} ${firstMessage.length >= MAX_FIRST_MESSAGE_LENGTH ? 'text-destructive' : ''}`}>
+              <span>
+                This is the greeting your AI assistant will use when answering
+                calls
+              </span>
+              <span
+                className={`${firstMessage.length > MAX_FIRST_MESSAGE_LENGTH * 0.9 ? 'text-warning' : ''} ${firstMessage.length >= MAX_FIRST_MESSAGE_LENGTH ? 'text-destructive' : ''}`}
+              >
                 {firstMessage.length}/{MAX_FIRST_MESSAGE_LENGTH}
               </span>
             </div>
@@ -404,15 +477,20 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
             <Textarea
               id="system-prompt"
               value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
+              onChange={e => setSystemPrompt(e.target.value)}
               placeholder="Enter the instructions for how your AI assistant should behave and respond to callers..."
-              className="min-h-48 resize-y w-full"
+              className="min-h-48 w-full resize-y"
               maxLength={MAX_PROMPT_LENGTH}
               disabled={saving || isSavingLocal}
             />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Define your assistant's personality, knowledge, and conversation style</span>
-              <span className={`${systemPrompt.length > MAX_PROMPT_LENGTH * 0.9 ? 'text-warning' : ''} ${systemPrompt.length >= MAX_PROMPT_LENGTH ? 'text-destructive' : ''}`}>
+              <span>
+                Define your assistant's personality, knowledge, and conversation
+                style
+              </span>
+              <span
+                className={`${systemPrompt.length > MAX_PROMPT_LENGTH * 0.9 ? 'text-warning' : ''} ${systemPrompt.length >= MAX_PROMPT_LENGTH ? 'text-destructive' : ''}`}
+              >
                 {systemPrompt.length}/{MAX_PROMPT_LENGTH}
               </span>
             </div>
@@ -420,11 +498,11 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
 
           {/* Example prompts */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium flex items-center gap-2">
+            <Label className="flex items-center gap-2 text-sm font-medium">
               <Wand2 className="h-4 w-4" />
               Quick Start Templates
             </Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {promptTemplates.map((template, index) => (
                 <Button
                   key={index}
@@ -432,11 +510,13 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                   size="sm"
                   onClick={() => setSystemPrompt(template.prompt)}
                   disabled={saving || isSavingLocal}
-                  className="text-left justify-start h-auto p-3"
+                  className="h-auto justify-start p-3 text-left"
                 >
                   <div>
                     <div className="font-medium">{template.title}</div>
-                    <div className="text-xs text-muted-foreground">{template.description}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {template.description}
+                    </div>
                   </div>
                 </Button>
               ))}
@@ -444,11 +524,13 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
           </div>
 
           {/* Save Button */}
-          <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex items-center justify-between border-t pt-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Settings className="h-4 w-4" />
               <span>
-                {hasUnsavedChanges ? 'You have unsaved changes' : 'All changes saved'}
+                {hasUnsavedChanges
+                  ? 'You have unsaved changes'
+                  : 'All changes saved'}
               </span>
             </div>
             <Button
@@ -456,14 +538,14 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
               disabled={saving || isSavingLocal || !hasUnsavedChanges}
               className="min-w-24"
             >
-              {(saving || isSavingLocal) ? (
+              {saving || isSavingLocal ? (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                   Saving...
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="mr-2 h-4 w-4" />
                   Save Changes
                 </>
               )}
@@ -471,10 +553,8 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
           </div>
         </CardContent>
       </Card>
-
-
     </div>
   );
 });
 
-AISettingsTab.displayName = 'AISettingsTab'; 
+AISettingsTab.displayName = 'AISettingsTab';

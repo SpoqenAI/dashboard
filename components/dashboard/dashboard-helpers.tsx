@@ -27,8 +27,9 @@ export const formatDuration = (seconds: number): string => {
 export const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   const now = new Date();
-  const diffInHours = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60);
-  
+  const diffInHours =
+    Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
   if (diffInHours < 24) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
@@ -46,81 +47,85 @@ export const formatDateDetailed = (dateString: string): string => {
 };
 
 // Memoized helper function to get sentiment badge
-export const getSentimentBadge = memo(({ sentiment }: { sentiment?: string }) => {
-  if (!sentiment) {
-    return <span className="text-xs text-muted-foreground">-</span>;
+export const getSentimentBadge = memo(
+  ({ sentiment }: { sentiment?: string }) => {
+    if (!sentiment) {
+      return <span className="text-xs text-muted-foreground">-</span>;
+    }
+
+    const config = {
+      positive: {
+        icon: Smile,
+        variant: 'default' as const,
+        className: 'bg-green-100 text-green-800 hover:bg-green-100',
+      },
+      neutral: {
+        icon: Meh,
+        variant: 'secondary' as const,
+        className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100',
+      },
+      negative: {
+        icon: Frown,
+        variant: 'destructive' as const,
+        className: 'bg-red-100 text-red-800 hover:bg-red-100',
+      },
+    };
+
+    const {
+      icon: Icon,
+      variant,
+      className,
+    } = config[sentiment as keyof typeof config] || config.neutral;
+
+    return (
+      <Badge variant={variant} className={`text-xs ${className}`}>
+        <Icon className="mr-1 h-3 w-3" />
+        {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
+      </Badge>
+    );
   }
-
-  const config = {
-    positive: {
-      icon: Smile,
-      variant: 'default' as const,
-      className: 'bg-green-100 text-green-800 hover:bg-green-100',
-    },
-    neutral: {
-      icon: Meh,
-      variant: 'secondary' as const,
-      className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100',
-    },
-    negative: {
-      icon: Frown,
-      variant: 'destructive' as const,
-      className: 'bg-red-100 text-red-800 hover:bg-red-100',
-    },
-  };
-
-  const {
-    icon: Icon,
-    variant,
-    className,
-  } = config[sentiment as keyof typeof config] || config.neutral;
-
-  return (
-    <Badge variant={variant} className={`text-xs ${className}`}>
-      <Icon className="mr-1 h-3 w-3" />
-      {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
-    </Badge>
-  );
-});
+);
 getSentimentBadge.displayName = 'GetSentimentBadge';
 
 // Memoized helper function to get lead quality badge
-export const getLeadQualityBadge = memo(({ leadQuality }: { leadQuality?: string }) => {
-  if (!leadQuality) {
-    return <span className="text-xs text-muted-foreground">-</span>;
+export const getLeadQualityBadge = memo(
+  ({ leadQuality }: { leadQuality?: string }) => {
+    if (!leadQuality) {
+      return <span className="text-xs text-muted-foreground">-</span>;
+    }
+
+    const config = {
+      hot: {
+        icon: Flame,
+        variant: 'destructive' as const,
+        className: 'bg-red-100 text-red-800 hover:bg-red-100',
+      },
+      warm: {
+        icon: Thermometer,
+        variant: 'default' as const,
+        className: 'bg-orange-100 text-orange-800 hover:bg-orange-100',
+      },
+      cold: {
+        icon: Snowflake,
+        variant: 'secondary' as const,
+        className: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
+      },
+    };
+
+    const {
+      icon: Icon,
+      variant,
+      className,
+    } = config[leadQuality as keyof typeof config] || config.cold;
+
+    return (
+      <Badge variant={variant} className={`text-xs ${className}`}>
+        <Icon className="mr-1 h-3 w-3" />
+        {leadQuality.charAt(0).toUpperCase() + leadQuality.slice(1)}
+      </Badge>
+    );
   }
-
-  const config = {
-    hot: {
-      icon: Flame,
-      variant: 'destructive' as const,
-      className: 'bg-red-100 text-red-800 hover:bg-red-100',
-    },
-    warm: {
-      icon: Thermometer,
-      variant: 'default' as const,
-      className: 'bg-orange-100 text-orange-800 hover:bg-orange-100',
-    },
-    cold: {
-      icon: Snowflake,
-      variant: 'secondary' as const,
-      className: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
-    },
-  };
-
-  const {
-    icon: Icon,
-    variant,
-    className,
-  } = config[leadQuality as keyof typeof config] || config.cold;
-
-  return (
-    <Badge variant={variant} className={`text-xs ${className}`}>
-      <Icon className="mr-1 h-3 w-3" />
-      {leadQuality.charAt(0).toUpperCase() + leadQuality.slice(1)}
-    </Badge>
-  );
-});
+);
 getLeadQualityBadge.displayName = 'GetLeadQualityBadge';
 
 export const getStatusBadge = (endedReason: string) => {
@@ -176,7 +181,10 @@ export const VALIDATION_PATTERNS = {
     /^(?!.* {2})(?!.*--)(?!.*\.{2})(?!.*,{2})(?!.*'')(?!.*&&)(?!.*\(\()(?!.*\)\))[a-zA-Z0-9](?:[a-zA-Z0-9\s\-'.,&()]*[a-zA-Z0-9.)])?$/,
 };
 
-export const validateContent = (field: string, value: string): string | null => {
+export const validateContent = (
+  field: string,
+  value: string
+): string | null => {
   const limits = fieldLimits[field as keyof typeof fieldLimits];
 
   if (value.length < limits.minLength) {
@@ -204,4 +212,4 @@ export const validateContent = (field: string, value: string): string | null => 
       break;
   }
   return null;
-}; 
+};

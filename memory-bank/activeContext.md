@@ -30,6 +30,7 @@ This document tracks the current work focus, recent changes, next steps, and imp
 - Add alerting/monitoring for failed provisions if needed.
 
 ## 2025-07-13: Onboarding Replaced by Welcome Screen
+
 - The multi-step onboarding flow has been fully replaced by a single /welcome page.
 - /welcome explains free tier features and upgrade path, with 'Skip for now' and 'Subscribe now' buttons.
 - Both buttons call a robust server action to set welcome_completed=true in user_settings, then redirect appropriately.

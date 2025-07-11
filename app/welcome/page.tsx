@@ -3,7 +3,12 @@
 import { useEffect, useState, Suspense, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { setWelcomeCompletedAction } from '@/lib/actions/welcome';
 import { createClient } from '@/lib/supabase/client';
@@ -71,11 +76,18 @@ function WelcomeContent() {
             {/* Explain free tier features and upgrade path */}
             <ul className="mb-4 list-disc pl-5 text-sm text-muted-foreground">
               <li>Free tier: Receive and transcribe up to 20 calls/month</li>
-              <li>AI receptionist answers, qualifies, and syncs leads to your CRM</li>
-              <li>Upgrade anytime for unlimited calls, advanced analytics, and integrations</li>
+              <li>
+                AI receptionist answers, qualifies, and syncs leads to your CRM
+              </li>
+              <li>
+                Upgrade anytime for unlimited calls, advanced analytics, and
+                integrations
+              </li>
             </ul>
-            <div className="mb-2 text-base font-medium">Ready to get started?</div>
-            <div className="flex flex-col gap-3 mt-4">
+            <div className="mb-2 text-base font-medium">
+              Ready to get started?
+            </div>
+            <div className="mt-4 flex flex-col gap-3">
               <Button
                 variant="default"
                 disabled={loading || isPending}
@@ -99,7 +111,7 @@ function WelcomeContent() {
                 Subscribe now
               </Button>
             </div>
-            {error && <div className="mt-4 text-red-600 text-sm">{error}</div>}
+            {error && <div className="mt-4 text-sm text-red-600">{error}</div>}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -111,9 +123,15 @@ function WelcomeContent() {
 export default function WelcomePage() {
   // Suspense for async client-side check/loading
   return (
-    <Suspense fallback={<div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      }
+    >
       <WelcomeContent />
     </Suspense>
   );
 }
-// Comments throughout explain each logic branch and async state. 
+// Comments throughout explain each logic branch and async state.

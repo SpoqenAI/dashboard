@@ -25,14 +25,10 @@ const analyticsFetcher = async (url: string): Promise<DashboardAnalytics> => {
   }
 
   const data = await response.json();
-  logger.info(
-    'DASHBOARD_ANALYTICS',
-    'Analytics data fetched successfully',
-    {
-      totalCalls: data.metrics?.totalCalls || 0,
-      recentCallsCount: data.recentCalls?.length || 0,
-    }
-  );
+  logger.info('DASHBOARD_ANALYTICS', 'Analytics data fetched successfully', {
+    totalCalls: data.metrics?.totalCalls || 0,
+    recentCallsCount: data.recentCalls?.length || 0,
+  });
 
   return data;
 };
@@ -40,15 +36,15 @@ const analyticsFetcher = async (url: string): Promise<DashboardAnalytics> => {
 export function useDashboardAnalytics(
   options: UseDashboardAnalyticsOptions = {}
 ) {
-  const { 
-    days = 30, 
-    limit = 100, 
+  const {
+    days = 30,
+    limit = 100,
     refetchInterval = 300000, // 5 minutes instead of 1 minute
-    enabled = true 
+    enabled = true,
   } = options;
 
   // Build the URL for SWR key
-  const url = enabled 
+  const url = enabled
     ? `/api/vapi/analytics?${new URLSearchParams({
         days: days.toString(),
         limit: limit.toString(),
@@ -72,19 +68,19 @@ export function useDashboardAnalytics(
       revalidateOnReconnect: true, // Revalidate when connection is restored
       revalidateIfStale: true, // Use stale data while revalidating
       dedupingInterval: 30000, // Dedupe requests within 30 seconds
-      
+
       // Cache configuration
       focusThrottleInterval: 60000, // Throttle focus revalidation to 1 minute
-      
+
       // Error handling
       shouldRetryOnError: true,
       errorRetryCount: 3,
       errorRetryInterval: 5000,
-      
+
       // Performance optimizations
       keepPreviousData: true, // Keep previous data while loading new data
-      
-      onSuccess: (data) => {
+
+      onSuccess: data => {
         logger.info(
           'DASHBOARD_ANALYTICS_SWR',
           'Analytics data updated via SWR',
@@ -95,8 +91,8 @@ export function useDashboardAnalytics(
           }
         );
       },
-      
-      onError: (err) => {
+
+      onError: err => {
         logger.error('DASHBOARD_ANALYTICS_SWR', 'SWR fetch error', err);
       },
     }

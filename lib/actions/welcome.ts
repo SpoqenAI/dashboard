@@ -31,7 +31,12 @@ export async function setWelcomeCompletedAction() {
       .maybeSingle();
 
     if (fetchError) {
-      logger.error('WELCOME_ACTION', 'Error fetching user_settings', fetchError, { userId: logger.maskUserId(user.id) });
+      logger.error(
+        'WELCOME_ACTION',
+        'Error fetching user_settings',
+        fetchError,
+        { userId: logger.maskUserId(user.id) }
+      );
       return { success: false, error: 'Failed to fetch user settings' };
     }
 
@@ -41,7 +46,12 @@ export async function setWelcomeCompletedAction() {
         .from('user_settings')
         .insert({ id: user.id, welcome_completed: true });
       if (insertError) {
-        logger.error('WELCOME_ACTION', 'Error inserting user_settings', insertError, { userId: logger.maskUserId(user.id) });
+        logger.error(
+          'WELCOME_ACTION',
+          'Error inserting user_settings',
+          insertError,
+          { userId: logger.maskUserId(user.id) }
+        );
         return { success: false, error: 'Failed to create user settings' };
       }
       // Immediately select the row to verify creation
@@ -51,8 +61,16 @@ export async function setWelcomeCompletedAction() {
         .eq('id', user.id)
         .maybeSingle();
       if (verifyError || !verifySettings) {
-        logger.error('WELCOME_ACTION', 'Failed to verify user_settings after insert', verifyError || new Error('No row returned'), { userId: logger.maskUserId(user.id) });
-        return { success: false, error: 'User settings creation verification failed' };
+        logger.error(
+          'WELCOME_ACTION',
+          'Failed to verify user_settings after insert',
+          verifyError || new Error('No row returned'),
+          { userId: logger.maskUserId(user.id) }
+        );
+        return {
+          success: false,
+          error: 'User settings creation verification failed',
+        };
       }
       return { success: true };
     }
@@ -68,12 +86,19 @@ export async function setWelcomeCompletedAction() {
       .update({ welcome_completed: true })
       .eq('id', user.id);
     if (updateError) {
-      logger.error('WELCOME_ACTION', 'Error updating welcome_completed', updateError, { userId: logger.maskUserId(user.id) });
+      logger.error(
+        'WELCOME_ACTION',
+        'Error updating welcome_completed',
+        updateError,
+        { userId: logger.maskUserId(user.id) }
+      );
       return { success: false, error: 'Failed to update welcome status' };
     }
     return { success: true };
   } catch (err: any) {
-    logger.error('WELCOME_ACTION', 'Unexpected error', err, { userId: logger.maskUserId(user.id) });
+    logger.error('WELCOME_ACTION', 'Unexpected error', err, {
+      userId: logger.maskUserId(user.id),
+    });
     return { success: false, error: 'Unexpected error' };
   }
-} 
+}
