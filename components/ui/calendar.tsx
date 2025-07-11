@@ -2,19 +2,12 @@
 
 import * as React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import dynamic from 'next/dynamic';
-
-// Lazy load DayPicker to reduce initial bundle (perf03_dynamic_heavy_libs)
-// ssr: false ensures it's only imported on client
-const LazyDayPicker = dynamic(
-  () => import('react-day-picker').then(m => m.DayPicker),
-  { ssr: false }
-);
+import { DayPicker } from 'react-day-picker';
 
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
 
-export type CalendarProps = React.ComponentProps<typeof LazyDayPicker>;
+export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
 function Calendar({
   className,
@@ -23,7 +16,7 @@ function Calendar({
   ...props
 }: CalendarProps) {
   return (
-    <LazyDayPicker
+    <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn('p-3', className)}
       classNames={{

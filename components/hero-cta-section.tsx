@@ -5,6 +5,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Play } from 'lucide-react';
+import { trackCTA, trackEvent } from '@/lib/analytics-tracking';
 
 // Dynamically import the modal to avoid SSR issues
 const DemoVideoModal = dynamic(
@@ -22,14 +23,20 @@ export function HeroCTASection() {
   const [isDemoVideoOpen, setIsDemoVideoOpen] = useState(false);
 
   // Memoized event handlers to prevent re-renders
-  const handleVideoEvent = useCallback(() => {}, []);
+  const handleVideoEvent = useCallback((event: string, data?: any) => {
+    trackEvent('video_interaction', { action: event, ...data });
+  }, []);
 
   const openDemoVideo = useCallback(() => {
     setIsDemoVideoOpen(true);
+    trackCTA('demo_video', 'hero_section', { position: 'secondary' });
   }, []);
 
   const closeDemoVideo = useCallback(() => {
     setIsDemoVideoOpen(false);
+    trackEvent('demo_video_closed', {
+      duration: Date.now() - (window as any).demoStartTime,
+    });
   }, []);
 
   return (
@@ -44,7 +51,11 @@ export function HeroCTASection() {
           <Link
             href="/signup"
             aria-label="Start your 14-day free trial"
-            onClick={() => undefined}
+            onClick={() =>
+              trackCTA('start_trial', 'hero_section', {
+                position: 'primary',
+              })
+            }
           >
             Start Free Trial
             <ArrowRight

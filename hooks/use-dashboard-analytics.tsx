@@ -1,140 +1,110 @@
-import { useCallback, useEffect, useRef } from 'react';
-import useSWR from 'swr';
+import { useState, useEffect, useCallback } from 'react';
 import { DashboardAnalytics } from '@/lib/types';
 import { logger } from '@/lib/logger';
-import { useAuth } from '@/hooks/use-auth';
 
 interface UseDashboardAnalyticsOptions {
   days?: number;
   limit?: number;
   refetchInterval?: number;
-  enabled?: boolean;
 }
-
-// Fetcher function for SWR
-const analyticsFetcher = async (url: string): Promise<DashboardAnalytics> => {
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    logger.error(
-      'DASHBOARD_ANALYTICS',
-      'Failed to fetch analytics',
-      new Error(errorText)
-    );
-    throw new Error(`Failed to fetch analytics: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  logger.info('DASHBOARD_ANALYTICS', 'Analytics data fetched successfully', {
-    totalCalls: data.metrics?.totalCalls || 0,
-    recentCallsCount: data.recentCalls?.length || 0,
-  });
-
-  return data;
-};
 
 export function useDashboardAnalytics(
   options: UseDashboardAnalyticsOptions = {}
 ) {
-  const { user } = useAuth();
-  const {
-    days = 30,
-    limit = 100,
-    refetchInterval = 300000, // 5 minutes instead of 1 minute
-    enabled = true,
-  } = options;
+  const { days = 30, limit = 100, refetchInterval = 60000 } = options; // Default 1 minute refetch
 
-  // Build the URL for SWR key - CRITICAL: Include user ID to ensure cache isolation
-  const url =
-    enabled && user
-      ? `/api/vapi/analytics?${new URLSearchParams({
+  const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefetching, setIsRefetching] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchAnalytics = useCallback(
+    async (isRefetch = false) => {
+      if (isRefetch) {
+        setIsRefetching(true);
+      } else {
+        setIsLoading(true);
+      }
+      setError(null);
+
+      try {
+        const params = new URLSearchParams({
           days: days.toString(),
           limit: limit.toString(),
-          userId: user.id, // Include user ID in key to isolate cache by user
-        }).toString()}`
-      : null;
+        });
 
-  // SWR configuration for better performance
-  const {
-    data: analytics,
-    error,
-    isLoading,
-    isValidating,
-    mutate,
-  } = useSWR(
-    url, // SWR key - null when disabled or no user
-    analyticsFetcher,
-    {
-      // Stale-while-revalidate configuration
-      refreshInterval: refetchInterval,
-      revalidateOnFocus: false, // Disable aggressive focus revalidation
-      revalidateOnReconnect: true, // Revalidate when connection is restored
-      revalidateIfStale: true, // Use stale data while revalidating
-      dedupingInterval: 30000, // Dedupe requests within 30 seconds
+        const response = await fetch(`/api/vapi/analytics?${params}`);
 
-      // Cache configuration
-      focusThrottleInterval: 60000, // Throttle focus revalidation to 1 minute
+        if (!response.ok) {
+          const errorText = await response.text();
+          logger.error(
+            'DASHBOARD_ANALYTICS',
+            'Failed to fetch analytics',
+            new Error(errorText)
+          );
+          throw new Error(`Failed to fetch analytics: ${response.statusText}`);
+        }
 
-      // Error handling
-      shouldRetryOnError: true,
-      errorRetryCount: 3,
-      errorRetryInterval: 5000,
-
-      // Performance optimizations
-      // Keep previous data during background revalidation so UI doesn't go blank
-      keepPreviousData: true,
-
-      onSuccess: data => {
+        const data = await response.json();
         logger.info(
-          'DASHBOARD_ANALYTICS_SWR',
-          'Analytics data updated via SWR',
+          'DASHBOARD_ANALYTICS',
+          'Analytics data fetched successfully',
           {
             totalCalls: data.metrics?.totalCalls || 0,
             recentCallsCount: data.recentCalls?.length || 0,
             timeRange: `${days} days`,
+            isRefetch,
           }
         );
-      },
 
-      onError: err => {
-        logger.error('DASHBOARD_ANALYTICS_SWR', 'SWR fetch error', err);
-      },
-    }
+        setAnalytics(data);
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Unknown error');
+        setError(error);
+        logger.error('DASHBOARD_ANALYTICS', 'Failed to fetch analytics', error);
+      } finally {
+        setIsLoading(false);
+        setIsRefetching(false);
+      }
+    },
+    [days, limit]
   );
 
-  // CRITICAL SECURITY FIX: Clear cache when user changes
-  useEffect(() => {
-    if (!user) {
-      // User logged out - immediately clear all cached data
-      mutate(undefined, false); // Clear cache without triggering revalidation
-      logger.info(
-        'DASHBOARD_ANALYTICS_SWR',
-        'Cache cleared due to user logout'
-      );
-    }
-  }, [user, mutate]);
-
-  // Trigger fetch when user logs in (user id changes)
-  const prevUserIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (user?.id && user.id !== prevUserIdRef.current) {
-      prevUserIdRef.current = user.id;
-      // Revalidate to ensure fresh data for the new user
-      mutate();
-    }
-  }, [user, mutate]);
-
-  // Manual refetch function
   const refetch = useCallback(() => {
-    return mutate();
-  }, [mutate]);
+    return fetchAnalytics(true);
+  }, [fetchAnalytics]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
+
+  // Set up refetch interval
+  useEffect(() => {
+    if (refetchInterval > 0) {
+      const interval = setInterval(() => {
+        fetchAnalytics(true);
+      }, refetchInterval);
+
+      return () => clearInterval(interval);
+    }
+  }, [fetchAnalytics, refetchInterval]);
+
+  // Refetch on window focus
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchAnalytics(true);
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchAnalytics]);
 
   return {
-    analytics: analytics || null,
+    analytics,
     isLoading,
     error,
     refetch,
-    isRefetching: isValidating && !isLoading, // SWR's background revalidation
+    isRefetching,
   };
 }

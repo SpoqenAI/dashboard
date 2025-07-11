@@ -46,12 +46,11 @@ export function useSubscription(): UseSubscriptionReturn {
           return;
         }
 
-        // Fetch the user's current subscription (current=true)
+        // Fetch the user's active subscription
         const { data, error: fetchError } = await supabase
           .from('subscriptions')
-          .select('*, tier_type')
+          .select('*')
           .eq('user_id', user.id)
-          .eq('current', true)
           .order('current_period_start_at', { ascending: false })
           .limit(1)
           .maybeSingle();

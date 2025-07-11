@@ -80,16 +80,14 @@ body {
   }
 
   .backdrop-blur-glass {
-    /* PERF: lower blur radius to reduce GPU cost on large surfaces */
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
   .shadow-glass {
-    /* PERF: halve blur radius to cut paint cost */
     box-shadow:
-      0 4px 16px 0 rgba(31, 38, 135, 0.3),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+      0 8px 32px 0 rgba(31, 38, 135, 0.37),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
   }
 
   .shadow-glow-primary {
@@ -314,13 +312,36 @@ body {
   animation: scale-in 0.3s ease-out;
 }
 
-/* PERF: disable entrance animations after first scroll */
-.motion-done .animate-slide-down,
-.motion-done .animate-slide-up,
-.motion-done .animate-fade-in,
-.motion-done .animate-slide-in-right,
-.motion-done .animate-scale-in {
-  animation: none !important;
+@keyframes fadeIn {
+  from {
+    opacity: 0.7;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0.8;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.animate-slideInUp {
+  animation: slideInUp 0.5s ease-out forwards;
+  will-change: transform, opacity;
 }
 
 /* Performance optimizations for dashboard preview */

@@ -11,7 +11,6 @@ export interface UserSettings {
   id: string;
   ai_greeting?: string;
   assistant_name?: string;
-  vapi_assistant_id?: string;
   email_notifications: boolean;
   sms_notifications: boolean;
   billing_notifications: boolean;
@@ -96,86 +95,12 @@ export function useUserSettings() {
     assistant_name: string;
     greeting: string;
   } | null>(null);
-  const [assistantData, setAssistantData] = useState<any>(null);
-  const [assistantLoading, setAssistantLoading] = useState(false);
-  const [assistantLastFetch, setAssistantLastFetch] = useState<number | null>(
-    null
-  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
 
   const supabase = getSupabaseClient();
-
-  // Cache TTL for assistant data (5 minutes)
-  const ASSISTANT_CACHE_TTL = 5 * 60 * 1000;
-
-  // Cached fetch for assistant data
-  const fetchAssistantData = useCallback(
-    async (force = false) => {
-      if (!user || !settings?.vapi_assistant_id) {
-        return null;
-      }
-
-      // Check cache validity
-      const now = Date.now();
-      const cacheValid =
-        assistantLastFetch && now - assistantLastFetch < ASSISTANT_CACHE_TTL;
-
-      if (!force && cacheValid && assistantData) {
-        return assistantData;
-      }
-
-      // Prevent duplicate requests
-      if (assistantLoading) {
-        return assistantData;
-      }
-
-      try {
-        setAssistantLoading(true);
-
-        const res = await fetch('/api/vapi/assistant/info');
-        if (res.ok) {
-          const json = await res.json();
-          if (json?.assistant) {
-            setAssistantData(json.assistant);
-            setAssistantLastFetch(now);
-
-            // Update the legacy assistant state for backward compatibility
-            setAssistant({
-              assistant_name: json.assistant.name ?? 'Ava',
-              greeting:
-                json.assistant.model?.messages?.find(
-                  (msg: any) => msg.role === 'system'
-                )?.content ||
-                json.assistant.firstMessage ||
-                'Hello! Thank you for calling. How can I assist you today?',
-            });
-
-            return json.assistant;
-          }
-        }
-        return null;
-      } catch (error) {
-        logger.error(
-          'USER_SETTINGS',
-          'Failed to fetch assistant data',
-          error as Error
-        );
-        return null;
-      } finally {
-        setAssistantLoading(false);
-      }
-    },
-    [
-      user,
-      settings?.vapi_assistant_id,
-      assistantData,
-      assistantLoading,
-      assistantLastFetch,
-    ]
-  );
 
   // Fetch user settings and profile
   const fetchUserData = useCallback(
@@ -231,13 +156,33 @@ export function useUserSettings() {
           throw profileError;
         }
 
-        // Set settings first so fetchAssistantData can access vapi_assistant_id
-        if (settingsData) {
-          setSettings(settingsData);
+        // Attempt to fetch assistant details from Vapi via internal API (optional)
+        let assistantData: { assistant_name: string; greeting: string } | null =
+          null;
+        if (settingsData?.vapi_assistant_id) {
+          try {
+            const res = await fetch('/api/vapi/assistant/info');
+            if (res.ok) {
+              const json = await res.json();
+              if (json?.assistant) {
+                assistantData = {
+                  assistant_name: json.assistant.name ?? 'Ava',
+                  greeting:
+                    json.assistant.model?.messages?.[0]?.content ||
+                    'Hello! Thank you for calling. How can I assist you today?',
+                };
+              }
+            }
+          } catch {
+            /* silent – non-critical */
+          }
         }
 
         // If no settings exist, create default settings
         if (!settingsData) {
+          const defaultAssistantName = 'Ava';
+          const defaultGreeting =
+            'Hello! Thank you for calling. How can I assist you today?';
           // Check abort signal before creating new settings
           if (signal?.aborted) {
             return;
@@ -259,6 +204,15 @@ export function useUserSettings() {
           }
 
           setSettings(newSettings);
+        } else {
+          // No merging with assistants table – keep existing value
+
+          // Final abort check before updating state
+          if (signal?.aborted) {
+            return;
+          }
+
+          setSettings(settingsData);
         }
 
         // Final abort check before updating profile state
@@ -267,14 +221,10 @@ export function useUserSettings() {
         }
 
         setProfile(profileData);
-        setDataLoaded(true);
-
-        // Fetch assistant data using cached method (non-blocking)
-        if (settingsData?.vapi_assistant_id) {
-          fetchAssistantData().catch(() => {
-            // Silent fail - non-critical for user experience
-          });
+        if (assistantData) {
+          setAssistant(assistantData);
         }
+        setDataLoaded(true);
       } catch (err: any) {
         // Don't update error state if request was aborted
         if (signal?.aborted) {
@@ -858,10 +808,5 @@ export function useUserSettings() {
     getProfileFormData,
     refetch,
     updateAddress,
-    // New assistant data exports
-    assistantData,
-    assistantLoading,
-    fetchAssistantData,
-    refreshAssistantData: () => fetchAssistantData(true),
   };
 }
