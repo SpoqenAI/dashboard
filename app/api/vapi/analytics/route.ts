@@ -109,9 +109,9 @@ export async function GET(request: NextRequest) {
   });
 
   try {
-    // Fetch calls from VAPI with adjusted limit based on time range
-    // For longer time ranges, we need to fetch more calls to ensure we get all calls within the range
-    const adjustedLimit = Math.max(limit, days * 10); // Rough estimate: 10 calls per day max
+    // Fetch calls from VAPI with a consistent high limit to avoid API inconsistencies
+    // Different limits for different time ranges were causing weird filtering behavior
+    const adjustedLimit = Math.max(limit, 500); // Use consistent high limit
 
     const url = new URL('/call', baseUrl);
     url.searchParams.set('limit', adjustedLimit.toString());
@@ -238,8 +238,14 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Map ALL calls to frontend format FIRST (this calculates durationSeconds from timestamps)
-    const mappedUserCalls = userFilteredCalls.map(mapVapiCallToFrontend);
+    // Map ALL calls to frontend format and sort newest first to ensure we capture the most recent calls
+    // This prevents scenarios where the VAPI API returns calls in an unexpected order and newer calls get truncated when slicing.
+    const mappedUserCalls = userFilteredCalls
+      .map(mapVapiCallToFrontend)
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
 
     // After line 163, before calculateMetrics, we need to enrich the mapped calls with database analysis data
     // Get recent calls for display (already mapped and date-filtered)

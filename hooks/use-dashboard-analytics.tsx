@@ -67,14 +67,14 @@ export function useDashboardAnalytics(
     analyticsFetcher,
     {
       // Stale-while-revalidate configuration
-      refreshInterval: refetchInterval,
-      revalidateOnFocus: false, // Disable aggressive focus revalidation
+      refreshInterval: 30000, // Poll every 30 seconds for new calls
+      revalidateOnFocus: true, // Enable focus revalidation to catch new calls
       revalidateOnReconnect: true, // Revalidate when connection is restored
-      revalidateIfStale: true, // Use stale data while revalidating
-      dedupingInterval: 30000, // Dedupe requests within 30 seconds
+      revalidateIfStale: false, // Always fetch fresh data
+      dedupingInterval: 5000, // Reduce deduping to 5 seconds
 
       // Cache configuration
-      focusThrottleInterval: 60000, // Throttle focus revalidation to 1 minute
+      focusThrottleInterval: 10000, // Reduce focus throttle to 10 seconds
 
       // Error handling
       shouldRetryOnError: true,
@@ -83,7 +83,7 @@ export function useDashboardAnalytics(
 
       // Performance optimizations
       // Keep previous data during background revalidation so UI doesn't go blank
-      keepPreviousData: true,
+      keepPreviousData: false, // Don't keep stale data - show loading state for fresh data
 
       onSuccess: data => {
         logger.info(
