@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   formatDateDetailed,
   formatDuration,
-  getSentimentBadge as GetSentimentBadge,
+  getSentimentBadge,
 } from './dashboard-helpers';
 import { VapiCall } from '@/lib/types';
 import {
@@ -51,6 +51,9 @@ export const CallDetailModal = memo(
 
     // Use action points directly from call analysis
     const keyPoints = call.analysis?.actionPoints || [];
+
+    // Assign memoized component to capitalized variable for JSX usage
+    const GetSentimentBadge = getSentimentBadge;
 
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
