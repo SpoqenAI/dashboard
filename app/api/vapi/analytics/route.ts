@@ -147,6 +147,13 @@ export async function GET(request: NextRequest) {
     const callsData = await res.json();
     const calls = Array.isArray(callsData) ? callsData : [];
 
+    // Debug: Log all call IDs from VAPI for this request
+    logger.info('ANALYTICS', 'All calls from VAPI', {
+      daysFilter: days,
+      totalCallsFromVAPI: calls.length,
+      callIds: calls.map(c => c.id).slice(0, 10), // First 10 call IDs
+    });
+
     // Filter calls by date range
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
@@ -154,6 +161,14 @@ export async function GET(request: NextRequest) {
     const filteredCalls = calls.filter(call => {
       const callDate = new Date(call.createdAt || call.startedAt);
       return callDate >= cutoffDate;
+    });
+
+    // Debug: Log date-filtered call IDs
+    logger.info('ANALYTICS', 'Date-filtered calls', {
+      daysFilter: days,
+      cutoffDate: cutoffDate.toISOString(),
+      dateFilteredCount: filteredCalls.length,
+      dateFilteredCallIds: filteredCalls.map(c => c.id),
     });
 
     // Get authenticated user and their assistant ID in a single optimized query
@@ -187,6 +202,14 @@ export async function GET(request: NextRequest) {
     const userFilteredCalls = userAssistantId
       ? filteredCalls.filter(call => call.assistantId === userAssistantId)
       : [];
+
+    // Debug: Log user-filtered call IDs
+    logger.info('ANALYTICS', 'User-filtered calls', {
+      daysFilter: days,
+      userAssistantId,
+      userFilteredCount: userFilteredCalls.length,
+      userFilteredCallIds: userFilteredCalls.map(c => c.id),
+    });
 
     logger.info(
       'ANALYTICS',
