@@ -20,7 +20,7 @@ interface LockedOverlayProps {
  * button. Used to prevent interaction with premium-only dashboard areas while
  * still allowing overall site navigation (e.g., switching tabs).
  */
-const LockedOverlay: React.FC<LockedOverlayProps> = ({
+export const LockedOverlay: React.FC<LockedOverlayProps> = ({
   upgradeHref = '/billing',
   className = '',
 }) => {
