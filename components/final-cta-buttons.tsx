@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-import { trackCTA } from '@/lib/analytics-tracking';
 
 export function FinalCTAButtons() {
   return (
@@ -14,14 +13,7 @@ export function FinalCTAButtons() {
         className="focus-visible-ring group"
         asChild
       >
-        <Link
-          href="/signup"
-          onClick={() =>
-            trackCTA('start_trial', 'final_cta', {
-              position: 'primary',
-            })
-          }
-        >
+        <Link href="/signup" onClick={() => undefined}>
           Start Free Trial
           <ArrowRight
             className="transition-transform group-hover:translate-x-1"
@@ -33,11 +25,7 @@ export function FinalCTAButtons() {
         variant="outline"
         size="xl"
         className="focus-visible-ring"
-        onClick={() =>
-          trackCTA('book_demo', 'final_cta', {
-            position: 'secondary',
-          })
-        }
+        onClick={() => undefined}
       >
         Book a Demo Call
       </Button>

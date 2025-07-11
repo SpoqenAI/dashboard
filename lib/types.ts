@@ -2,7 +2,9 @@
 
 export interface VapiCall {
   id: string;
-  phoneNumber?: string;
+  phoneNumber?: {
+    number: string;
+  };
   callerName?: string;
   status: string;
   endedReason: string;
@@ -14,8 +16,11 @@ export interface VapiCall {
   transcript?: string;
   summary?: string;
   recordingUrl?: string;
-  sentiment?: 'positive' | 'neutral' | 'negative';
-  leadQuality?: 'hot' | 'warm' | 'cold';
+  analysis?: {
+    sentiment?: 'positive' | 'neutral' | 'negative';
+    leadQuality?: 'hot' | 'warm' | 'cold';
+    actionPoints?: string[];
+  };
 }
 
 export interface ActionPoints {

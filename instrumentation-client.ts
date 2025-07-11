@@ -2,16 +2,50 @@
 // The added config here will be used whenever a users loads a page in their browser.
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
-import * as Sentry from '@sentry/nextjs';
+// Defer loading of the heavy Sentry browser SDK until after the page has fully loaded.
+// This removes ~90 kB of JavaScript from the critical path but still gives us error monitoring.
 
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+/* eslint-disable @typescript-eslint/no-explicit-any */
+declare global {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+  interface Window {
+    __sentry?: unknown;
+  }
+}
 
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1,
+/**
+ * Dynamically imports and initialises Sentry after the `load` event or during idle time.
+ */
+function initSentry() {
+  // Avoid loading twice.
+  if (window.__sentry) return;
 
-  // Setting this option to true will print useful information to the console while you're setting up Sentry.
-  debug: false,
-});
+  import('@sentry/nextjs').then(Sentry => {
+    Sentry.init({
+      dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+      tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1,
+      debug: false,
+    });
 
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+    window.__sentry = Sentry;
+
+    // Optional: forward router transition events once SDK is ready
+    if (Sentry.captureRouterTransitionStart) {
+      (globalThis as any).onRouterTransitionStart =
+        Sentry.captureRouterTransitionStart;
+    }
+  });
+}
+
+// Use `requestIdleCallback` when available; otherwise fall back to window load.
+if (typeof window !== 'undefined') {
+  if ('requestIdleCallback' in window) {
+    (window as any).requestIdleCallback(initSentry);
+  } else if (document.readyState === 'complete') {
+    initSentry();
+  } else {
+    (window as any).addEventListener('load', initSentry);
+  }
+}
+
+export {}; // Make this file a module to enable global augmentation

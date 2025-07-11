@@ -23,11 +23,12 @@ export async function provisionAssistant(userId: string): Promise<void> {
     return;
   }
 
-  // Check for active subscription before provisioning
+  // Check for current subscription before provisioning
   const { data: subscription, error: subError } = await supabase
     .from('subscriptions')
     .select('*')
     .eq('user_id', userId)
+    .eq('current', true)
     .order('current_period_start_at', { ascending: false })
     .limit(1)
     .maybeSingle();
