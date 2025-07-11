@@ -125,7 +125,8 @@ async function processVapiWebhook(envelope: any) {
       .maybeSingle();
 
     const email = profile?.email;
-    const emailNotifications: boolean = settingsRes?.email_notifications ?? true;
+    const emailNotifications: boolean =
+      settingsRes?.email_notifications ?? true;
 
     if (!email || !emailNotifications) return;
 
