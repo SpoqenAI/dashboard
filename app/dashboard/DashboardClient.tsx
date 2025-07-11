@@ -15,7 +15,6 @@ import {
   useReducer,
   startTransition,
   Suspense,
-  useRef,
 } from 'react';
 import dynamic from 'next/dynamic';
 import { ProtectedRoute } from '@/components/protected-route';

@@ -265,10 +265,12 @@ export async function GET(request: NextRequest) {
     // This prevents scenarios where the VAPI API returns calls in an unexpected order and newer calls get truncated when slicing.
     const mappedUserCalls = userFilteredCalls
       .map(mapVapiCallToFrontend)
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      .map(call => ({
+        ...call,
+        _sortTimestamp: new Date(call.createdAt).getTime(), // Precompute timestamp for efficient sorting
+      }))
+      .sort((a, b) => b._sortTimestamp - a._sortTimestamp) // Use precomputed timestamps
+      .map(({ _sortTimestamp, ...call }) => call); // Remove the temporary sorting field
 
     // After line 163, before calculateMetrics, we need to enrich the mapped calls with database analysis data
     // Get recent calls for display (already mapped and date-filtered)
