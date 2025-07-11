@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
       return callDate >= cutoffDate;
     });
 
-    // Get authenticated user and their assistant ID
+    // Get authenticated user and their assistant ID in a single optimized query
     const supabase = await createClient();
     const {
       data: { user },
@@ -81,12 +81,17 @@ export async function GET(request: NextRequest) {
 
     let userAssistantId: string | null = null;
     if (user) {
-      // Get the user's VAPI assistant ID from user_settings
-      const { data: userSettings } = await supabase
+      // Optimized query with proper error handling and caching hint
+      const { data: userSettings, error: settingsError } = await supabase
         .from('user_settings')
         .select('vapi_assistant_id')
         .eq('id', user.id)
         .single();
+
+      if (settingsError) {
+        logger.error('ANALYTICS', 'Failed to fetch user settings', settingsError);
+        // Continue with null assistant ID rather than failing completely
+      }
 
       userAssistantId = userSettings?.vapi_assistant_id || null;
     }
@@ -155,41 +160,75 @@ export async function GET(request: NextRequest) {
     let recentCalls = mappedUserCalls.slice(0, 100);
 
     // Enrich calls with database analysis data if user is authenticated
-    if (user?.id && supabase) {
+    if (user?.id && supabase && recentCalls.length > 0) {
       try {
         const callIds = recentCalls.map(call => call.id);
-        if (callIds.length > 0) {
-          const { data: analysisData, error: analysisError } = await supabase
+        
+        // Optimize for large datasets - batch process if too many IDs
+        const MAX_IDS_PER_QUERY = 100; // Prevent PostgreSQL IN clause performance issues
+        let analysisData: any[] = [];
+
+        if (callIds.length <= MAX_IDS_PER_QUERY) {
+          // Single query for small datasets
+          const { data, error: analysisError } = await supabase
             .from('call_analysis')
             .select('vapi_call_id, sentiment, lead_quality')
             .eq('user_id', user.id)
-            .in('vapi_call_id', callIds);
+            .in('vapi_call_id', callIds)
+            .limit(MAX_IDS_PER_QUERY); // Additional safety limit
 
-          if (!analysisError && analysisData) {
-            // Create a map for quick lookup
-            const analysisMap = new Map(
-              analysisData.map(item => [item.vapi_call_id, item])
-            );
-
-            // Enrich the calls with database analysis data
-            recentCalls = recentCalls.map(call => {
-              const dbAnalysis = analysisMap.get(call.id);
-              return {
-                ...call,
-                // Prioritize database analysis over VAPI analysis if available
-                sentiment: dbAnalysis?.sentiment || call.sentiment,
-                leadQuality: dbAnalysis?.lead_quality || call.leadQuality,
-              };
-            });
-
-            logger.info('ANALYTICS', 'Enriched calls with database analysis', {
-              totalCalls: recentCalls.length,
-              callsWithDbAnalysis: analysisData.length,
-              callsWithSentiment: recentCalls.filter(c => c.sentiment).length,
-              callsWithLeadQuality: recentCalls.filter(c => c.leadQuality)
-                .length,
-            });
+          if (analysisError) {
+            logger.error('ANALYTICS', 'Database analysis query failed', analysisError);
+          } else {
+            analysisData = data || [];
           }
+        } else {
+          // Batch queries for large datasets to maintain performance
+          logger.info('ANALYTICS', 'Using batched queries for large call dataset', {
+            totalCallIds: callIds.length,
+            batchSize: MAX_IDS_PER_QUERY,
+          });
+
+          for (let i = 0; i < callIds.length; i += MAX_IDS_PER_QUERY) {
+            const batchIds = callIds.slice(i, i + MAX_IDS_PER_QUERY);
+            const { data, error: batchError } = await supabase
+              .from('call_analysis')
+              .select('vapi_call_id, sentiment, lead_quality')
+              .eq('user_id', user.id)
+              .in('vapi_call_id', batchIds);
+
+            if (batchError) {
+              logger.error('ANALYTICS', `Batch query failed for calls ${i}-${i + batchIds.length}`, batchError);
+            } else {
+              analysisData.push(...(data || []));
+            }
+          }
+        }
+
+        if (analysisData.length > 0) {
+          // Create a map for efficient O(1) lookup
+          const analysisMap = new Map(
+            analysisData.map((item: any) => [item.vapi_call_id, item])
+          );
+
+          // Enrich the calls with database analysis data
+          recentCalls = recentCalls.map(call => {
+            const dbAnalysis = analysisMap.get(call.id);
+            return {
+              ...call,
+              // Prioritize database analysis over VAPI analysis if available
+              sentiment: dbAnalysis?.sentiment || call.sentiment,
+              leadQuality: dbAnalysis?.lead_quality || call.leadQuality,
+            };
+          });
+
+          logger.info('ANALYTICS', 'Enriched calls with database analysis', {
+            totalCalls: recentCalls.length,
+            callsWithDbAnalysis: analysisData.length,
+            enrichmentRate: `${Math.round((analysisData.length / recentCalls.length) * 100)}%`,
+            callsWithSentiment: recentCalls.filter(c => c.sentiment).length,
+            callsWithLeadQuality: recentCalls.filter(c => c.leadQuality).length,
+          });
         }
       } catch (dbError) {
         logger.error(
@@ -197,6 +236,7 @@ export async function GET(request: NextRequest) {
           'Failed to enrich calls with database analysis',
           dbError as Error
         );
+        // Continue without enrichment rather than failing the entire request
       }
     }
 
@@ -246,7 +286,29 @@ export async function GET(request: NextRequest) {
       cutoffDate: cutoffDate.toISOString(),
     });
 
-    return NextResponse.json(analytics);
+    // Calculate appropriate cache duration based on time range
+    // Shorter time ranges need more frequent updates, longer ranges can cache longer
+    let cacheMaxAge: number;
+    if (days <= 7) {
+      cacheMaxAge = 120; // 2 minutes for recent data
+    } else if (days <= 30) {
+      cacheMaxAge = 300; // 5 minutes for medium-term data
+    } else {
+      cacheMaxAge = 600; // 10 minutes for historical data
+    }
+
+    // Create response with caching headers
+    const response = NextResponse.json(analytics);
+    
+    // HTTP caching headers for better performance
+    response.headers.set('Cache-Control', `public, max-age=${cacheMaxAge}, stale-while-revalidate=${cacheMaxAge * 2}`);
+    response.headers.set('ETag', `"analytics-${user?.id || 'anon'}-${days}-${Date.now().toString(36)}"`);
+    response.headers.set('Vary', 'Authorization');
+    
+    // Performance monitoring header
+    response.headers.set('X-Cache-Duration', `${cacheMaxAge}s`);
+
+    return response;
   } catch (error) {
     logger.error('ANALYTICS', 'Analytics calculation failed', error as Error);
     return NextResponse.json(
