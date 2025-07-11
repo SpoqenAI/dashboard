@@ -101,32 +101,32 @@ async function processVapiWebhook(envelope: any) {
 
     const supabase = createSupabaseAdmin();
 
-    const [profileRes, settingsRes] = await Promise.all([
-      supabase
-        .from('user_settings')
-        .select('id')
-        .eq('vapi_assistant_id', assistantId)
-        .maybeSingle(),
-      supabase
-        .from('user_settings')
-        .select('email_notifications')
-        .eq('vapi_assistant_id', assistantId)
-        .maybeSingle(),
-    ]);
+    // First, get the user id from user_settings
+    const { data: userSettingsRow } = await supabase
+      .from('user_settings')
+      .select('id')
+      .eq('vapi_assistant_id', assistantId)
+      .maybeSingle();
 
-    const userRow = profileRes.data;
-    const emailNotifications: boolean =
-      settingsRes.data?.email_notifications ?? true;
+    if (!userSettingsRow) return;
 
-    if (!userRow) return;
-
+    // Now, get the email from profiles
     const { data: profile } = await supabase
       .from('profiles')
       .select('email')
-      .eq('id', userRow.id)
+      .eq('id', userSettingsRow.id)
       .single();
 
+    // Get email_notifications from user_settings
+    const { data: settingsRes } = await supabase
+      .from('user_settings')
+      .select('email_notifications')
+      .eq('id', userSettingsRow.id)
+      .maybeSingle();
+
     const email = profile?.email;
+    const emailNotifications: boolean =
+      settingsRes?.email_notifications ?? true;
 
     if (!email || !emailNotifications) return;
 
