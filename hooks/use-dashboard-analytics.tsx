@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import { DashboardAnalytics } from '@/lib/types';
 import { logger } from '@/lib/logger';
@@ -82,7 +82,8 @@ export function useDashboardAnalytics(
       errorRetryInterval: 5000,
 
       // Performance optimizations
-      keepPreviousData: false, // CRITICAL: Don't keep previous user's data
+      // Keep previous data during background revalidation so UI doesn't go blank
+      keepPreviousData: true,
 
       onSuccess: data => {
         logger.info(
@@ -111,6 +112,16 @@ export function useDashboardAnalytics(
         'DASHBOARD_ANALYTICS_SWR',
         'Cache cleared due to user logout'
       );
+    }
+  }, [user, mutate]);
+
+  // Trigger fetch when user logs in (user id changes)
+  const prevUserIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (user?.id && user.id !== prevUserIdRef.current) {
+      prevUserIdRef.current = user.id;
+      // Revalidate to ensure fresh data for the new user
+      mutate();
     }
   }, [user, mutate]);
 
