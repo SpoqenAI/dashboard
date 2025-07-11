@@ -2,7 +2,7 @@
 
 import type React from 'react';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ProtectedRoute } from '@/components/protected-route';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -29,6 +29,7 @@ const PasswordStrengthBar = dynamic(
 );
 import Logo from '@/components/ui/logo';
 import { CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // CONVERSION OPTIMIZATION: Reduced form fields for better conversion
 type FormFieldName = 'email' | 'password' | 'confirmPassword' | 'firstName';
@@ -119,6 +120,11 @@ export default function SignupPage() {
     firstName: false,
   });
 
+  // Keep the latest password value for confirm-password comparison
+  const latestPasswordRef = useRef('');
+  // Keep the latest confirm-password value to avoid stale state during re-validation
+  const confirmPasswordRef = useRef('');
+
   const [fieldValidStates, setFieldValidStates] = useState<
     Record<FormFieldName, boolean>
   >({
@@ -127,6 +133,8 @@ export default function SignupPage() {
     confirmPassword: false,
     firstName: true, // Optional field, defaults to valid
   });
+
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [score, setScore] = useState(0);
 
@@ -204,7 +212,8 @@ export default function SignupPage() {
       }
       case 'confirmPassword': {
         if (!value) return 'Please confirm your password';
-        if (value !== formData.password) return 'Passwords do not match';
+        if (value !== latestPasswordRef.current)
+          return 'Passwords do not match';
         return null;
       }
       default:
@@ -212,29 +221,32 @@ export default function SignupPage() {
     }
   };
 
-  // CONVERSION OPTIMIZATION: Debounced real-time validation
-  useEffect(() => {
-    const validateWithDelay = async (field: FormFieldName, value: string) => {
-      if (!touchedFields[field]) return;
+  // Debounced per-field validation (runs only on the field being edited)
+  // Store timers so each field has its own debounce instance
+  const validationTimers = useRef<Record<FormFieldName, NodeJS.Timeout | null>>(
+    {
+      email: null,
+      password: null,
+      confirmPassword: null,
+      firstName: null,
+    }
+  );
 
-      setIsValidating(prev => ({ ...prev, [field]: true }));
+  const triggerValidation = (field: FormFieldName, value: string) => {
+    // Clear any existing timer for this field
+    if (validationTimers.current[field]) {
+      clearTimeout(validationTimers.current[field] as NodeJS.Timeout);
+    }
 
-      // Debounce validation
-      setTimeout(async () => {
-        const error = await validateField(field, value);
-        setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
-        setFieldValidStates(prev => ({ ...prev, [field]: !error }));
-        setIsValidating(prev => ({ ...prev, [field]: false }));
-      }, 300);
-    };
+    setIsValidating(prev => ({ ...prev, [field]: true }));
 
-    Object.keys(formData).forEach(field => {
-      validateWithDelay(
-        field as FormFieldName,
-        formData[field as FormFieldName]
-      );
-    });
-  }, [formData, touchedFields]);
+    validationTimers.current[field] = setTimeout(async () => {
+      const error = await validateField(field, value);
+      setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
+      setFieldValidStates(prev => ({ ...prev, [field]: !error }));
+      setIsValidating(prev => ({ ...prev, [field]: false }));
+    }, 300);
+  };
 
   const handleFieldBlur = (field: FormFieldName) => {
     setTouchedFields(prev => ({ ...prev, [field]: true }));
@@ -252,18 +264,34 @@ export default function SignupPage() {
       processedValue = value.slice(0, 128); // Limit length
     }
 
+    // Update refs for latest values before validations
+    if (field === 'password') {
+      latestPasswordRef.current = processedValue;
+    } else if (field === 'confirmPassword') {
+      confirmPasswordRef.current = processedValue;
+    }
+
+    // Mark field as touched as soon as user edits
+    setTouchedFields(prev => ({ ...prev, [field]: true }));
+
     setFormData(prev => ({ ...prev, [field]: processedValue }));
+
+    triggerValidation(field, processedValue);
+
+    // If password changed, re-validate confirmPassword with latest value to keep them in sync
+    if (field === 'password' && touchedFields.confirmPassword) {
+      triggerValidation('confirmPassword', confirmPasswordRef.current);
+    }
   };
 
   // CONVERSION OPTIMIZATION: Check if form is valid for submission
   const isFormValid = () => {
-    const requiredFields: FormFieldName[] = [
-      'email',
-      'password',
-      'confirmPassword',
-    ];
-    return requiredFields.every(
-      field => fieldValidStates[field] && formData[field]
+    return (
+      fieldValidStates.email &&
+      fieldValidStates.password &&
+      fieldValidStates.confirmPassword &&
+      acceptedTerms &&
+      !isLoading
     );
   };
 
@@ -525,6 +553,40 @@ export default function SignupPage() {
               </CardContent>
 
               <CardFooter className="flex flex-col space-y-4">
+                {/* Terms checkbox */}
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="terms"
+                    checked={acceptedTerms}
+                    onCheckedChange={v => setAcceptedTerms(!!v)}
+                    aria-label="Accept Terms of Service and Privacy Policy"
+                    className="rounded-[2px]"
+                  />
+                  <label
+                    htmlFor="terms"
+                    className="text-sm text-muted-foreground"
+                  >
+                    I agree to the{' '}
+                    <Link
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      Terms of Service
+                    </Link>{' '}
+                    and{' '}
+                    <Link
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      Privacy Policy
+                    </Link>
+                  </label>
+                </div>
+
                 <div className="w-full">
                   <Button
                     className="w-full"
@@ -549,20 +611,6 @@ export default function SignupPage() {
                   Already have an account?{' '}
                   <Link href="/login" className="text-primary hover:underline">
                     Sign in
-                  </Link>
-                </div>
-
-                <div className="text-center text-xs text-muted-foreground">
-                  By creating an account, you agree to our{' '}
-                  <Link href="/terms" className="text-primary hover:underline">
-                    Terms of Service
-                  </Link>{' '}
-                  and{' '}
-                  <Link
-                    href="/privacy"
-                    className="text-primary hover:underline"
-                  >
-                    Privacy Policy
                   </Link>
                 </div>
               </CardFooter>
