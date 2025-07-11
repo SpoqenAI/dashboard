@@ -10,17 +10,19 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface Window {
     __sentry?: unknown;
+    onRouterTransitionStart?: unknown;
   }
 }
 
 /**
  * Dynamically imports and initialises Sentry after the `load` event or during idle time.
  */
-function initSentry() {
+async function initSentry() {
   // Avoid loading twice.
   if (window.__sentry) return;
 
-  import('@sentry/nextjs').then(Sentry => {
+  try {
+    const Sentry = await import('@sentry/nextjs');
     Sentry.init({
       dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
       tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1,
@@ -31,10 +33,13 @@ function initSentry() {
 
     // Optional: forward router transition events once SDK is ready
     if (Sentry.captureRouterTransitionStart) {
-      (globalThis as any).onRouterTransitionStart =
-        Sentry.captureRouterTransitionStart;
+      window.onRouterTransitionStart = Sentry.captureRouterTransitionStart;
     }
-  });
+  } catch (err) {
+    // Optionally log the error or handle gracefully
+    // eslint-disable-next-line no-console
+    console.warn('Sentry failed to load:', err);
+  }
 }
 
 // Use `requestIdleCallback` when available; otherwise fall back to window load.

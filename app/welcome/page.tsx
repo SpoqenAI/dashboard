@@ -94,7 +94,7 @@ function WelcomeContent() {
                 onClick={() => handleComplete('/dashboard')}
                 className="w-full"
               >
-                {loading && isPending ? (
+                {loading || isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
                 Skip for now
@@ -102,10 +102,10 @@ function WelcomeContent() {
               <Button
                 variant="outline"
                 disabled={loading || isPending}
-                onClick={() => handleComplete('/onboarding/subscribe')}
+                onClick={() => handleComplete('/settings?tab=billing')}
                 className="w-full"
               >
-                {loading && isPending ? (
+                {loading || isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
                 Subscribe now

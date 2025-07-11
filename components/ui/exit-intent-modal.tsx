@@ -152,8 +152,6 @@ export const ExitIntentModal = ({
     onClose?.();
   }, [onClose]);
 
-  const handleCTAClick = useCallback(() => {}, [offer, ctaText]);
-
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent) => {
       if (e.target === e.currentTarget) {
@@ -246,7 +244,7 @@ export const ExitIntentModal = ({
           {/* CTA */}
           <div className="space-y-3">
             <Button variant="neon" className="w-full" size="lg" asChild>
-              <a href={ctaLink} onClick={handleCTAClick}>
+              <a href={ctaLink}>
                 {ctaText}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </a>

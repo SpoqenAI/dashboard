@@ -36,7 +36,8 @@ export const LockedOverlay: React.FC<LockedOverlayProps> = ({
 
   // Keyboard accessibility: dismiss on Escape
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent | KeyboardEventInit) => {
+    const handleKeyDown = (event: Event) => {
+      const e = event as unknown as KeyboardEvent;
       if (e.key === 'Escape') {
         // Optionally, you could call a dismiss/close prop here
         // For now, just blur the overlay
@@ -45,9 +46,9 @@ export const LockedOverlay: React.FC<LockedOverlayProps> = ({
         }
       }
     };
-    window.addEventListener('keydown', handleKeyDown as any);
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown as any);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
