@@ -247,8 +247,8 @@ const nextConfig = {
 
 // Remove webpack config when Turbopack is active to silence warnings
 if (process.env.TURBOPACK) {
-  // Turbopack ignores Webpack config; deleting prevents noisy warning
-  delete nextConfig.webpack;
+  // Turbopack ignores Webpack config; setting to undefined prevents noisy warning
+  nextConfig.webpack = undefined;
 }
 
 const withAnalyzer = withBundleAnalyzer({
