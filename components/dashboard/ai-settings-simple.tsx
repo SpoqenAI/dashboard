@@ -61,6 +61,16 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   const MAX_FIRST_MESSAGE_LENGTH = useMemo(() => 100, []);
   const MAX_PROMPT_LENGTH = useMemo(() => 5000, []);
 
+  // Default message constants to avoid duplication
+  const DEFAULT_FIRST_MESSAGE = useMemo(
+    () => 'Hi, thank you for calling. How can I help you today?',
+    []
+  );
+  const DEFAULT_SYSTEM_PROMPT = useMemo(
+    () => 'Hello! Thank you for calling. How can I assist you today?',
+    []
+  );
+
   // Debounced values for performance optimization
   const debouncedFirstMessage = useDebouncedValue(firstMessage, 300);
   const debouncedSystemPrompt = useDebouncedValue(systemPrompt, 300);
@@ -69,22 +79,18 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   const originalValues = useMemo(() => {
     if (!assistantData) {
       return {
-        firstMessage: 'Hi, thank you for calling. How can I help you today?',
-        systemPrompt:
-          'Hello! Thank you for calling. How can I assist you today?',
+        firstMessage: DEFAULT_FIRST_MESSAGE,
+        systemPrompt: DEFAULT_SYSTEM_PROMPT,
       };
     }
 
     return {
-      firstMessage:
-        assistantData.firstMessage ||
-        'Hi, thank you for calling. How can I help you today?',
+      firstMessage: assistantData.firstMessage || DEFAULT_FIRST_MESSAGE,
       systemPrompt:
         assistantData.model?.messages?.find((msg: any) => msg.role === 'system')
-          ?.content ||
-        'Hello! Thank you for calling. How can I assist you today?',
+          ?.content || DEFAULT_SYSTEM_PROMPT,
     };
-  }, [assistantData]);
+  }, [assistantData, DEFAULT_FIRST_MESSAGE, DEFAULT_SYSTEM_PROMPT]);
 
   // Memoized unsaved changes detection
   const hasUnsavedChanges = useMemo(() => {
@@ -161,14 +167,11 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     if (assistantData) {
       // We have assistant data - use it
       const newFirstMessage =
-        assistantData.firstMessage ||
-        'Hi, thank you for calling. How can I help you today?';
+        assistantData.firstMessage || DEFAULT_FIRST_MESSAGE;
       const systemMessage = assistantData.model?.messages?.find(
         (msg: any) => msg.role === 'system'
       );
-      const newSystemPrompt =
-        systemMessage?.content ||
-        'Hello! Thank you for calling. How can I assist you today?';
+      const newSystemPrompt = systemMessage?.content || DEFAULT_SYSTEM_PROMPT;
 
       setFirstMessage(newFirstMessage);
       setSystemPrompt(newSystemPrompt);
@@ -181,11 +184,8 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       if (!hasVapiId) {
         // No VAPI assistant configured - use fallback values immediately
         const aiSettings = getAIReceptionistSettings();
-        setFirstMessage('Hi, thank you for calling. How can I help you today?');
-        setSystemPrompt(
-          aiSettings.greetingScript ||
-            'Hello! Thank you for calling. How can I assist you today?'
-        );
+        setFirstMessage(DEFAULT_FIRST_MESSAGE);
+        setSystemPrompt(aiSettings.greetingScript || DEFAULT_SYSTEM_PROMPT);
         setIsLoading(false);
         setHasInitialized(true);
       } else if (!assistantLoading) {
@@ -200,25 +200,15 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
 
             // No data available after fetch, use fallbacks
             const aiSettings = getAIReceptionistSettings();
-            setFirstMessage(
-              'Hi, thank you for calling. How can I help you today?'
-            );
-            setSystemPrompt(
-              aiSettings.greetingScript ||
-                'Hello! Thank you for calling. How can I assist you today?'
-            );
+            setFirstMessage(DEFAULT_FIRST_MESSAGE);
+            setSystemPrompt(aiSettings.greetingScript || DEFAULT_SYSTEM_PROMPT);
             setIsLoading(false);
           })
           .catch(() => {
             // Failed to fetch, use fallbacks
             const aiSettings = getAIReceptionistSettings();
-            setFirstMessage(
-              'Hi, thank you for calling. How can I help you today?'
-            );
-            setSystemPrompt(
-              aiSettings.greetingScript ||
-                'Hello! Thank you for calling. How can I assist you today?'
-            );
+            setFirstMessage(DEFAULT_FIRST_MESSAGE);
+            setSystemPrompt(aiSettings.greetingScript || DEFAULT_SYSTEM_PROMPT);
             setIsLoading(false);
           });
       } else if (assistantLoading) {
@@ -234,6 +224,8 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     isSavingLocal,
     hasInitialized,
     fetchAssistantData,
+    DEFAULT_FIRST_MESSAGE,
+    DEFAULT_SYSTEM_PROMPT,
   ]);
 
   // Don't reset initialization state on unmount - let cached data persist
@@ -290,10 +282,8 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         greetingScript: systemPrompt.trim(),
       });
 
-      // Small delay to ensure both updates are processed
-      await new Promise(resolve => setTimeout(resolve, 500));
-
       // Refresh data to get latest from VAPI and update local state
+      // Both API operations are complete at this point since they were properly awaited
       const refreshedData = await refreshAssistantData();
 
       // Update local state with fresh data to prevent old values from flashing
@@ -355,14 +345,11 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       // Update local state with fresh data
       if (refreshedData) {
         const newFirstMessage =
-          refreshedData.firstMessage ||
-          'Hi, thank you for calling. How can I help you today?';
+          refreshedData.firstMessage || DEFAULT_FIRST_MESSAGE;
         const systemMessage = refreshedData.model?.messages?.find(
           (msg: any) => msg.role === 'system'
         );
-        const newSystemPrompt =
-          systemMessage?.content ||
-          'Hello! Thank you for calling. How can I assist you today?';
+        const newSystemPrompt = systemMessage?.content || DEFAULT_SYSTEM_PROMPT;
 
         setFirstMessage(newFirstMessage);
         setSystemPrompt(newSystemPrompt);
@@ -375,7 +362,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     } finally {
       setIsSavingLocal(false);
     }
-  }, [refreshAssistantData]);
+  }, [refreshAssistantData, DEFAULT_FIRST_MESSAGE, DEFAULT_SYSTEM_PROMPT]);
 
   if (isLoading) {
     return (

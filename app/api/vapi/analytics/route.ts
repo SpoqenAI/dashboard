@@ -3,6 +3,89 @@ import { logger } from '@/lib/logger';
 import { CallMetrics, DashboardAnalytics } from '@/lib/types';
 import { createClient } from '@/lib/supabase/server';
 
+/**
+ * @swagger
+ * /api/vapi/analytics:
+ *   get:
+ *     summary: Get call analytics data
+ *     description: Returns analytics data including metrics, recent calls, and trends
+ *     parameters:
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *           default: 30
+ *         description: Number of days to include in analytics
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 100
+ *         description: Maximum number of recent calls to return
+ *     responses:
+ *       200:
+ *         description: Analytics data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 metrics:
+ *                   $ref: '#/components/schemas/CallMetrics'
+ *                 recentCalls:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/CallData'
+ *                 trends:
+ *                   $ref: '#/components/schemas/Trends'
+ *
+ * components:
+ *   schemas:
+ *     CallData:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         phoneNumber:
+ *           type: object
+ *           properties:
+ *             number:
+ *               type: string
+ *         callerName:
+ *           type: string
+ *         status:
+ *           type: string
+ *         endedReason:
+ *           type: string
+ *         durationSeconds:
+ *           type: number
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         startedAt:
+ *           type: string
+ *           format: date-time
+ *         endedAt:
+ *           type: string
+ *           format: date-time
+ *         cost:
+ *           type: number
+ *         transcript:
+ *           type: string
+ *         summary:
+ *           type: string
+ *         analysis:
+ *           type: object
+ *           properties:
+ *             sentiment:
+ *               type: string
+ *               enum: [positive, neutral, negative]
+ *               description: Call sentiment analysis result
+ *             leadQuality:
+ *               type: string
+ *               enum: [hot, warm, cold]
+ *               description: Lead quality assessment
+ */
 export async function GET(request: NextRequest) {
   const apiKey = process.env.VAPI_PRIVATE_KEY;
   const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
@@ -228,11 +311,13 @@ export async function GET(request: NextRequest) {
           );
 
           // Enrich the calls with database analysis data
+          // IMPORTANT: Maintains nested structure with sentiment and leadQuality under analysis
           recentCalls = recentCalls.map(call => {
             const dbAnalysis = analysisMap.get(call.id);
             return {
               ...call,
               // Prioritize database analysis over VAPI analysis if available
+              // Keep sentiment and leadQuality nested under analysis object per OpenAPI spec
               analysis: {
                 ...call.analysis,
                 sentiment: dbAnalysis?.sentiment || call.analysis?.sentiment,
@@ -923,6 +1008,13 @@ function calculateTrends(
   };
 }
 
+/**
+ * Maps a VAPI call object to the frontend CallData format
+ * Ensures sentiment and leadQuality are properly nested under analysis object
+ *
+ * @param vapiCall - Raw call data from VAPI API
+ * @returns CallData object with standardized structure
+ */
 function mapVapiCallToFrontend(vapiCall: any) {
   const phoneNumber = {
     number:
@@ -968,6 +1060,8 @@ function mapVapiCallToFrontend(vapiCall: any) {
     cost: vapiCall.cost,
     transcript,
     summary: vapiCall.analysis?.summary,
+    // IMPORTANT: sentiment and leadQuality are nested under analysis object
+    // This structure matches the OpenAPI documentation and frontend expectations
     analysis: {
       sentiment: sentiment as 'positive' | 'neutral' | 'negative' | undefined,
       leadQuality: leadQuality as 'hot' | 'warm' | 'cold' | undefined,

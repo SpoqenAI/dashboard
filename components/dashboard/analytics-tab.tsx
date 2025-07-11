@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/select';
 import { ModernStatsCard } from '@/components/modern-stats-card';
 import { CallHistoryTable } from './call-history-table';
+import { formatDuration } from './dashboard-helpers';
+import { VapiCall } from '@/lib/types';
 import {
   Phone,
   PhoneCall,
@@ -48,23 +50,7 @@ interface AnalyticsData {
 }
 
 // Define interfaces for call data
-interface CallData {
-  id: string;
-  phoneNumber?: {
-    number: string;
-  };
-  startedAt: string;
-  endedAt?: string;
-  endedReason: string;
-  cost?: number;
-  transcript?: string;
-  recordingUrl?: string;
-  analysis?: {
-    sentiment?: string;
-    leadQuality?: string;
-    actionPoints?: string[];
-  };
-}
+// Using VapiCall from lib/types instead of local CallData interface
 
 interface AnalyticsTabProps {
   analytics: AnalyticsData | null;
@@ -76,7 +62,7 @@ interface AnalyticsTabProps {
   onBulkAnalyze: () => void;
   isBulkAnalyzing: boolean;
   // Call history props
-  calls: CallData[];
+  calls: VapiCall[];
   callsLoading: boolean;
   callsError: string | null;
   searchTerm: string;
@@ -91,7 +77,7 @@ interface AnalyticsTabProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   selectedCallId: string | null;
-  onCallSelect: (call: CallData) => void;
+  onCallSelect: (call: VapiCall) => void;
 }
 
 export const AnalyticsTab = memo(
@@ -177,12 +163,6 @@ export const AnalyticsTab = memo(
         leadQualityDistribution: safeLeadQualityDistribution,
       };
     }, [analytics]);
-
-    const formatDuration = (seconds: number): string => {
-      const minutes = Math.floor(seconds / 60);
-      const remainingSeconds = seconds % 60;
-      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-    };
 
     const formatCurrency = (amount: number): string => {
       return new Intl.NumberFormat('en-US', {

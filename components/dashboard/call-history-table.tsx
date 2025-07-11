@@ -22,10 +22,12 @@ import {
 import {
   formatDate,
   formatDuration,
+  calculateAndFormatCallDuration,
   getSentimentBadge as GetSentimentBadge,
   getLeadQualityBadge as GetLeadQualityBadge,
   getStatusBadge,
 } from './dashboard-helpers';
+import { VapiCall } from '@/lib/types';
 import {
   Search,
   Filter,
@@ -37,26 +39,8 @@ import {
 } from 'lucide-react';
 
 // Define interfaces
-interface CallData {
-  id: string;
-  phoneNumber?: {
-    number: string;
-  };
-  startedAt: string;
-  endedAt?: string;
-  endedReason: string;
-  cost?: number;
-  transcript?: string;
-  recordingUrl?: string;
-  analysis?: {
-    sentiment?: string;
-    leadQuality?: string;
-    actionPoints?: string[];
-  };
-}
-
 interface CallHistoryTableProps {
-  calls: CallData[];
+  calls: VapiCall[];
   isLoading: boolean;
   error: string | null;
   searchTerm: string;
@@ -71,7 +55,7 @@ interface CallHistoryTableProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   selectedCallId: string | null;
-  onCallSelect: (call: CallData) => void;
+  onCallSelect: (call: VapiCall) => void;
 }
 
 const ITEMS_PER_PAGE = 20;
@@ -257,17 +241,18 @@ export const CallHistoryTable = memo(
                         <TableCell className="font-medium">
                           {call.phoneNumber?.number || 'Unknown'}
                         </TableCell>
-                        <TableCell>{formatDate(call.startedAt)}</TableCell>
                         <TableCell>
-                          {call.startedAt && call.endedAt
-                            ? formatDuration(
-                                Math.round(
-                                  (new Date(call.endedAt).getTime() -
-                                    new Date(call.startedAt).getTime()) /
-                                    1000
-                                )
+                          {call.startedAt
+                            ? formatDate(call.startedAt)
+                            : 'Unknown'}
+                        </TableCell>
+                        <TableCell>
+                          {call.startedAt
+                            ? calculateAndFormatCallDuration(
+                                call.startedAt,
+                                call.endedAt
                               )
-                            : '-'}
+                            : 'Unknown'}
                         </TableCell>
                         <TableCell>
                           {getStatusBadge(call.endedReason)}
@@ -311,7 +296,9 @@ export const CallHistoryTable = memo(
                               {call.phoneNumber?.number || 'Unknown'}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              {formatDate(call.startedAt)}
+                              {call.startedAt
+                                ? formatDate(call.startedAt)
+                                : 'Unknown'}
                             </p>
                           </div>
                           {getStatusBadge(call.endedReason)}
@@ -321,15 +308,12 @@ export const CallHistoryTable = memo(
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-muted-foreground" />
                             <span>
-                              {call.startedAt && call.endedAt
-                                ? formatDuration(
-                                    Math.round(
-                                      (new Date(call.endedAt).getTime() -
-                                        new Date(call.startedAt).getTime()) /
-                                        1000
-                                    )
+                              {call.startedAt
+                                ? calculateAndFormatCallDuration(
+                                    call.startedAt,
+                                    call.endedAt
                                   )
-                                : '-'}
+                                : 'Unknown'}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">

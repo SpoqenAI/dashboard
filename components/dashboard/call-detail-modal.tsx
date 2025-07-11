@@ -7,6 +7,7 @@ import {
   formatDateDetailed,
   getSentimentBadge as GetSentimentBadge,
 } from './dashboard-helpers';
+import { VapiCall } from '@/lib/types';
 import {
   Clock,
   Phone,
@@ -27,34 +28,8 @@ const CallTranscriptViewer = lazy(() =>
   }))
 );
 
-// Define the call type interface
-interface CallDetail {
-  id: string;
-  phoneNumber?: {
-    number: string;
-  };
-  callerName?: string;
-  startedAt: string;
-  endedAt?: string;
-  endedReason: string;
-  durationSeconds?: number;
-  cost?: number;
-  transcript?: string;
-  summary?: string;
-  recordingUrl?: string;
-  analysis?: {
-    sentiment?: string;
-    leadQuality?: string;
-    actionPoints?: string[];
-    callPurpose?: string;
-    keyPoints?: string[];
-    followUpItems?: string[];
-    urgentConcerns?: string[];
-  };
-}
-
 interface CallDetailModalProps {
-  call: CallDetail | null;
+  call: VapiCall | null;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -80,9 +55,10 @@ export const CallDetailModal = memo(
     };
 
     // Parse key points, follow-up items, and urgent concerns from action points
-    const structuredKeyPoints = call.analysis?.keyPoints || [];
-    const followUpItems = call.analysis?.followUpItems || [];
-    const urgentConcerns = call.analysis?.urgentConcerns || [];
+    // Note: VapiCall analysis doesn't have structured keyPoints, followUpItems, urgentConcerns
+    const structuredKeyPoints: string[] = [];
+    const followUpItems: string[] = [];
+    const urgentConcerns: string[] = [];
 
     // If no structured data, try to parse from actionPoints array
     const allActionPoints = call.analysis?.actionPoints || [];
@@ -103,7 +79,10 @@ export const CallDetailModal = memo(
               {call.callerName || call.phoneNumber?.number || 'Unknown'}
             </DialogTitle>
             <p className="text-sm text-muted-foreground">
-              {formatDateDetailed(call.startedAt)} • {formatDuration(duration)}
+              {call.startedAt
+                ? formatDateDetailed(call.startedAt)
+                : 'Unknown date'}{' '}
+              • {formatDuration(duration)}
             </p>
           </div>
 
@@ -180,7 +159,6 @@ export const CallDetailModal = memo(
 
             {/* AI-Generated Action Points */}
             {(call.analysis?.sentiment ||
-              call.analysis?.callPurpose ||
               keyPoints.length > 0 ||
               followUpItems.length > 0) && (
               <Card>
@@ -193,19 +171,6 @@ export const CallDetailModal = memo(
                   </div>
 
                   <div className="space-y-6">
-                    {/* Call Purpose */}
-                    {call.analysis?.callPurpose && (
-                      <div>
-                        <h4 className="mb-2 font-semibold">Call Purpose</h4>
-                        <Badge
-                          variant="secondary"
-                          className="bg-gray-100 text-gray-700"
-                        >
-                          {call.analysis.callPurpose}
-                        </Badge>
-                      </div>
-                    )}
-
                     {/* Call Sentiment */}
                     {call.analysis?.sentiment && (
                       <div>

@@ -14,6 +14,7 @@ import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useActionPoints } from '@/hooks/use-action-points';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
+import { VapiCall } from '@/lib/types';
 
 // Import dashboard components
 import { AnalyticsTab } from '@/components/dashboard/analytics-tab';
@@ -24,23 +25,7 @@ import { AISettingsTab } from '@/components/dashboard/ai-settings-simple';
 import { BarChart3, Settings, AlertCircle, ArrowUp } from 'lucide-react';
 
 // Types
-interface CallData {
-  id: string;
-  phoneNumber?: {
-    number: string;
-  };
-  startedAt: string;
-  endedAt?: string;
-  endedReason: string;
-  cost?: number;
-  transcript?: string;
-  recordingUrl?: string;
-  analysis?: {
-    sentiment?: string;
-    leadQuality?: string;
-    actionPoints?: string[];
-  };
-}
+type CallData = VapiCall;
 
 interface AnalyticsData {
   metrics: {
@@ -73,9 +58,6 @@ export default function DashboardPage() {
 
   // Analytics and call data
   const [timeRange, setTimeRange] = useState('30');
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState(true);
-  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
 
   // Pagination and filtering
   const [currentPage, setCurrentPage] = useState(1);
@@ -91,6 +73,13 @@ export default function DashboardPage() {
   const [isBulkAnalyzing, setIsBulkAnalyzing] = useState(false);
   const [loadingCallDetails, setLoadingCallDetails] = useState(false);
 
+  // Use SWR-powered analytics hook for better caching and error handling
+  const { analytics, isLoading, error, refetch } = useDashboardAnalytics({
+    days: Number(timeRange),
+    refetchInterval: 30000,
+    enabled: !!user && !isBulkAnalyzing,
+  });
+
   // Action points hook
   const { generateActionPoints } = useActionPoints();
 
@@ -103,36 +92,6 @@ export default function DashboardPage() {
     return !subscription || subscription.status !== 'active';
   }, [subscription, subscriptionLoading]);
 
-  // Fetch analytics data
-  const fetchAnalytics = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      setAnalyticsLoading(true);
-      setAnalyticsError(null);
-
-      const response = await fetch(
-        `/api/vapi/analytics?timeRange=${timeRange}`
-      );
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch analytics');
-      }
-
-      setAnalytics(data);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to load analytics';
-      setAnalyticsError(errorMessage);
-      logger.error('DASHBOARD', 'Failed to fetch analytics', error as Error, {
-        timeRange,
-      });
-    } finally {
-      setAnalyticsLoading(false);
-    }
-  }, [user, timeRange]);
-
   // Client-side filtering and pagination of calls
   const filteredAndPaginatedCalls = useMemo(() => {
     if (!analytics?.recentCalls) return { calls: [], totalCalls: 0 };
@@ -144,20 +103,22 @@ export default function DashboardPage() {
       const searchLower = debouncedSearchTerm.toLowerCase();
       filtered = filtered.filter(
         call =>
-          call.phoneNumber?.toLowerCase().includes(searchLower) ||
+          call.phoneNumber?.number?.toLowerCase().includes(searchLower) ||
           call.callerName?.toLowerCase().includes(searchLower)
       );
     }
 
     // Apply sentiment filter
     if (sentimentFilter !== 'all') {
-      filtered = filtered.filter(call => call.sentiment === sentimentFilter);
+      filtered = filtered.filter(
+        call => call.analysis?.sentiment === sentimentFilter
+      );
     }
 
     // Apply lead quality filter
     if (leadQualityFilter !== 'all') {
       filtered = filtered.filter(
-        call => call.leadQuality === leadQualityFilter
+        call => call.analysis?.leadQuality === leadQualityFilter
       );
     }
 
@@ -214,7 +175,7 @@ export default function DashboardPage() {
       });
 
       // Refresh data after bulk analysis
-      await fetchAnalytics();
+      await refetch();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to analyze calls';
@@ -227,7 +188,7 @@ export default function DashboardPage() {
     } finally {
       setIsBulkAnalyzing(false);
     }
-  }, [user, fetchAnalytics]);
+  }, [user, refetch]);
 
   // Fetch call recording URL from VAPI
   const fetchCallRecording = useCallback(
@@ -262,7 +223,7 @@ export default function DashboardPage() {
 
   // Handle call selection with detailed data fetching
   const handleCallSelect = useCallback(
-    async (call: CallData) => {
+    async (call: VapiCall) => {
       setSelectedCall(call);
       setIsCallDetailOpen(true);
       setLoadingCallDetails(true);
@@ -325,26 +286,6 @@ export default function DashboardPage() {
     statusFilter,
     timeRange,
   ]);
-
-  // Initial data fetch
-  useEffect(() => {
-    if (user) {
-      fetchAnalytics();
-    }
-  }, [user, fetchAnalytics]);
-
-  // Auto-refresh data every 30 seconds for real-time updates
-  useEffect(() => {
-    if (!user) return;
-
-    const interval = setInterval(() => {
-      if (!isBulkAnalyzing) {
-        fetchAnalytics();
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [user, fetchAnalytics, isBulkAnalyzing]);
 
   if (!user) {
     return (
@@ -422,16 +363,16 @@ export default function DashboardPage() {
               <TabsContent value="analytics" className="space-y-6">
                 <AnalyticsTab
                   analytics={analytics}
-                  isLoading={analyticsLoading}
-                  error={analyticsError}
+                  isLoading={isLoading}
+                  error={error}
                   timeRange={timeRange}
                   onTimeRangeChange={setTimeRange}
                   isUserFree={isUserFree}
                   onBulkAnalyze={handleBulkAnalyze}
                   isBulkAnalyzing={isBulkAnalyzing}
                   calls={filteredAndPaginatedCalls.calls}
-                  callsLoading={analyticsLoading}
-                  callsError={analyticsError}
+                  callsLoading={isLoading}
+                  callsError={error}
                   searchTerm={searchTerm}
                   onSearchChange={setSearchTerm}
                   sentimentFilter={sentimentFilter}

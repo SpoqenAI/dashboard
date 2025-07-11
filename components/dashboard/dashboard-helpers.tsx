@@ -24,6 +24,21 @@ export const formatDuration = (seconds: number): string => {
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
+export const calculateAndFormatCallDuration = (
+  startedAt: string,
+  endedAt?: string
+): string => {
+  if (!startedAt || !endedAt) {
+    return '-';
+  }
+
+  const durationSeconds = Math.round(
+    (new Date(endedAt).getTime() - new Date(startedAt).getTime()) / 1000
+  );
+
+  return formatDuration(durationSeconds);
+};
+
 export const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   const now = new Date();
