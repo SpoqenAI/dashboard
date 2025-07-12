@@ -218,33 +218,6 @@ export default function DashboardClient() {
     filteredAndPaginatedCalls.totalCalls / ITEMS_PER_PAGE
   );
 
-  // Remove bulk analyze handler since automatic analysis is now handled via webhook
-  // const handleBulkAnalyze = useCallback(async () => {
-  //   if (!user) return;
-  //   try {
-  //     setIsBulkAnalyzing(true);
-  //     const res = await fetch('/api/vapi/bulk-analyze', {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify({ limit: 100 }),
-  //     });
-  //     const data = await res.json();
-  //     if (!res.ok) throw new Error(data.error || 'Failed');
-  //     toast({
-  //       title: 'Analysis complete',
-  //       description: `Analyzed ${data.processed || 0} calls.`,
-  //     });
-  //     await refetch();
-  //   } catch (err) {
-  //     toast({
-  //       title: 'Bulk analyze failed',
-  //       description: err instanceof Error ? err.message : String(err),
-  //       variant: 'destructive',
-  //     });
-  //   } finally {
-  //     setIsBulkAnalyzing(false);
-  //   }
-  // }, [user, refetch]);
 
   // Fetch recording helper
   const fetchCallRecording = useCallback(async (callId: string) => {
