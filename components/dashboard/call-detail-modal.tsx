@@ -7,6 +7,7 @@ import {
   formatDateDetailed,
   formatDuration,
   getSentimentBadge,
+  getLeadQualityBadge,
 } from './dashboard-helpers';
 import { VapiCall } from '@/lib/types';
 import {
@@ -20,6 +21,7 @@ import {
   AlertCircle,
   Lightbulb,
   Smile,
+  TrendingUp,
 } from 'lucide-react';
 
 // Lazy load heavy components for better performance
@@ -62,6 +64,7 @@ export const CallDetailModal = memo(
 
     // Assign memoized component to capitalized variable for JSX usage
     const GetSentimentBadge = getSentimentBadge;
+    const GetLeadQualityBadge = getLeadQualityBadge;
 
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -190,6 +193,20 @@ export const CallDetailModal = memo(
                         <GetSentimentBadge
                           sentiment={
                             (ap?.sentiment || call.analysis?.sentiment) as any
+                          }
+                        />
+                      </div>
+                    )}
+
+                    {/* Lead Quality */}
+                    {(ap?.callAnalysis?.leadQuality || call.analysis?.leadQuality) && (
+                      <div>
+                        <h4 className="mb-2 flex items-center gap-2 font-semibold">
+                          <TrendingUp className="h-4 w-4" /> Lead Quality
+                        </h4>
+                        <GetLeadQualityBadge
+                          leadQuality={
+                            (ap?.callAnalysis?.leadQuality || call.analysis?.leadQuality) as any
                           }
                         />
                       </div>

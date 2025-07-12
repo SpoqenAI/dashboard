@@ -149,13 +149,15 @@ export default function DashboardClient() {
   const [selectedCall, setSelectedCall] = useState<CallData | null>(null);
   const [isCallDetailOpen, setIsCallDetailOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('analytics');
-  const [isBulkAnalyzing, setIsBulkAnalyzing] = useState(false);
+  // Remove isBulkAnalyzing state since automatic analysis is now handled via webhook
+  // const [isBulkAnalyzing, setIsBulkAnalyzing] = useState(false);
 
   // Analytics hook
   const { analytics, isLoading, error, refetch } = useDashboardAnalytics({
     days: Number(timeRange),
     refetchInterval: 300_000, // 5 minutes after optimisation
-    enabled: !!user && !isBulkAnalyzing && !isCallDetailOpen && !isUserFree,
+    // Remove isBulkAnalyzing dependency since automatic analysis is now handled via webhook
+    enabled: !!user && !isCallDetailOpen && !isUserFree,
   });
 
   // Action points
@@ -216,33 +218,33 @@ export default function DashboardClient() {
     filteredAndPaginatedCalls.totalCalls / ITEMS_PER_PAGE
   );
 
-  // Bulk analyze handler
-  const handleBulkAnalyze = useCallback(async () => {
-    if (!user) return;
-    try {
-      setIsBulkAnalyzing(true);
-      const res = await fetch('/api/vapi/bulk-analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ limit: 100 }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
-      toast({
-        title: 'Analysis complete',
-        description: `Analyzed ${data.processed || 0} calls.`,
-      });
-      await refetch();
-    } catch (err) {
-      toast({
-        title: 'Bulk analyze failed',
-        description: err instanceof Error ? err.message : String(err),
-        variant: 'destructive',
-      });
-    } finally {
-      setIsBulkAnalyzing(false);
-    }
-  }, [user, refetch]);
+  // Remove bulk analyze handler since automatic analysis is now handled via webhook
+  // const handleBulkAnalyze = useCallback(async () => {
+  //   if (!user) return;
+  //   try {
+  //     setIsBulkAnalyzing(true);
+  //     const res = await fetch('/api/vapi/bulk-analyze', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ limit: 100 }),
+  //     });
+  //     const data = await res.json();
+  //     if (!res.ok) throw new Error(data.error || 'Failed');
+  //     toast({
+  //       title: 'Analysis complete',
+  //       description: `Analyzed ${data.processed || 0} calls.`,
+  //     });
+  //     await refetch();
+  //   } catch (err) {
+  //     toast({
+  //       title: 'Bulk analyze failed',
+  //       description: err instanceof Error ? err.message : String(err),
+  //       variant: 'destructive',
+  //     });
+  //   } finally {
+  //     setIsBulkAnalyzing(false);
+  //   }
+  // }, [user, refetch]);
 
   // Fetch recording helper
   const fetchCallRecording = useCallback(async (callId: string) => {
@@ -369,8 +371,7 @@ export default function DashboardClient() {
                     timeRange={timeRange}
                     onTimeRangeChange={setTimeRange}
                     isUserFree={isUserFree}
-                    onBulkAnalyze={handleBulkAnalyze}
-                    isBulkAnalyzing={isBulkAnalyzing}
+                    // Remove bulk analyze props since automatic analysis is now handled via webhook
                     calls={filteredAndPaginatedCalls.calls}
                     callsLoading={isLoading}
                     callsError={error ? (error as Error).message : null}
