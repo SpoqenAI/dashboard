@@ -534,12 +534,21 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                 {DEEPGRAM_VOICES.map(v => (
                   <SelectItem key={v.id} value={v.id}>
                     <div className="flex items-center justify-between w-full">
-                      <span>{v.label}</span>
-                      {v.id === 'luna' && (
-                        <Badge variant="secondary" className="ml-2 text-xs">
-                          Recommended
-                        </Badge>
-                      )}
+                      <span className="flex-1">{v.label}</span>
+                      <div className="flex items-center gap-1 ml-2">
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          v.gender === 'Female' 
+                            ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/20 dark:text-pink-300' 
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                        }`}>
+                          {v.gender}
+                        </span>
+                        {v.id === 'luna' && (
+                          <Badge variant="default" className="text-xs">
+                            Recommended
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </SelectItem>
                 ))}
