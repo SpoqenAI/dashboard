@@ -23,7 +23,6 @@ import {
   TrendingUp,
   BarChart3,
   AlertCircle,
-  Zap,
   Calendar,
 } from 'lucide-react';
 
@@ -59,8 +58,9 @@ interface AnalyticsTabProps {
   timeRange: string;
   onTimeRangeChange: (value: string) => void;
   isUserFree: boolean;
-  onBulkAnalyze: () => void;
-  isBulkAnalyzing: boolean;
+  // Remove bulk analyze props since automatic analysis is now handled via webhook
+  // onBulkAnalyze: () => void;
+  // isBulkAnalyzing: boolean;
   // Call history props
   calls: VapiCall[];
   callsLoading: boolean;
@@ -88,8 +88,9 @@ export const AnalyticsTab = memo(
     timeRange,
     onTimeRangeChange,
     isUserFree,
-    onBulkAnalyze,
-    isBulkAnalyzing,
+    // Remove bulk analyze props
+    // onBulkAnalyze,
+    // isBulkAnalyzing,
     calls,
     callsLoading,
     callsError,
@@ -219,7 +220,8 @@ export const AnalyticsTab = memo(
               </SelectContent>
             </Select>
 
-            <Button
+            {/* Remove the Analyze Calls button since automatic analysis is now handled via webhook */}
+            {/* <Button
               onClick={onBulkAnalyze}
               disabled={isBulkAnalyzing}
               variant="outline"
@@ -236,7 +238,7 @@ export const AnalyticsTab = memo(
                   Analyze Calls
                 </>
               )}
-            </Button>
+            </Button> */}
           </div>
         </div>
 
