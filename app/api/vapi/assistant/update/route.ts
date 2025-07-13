@@ -72,14 +72,17 @@ export async function PATCH(req: NextRequest) {
       };
     }
 
-    const vapiRes = await fetch(`https://api.vapi.ai/assistant/${assistantId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${vapiApiKey}`,
-      },
-      body: JSON.stringify(payload),
-    });
+    const vapiRes = await fetch(
+      `https://api.vapi.ai/assistant/${assistantId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${vapiApiKey}`,
+        },
+        body: JSON.stringify(payload),
+      }
+    );
 
     if (!vapiRes.ok) {
       const txt = await vapiRes.text();

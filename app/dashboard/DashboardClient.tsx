@@ -218,7 +218,6 @@ export default function DashboardClient() {
     filteredAndPaginatedCalls.totalCalls / ITEMS_PER_PAGE
   );
 
-
   // Fetch recording helper
   const fetchCallRecording = useCallback(async (callId: string) => {
     try {

@@ -199,14 +199,16 @@ export const CallDetailModal = memo(
                     )}
 
                     {/* Lead Quality */}
-                    {(ap?.callAnalysis?.leadQuality || call.analysis?.leadQuality) && (
+                    {(ap?.callAnalysis?.leadQuality ||
+                      call.analysis?.leadQuality) && (
                       <div>
                         <h4 className="mb-2 flex items-center gap-2 font-semibold">
                           <TrendingUp className="h-4 w-4" /> Lead Quality
                         </h4>
                         <GetLeadQualityBadge
                           leadQuality={
-                            (ap?.callAnalysis?.leadQuality || call.analysis?.leadQuality) as any
+                            (ap?.callAnalysis?.leadQuality ||
+                              call.analysis?.leadQuality) as any
                           }
                         />
                       </div>
