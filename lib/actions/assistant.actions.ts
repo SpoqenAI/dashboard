@@ -122,7 +122,8 @@ export async function provisionAssistant(userId: string): Promise<void> {
 export async function syncVapiAssistant(
   userId: string,
   assistantName: string,
-  greeting: string
+  greeting: string,
+  voiceId?: string
 ): Promise<void> {
   'use server';
 
@@ -200,10 +201,15 @@ export async function syncVapiAssistant(
               },
             ],
           },
-          voice: {
-            provider: 'deepgram',
-            voiceId: 'luna',
-          },
+          ...(voiceId
+            ? {
+                voice: {
+                  provider: 'deepgram',
+                  model: 'aura-2',
+                  voiceId,
+                },
+              }
+            : {}),
         }),
       }
     );
