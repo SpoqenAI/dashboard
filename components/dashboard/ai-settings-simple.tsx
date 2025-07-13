@@ -8,6 +8,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import { DEEPGRAM_VOICES } from '@/lib/vapi/voices';
+import {
   Bot,
   Save,
   RefreshCw,
@@ -57,6 +65,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   // Initialize local state - start empty and let useEffect populate with real data
   const [firstMessage, setFirstMessage] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
+  const [voiceId, setVoiceId] = useState('');
   const [isSavingLocal, setIsSavingLocal] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -85,6 +94,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       return {
         firstMessage: DEFAULT_FIRST_MESSAGE,
         systemPrompt: DEFAULT_SYSTEM_PROMPT,
+        voiceId: '',
       };
     }
 
@@ -93,6 +103,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       systemPrompt:
         assistantData.model?.messages?.find((msg: any) => msg.role === 'system')
           ?.content || DEFAULT_SYSTEM_PROMPT,
+      voiceId: assistantData.voice?.voiceId || '',
     };
   }, [assistantData, DEFAULT_FIRST_MESSAGE, DEFAULT_SYSTEM_PROMPT]);
 
@@ -102,11 +113,13 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
 
     return (
       debouncedFirstMessage.trim() !== originalValues.firstMessage ||
-      debouncedSystemPrompt.trim() !== originalValues.systemPrompt
+      debouncedSystemPrompt.trim() !== originalValues.systemPrompt ||
+      voiceId !== originalValues.voiceId
     );
   }, [
     debouncedFirstMessage,
     debouncedSystemPrompt,
+    voiceId,
     originalValues,
     isLoading,
     hasInitialized,
@@ -176,9 +189,11 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         (msg: any) => msg.role === 'system'
       );
       const newSystemPrompt = systemMessage?.content || DEFAULT_SYSTEM_PROMPT;
+      const newVoice = assistantData.voice?.voiceId || '';
 
       setFirstMessage(newFirstMessage);
       setSystemPrompt(newSystemPrompt);
+      setVoiceId(newVoice);
       setIsLoading(false);
       setHasInitialized(true);
     } else if (settings && !hasInitialized) {
@@ -190,6 +205,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         const aiSettings = getAIReceptionistSettings();
         setFirstMessage(DEFAULT_FIRST_MESSAGE);
         setSystemPrompt(aiSettings.greetingScript || DEFAULT_SYSTEM_PROMPT);
+        setVoiceId(aiSettings.voiceId || '');
         setIsLoading(false);
         setHasInitialized(true);
       } else if (!assistantLoading) {
@@ -206,6 +222,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
             const aiSettings = getAIReceptionistSettings();
             setFirstMessage(DEFAULT_FIRST_MESSAGE);
             setSystemPrompt(aiSettings.greetingScript || DEFAULT_SYSTEM_PROMPT);
+            setVoiceId(aiSettings.voiceId || '');
             setIsLoading(false);
           })
           .catch(() => {
@@ -213,6 +230,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
             const aiSettings = getAIReceptionistSettings();
             setFirstMessage(DEFAULT_FIRST_MESSAGE);
             setSystemPrompt(aiSettings.greetingScript || DEFAULT_SYSTEM_PROMPT);
+            setVoiceId(aiSettings.voiceId || '');
             setIsLoading(false);
           });
       } else if (assistantLoading) {
@@ -262,15 +280,20 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
 
       // Update first message via direct VAPI API call first (more critical)
       if (assistantData?.id) {
+        const payload: Record<string, any> = {
+          assistantId: assistantData.id,
+          firstMessage: firstMessage.trim(),
+        };
+        if (voiceId !== originalValues.voiceId) {
+          payload.voiceId = voiceId;
+        }
+
         const response = await fetch('/api/vapi/assistant/update', {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            assistantId: assistantData.id,
-            firstMessage: firstMessage.trim(),
-          }),
+          body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
@@ -279,12 +302,17 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       }
 
       // Update system prompt via existing settings (preserve existing assistant name)
-      await updateAIReceptionistSettings({
+      const aiSettingsPayload: any = {
         aiAssistantName: assistantData?.name || 'AI Assistant', // Preserve the actual assistant name
         yourName: profile?.full_name || '',
         businessName: profile?.business_name || '',
         greetingScript: systemPrompt.trim(),
-      });
+      };
+      if (voiceId !== originalValues.voiceId) {
+        aiSettingsPayload.voiceId = voiceId;
+      }
+
+      await updateAIReceptionistSettings(aiSettingsPayload);
 
       // Refresh data to get latest from VAPI and update local state
       // Both API operations are complete at this point since they were properly awaited
@@ -338,6 +366,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     profile?.full_name,
     profile?.business_name,
     refreshAssistantData,
+    voiceId,
   ]);
 
   // Handle refresh (memoized for performance)
@@ -354,9 +383,11 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
           (msg: any) => msg.role === 'system'
         );
         const newSystemPrompt = systemMessage?.content || DEFAULT_SYSTEM_PROMPT;
+        const newVoice = refreshedData.voice?.voiceId || '';
 
         setFirstMessage(newFirstMessage);
         setSystemPrompt(newSystemPrompt);
+        setVoiceId(newVoice);
       }
 
       toast({
@@ -488,6 +519,43 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                 {systemPrompt.length}/{MAX_PROMPT_LENGTH}
               </span>
             </div>
+          </div>
+
+          {/* Voice Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="voice-select" className="text-sm font-medium">
+              Voice
+            </Label>
+            <Select value={voiceId} onValueChange={setVoiceId}>
+              <SelectTrigger id="voice-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DEEPGRAM_VOICES.map(v => (
+                  <SelectItem key={v.id} value={v.id}>
+                    <div className="flex w-full items-center justify-between">
+                      <span className="flex-1">{v.label}</span>
+                      <div className="ml-2 flex items-center gap-1">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs ${
+                            v.gender === 'Female'
+                              ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/20 dark:text-pink-300'
+                              : 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                          }`}
+                        >
+                          {v.gender}
+                        </span>
+                        {v.id === 'luna' && (
+                          <Badge variant="default" className="text-xs">
+                            Recommended
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Example prompts */}

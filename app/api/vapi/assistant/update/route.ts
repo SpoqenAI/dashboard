@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 // PATCH /api/vapi/assistant/update - Update VAPI assistant properties like firstMessage
 export async function PATCH(req: NextRequest) {
   try {
-    const { assistantId, firstMessage } = await req.json();
+    const { assistantId, firstMessage, voiceId } = await req.json();
 
     if (!assistantId || !firstMessage) {
       return NextResponse.json(
@@ -60,6 +60,18 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    const payload: Record<string, any> = {
+      firstMessage: firstMessage.trim(),
+    };
+
+    if (voiceId) {
+      payload.voice = {
+        provider: 'deepgram',
+        model: 'aura-2',
+        voiceId,
+      };
+    }
+
     const vapiRes = await fetch(
       `https://api.vapi.ai/assistant/${assistantId}`,
       {
@@ -68,9 +80,7 @@ export async function PATCH(req: NextRequest) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${vapiApiKey}`,
         },
-        body: JSON.stringify({
-          firstMessage: firstMessage.trim(),
-        }),
+        body: JSON.stringify(payload),
       }
     );
 

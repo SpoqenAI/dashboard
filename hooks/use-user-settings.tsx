@@ -49,6 +49,7 @@ export interface AIReceptionistSettings {
   yourName: string;
   businessName: string;
   greetingScript: string;
+  voiceId?: string;
 }
 
 export interface ProfileFormData {
@@ -335,10 +336,17 @@ export function useUserSettings() {
             '@/lib/actions/assistant.actions'
           );
 
+          const voiceIdForSync =
+            newSettings.voiceId &&
+            newSettings.voiceId !== assistantData?.voice?.voiceId
+              ? newSettings.voiceId
+              : undefined;
+
           syncVapiAssistant(
             browserUser.id,
             newSettings.aiAssistantName.trim(),
-            newSettings.greetingScript.trim()
+            newSettings.greetingScript.trim(),
+            voiceIdForSync
           );
         }
       } catch (syncErr) {
@@ -804,6 +812,7 @@ export function useUserSettings() {
         yourName: '',
         businessName: '',
         greetingScript: '',
+        voiceId: '',
       };
     }
 
@@ -816,8 +825,9 @@ export function useUserSettings() {
         assistant?.greeting ||
         settings?.ai_greeting ||
         'Hello! Thank you for calling. How can I assist you today?',
+      voiceId: assistantData?.voice?.voiceId || '',
     };
-  }, [dataLoaded, settings, profile, assistant]);
+  }, [dataLoaded, settings, profile, assistant, assistantData]);
 
   // Wrapper for manual refetch that doesn't use abort signal
   const refetch = useCallback(() => {
