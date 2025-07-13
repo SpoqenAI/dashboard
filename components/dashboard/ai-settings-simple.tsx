@@ -71,8 +71,8 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Character limits (memoized constants)
-  const MAX_FIRST_MESSAGE_LENGTH = useMemo(() => 100, []);
-  const MAX_PROMPT_LENGTH = useMemo(() => 5000, []);
+  const MAX_FIRST_MESSAGE_LENGTH = useMemo(() => 1000, []);
+  const MAX_PROMPT_LENGTH = useMemo(() => 10000, []);
 
   // Default message constants to avoid duplication
   const DEFAULT_FIRST_MESSAGE = useMemo(
