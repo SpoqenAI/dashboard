@@ -263,7 +263,7 @@ export default function RecentCallsClient() {
               {isUserFree && <LockedOverlay />}
               <CallHistoryTable
                 calls={filteredAndPaginatedCalls.calls}
-                loading={isLoading}
+                isLoading={isLoading}
                 error={error ? (error as Error).message : null}
                 searchTerm={searchTerm}
                 onSearchChange={handleSearchChange}

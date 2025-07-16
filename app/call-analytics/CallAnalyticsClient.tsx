@@ -101,23 +101,6 @@ export default function CallAnalyticsClient() {
                 timeRange={timeRange}
                 onTimeRangeChange={setTimeRange}
                 isUserFree={isUserFree}
-                // Remove call-related props since this is analytics-only
-                calls={[]}
-                callsLoading={false}
-                callsError={null}
-                searchTerm=""
-                onSearchChange={() => {}}
-                sentimentFilter="all"
-                onSentimentFilterChange={() => {}}
-                leadQualityFilter="all"
-                onLeadQualityFilterChange={() => {}}
-                statusFilter="all"
-                onStatusFilterChange={() => {}}
-                currentPage={1}
-                totalPages={1}
-                onPageChange={() => {}}
-                selectedCallId={null}
-                onCallSelect={() => {}}
               />
             </div>
           </div>
