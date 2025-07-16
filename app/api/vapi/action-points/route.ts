@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { ActionPoints } from '@/lib/types';
 import { createClient } from '@/lib/supabase/server';
-import { getCallAnalysis } from '@/lib/redis/client';
+// Removed Redis dependency - all analysis comes directly from VAPI
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,29 +33,7 @@ export async function POST(request: NextRequest) {
 
     const userId = user.id;
 
-    // --- PERFORMANCE OPTIMIZATION --------------------------------------------------
-    // Check if we already have analysis stored in Redis. This dramatically speeds up
-    // subsequent openings and avoids hitting VAPI API repeatedly for the same call.
-    
-    try {
-      const existingAnalysis = await getCallAnalysis(userId, callId);
-      
-      if (existingAnalysis && existingAnalysis.vapiAnalysis) {
-        logger.info('ACTION_POINTS', 'Returning cached Redis analysis', {
-          callId,
-          userId: logger.maskUserId(userId),
-        });
-
-        // Extract action points from cached VAPI analysis
-        const actionPoints = extractActionPointsFromVapiAnalysis(existingAnalysis.vapiAnalysis);
-        return NextResponse.json({ actionPoints });
-      }
-    } catch (cacheErr) {
-      logger.error('ACTION_POINTS', 'Redis cache check failed', cacheErr as Error);
-      // Continue to fetch from VAPI if Redis fails
-    }
-
-    // ------------------------------------------------------------------------------
+    // Fetch fresh call details from VAPI - no caching needed since VAPI is the source of truth
 
     // Fetch fresh call details from VAPI if not cached
     const vapiResponse = await fetch(
@@ -210,6 +188,7 @@ function extractActionPointsFromVapiAnalysis(vapiAnalysis: any): ActionPoints {
       leadQuality: leadQuality as 'hot' | 'warm' | 'cold',
       appointmentRequested,
       propertyInterest: businessInterest, // Keep field name for compatibility
+      budget: structuredData.budget || 'Not specified',
       timeline,
       contactPreference,
     },

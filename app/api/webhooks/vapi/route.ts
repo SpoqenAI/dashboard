@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { sendCallSummaryEmail } from '@/lib/email/send-call-summary';
-import { storeCallAnalysis, type CallAnalysisData } from '@/lib/redis/client';
+// Removed Redis dependency - analysis comes directly from VAPI API calls
 
 // Run as an Edge Function (Next.js 15+) to dramatically increase concurrency and
 // (Edge Runtime removed – Node runtime is required to use the SendGrid SDK.)
@@ -24,62 +24,10 @@ async function processVapiWebhook(envelope: any) {
     return;
   }
 
-  // === Persist VAPI AI analysis to Redis (no manual processing) ===
-  try {
-    const callId: string | undefined = message.call?.id;
-    const assistantId: string | undefined =
-      message.assistant?.id ?? message.call?.assistantId;
-
-    if (!callId || !assistantId) {
-      logger.warn('VAPI_WEBHOOK', 'Missing identifiers', {
-        callId,
-        assistantId,
-      });
-      throw new Error('Missing identifiers');
-    }
-
-    const supabase = createSupabaseAdmin();
-
-    const { data: settingsRow, error: settingsErr } = await supabase
-      .from('user_settings')
-      .select('id')
-      .eq('vapi_assistant_id', assistantId)
-      .maybeSingle();
-
-    if (settingsErr || !settingsRow) {
-      logger.warn(
-        'VAPI_WEBHOOK',
-        'Could not resolve user for call analysis persistence',
-        {
-          assistantId,
-          error: settingsErr,
-        }
-      );
-      throw new Error('User resolution failed');
-    }
-
-    const userId: string = settingsRow.id;
-
-    // Store the RAW VAPI analysis data in Redis without any manual processing
-    // This ensures 100% AI-generated analysis with proper VAPI hierarchy
-    const analysisData: CallAnalysisData = {
-      callId,
-      userId,
-      assistantId,
-      analyzedAt: new Date().toISOString(),
-      vapiAnalysis: {
-        summary: message.analysis?.summary,
-        structuredData: message.analysis?.structuredData || {},
-        successEvaluation: message.analysis?.successEvaluation,
-      },
-    };
-
-    // Store in Redis for fast retrieval
-    await storeCallAnalysis(analysisData);
-
-    logger.info('VAPI_WEBHOOK', 'Call analysis stored in Redis successfully', {
-      callId,
-      userId: logger.maskUserId(userId),
+  // Log analysis data for monitoring (no storage needed - analysis comes from VAPI API)
+  if (message.analysis) {
+    logger.info('VAPI_WEBHOOK', 'Call analysis received from VAPI', {
+      callId: message.call?.id,
       hasVapiSummary: !!message.analysis?.summary,
       hasVapiStructuredData: !!message.analysis?.structuredData,
       hasVapiSuccessEvaluation: !!message.analysis?.successEvaluation,
@@ -87,8 +35,6 @@ async function processVapiWebhook(envelope: any) {
         ? Object.keys(message.analysis.structuredData)
         : null,
     });
-  } catch (err) {
-    logger.error('VAPI_WEBHOOK', 'Redis analysis persistence failure', err as Error);
   }
 
   // === Attempt to email the call summary ===
