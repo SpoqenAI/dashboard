@@ -176,7 +176,6 @@ export const AnalyticsTab = memo(
                 <SelectItem value="90">Last 90 days</SelectItem>
               </SelectContent>
             </Select>
-
           </div>
         </div>
 
@@ -439,7 +438,6 @@ export const AnalyticsTab = memo(
               )}
             </div>
           )}
-
       </div>
     );
   }
