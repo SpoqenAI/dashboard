@@ -12,9 +12,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ModernStatsCard } from '@/components/modern-stats-card';
-import { CallHistoryTable } from './call-history-table';
 import { formatDuration } from './dashboard-helpers';
-import { VapiCall } from '@/lib/types';
+// Pure analytics presentation component - no call data dependencies
 import {
   Phone,
   PhoneCall,
@@ -48,9 +47,6 @@ interface AnalyticsData {
   };
 }
 
-// Define interfaces for call data
-// Using VapiCall from lib/types instead of local CallData interface
-
 interface AnalyticsTabProps {
   analytics: AnalyticsData | null;
   isLoading: boolean;
@@ -58,26 +54,6 @@ interface AnalyticsTabProps {
   timeRange: string;
   onTimeRangeChange: (value: string) => void;
   isUserFree: boolean;
-  // Remove bulk analyze props since automatic analysis is now handled via webhook
-  // onBulkAnalyze: () => void;
-  // isBulkAnalyzing: boolean;
-  // Call history props
-  calls: VapiCall[];
-  callsLoading: boolean;
-  callsError: string | null;
-  searchTerm: string;
-  onSearchChange: (value: string) => void;
-  sentimentFilter: string;
-  onSentimentFilterChange: (value: string) => void;
-  leadQualityFilter: string;
-  onLeadQualityFilterChange: (value: string) => void;
-  statusFilter: string;
-  onStatusFilterChange: (value: string) => void;
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  selectedCallId: string | null;
-  onCallSelect: (call: VapiCall) => void;
 }
 
 export const AnalyticsTab = memo(
@@ -88,25 +64,6 @@ export const AnalyticsTab = memo(
     timeRange,
     onTimeRangeChange,
     isUserFree,
-    // Remove bulk analyze props
-    // onBulkAnalyze,
-    // isBulkAnalyzing,
-    calls,
-    callsLoading,
-    callsError,
-    searchTerm,
-    onSearchChange,
-    sentimentFilter,
-    onSentimentFilterChange,
-    leadQualityFilter,
-    onLeadQualityFilterChange,
-    statusFilter,
-    onStatusFilterChange,
-    currentPage,
-    totalPages,
-    onPageChange,
-    selectedCallId,
-    onCallSelect,
   }: AnalyticsTabProps) => {
     // Calculate derived metrics
     const derivedMetrics = useMemo(() => {
@@ -201,9 +158,9 @@ export const AnalyticsTab = memo(
         {/* Header with Time Range Filter */}
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-2xl font-bold">Call Analytics</h2>
+            <h2 className="text-2xl font-bold">Analytics Overview</h2>
             <p className="text-muted-foreground">
-              Overview of your call activity and performance
+              Insights into your call performance and trends
             </p>
           </div>
 
@@ -219,26 +176,6 @@ export const AnalyticsTab = memo(
                 <SelectItem value="90">Last 90 days</SelectItem>
               </SelectContent>
             </Select>
-
-            {/* Remove the Analyze Calls button since automatic analysis is now handled via webhook */}
-            {/* <Button
-              onClick={onBulkAnalyze}
-              disabled={isBulkAnalyzing}
-              variant="outline"
-              size="sm"
-            >
-              {isBulkAnalyzing ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <Zap className="mr-2 h-4 w-4" />
-                  Analyze Calls
-                </>
-              )}
-            </Button> */}
           </div>
         </div>
 
@@ -501,26 +438,6 @@ export const AnalyticsTab = memo(
               )}
             </div>
           )}
-
-        {/* Call History Section */}
-        <CallHistoryTable
-          calls={calls}
-          isLoading={callsLoading}
-          error={callsError}
-          searchTerm={searchTerm}
-          onSearchChange={onSearchChange}
-          sentimentFilter={sentimentFilter}
-          onSentimentFilterChange={onSentimentFilterChange}
-          leadQualityFilter={leadQualityFilter}
-          onLeadQualityFilterChange={onLeadQualityFilterChange}
-          statusFilter={statusFilter}
-          onStatusFilterChange={onStatusFilterChange}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-          selectedCallId={selectedCallId}
-          onCallSelect={onCallSelect}
-        />
       </div>
     );
   }
