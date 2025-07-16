@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { sendCallSummaryEmail } from '@/lib/email/send-call-summary';
+import { storeCallAnalysis, type CallAnalysisData } from '@/lib/redis/client';
 
 // Run as an Edge Function (Next.js 15+) to dramatically increase concurrency and
 // (Edge Runtime removed – Node runtime is required to use the SendGrid SDK.)
@@ -23,7 +24,7 @@ async function processVapiWebhook(envelope: any) {
     return;
   }
 
-  // === Persist analysis to call_analysis (same logic as before) ===
+  // === Persist VAPI AI analysis to Redis (no manual processing) ===
   try {
     const callId: string | undefined = message.call?.id;
     const assistantId: string | undefined =
@@ -59,37 +60,35 @@ async function processVapiWebhook(envelope: any) {
 
     const userId: string = settingsRow.id;
 
-    const structured = message.analysis?.structuredData ?? {};
-    const sentiment =
-      structured.sentiment || message.analysis?.sentiment || 'neutral';
-    const leadQuality =
-      structured.leadQuality || structured.lead_quality || 'cold';
-
-    const { error: insertErr } = await supabase.from('call_analysis').upsert(
-      {
-        user_id: userId,
-        vapi_call_id: callId,
-        sentiment,
-        lead_quality: leadQuality,
-        call_purpose: structured.callPurpose || structured.purpose || null,
-        key_points: structured.keyPoints || null,
-        analyzed_at: new Date().toISOString(),
+    // Store the RAW VAPI analysis data in Redis without any manual processing
+    // This ensures 100% AI-generated analysis with proper VAPI hierarchy
+    const analysisData: CallAnalysisData = {
+      callId,
+      userId,
+      assistantId,
+      analyzedAt: new Date().toISOString(),
+      vapiAnalysis: {
+        summary: message.analysis?.summary,
+        structuredData: message.analysis?.structuredData || {},
+        successEvaluation: message.analysis?.successEvaluation,
       },
-      {
-        onConflict: 'vapi_call_id',
-      }
-    );
+    };
 
-    if (insertErr) {
-      logger.error(
-        'VAPI_WEBHOOK',
-        'Failed to upsert call_analysis from webhook',
-        insertErr,
-        { callId }
-      );
-    }
+    // Store in Redis for fast retrieval
+    await storeCallAnalysis(analysisData);
+
+    logger.info('VAPI_WEBHOOK', 'Call analysis stored in Redis successfully', {
+      callId,
+      userId: logger.maskUserId(userId),
+      hasVapiSummary: !!message.analysis?.summary,
+      hasVapiStructuredData: !!message.analysis?.structuredData,
+      hasVapiSuccessEvaluation: !!message.analysis?.successEvaluation,
+      vapiStructuredDataFields: message.analysis?.structuredData
+        ? Object.keys(message.analysis.structuredData)
+        : null,
+    });
   } catch (err) {
-    logger.error('VAPI_WEBHOOK', 'Analysis persistence failure', err as Error);
+    logger.error('VAPI_WEBHOOK', 'Redis analysis persistence failure', err as Error);
   }
 
   // === Attempt to email the call summary ===

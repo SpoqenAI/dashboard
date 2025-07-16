@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { CallMetrics, DashboardAnalytics } from '@/lib/types';
 import { createClient } from '@/lib/supabase/server';
+import { getUserCallAnalyses, getCallAnalysis } from '@/lib/redis/client';
 
 /**
  * @swagger
@@ -278,63 +279,34 @@ export async function GET(request: NextRequest) {
     // Note: mappedUserCalls are already filtered by date range and user, so we use them directly
     let recentCalls = mappedUserCalls.slice(0, 100);
 
-    // Enrich calls with database analysis data if user is authenticated
-    if (user?.id && supabase && recentCalls.length > 0) {
+    // Enrich calls with Redis analysis data if user is authenticated
+    if (user?.id && recentCalls.length > 0) {
       try {
+        const userId = user.id;
         const callIds = recentCalls.map(call => call.id);
 
-        // Optimize for large datasets - batch process if too many IDs
-        const MAX_IDS_PER_QUERY = 100; // Prevent PostgreSQL IN clause performance issues
-        let analysisData: any[] = [];
-
-        if (callIds.length <= MAX_IDS_PER_QUERY) {
-          // Single query for small datasets
-          const { data, error: analysisError } = await supabase
-            .from('call_analysis')
-            .select('vapi_call_id, sentiment, lead_quality')
-            .eq('user_id', user.id)
-            .in('vapi_call_id', callIds)
-            .limit(MAX_IDS_PER_QUERY); // Additional safety limit
-
-          if (analysisError) {
-            logger.error(
-              'ANALYTICS',
-              'Database analysis query failed',
-              analysisError
-            );
-          } else {
-            analysisData = data || [];
+        // Fetch analysis data from Redis for each call (parallel requests for performance)
+        const analysisPromises = callIds.map(async callId => {
+          try {
+            const analysis = await getCallAnalysis(userId, callId);
+            return analysis
+              ? {
+                  vapi_call_id: callId,
+                  sentiment: analysis.vapiAnalysis?.structuredData?.sentiment,
+                  lead_quality: analysis.vapiAnalysis?.structuredData?.leadQuality,
+                }
+              : null;
+          } catch (error) {
+            logger.error('ANALYTICS', 'Failed to get call analysis from Redis', error as Error, {
+              callId,
+              userId: logger.maskUserId(userId),
+            });
+            return null;
           }
-        } else {
-          // Batch queries for large datasets to maintain performance
-          logger.info(
-            'ANALYTICS',
-            'Using batched queries for large call dataset',
-            {
-              totalCallIds: callIds.length,
-              batchSize: MAX_IDS_PER_QUERY,
-            }
-          );
+        });
 
-          for (let i = 0; i < callIds.length; i += MAX_IDS_PER_QUERY) {
-            const batchIds = callIds.slice(i, i + MAX_IDS_PER_QUERY);
-            const { data, error: batchError } = await supabase
-              .from('call_analysis')
-              .select('vapi_call_id, sentiment, lead_quality')
-              .eq('user_id', user.id)
-              .in('vapi_call_id', batchIds);
-
-            if (batchError) {
-              logger.error(
-                'ANALYTICS',
-                `Batch query failed for calls ${i}-${i + batchIds.length}`,
-                batchError
-              );
-            } else {
-              analysisData.push(...(data || []));
-            }
-          }
-        }
+        const analysisResults = await Promise.all(analysisPromises);
+        const analysisData = analysisResults.filter(Boolean);
 
         if (analysisData.length > 0) {
           // Create a map for efficient O(1) lookup
@@ -342,26 +314,26 @@ export async function GET(request: NextRequest) {
             analysisData.map((item: any) => [item.vapi_call_id, item])
           );
 
-          // Enrich the calls with database analysis data
+          // Enrich the calls with Redis analysis data
           // IMPORTANT: Maintains nested structure with sentiment and leadQuality under analysis
           recentCalls = recentCalls.map(call => {
-            const dbAnalysis = analysisMap.get(call.id);
+            const redisAnalysis = analysisMap.get(call.id);
             return {
               ...call,
-              // Prioritize database analysis over VAPI analysis if available
+              // Prioritize Redis analysis (VAPI-sourced) over raw VAPI response if available
               // Keep sentiment and leadQuality nested under analysis object per OpenAPI spec
               analysis: {
                 ...call.analysis,
-                sentiment: dbAnalysis?.sentiment || call.analysis?.sentiment,
+                sentiment: redisAnalysis?.sentiment || call.analysis?.sentiment,
                 leadQuality:
-                  dbAnalysis?.lead_quality || call.analysis?.leadQuality,
+                  redisAnalysis?.lead_quality || call.analysis?.leadQuality,
               },
             };
           });
 
-          logger.info('ANALYTICS', 'Enriched calls with database analysis', {
+          logger.info('ANALYTICS', 'Enriched calls with Redis analysis', {
             totalCalls: recentCalls.length,
-            callsWithDbAnalysis: analysisData.length,
+            callsWithRedisAnalysis: analysisData.length,
             enrichmentRate: `${Math.round((analysisData.length / recentCalls.length) * 100)}%`,
             callsWithSentiment: recentCalls.filter(c => c.analysis?.sentiment)
               .length,
@@ -370,11 +342,11 @@ export async function GET(request: NextRequest) {
             ).length,
           });
         }
-      } catch (dbError) {
+      } catch (redisError) {
         logger.error(
           'ANALYTICS',
-          'Failed to enrich calls with database analysis',
-          dbError as Error
+          'Failed to enrich calls with Redis analysis',
+          redisError as Error
         );
         // Continue without enrichment rather than failing the entire request
       }
@@ -782,8 +754,8 @@ async function calculateMetrics(
     cold: 0,
   };
 
-  // Fetch real sentiment data from database if user is authenticated
-  if (userId && supabase) {
+  // Fetch real sentiment data from Redis if user is authenticated
+  if (userId) {
     try {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - (days || 30));
@@ -791,18 +763,29 @@ async function calculateMetrics(
       // Get call IDs from current VAPI data to ensure we only count analysis for existing calls
       const currentVapiCallIds = calls.map(call => call.id);
 
-      const { data: callAnalysisData, error } = await supabase
-        .from('call_analysis')
-        .select('sentiment, lead_quality, analyzed_at, vapi_call_id')
-        .eq('user_id', userId)
-        .gte('analyzed_at', cutoffDate.toISOString())
-        .in('vapi_call_id', currentVapiCallIds); // Only include analysis for calls still in VAPI
+      // Fetch all user's call analyses from Redis (already filtered by time in Redis)
+      const userAnalyses = await getUserCallAnalyses(userId, 500); // Get more to ensure we cover the time range
+      
+      // Filter by cutoff date and current VAPI call IDs
+      const callAnalysisData = userAnalyses
+        .filter(analysis => {
+          const analyzedAt = new Date(analysis.analyzedAt);
+          const isWithinTimeRange = analyzedAt >= cutoffDate;
+          const isCurrentCall = currentVapiCallIds.includes(analysis.callId);
+          return isWithinTimeRange && isCurrentCall;
+        })
+        .map(analysis => ({
+          sentiment: analysis.vapiAnalysis?.structuredData?.sentiment,
+          lead_quality: analysis.vapiAnalysis?.structuredData?.leadQuality,
+          analyzed_at: analysis.analyzedAt,
+          vapi_call_id: analysis.callId,
+        }));
 
-      if (error) {
-        logger.error(
+      if (callAnalysisData.length === 0) {
+        logger.info(
           'ANALYTICS',
-          'Failed to fetch sentiment data from database',
-          error
+          'No Redis analysis data found for time range',
+          { userId: logger.maskUserId(userId), cutoffDate }
         );
         // Fall back to proportional estimates based on answered calls
         sentimentDistribution = {
@@ -849,11 +832,11 @@ async function calculateMetrics(
           leadQualityDistribution,
         });
       }
-    } catch (dbError) {
+    } catch (redisError) {
       logger.error(
         'ANALYTICS',
-        'Database query failed for sentiment data',
-        dbError as Error
+        'Redis query failed for sentiment data',
+        redisError as Error
       );
       // Fall back to estimates
       sentimentDistribution = {
