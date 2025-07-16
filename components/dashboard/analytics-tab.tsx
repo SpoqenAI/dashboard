@@ -12,9 +12,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ModernStatsCard } from '@/components/modern-stats-card';
-// Removed CallHistoryTable import - now handled in Recent Calls page
 import { formatDuration } from './dashboard-helpers';
-// VapiCall import removed - no longer needed for analytics-only view
+// Pure analytics presentation component - no call data dependencies
 import {
   Phone,
   PhoneCall,
@@ -48,9 +47,6 @@ interface AnalyticsData {
   };
 }
 
-// Define interfaces for call data
-// Using VapiCall from lib/types instead of local CallData interface
-
 interface AnalyticsTabProps {
   analytics: AnalyticsData | null;
   isLoading: boolean;
@@ -58,7 +54,6 @@ interface AnalyticsTabProps {
   timeRange: string;
   onTimeRangeChange: (value: string) => void;
   isUserFree: boolean;
-  // Call history props removed - now handled in Recent Calls page
 }
 
 export const AnalyticsTab = memo(
@@ -163,9 +158,9 @@ export const AnalyticsTab = memo(
         {/* Header with Time Range Filter */}
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-2xl font-bold">Call Analytics</h2>
+            <h2 className="text-2xl font-bold">Analytics Overview</h2>
             <p className="text-muted-foreground">
-              Overview of your call activity and performance
+              Insights into your call performance and trends
             </p>
           </div>
 
@@ -182,25 +177,6 @@ export const AnalyticsTab = memo(
               </SelectContent>
             </Select>
 
-            {/* Remove the Analyze Calls button since automatic analysis is now handled via webhook */}
-            {/* <Button
-              onClick={onBulkAnalyze}
-              disabled={isBulkAnalyzing}
-              variant="outline"
-              size="sm"
-            >
-              {isBulkAnalyzing ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <Zap className="mr-2 h-4 w-4" />
-                  Analyze Calls
-                </>
-              )}
-            </Button> */}
           </div>
         </div>
 
@@ -464,7 +440,6 @@ export const AnalyticsTab = memo(
             </div>
           )}
 
-        {/* Call History Section removed - now handled in Recent Calls page */}
       </div>
     );
   }
