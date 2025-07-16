@@ -25,7 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DashboardShell } from '@/components/dashboard-shell';
 import { useAuth } from '@/hooks/use-auth';
 import { useSubscription } from '@/hooks/use-subscription';
-import { isFreeUser } from '@/lib/paddle';
+import { isFreeUser, hasDashboardAccess, hasAnalyticsAccess } from '@/lib/paddle';
 import { LockedOverlay } from '@/components/dashboard/locked-overlay';
 import { useDashboardAnalytics } from '@/hooks/use-dashboard-analytics';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
@@ -33,7 +33,7 @@ import { useActionPoints } from '@/hooks/use-action-points';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
 import { VapiCall } from '@/lib/types';
-import { AlertCircle, ArrowUp, BarChart3, Settings } from 'lucide-react';
+import { AlertCircle, ArrowUp, BarChart3, Settings, Lock } from 'lucide-react';
 
 // Lazy-load heavy dashboard tabs to trim initial JS (perf optim)
 const AnalyticsTab = dynamic(
@@ -145,19 +145,31 @@ export default function DashboardClient() {
     return isFreeUser(subscription);
   }, [subscriptionLoading, subscription]);
 
-  // UI state
+  // Check if user has dashboard access
+  const userHasDashboardAccess = useMemo(() => {
+    if (subscriptionLoading) return false;
+    return hasDashboardAccess(subscription);
+  }, [subscriptionLoading, subscription]);
+
+  // Check if user has analytics data access
+  const userHasAnalyticsAccess = useMemo(() => {
+    if (subscriptionLoading) return false;
+    return hasAnalyticsAccess(subscription);
+  }, [subscriptionLoading, subscription]);
+
+  // UI state - all users start on analytics to showcase value
   const [selectedCall, setSelectedCall] = useState<CallData | null>(null);
   const [isCallDetailOpen, setIsCallDetailOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('analytics');
   // Remove isBulkAnalyzing state since automatic analysis is now handled via webhook
   // const [isBulkAnalyzing, setIsBulkAnalyzing] = useState(false);
 
-  // Analytics hook
+  // Analytics hook - only enabled for users with analytics access
   const { analytics, isLoading, error, refetch } = useDashboardAnalytics({
     days: Number(timeRange),
     refetchInterval: 300_000, // 5 minutes after optimisation
     // Remove isBulkAnalyzing dependency since automatic analysis is now handled via webhook
-    enabled: !!user && !isCallDetailOpen && !isUserFree,
+    enabled: !!user && !isCallDetailOpen && userHasAnalyticsAccess,
   });
 
   // Action points
@@ -291,18 +303,18 @@ export default function DashboardClient() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <AlertCircle className="h-5 w-5 text-orange-600" />
+                      <Lock className="h-5 w-5 text-orange-600" />
                       <div>
                         <h3 className="font-semibold text-orange-900">
-                          You're on the Free Plan
+                          Free Plan - Preview Mode
                         </h3>
                         <p className="text-sm text-orange-700">
-                          Upgrade to unlock advanced analytics.
+                          You can explore the dashboard, but need Starter ($10/month) to access call data and make calls.
                         </p>
                       </div>
                     </div>
                     <Button asChild>
-                      <a href="/settings?tab=billing">
+                      <a href="/pricing">
                         <ArrowUp className="mr-2 h-4 w-4" /> Upgrade Now
                       </a>
                     </Button>
@@ -332,7 +344,7 @@ export default function DashboardClient() {
               </TabsList>
 
               <TabsContent value="analytics" className="relative space-y-6">
-                {isUserFree && <LockedOverlay />}
+                {!userHasAnalyticsAccess && <LockedOverlay />}
                 <Suspense
                   fallback={<div className="p-6">Loading analytics…</div>}
                 >
