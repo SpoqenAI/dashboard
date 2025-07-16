@@ -199,7 +199,11 @@ export default function RecentCallsClient() {
           actionPoints: actionPoints || call.actionPoints,
         });
       } catch (err) {
-        logger.error('RECENT_CALLS', 'Error fetching call details', err as Error);
+        logger.error(
+          'RECENT_CALLS',
+          'Error fetching call details',
+          err as Error
+        );
       }
     },
     [fetchCallRecording, generateActionPoints]
