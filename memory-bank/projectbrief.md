@@ -13,9 +13,10 @@ The primary goal of the Spoqen Dashboard is to provide a comprehensive AI-powere
 - **Web Application:** Built with Next.js for a responsive and modern user interface.
 - **Deployment:** Continuous deployment via GitHub Actions to Vercel.
 - **Address Autocomplete:** Integration with Geoapify for address input.
-- **Comprehensive Analytics Dashboard:** **Display real-time and historical call metrics, sentiment analysis, and lead quality specific to the user's AI assistant.**
-- **AI Assistant Settings Management:** **Allow users to configure and manage their AI receptionist's name, greeting, and business details securely and intuitively.**
+- **Recent Calls Management:** **Display and manage call history with advanced filtering, search, and call detail views.**
+- **Call Analytics Dashboard:** **Display real-time and historical call metrics, sentiment analysis, and lead quality specific to the user's AI assistant.**
+- **AI Configuration Management:** **Allow users to configure and manage their AI receptionist's name, greeting, and business details securely and intuitively.**
 
 ## Scope
 
-The project encompasses the Next.js frontend application, integration with Supabase for backend services, and deployment automation. It focuses on providing a dashboard for real estate agents to **monitor their AI receptionist's performance, gain actionable insights, and manage its configuration**.
+The project encompasses the Next.js frontend application, integration with Supabase for backend services, and deployment automation. It focuses on providing a comprehensive platform with four main sections: **Recent Calls for call management, Call Analytics for performance insights, AI Configuration for assistant setup, and Settings for user preferences**.

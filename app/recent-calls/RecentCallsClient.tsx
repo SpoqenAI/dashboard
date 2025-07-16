@@ -1,12 +1,5 @@
 'use client';
 
-// NOTE: This file contains the original client-side dashboard implementation that was previously
-// in `app/dashboard/page.tsx`. The code is moved here unchanged (except for import paths) so
-// that it can be lazy-loaded from the new server component wrapper. This achieves a significant
-// bundle‐size reduction for routes that do not need the dashboard.
-
-// BEGIN ORIGINAL IMPLEMENTATION
-
 import {
   useState,
   useEffect,
@@ -14,18 +7,15 @@ import {
   useCallback,
   useReducer,
   startTransition,
-  Suspense,
 } from 'react';
-import dynamic from 'next/dynamic';
 import { ProtectedRoute } from '@/components/protected-route';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DashboardShell } from '@/components/dashboard-shell';
 import { useAuth } from '@/hooks/use-auth';
 import { useSubscription } from '@/hooks/use-subscription';
-import { isFreeUser, hasDashboardAccess, hasAnalyticsAccess } from '@/lib/paddle';
+import { isFreeUser } from '@/lib/paddle';
 import { LockedOverlay } from '@/components/dashboard/locked-overlay';
 import { useDashboardAnalytics } from '@/hooks/use-dashboard-analytics';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
@@ -33,50 +23,9 @@ import { useActionPoints } from '@/hooks/use-action-points';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
 import { VapiCall } from '@/lib/types';
-import { AlertCircle, ArrowUp, BarChart3, Settings, Lock } from 'lucide-react';
-
-// Lazy-load heavy dashboard tabs to trim initial JS (perf optim)
-const AnalyticsTab = dynamic(
-  () =>
-    import('@/components/dashboard/analytics-tab').then(m => m.AnalyticsTab),
-  { ssr: false, loading: () => <div className="p-6">Loading analytics…</div> }
-);
-
-const AISettingsTab = dynamic(
-  () =>
-    import('@/components/dashboard/ai-settings-simple').then(
-      m => m.AISettingsTab
-    ),
-  { ssr: false, loading: () => <div className="p-6">Loading settings…</div> }
-);
-
+import { AlertCircle, ArrowUp } from 'lucide-react';
 import { CallDetailModal } from '@/components/dashboard/call-detail-modal';
-
-// Types
-type CallData = VapiCall;
-
-interface AnalyticsData {
-  metrics: {
-    totalCalls: number;
-    answeredCalls: number;
-    missedCalls: number;
-    avgDuration: number;
-    totalCost: number;
-    avgCost: number;
-    sentimentDistribution: {
-      positive: number;
-      neutral: number;
-      negative: number;
-    };
-    leadQualityDistribution: {
-      hot: number;
-      warm: number;
-      cold: number;
-    };
-  };
-  recentCalls?: any[];
-  trends?: any;
-}
+import { CallHistoryTable } from '@/components/dashboard/call-history-table';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -121,12 +70,9 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
   }
 }
 
-export default function DashboardClient() {
+export default function RecentCallsClient() {
   const { user } = useAuth();
   const { subscription, loading: subscriptionLoading } = useSubscription();
-
-  // Analytics time range
-  const [timeRange, setTimeRange] = useState('30');
 
   // Unified filter state
   const [filters, dispatchFilters] = useReducer(filterReducer, initialFilters);
@@ -145,31 +91,15 @@ export default function DashboardClient() {
     return isFreeUser(subscription);
   }, [subscriptionLoading, subscription]);
 
-  // Check if user has dashboard access
-  const userHasDashboardAccess = useMemo(() => {
-    if (subscriptionLoading) return false;
-    return hasDashboardAccess(subscription);
-  }, [subscriptionLoading, subscription]);
-
-  // Check if user has analytics data access
-  const userHasAnalyticsAccess = useMemo(() => {
-    if (subscriptionLoading) return false;
-    return hasAnalyticsAccess(subscription);
-  }, [subscriptionLoading, subscription]);
-
-  // UI state - all users start on analytics to showcase value
-  const [selectedCall, setSelectedCall] = useState<CallData | null>(null);
+  // UI state
+  const [selectedCall, setSelectedCall] = useState<VapiCall | null>(null);
   const [isCallDetailOpen, setIsCallDetailOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('analytics');
-  // Remove isBulkAnalyzing state since automatic analysis is now handled via webhook
-  // const [isBulkAnalyzing, setIsBulkAnalyzing] = useState(false);
 
-  // Analytics hook - only enabled for users with analytics access
-  const { analytics, isLoading, error, refetch } = useDashboardAnalytics({
-    days: Number(timeRange),
-    refetchInterval: 300_000, // 5 minutes after optimisation
-    // Remove isBulkAnalyzing dependency since automatic analysis is now handled via webhook
-    enabled: !!user && !isCallDetailOpen && userHasAnalyticsAccess,
+  // Analytics hook for calls data
+  const { analytics, isLoading, error } = useDashboardAnalytics({
+    days: 30,
+    refetchInterval: 300_000,
+    enabled: !!user && !isCallDetailOpen && !isUserFree,
   });
 
   // Action points
@@ -255,7 +185,6 @@ export default function DashboardClient() {
         setSelectedCall({
           ...call,
           recordingUrl: recordingUrl || call.recordingUrl,
-          // Preserve original analysis but enrich it with sentiment and flattened action points for backward-compat
           analysis: {
             ...call.analysis,
             sentiment: actionPoints?.sentiment || call.analysis?.sentiment,
@@ -267,11 +196,14 @@ export default function DashboardClient() {
                 ]
               : call.analysis?.actionPoints || [],
           },
-          // Attach full structured action points for detailed modal rendering
           actionPoints: actionPoints || call.actionPoints,
         });
       } catch (err) {
-        logger.error('DASHBOARD', 'Error fetching call details', err as Error);
+        logger.error(
+          'RECENT_CALLS',
+          'Error fetching call details',
+          err as Error
+        );
       }
     },
     [fetchCallRecording, generateActionPoints]
@@ -298,23 +230,27 @@ export default function DashboardClient() {
       <div className="min-h-screen bg-background">
         <DashboardShell>
           <div className="mx-auto max-w-7xl space-y-6 py-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold">Recent Calls</h1>
+            </div>
+
             {isUserFree && (
               <Card className="border-orange-200 bg-orange-50">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Lock className="h-5 w-5 text-orange-600" />
+                      <AlertCircle className="h-5 w-5 text-orange-600" />
                       <div>
                         <h3 className="font-semibold text-orange-900">
-                          Free Plan - Preview Mode
+                          You're on the Free Plan
                         </h3>
                         <p className="text-sm text-orange-700">
-                          You can explore the dashboard, but need Starter ($10/month) to access call data and make calls.
+                          Upgrade to view your call history and details.
                         </p>
                       </div>
                     </div>
                     <Button asChild>
-                      <a href="/pricing">
+                      <a href="/settings?tab=billing">
                         <ArrowUp className="mr-2 h-4 w-4" /> Upgrade Now
                       </a>
                     </Button>
@@ -323,64 +259,27 @@ export default function DashboardClient() {
               </Card>
             )}
 
-            <Tabs
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="space-y-6"
-            >
-              <TabsList className="grid w-full grid-cols-2 lg:w-auto">
-                <TabsTrigger
-                  value="analytics"
-                  className="flex items-center gap-2"
-                >
-                  <BarChart3 className="h-4 w-4" /> Analytics
-                </TabsTrigger>
-                <TabsTrigger
-                  value="ai-settings"
-                  className="flex items-center gap-2"
-                >
-                  <Settings className="h-4 w-4" /> AI Settings
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="analytics" className="relative space-y-6">
-                {!userHasAnalyticsAccess && <LockedOverlay />}
-                <Suspense
-                  fallback={<div className="p-6">Loading analytics…</div>}
-                >
-                  <AnalyticsTab
-                    analytics={analytics as AnalyticsData | null}
-                    isLoading={isLoading}
-                    error={error ? (error as Error).message : null}
-                    timeRange={timeRange}
-                    onTimeRangeChange={setTimeRange}
-                    isUserFree={isUserFree}
-                    // Remove bulk analyze props since automatic analysis is now handled via webhook
-                    calls={filteredAndPaginatedCalls.calls}
-                    callsLoading={isLoading}
-                    callsError={error ? (error as Error).message : null}
-                    searchTerm={searchTerm}
-                    onSearchChange={handleSearchChange}
-                    sentimentFilter={sentimentFilter}
-                    onSentimentFilterChange={handleSentimentChange}
-                    leadQualityFilter={leadQualityFilter}
-                    onLeadQualityFilterChange={handleLeadChange}
-                    statusFilter={statusFilter}
-                    onStatusFilterChange={handleStatusChange}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                    selectedCallId={selectedCall?.id || null}
-                    onCallSelect={handleCallSelect}
-                  />
-                </Suspense>
-              </TabsContent>
-
-              {/* Keep the AI Settings tab mounted so it doesn’t reload every time */}
-              <TabsContent value="ai-settings" forceMount>
-                <AISettingsTab isUserFree={isUserFree} />
-              </TabsContent>
-            </Tabs>
+            <div className="relative space-y-6">
+              {isUserFree && <LockedOverlay />}
+              <CallHistoryTable
+                calls={filteredAndPaginatedCalls.calls}
+                isLoading={isLoading}
+                error={error ? (error as Error).message : null}
+                searchTerm={searchTerm}
+                onSearchChange={handleSearchChange}
+                sentimentFilter={sentimentFilter}
+                onSentimentFilterChange={handleSentimentChange}
+                leadQualityFilter={leadQualityFilter}
+                onLeadQualityFilterChange={handleLeadChange}
+                statusFilter={statusFilter}
+                onStatusFilterChange={handleStatusChange}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                selectedCallId={selectedCall?.id || null}
+                onCallSelect={handleCallSelect}
+              />
+            </div>
 
             <CallDetailModal
               call={selectedCall}
@@ -396,5 +295,3 @@ export default function DashboardClient() {
     </ProtectedRoute>
   );
 }
-
-// END ORIGINAL IMPLEMENTATION
