@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Recent Calls | Spoqen',
+  title: 'Dashboard | Spoqen',
 };
 
 import { redirect } from 'next/navigation';
