@@ -1,14 +1,10 @@
 export const metadata = {
-  title: 'Dashboard | Spoqen',
+  title: 'Recent Calls | Spoqen',
 };
 
-import { Suspense } from 'react';
-import DashboardClientLoader from './DashboardClientLoader';
+import { redirect } from 'next/navigation';
 
 export default function DashboardPage() {
-  return (
-    <Suspense fallback={<div className="p-6">Loading…</div>}>
-      <DashboardClientLoader />
-    </Suspense>
-  );
+  // Redirect to Recent Calls as the new default dashboard view
+  redirect('/recent-calls');
 }

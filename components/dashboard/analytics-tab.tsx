@@ -12,9 +12,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ModernStatsCard } from '@/components/modern-stats-card';
-import { CallHistoryTable } from './call-history-table';
+// Removed CallHistoryTable import - now handled in Recent Calls page
 import { formatDuration } from './dashboard-helpers';
-import { VapiCall } from '@/lib/types';
+// VapiCall import removed - no longer needed for analytics-only view
 import {
   Phone,
   PhoneCall,
@@ -58,26 +58,7 @@ interface AnalyticsTabProps {
   timeRange: string;
   onTimeRangeChange: (value: string) => void;
   isUserFree: boolean;
-  // Remove bulk analyze props since automatic analysis is now handled via webhook
-  // onBulkAnalyze: () => void;
-  // isBulkAnalyzing: boolean;
-  // Call history props
-  calls: VapiCall[];
-  callsLoading: boolean;
-  callsError: string | null;
-  searchTerm: string;
-  onSearchChange: (value: string) => void;
-  sentimentFilter: string;
-  onSentimentFilterChange: (value: string) => void;
-  leadQualityFilter: string;
-  onLeadQualityFilterChange: (value: string) => void;
-  statusFilter: string;
-  onStatusFilterChange: (value: string) => void;
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  selectedCallId: string | null;
-  onCallSelect: (call: VapiCall) => void;
+  // Call history props removed - now handled in Recent Calls page
 }
 
 export const AnalyticsTab = memo(
@@ -88,25 +69,6 @@ export const AnalyticsTab = memo(
     timeRange,
     onTimeRangeChange,
     isUserFree,
-    // Remove bulk analyze props
-    // onBulkAnalyze,
-    // isBulkAnalyzing,
-    calls,
-    callsLoading,
-    callsError,
-    searchTerm,
-    onSearchChange,
-    sentimentFilter,
-    onSentimentFilterChange,
-    leadQualityFilter,
-    onLeadQualityFilterChange,
-    statusFilter,
-    onStatusFilterChange,
-    currentPage,
-    totalPages,
-    onPageChange,
-    selectedCallId,
-    onCallSelect,
   }: AnalyticsTabProps) => {
     // Calculate derived metrics
     const derivedMetrics = useMemo(() => {
@@ -502,25 +464,7 @@ export const AnalyticsTab = memo(
             </div>
           )}
 
-        {/* Call History Section */}
-        <CallHistoryTable
-          calls={calls}
-          isLoading={callsLoading}
-          error={callsError}
-          searchTerm={searchTerm}
-          onSearchChange={onSearchChange}
-          sentimentFilter={sentimentFilter}
-          onSentimentFilterChange={onSentimentFilterChange}
-          leadQualityFilter={leadQualityFilter}
-          onLeadQualityFilterChange={onLeadQualityFilterChange}
-          statusFilter={statusFilter}
-          onStatusFilterChange={onStatusFilterChange}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-          selectedCallId={selectedCallId}
-          onCallSelect={onCallSelect}
-        />
+        {/* Call History Section removed - now handled in Recent Calls page */}
       </div>
     );
   }

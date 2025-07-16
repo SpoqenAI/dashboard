@@ -8,15 +8,27 @@ import { UserNav } from '@/components/user-nav';
 import Logo from '@/components/ui/logo';
 import { useAuth } from '@/hooks/use-auth';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { LayoutDashboard, Settings, HelpCircle, Menu } from 'lucide-react';
+import { Phone, BarChart3, Settings, Cog, HelpCircle, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const navigationItems = [
   {
-    name: 'Dashboard',
-    href: '/dashboard',
-    icon: LayoutDashboard,
+    name: 'Recent Calls',
+    href: '/recent-calls',
+    icon: Phone,
+    requiresAuth: true,
+  },
+  {
+    name: 'Call Analytics',
+    href: '/call-analytics',
+    icon: BarChart3,
+    requiresAuth: true,
+  },
+  {
+    name: 'AI Configuration',
+    href: '/ai-configuration',
+    icon: Cog,
     requiresAuth: true,
   },
   {
