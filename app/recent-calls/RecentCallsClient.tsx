@@ -20,6 +20,7 @@ import { LockedOverlay } from '@/components/dashboard/locked-overlay';
 import { useDashboardAnalytics } from '@/hooks/use-dashboard-analytics';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useActionPoints } from '@/hooks/use-action-points';
+import { useCallUpdates } from '@/hooks/use-call-updates';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
 import { VapiCall } from '@/lib/types';
@@ -95,15 +96,43 @@ export default function RecentCallsClient() {
   const [selectedCall, setSelectedCall] = useState<VapiCall | null>(null);
   const [isCallDetailOpen, setIsCallDetailOpen] = useState(false);
 
-  // Analytics hook for calls data
-  const { analytics, isLoading, error } = useDashboardAnalytics({
+  // Analytics hook for calls data - hybrid mode: initial load + events only
+  const { analytics, isLoading, error, refetch, hasCachedData } = useDashboardAnalytics({
     days: 30,
-    refetchInterval: 300_000,
+    refetchInterval: 0, // No polling - pure event-driven after initial load
     enabled: !!user && !isCallDetailOpen && !isUserFree,
   });
 
   // Action points
   const { generateActionPoints } = useActionPoints();
+
+  // Real-time call updates
+  const { isConnected: isRealTimeConnected } = useCallUpdates({
+    enabled: !!user && !isUserFree,
+    onNewCall: useCallback((event) => {
+      logger.info('RECENT_CALLS', 'New call detected via SSE', {
+        callId: event.callId,
+        timestamp: event.timestamp,
+        hasCallData: !!event.callData,
+        hasAnalysis: !!event.callData?.analysis,
+      });
+
+      // Show enhanced toast notification with call details
+      const callerInfo = event.callData?.callerName || event.callData?.phoneNumber || 'Unknown caller';
+      const leadQuality = event.callData?.analysis?.structuredData?.leadQuality;
+      const sentiment = event.callData?.analysis?.structuredData?.sentiment;
+      
+      toast({
+        title: "New Call Received",
+        description: `${callerInfo}${leadQuality ? ` - ${leadQuality.toUpperCase()} lead` : ''}${sentiment ? ` - ${sentiment} sentiment` : ''}`,
+        duration: 8000,
+      });
+
+      // Immediately refetch analytics data since we have the call data from webhook
+      // No delay needed since VAPI has already processed and sent us the analysis
+      refetch();
+    }, [refetch]),
+  });
 
   // Debounced search
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
@@ -231,7 +260,21 @@ export default function RecentCallsClient() {
         <DashboardShell>
           <div className="mx-auto max-w-7xl space-y-6 py-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold">Recent Calls</h1>
+              <div className="flex items-center gap-4">
+                <h1 className="text-3xl font-bold">Recent Calls</h1>
+                {!isUserFree && (
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`h-2 w-2 rounded-full ${
+                        isRealTimeConnected ? 'bg-green-500' : 'bg-gray-400'
+                      }`}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {isRealTimeConnected ? 'Live updates' : 'Connecting...'}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {isUserFree && (

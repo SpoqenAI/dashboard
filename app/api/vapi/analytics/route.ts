@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { CallMetrics, DashboardAnalytics } from '@/lib/types';
 import { createClient } from '@/lib/supabase/server';
+import { callCache } from '@/lib/call-cache';
 // Removed Redis dependency - all analysis comes directly from VAPI
 
 /**
@@ -110,6 +111,19 @@ export async function GET(request: NextRequest) {
   });
 
   try {
+    // Check cache first for recent requests (reduces VAPI API load)
+    const { searchParams } = new URL(request.url);
+    const cacheKey = `analytics:${searchParams.toString()}`;
+    const cachedData = callCache.get(cacheKey);
+    
+    if (cachedData) {
+      logger.info('ANALYTICS', 'Returning cached analytics data', {
+        requestedDays: days,
+        cacheKey,
+      });
+      return NextResponse.json(cachedData);
+    }
+
     // Maximum number of calls to fetch from VAPI in a single analytics request.
     // Chosen to balance API performance, avoid missing recent calls, and prevent excessive payloads.
     const VAPI_ANALYTICS_FETCH_LIMIT = 500;
@@ -324,11 +338,19 @@ export async function GET(request: NextRequest) {
       trends,
     };
 
+    // Cache the result for longer since webhooks invalidate when new calls arrive
+    // Pure event-driven system allows longer cache without staleness concerns
+    const resultCacheKey = `analytics:${searchParams.toString()}`;
+    const cacheTtl = days <= 7 ? 1800000 : days <= 30 ? 3600000 : 7200000; // 30min-2hours
+    callCache.set(resultCacheKey, analytics, cacheTtl);
+
     logger.info('ANALYTICS', 'Successfully calculated analytics', {
       totalCalls: metrics.totalCalls,
       timeRange: `${days} days`,
       recentCallsCount: recentCalls.length,
       cutoffDate: cutoffDate.toISOString(),
+      cached: true,
+      cacheTtlMs: cacheTtl,
     });
 
     // Calculate appropriate cache duration based on time range
