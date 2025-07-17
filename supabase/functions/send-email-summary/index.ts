@@ -43,7 +43,7 @@ serve(async req => {
 
   /* b. Render React template to HTML ------------------------------------ */
   const baseUrl = Deno.env.get('BASE_URL') ?? 'https://www.spoqen.com';
-  const bucketUrl = Deno.env.get('IMAGE_BUCKET_URL')!;
+  const bucketUrl = `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/public-assets`;
   const html = renderToStaticMarkup(
     React.createElement(CallSummaryEmail, {
       summary,
