@@ -77,29 +77,44 @@ async function processVapiWebhook(envelope: any) {
             transcript: message.transcript,
             recordingUrl: message.recordingUrl,
             // Extract phone number from call object
-            phoneNumber: message.call?.customer?.number || message.call?.destination?.number,
+            phoneNumber:
+              message.call?.customer?.number ||
+              message.call?.destination?.number,
             callerName: message.call?.customer?.name,
             createdAt: message.call?.createdAt || new Date().toISOString(),
             startedAt: message.call?.startedAt,
             endedAt: message.call?.endedAt,
             cost: message.call?.cost,
-            durationSeconds: message.call?.endedAt && message.call?.startedAt 
-              ? Math.round((new Date(message.call.endedAt).getTime() - new Date(message.call.startedAt).getTime()) / 1000)
-              : 0,
-          }
+            durationSeconds:
+              message.call?.endedAt && message.call?.startedAt
+                ? Math.round(
+                    (new Date(message.call.endedAt).getTime() -
+                      new Date(message.call.startedAt).getTime()) /
+                      1000
+                  )
+                : 0,
+          },
         });
 
-        logger.info('VAPI_WEBHOOK', 'Real-time call event emitted with call data', {
-          callId,
-          userId: logger.maskUserId(userId),
-          activeListeners: callEventEmitter.getListenerCount(),
-          hasAnalysis: !!message.analysis,
-          hasStructuredData: !!message.analysis?.structuredData,
-        });
+        logger.info(
+          'VAPI_WEBHOOK',
+          'Real-time call event emitted with call data',
+          {
+            callId,
+            userId: logger.maskUserId(userId),
+            activeListeners: callEventEmitter.getListenerCount(),
+            hasAnalysis: !!message.analysis,
+            hasStructuredData: !!message.analysis?.structuredData,
+          }
+        );
       }
     }
   } catch (eventErr) {
-    logger.error('VAPI_WEBHOOK', 'Failed to emit real-time event', eventErr as Error);
+    logger.error(
+      'VAPI_WEBHOOK',
+      'Failed to emit real-time event',
+      eventErr as Error
+    );
   }
 
   // === Attempt to email the call summary ===
@@ -143,10 +158,9 @@ async function processVapiWebhook(envelope: any) {
   }
 }
 
-
 export async function POST(req: NextRequest) {
   console.log(req.body);
-  
+
   const requestBody = await req.text();
   const secret = process.env.VAPI_WEBHOOK_SECRET;
   const incomingSecret = req.headers.get('x-vapi-secret');

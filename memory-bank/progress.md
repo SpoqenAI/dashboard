@@ -11,6 +11,7 @@ This document tracks what works, what's been built, current status, and the evol
 **NEW PRICING STRUCTURE**:
 
 ✅ **Free Tier - Setup Only**:
+
 - No call handling capabilities
 - No dashboard access (AI settings tab only)
 - Basic greeting customization only
@@ -18,6 +19,7 @@ This document tracks what works, what's been built, current status, and the evol
 - Perfect for users setting up their AI assistant
 
 ✅ **Starter Tier ($10/month)**:
+
 - 30 calls per month limit
 - Full dashboard and analytics access
 - Call summaries & transcripts
@@ -25,6 +27,7 @@ This document tracks what works, what's been built, current status, and the evol
 - Entry-level paid tier for small businesses
 
 ✅ **Professional Tier ($30/month)**:
+
 - Unlimited calls and minutes
 - Advanced analytics dashboard
 - Advanced lead qualification
@@ -33,6 +36,7 @@ This document tracks what works, what's been built, current status, and the evol
 - Main growth tier for established businesses
 
 ✅ **Business Tier (Contact Sales Only)**:
+
 - Custom pricing and limits
 - Enterprise features and dedicated support
 - Multi-language and AI training
@@ -41,40 +45,47 @@ This document tracks what works, what's been built, current status, and the evol
 **TECHNICAL IMPLEMENTATION**:
 
 ✅ **Enhanced Feature Gating System** (`lib/paddle.ts`):
+
 - Added "starter" tier to SubscriptionTier type
 - New dashboard access controls with `dashboard.analytics` and `dashboard.fullAccess` flags
 - Price ID-based tier mapping for accurate subscription classification
 - Updated TIER_LIMITS with granular access restrictions
 
 ✅ **Dashboard Access Restrictions** (`app/dashboard/DashboardClient.tsx`):
+
 - Free users restricted to AI settings tab only
 - Analytics tab conditionally rendered based on subscription
 - Enhanced upgrade prompts with pricing information
 - Automatic tab selection (free users start on AI settings)
 
 ✅ **Updated Pricing Page** (`app/pricing/page.tsx`):
+
 - Four-tier pricing structure with "Contact Sales" for business
 - Updated feature lists and pricing ($10/$30 instead of $49/$99)
 - Business tier shows "Contact Sales" instead of price
 - Proper routing to contact page for business inquiries
 
 ✅ **Enhanced Subscription Hooks** (`hooks/use-subscription-features.tsx`):
+
 - New `useDashboardFeatures()` hook for access control
 - Updated upgrade messaging for new pricing
 - Comprehensive feature checking for all tiers
 
 ✅ **Updated Documentation** (`PADDLE_SETUP.md`):
+
 - Documented new pricing structure and access restrictions
 - Updated environment variable configuration
 - Clear tier mapping explanation
 
-**BUSINESS IMPACT**: 
+**BUSINESS IMPACT**:
+
 - Clear value proposition with entry-level $10 tier
 - Strict free tier limitations drive upgrade conversions
 - Professional tier positioned as main growth option
 - Enterprise sales funnel through business tier contact form
 
 **USER EXPERIENCE IMPROVEMENTS**:
+
 - Free users get focused AI setup experience
 - Clear upgrade path with immediate value
 - No confusion about call limitations on free tier

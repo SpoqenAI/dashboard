@@ -32,10 +32,12 @@ export function useCallUpdates({
         logger.info('CALL_UPDATES', 'SSE connection established');
       };
 
-      eventSource.onmessage = (event) => {
+      eventSource.onmessage = event => {
         try {
-          const data = JSON.parse(event.data) as CallUpdateEvent & { type: string };
-          
+          const data = JSON.parse(event.data) as CallUpdateEvent & {
+            type: string;
+          };
+
           if (data.type === 'connected' || data.type === 'heartbeat') {
             // Connection/heartbeat messages - just log
             return;
@@ -55,7 +57,11 @@ export function useCallUpdates({
             callId: data.callId,
           });
         } catch (error) {
-          logger.error('CALL_UPDATES', 'Error parsing SSE message', error as Error);
+          logger.error(
+            'CALL_UPDATES',
+            'Error parsing SSE message',
+            error as Error
+          );
         }
       };
 
@@ -65,7 +71,10 @@ export function useCallUpdates({
         eventSourceRef.current = null;
 
         // Exponential backoff for reconnection
-        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+        const delay = Math.min(
+          1000 * Math.pow(2, reconnectAttempts.current),
+          30000
+        );
         reconnectAttempts.current++;
 
         logger.warn('CALL_UPDATES', 'SSE connection error, reconnecting', {
@@ -80,7 +89,11 @@ export function useCallUpdates({
         }, delay);
       };
     } catch (error) {
-      logger.error('CALL_UPDATES', 'Failed to create SSE connection', error as Error);
+      logger.error(
+        'CALL_UPDATES',
+        'Failed to create SSE connection',
+        error as Error
+      );
     }
   };
 

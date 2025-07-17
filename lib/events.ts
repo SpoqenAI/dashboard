@@ -24,7 +24,8 @@ interface CallUpdateEvent {
 }
 
 class CallEventEmitter {
-  private listeners: Map<string, Set<(event: CallUpdateEvent) => void>> = new Map();
+  private listeners: Map<string, Set<(event: CallUpdateEvent) => void>> =
+    new Map();
 
   // Subscribe to call updates for a specific user
   subscribe(userId: string, callback: (event: CallUpdateEvent) => void) {

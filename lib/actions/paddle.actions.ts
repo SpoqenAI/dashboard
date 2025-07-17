@@ -8,14 +8,18 @@ import { validatePaddleConfig } from '@/lib/paddle';
 // Initialize Paddle client
 function createPaddleClient() {
   const apiKey = process.env.PADDLE_API_KEY;
-  
+
   if (!apiKey) {
     throw new Error('PADDLE_API_KEY environment variable is required');
   }
 
   // Determine environment
-  const envVar = process.env.PADDLE_ENVIRONMENT || process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
-  const isSandbox = envVar?.toLowerCase() === 'sandbox' || apiKey.toLowerCase().startsWith('sandbox');
+  const envVar =
+    process.env.PADDLE_ENVIRONMENT ||
+    process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
+  const isSandbox =
+    envVar?.toLowerCase() === 'sandbox' ||
+    apiKey.toLowerCase().startsWith('sandbox');
 
   return new Paddle(apiKey, {
     environment: isSandbox ? Environment.sandbox : Environment.production,
@@ -31,18 +35,27 @@ export async function createCheckoutSession(priceId: string): Promise<{
     // Validate Paddle configuration
     const configValidation = validatePaddleConfig();
     if (!configValidation.isValid) {
-      logger.error('PADDLE_CHECKOUT', 'Paddle configuration invalid', new Error('Missing environment variables'), {
-        missingVars: configValidation.missingVars,
-      });
+      logger.error(
+        'PADDLE_CHECKOUT',
+        'Paddle configuration invalid',
+        new Error('Missing environment variables'),
+        {
+          missingVars: configValidation.missingVars,
+        }
+      );
       return {
         success: false,
-        error: 'Payment system not properly configured. Please contact support.',
+        error:
+          'Payment system not properly configured. Please contact support.',
       };
     }
 
     // Get current user
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return {
@@ -59,9 +72,14 @@ export async function createCheckoutSession(priceId: string): Promise<{
       .single();
 
     if (profileError || !profile) {
-      logger.error('PADDLE_CHECKOUT', 'Profile not found', profileError || new Error('Profile not found'), {
-        userId: logger.maskUserId(user.id),
-      });
+      logger.error(
+        'PADDLE_CHECKOUT',
+        'Profile not found',
+        profileError || new Error('Profile not found'),
+        {
+          userId: logger.maskUserId(user.id),
+        }
+      );
       return {
         success: false,
         error: 'User profile not found',
@@ -73,7 +91,7 @@ export async function createCheckoutSession(priceId: string): Promise<{
 
     // Create checkout session
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    
+
     const checkoutData = {
       items: [
         {
@@ -86,9 +104,10 @@ export async function createCheckoutSession(priceId: string): Promise<{
       },
       customer: {
         email: profile.email,
-        ...(profile.first_name && profile.last_name && {
-          name: `${profile.first_name} ${profile.last_name}`.trim(),
-        }),
+        ...(profile.first_name &&
+          profile.last_name && {
+            name: `${profile.first_name} ${profile.last_name}`.trim(),
+          }),
       },
       settings: {
         successUrl: `${baseUrl}/api/paddle/success?user_id=${user.id}`,
@@ -105,10 +124,15 @@ export async function createCheckoutSession(priceId: string): Promise<{
     const transaction = await paddle.transactions.create(checkoutData);
 
     if (!transaction.checkout?.url) {
-      logger.error('PADDLE_CHECKOUT', 'No checkout URL returned', new Error('Missing checkout URL'), {
-        userId: logger.maskUserId(user.id),
-        transactionId: transaction.id,
-      });
+      logger.error(
+        'PADDLE_CHECKOUT',
+        'No checkout URL returned',
+        new Error('Missing checkout URL'),
+        {
+          userId: logger.maskUserId(user.id),
+          transactionId: transaction.id,
+        }
+      );
       return {
         success: false,
         error: 'Failed to create checkout session',
@@ -138,12 +162,18 @@ export async function createCheckoutSession(priceId: string): Promise<{
     );
 
     // Provide more helpful error messages for common issues
-    let userFriendlyError = 'Failed to create checkout session. Please try again.';
-    
-    if (error?.code === 'forbidden' && error?.detail?.includes('not authorized')) {
-      userFriendlyError = 'API key permissions error. Please check your Paddle dashboard - your API key needs "Transactions" permissions.';
+    let userFriendlyError =
+      'Failed to create checkout session. Please try again.';
+
+    if (
+      error?.code === 'forbidden' &&
+      error?.detail?.includes('not authorized')
+    ) {
+      userFriendlyError =
+        'API key permissions error. Please check your Paddle dashboard - your API key needs "Transactions" permissions.';
     } else if (error?.code === 'unauthorized') {
-      userFriendlyError = 'Invalid API key. Please check your Paddle configuration.';
+      userFriendlyError =
+        'Invalid API key. Please check your Paddle configuration.';
     } else if (error?.detail) {
       userFriendlyError = error.detail;
     }
@@ -163,7 +193,10 @@ export async function createCustomerPortalSession(): Promise<{
   try {
     // Get current user
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return {
@@ -181,9 +214,14 @@ export async function createCustomerPortalSession(): Promise<{
       .single();
 
     if (subscriptionError || !subscription) {
-      logger.error('PADDLE_PORTAL', 'No active subscription found', subscriptionError || new Error('No subscription'), {
-        userId: logger.maskUserId(user.id),
-      });
+      logger.error(
+        'PADDLE_PORTAL',
+        'No active subscription found',
+        subscriptionError || new Error('No subscription'),
+        {
+          userId: logger.maskUserId(user.id),
+        }
+      );
       return {
         success: false,
         error: 'No active subscription found',
@@ -191,10 +229,15 @@ export async function createCustomerPortalSession(): Promise<{
     }
 
     if (!subscription.paddle_customer_id) {
-      logger.error('PADDLE_PORTAL', 'No Paddle customer ID found', new Error('Missing customer ID'), {
-        userId: logger.maskUserId(user.id),
-        subscriptionId: subscription.id,
-      });
+      logger.error(
+        'PADDLE_PORTAL',
+        'No Paddle customer ID found',
+        new Error('Missing customer ID'),
+        {
+          userId: logger.maskUserId(user.id),
+          subscriptionId: subscription.id,
+        }
+      );
       return {
         success: false,
         error: 'Customer information not found',
@@ -211,20 +254,29 @@ export async function createCustomerPortalSession(): Promise<{
     );
 
     if (!session.urls?.general?.overview) {
-      logger.error('PADDLE_PORTAL', 'No portal URL returned', new Error('Missing portal URL'), {
-        userId: logger.maskUserId(user.id),
-        customerId: subscription.paddle_customer_id,
-      });
+      logger.error(
+        'PADDLE_PORTAL',
+        'No portal URL returned',
+        new Error('Missing portal URL'),
+        {
+          userId: logger.maskUserId(user.id),
+          customerId: subscription.paddle_customer_id,
+        }
+      );
       return {
         success: false,
         error: 'Failed to create customer portal session',
       };
     }
 
-    logger.info('PADDLE_PORTAL', 'Customer portal session created successfully', {
-      userId: logger.maskUserId(user.id),
-      customerId: subscription.paddle_customer_id,
-    });
+    logger.info(
+      'PADDLE_PORTAL',
+      'Customer portal session created successfully',
+      {
+        userId: logger.maskUserId(user.id),
+        customerId: subscription.paddle_customer_id,
+      }
+    );
 
     return {
       success: true,
@@ -245,7 +297,9 @@ export async function createCustomerPortalSession(): Promise<{
 }
 
 // Helper function to get subscription management URL for a specific subscription
-export async function getSubscriptionManagementUrl(subscriptionId: string): Promise<{
+export async function getSubscriptionManagementUrl(
+  subscriptionId: string
+): Promise<{
   success: boolean;
   managementUrl?: string;
   error?: string;
@@ -281,7 +335,9 @@ export async function getSubscriptionManagementUrl(subscriptionId: string): Prom
       };
     }
 
-    const session = await paddle.customerPortalSessions.create(customerId, [subscriptionId]);
+    const session = await paddle.customerPortalSessions.create(customerId, [
+      subscriptionId,
+    ]);
 
     if (session.urls?.general?.overview) {
       return {
@@ -307,4 +363,4 @@ export async function getSubscriptionManagementUrl(subscriptionId: string): Prom
       error: 'Failed to get management URL. Please try again.',
     };
   }
-} 
+}

@@ -27,7 +27,7 @@ NEXT_PUBLIC_PADDLE_ENVIRONMENT=sandbox
 # ⚠️ IMPORTANT: API Key Permissions Required
 # Your Paddle API key MUST have these permissions enabled:
 # ✅ Transactions (Read & Write) - Required for checkout sessions
-# ✅ Products (Read) - Required for price validation  
+# ✅ Products (Read) - Required for price validation
 # ✅ Prices (Read) - Required for price validation
 # ✅ Customers (Read & Write) - Required for customer creation
 # ✅ Subscriptions (Read & Write) - Required for subscription management
@@ -36,7 +36,7 @@ NEXT_PUBLIC_PADDLE_ENVIRONMENT=sandbox
 # Starter tier (current): pri_01jx94f6qywr25x1cqnh0td7fy
 # You'll need to create additional price IDs in Paddle for:
 # - Starter Annual
-# - Pro Monthly  
+# - Pro Monthly
 # - Pro Annual
 
 # Site Configuration
@@ -65,6 +65,7 @@ cancel_at_period_end    BOOLEAN             -- If subscription will cancel
 **Note:** Tier determination is based on Paddle `price_id` mapping configured in `lib/paddle.ts`. Update the `STARTER_PRICE_IDS`, `PRO_PRICE_IDS`, and `BUSINESS_PRICE_IDS` arrays with your actual Paddle price IDs.
 
 ### Free Tier
+
 - **No call handling capabilities**
 - AI assistant setup only
 - Basic greeting customization
@@ -72,6 +73,7 @@ cancel_at_period_end    BOOLEAN             -- If subscription will cancel
 - **No dashboard access** (AI settings only)
 
 ### Starter Tier ($10/month or $8/month annually)
+
 - Up to 30 calls per month
 - Basic analytics dashboard
 - Call summaries & transcripts
@@ -80,6 +82,7 @@ cancel_at_period_end    BOOLEAN             -- If subscription will cancel
 - Email support
 
 ### Professional Tier ($30/month or $24/month annually)
+
 - Unlimited calls & minutes
 - Advanced analytics dashboard
 - Advanced lead qualification
@@ -89,6 +92,7 @@ cancel_at_period_end    BOOLEAN             -- If subscription will cancel
 - Priority support
 
 ### Business Tier (Contact Sales)
+
 - Everything in Professional
 - Multi-language support
 - Custom AI training & fine-tuning
@@ -101,29 +105,34 @@ cancel_at_period_end    BOOLEAN             -- If subscription will cancel
 ## Key Components
 
 ### 1. Pricing Page (`/pricing`)
+
 - Modern, responsive design with three pricing tiers
 - Monthly/annual billing toggle with savings display
 - Feature comparison and FAQ section
 - Integrated with checkout system
 
 ### 2. Server Actions (`lib/actions/paddle.actions.ts`)
+
 - `createCheckoutSession(priceId)` - Creates secure Paddle checkout
 - `createCustomerPortalSession()` - Generates customer portal URL
 - `getSubscriptionManagementUrl(subscriptionId)` - Gets management URL
 
 ### 3. Webhook Handler (`app/api/webhooks/paddle/route.ts`)
+
 - Processes subscription events (`created`, `updated`, `canceled`)
 - Secure signature verification
 - Automatic subscription data synchronization
 - Triggers Twilio number cleanup on cancellation
 
 ### 4. Enhanced Settings Page (`app/settings/page.tsx`)
+
 - Beautiful subscription status display
 - Current plan features overview
 - One-click access to customer portal
 - Upgrade prompts and plan comparison
 
 ### 5. Feature Gating System
+
 - Comprehensive feature limits definition
 - Subscription tier determination
 - Usage tracking (calls, minutes, features)
@@ -138,7 +147,7 @@ import { useSubscriptionFeatures } from '@/hooks/use-subscription-features';
 
 function AnalyticsComponent() {
   const { hasFeature, getUpgradeMessage } = useSubscriptionFeatures();
-  
+
   if (!hasFeature('analytics', 'advanced')) {
     return (
       <div className="text-center">
@@ -147,7 +156,7 @@ function AnalyticsComponent() {
       </div>
     );
   }
-  
+
   return <AdvancedAnalyticsChart />;
 }
 ```
@@ -160,10 +169,10 @@ import { useSubscriptionFeatures } from '@/hooks/use-subscription-features';
 function CallButton() {
   const { canMakeCalls, getRemainingCalls } = useSubscriptionFeatures();
   const currentUsage = 5; // Get from your analytics
-  
+
   const canCall = canMakeCalls(currentUsage);
   const remaining = getRemainingCalls(currentUsage);
-  
+
   return (
     <Button disabled={!canCall}>
       {canCall ? 'Make Call' : 'Upgrade to Continue'}
@@ -181,17 +190,19 @@ import { isActiveSubscription, formatSubscriptionDate } from '@/lib/paddle';
 
 function BillingTab() {
   const { subscription } = useSubscription();
-  
+
   if (subscription && isActiveSubscription(subscription)) {
     return (
       <div>
         <h3>Professional Plan - Active</h3>
-        <p>Renews {formatSubscriptionDate(subscription.current_period_end_at)}</p>
+        <p>
+          Renews {formatSubscriptionDate(subscription.current_period_end_at)}
+        </p>
         <Button onClick={openCustomerPortal}>Manage Billing</Button>
       </div>
     );
   }
-  
+
   return <UpgradePrompt />;
 }
 ```
@@ -209,12 +220,14 @@ The webhook handler includes comprehensive security measures:
 ## Testing
 
 ### Sandbox Testing
+
 1. Set `NEXT_PUBLIC_PADDLE_ENVIRONMENT=sandbox`
 2. Use Paddle sandbox API keys
 3. Create test products in Paddle sandbox
 4. Use ngrok for local webhook testing
 
 ### Production Deployment
+
 1. Set `NEXT_PUBLIC_PADDLE_ENVIRONMENT=production`
 2. Use production Paddle API keys
 3. Configure webhook URL in Paddle dashboard
@@ -265,4 +278,4 @@ curl -X POST http://localhost:3000/api/webhooks/paddle \
 4. **Monitor Webhooks**: Set up logging and monitoring for webhook events
 5. **Add Business Logic**: Implement any custom subscription logic needed
 
-The integration is now complete and production-ready! 🎉 
+The integration is now complete and production-ready! 🎉

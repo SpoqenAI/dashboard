@@ -2,18 +2,18 @@
 
 import { useMemo } from 'react';
 import { useSubscription } from '@/hooks/use-subscription';
-import { 
-  getSubscriptionTier, 
-  getFeatureLimits, 
-  hasFeatureAccess, 
-  canMakeCalls, 
+import {
+  getSubscriptionTier,
+  getFeatureLimits,
+  hasFeatureAccess,
+  canMakeCalls,
   getRemainingCalls,
   shouldShowUpgradePrompt,
   getUpgradeMessage,
   hasDashboardAccess,
   hasAnalyticsAccess,
   type SubscriptionTier,
-  type FeatureLimits 
+  type FeatureLimits,
 } from '@/lib/paddle';
 
 export interface SubscriptionFeatures {
@@ -38,12 +38,15 @@ export function useSubscriptionFeatures(): SubscriptionFeatures {
     return {
       tier,
       limits,
-      canMakeCalls: (currentUsage = 0) => canMakeCalls(subscription, currentUsage),
-      getRemainingCalls: (currentUsage = 0) => getRemainingCalls(subscription, currentUsage),
-      hasFeature: (feature: keyof FeatureLimits, subFeature?: string) => 
+      canMakeCalls: (currentUsage = 0) =>
+        canMakeCalls(subscription, currentUsage),
+      getRemainingCalls: (currentUsage = 0) =>
+        getRemainingCalls(subscription, currentUsage),
+      hasFeature: (feature: keyof FeatureLimits, subFeature?: string) =>
         hasFeatureAccess(subscription, feature, subFeature),
       shouldShowUpgrade: shouldShowUpgradePrompt(subscription),
-      getUpgradeMessage: (feature: string) => getUpgradeMessage(subscription, feature),
+      getUpgradeMessage: (feature: string) =>
+        getUpgradeMessage(subscription, feature),
       isLoading: loading,
       subscription,
     };
@@ -54,45 +57,52 @@ export function useSubscriptionFeatures(): SubscriptionFeatures {
 
 // Specific feature hooks for common use cases
 export function useAnalyticsFeatures() {
-  const { hasFeature, shouldShowUpgrade, getUpgradeMessage } = useSubscriptionFeatures();
-  
+  const { hasFeature, shouldShowUpgrade, getUpgradeMessage } =
+    useSubscriptionFeatures();
+
   return {
     canViewBasic: hasFeature('analytics', 'basic'),
     canViewAdvanced: hasFeature('analytics', 'advanced'),
     canViewCustomReports: hasFeature('analytics', 'customReports'),
     shouldShowUpgrade: shouldShowUpgrade,
-    getUpgradeMessage: (feature: string) => getUpgradeMessage(`advanced analytics - ${feature}`),
+    getUpgradeMessage: (feature: string) =>
+      getUpgradeMessage(`advanced analytics - ${feature}`),
   };
 }
 
 export function useIntegrationFeatures() {
-  const { hasFeature, shouldShowUpgrade, getUpgradeMessage } = useSubscriptionFeatures();
-  
+  const { hasFeature, shouldShowUpgrade, getUpgradeMessage } =
+    useSubscriptionFeatures();
+
   return {
     canUseWebhook: hasFeature('integrations', 'webhook'),
     canUseZapier: hasFeature('integrations', 'zapier'),
     canUseCRM: hasFeature('integrations', 'crm'),
     shouldShowUpgrade: shouldShowUpgrade,
-    getUpgradeMessage: (integration: string) => getUpgradeMessage(`${integration} integration`),
+    getUpgradeMessage: (integration: string) =>
+      getUpgradeMessage(`${integration} integration`),
   };
 }
 
 export function useCustomizationFeatures() {
-  const { hasFeature, shouldShowUpgrade, getUpgradeMessage } = useSubscriptionFeatures();
-  
+  const { hasFeature, shouldShowUpgrade, getUpgradeMessage } =
+    useSubscriptionFeatures();
+
   return {
     canUseBasicGreeting: hasFeature('customization', 'basicGreeting'),
     canUseCustomScripts: hasFeature('customization', 'customScripts'),
     canUseMultiLanguage: hasFeature('customization', 'multiLanguage'),
     canUseAITraining: hasFeature('customization', 'aiTraining'),
     shouldShowUpgrade: shouldShowUpgrade,
-    getUpgradeMessage: (feature: string) => getUpgradeMessage(`custom ${feature}`),
+    getUpgradeMessage: (feature: string) =>
+      getUpgradeMessage(`custom ${feature}`),
   };
 }
 
 export function useSupportFeatures() {
-  const { hasFeature, shouldShowUpgrade, getUpgradeMessage } = useSubscriptionFeatures();
-  
+  const { hasFeature, shouldShowUpgrade, getUpgradeMessage } =
+    useSubscriptionFeatures();
+
   return {
     hasCommunitySupport: hasFeature('support', 'community'),
     hasEmailSupport: hasFeature('support', 'email'),
@@ -104,12 +114,14 @@ export function useSupportFeatures() {
 }
 
 export function useDashboardFeatures() {
-  const { subscription, shouldShowUpgrade, getUpgradeMessage } = useSubscriptionFeatures();
-  
+  const { subscription, shouldShowUpgrade, getUpgradeMessage } =
+    useSubscriptionFeatures();
+
   return {
     hasAnalyticsAccess: hasAnalyticsAccess(subscription),
     hasDashboardAccess: hasDashboardAccess(subscription),
     shouldShowUpgrade: shouldShowUpgrade,
-    getUpgradeMessage: (feature: string) => getUpgradeMessage(`dashboard ${feature}`),
+    getUpgradeMessage: (feature: string) =>
+      getUpgradeMessage(`dashboard ${feature}`),
   };
-} 
+}

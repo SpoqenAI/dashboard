@@ -54,6 +54,9 @@ class SimpleCache<T> {
 export const callCache = new SimpleCache();
 
 // Cleanup expired entries every 5 minutes
-setInterval(() => {
-  callCache.cleanup();
-}, 5 * 60 * 1000);
+setInterval(
+  () => {
+    callCache.cleanup();
+  },
+  5 * 60 * 1000
+);

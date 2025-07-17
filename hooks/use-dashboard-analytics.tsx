@@ -42,7 +42,7 @@ export function useDashboardAnalytics(
   const {
     days = 30,
     limit = 100,
-    refetchInterval = 0, // REMOVED: No more scheduled polling - pure event-driven
+    //refetchInterval = 0, // REMOVED: No more scheduled polling - pure event-driven
     enabled = true,
     dedupingInterval = 30000, // 30 seconds - balance between freshness and performance
   } = options;

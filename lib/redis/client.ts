@@ -51,7 +51,8 @@ export interface CallAnalysisData {
 
 // Redis key generators
 export const RedisKeys = {
-  callAnalysis: (userId: string, callId: string) => `call_analysis:${userId}:${callId}`,
+  callAnalysis: (userId: string, callId: string) =>
+    `call_analysis:${userId}:${callId}`,
   userCalls: (userId: string) => `user_calls:${userId}`,
   callMetadata: (callId: string) => `call_metadata:${callId}`,
 } as const;
@@ -61,17 +62,20 @@ export async function storeCallAnalysis(data: CallAnalysisData): Promise<void> {
   try {
     const redis = createRedisClient();
     const key = RedisKeys.callAnalysis(data.userId, data.callId);
-    
+
     // Store the analysis data
     await redis.setex(key, 60 * 60 * 24 * 90, JSON.stringify(data)); // 90 days TTL
-    
+
     // Add to user's call set with timestamp score for sorting
     const timestamp = new Date(data.analyzedAt).getTime();
-    await redis.zadd(RedisKeys.userCalls(data.userId), { score: timestamp, member: data.callId });
-    
-    logger.info('REDIS', 'Call analysis stored successfully', { 
-      callId: data.callId, 
-      userId: logger.maskUserId(data.userId) 
+    await redis.zadd(RedisKeys.userCalls(data.userId), {
+      score: timestamp,
+      member: data.callId,
+    });
+
+    logger.info('REDIS', 'Call analysis stored successfully', {
+      callId: data.callId,
+      userId: logger.maskUserId(data.userId),
     });
   } catch (error) {
     logger.error('REDIS', 'Failed to store call analysis', error as Error, {
@@ -83,16 +87,19 @@ export async function storeCallAnalysis(data: CallAnalysisData): Promise<void> {
 }
 
 // Retrieve call analysis data from Redis
-export async function getCallAnalysis(userId: string, callId: string): Promise<CallAnalysisData | null> {
+export async function getCallAnalysis(
+  userId: string,
+  callId: string
+): Promise<CallAnalysisData | null> {
   try {
     const redis = createRedisClient();
     const key = RedisKeys.callAnalysis(userId, callId);
-    
+
     const data = await redis.get(key);
     if (!data) {
       return null;
     }
-    
+
     // Upstash Redis client auto-parses JSON, so data might already be an object
     if (typeof data === 'string') {
       return JSON.parse(data) as CallAnalysisData;
@@ -110,21 +117,26 @@ export async function getCallAnalysis(userId: string, callId: string): Promise<C
 
 // Get user's recent call analysis data
 export async function getUserCallAnalyses(
-  userId: string, 
+  userId: string,
   limit = 100,
   offset = 0
 ): Promise<CallAnalysisData[]> {
   try {
     const redis = createRedisClient();
     const userCallsKey = RedisKeys.userCalls(userId);
-    
+
     // Get call IDs sorted by timestamp (newest first)
-    const callIds = await redis.zrange(userCallsKey, offset, offset + limit - 1, { rev: true });
-    
+    const callIds = await redis.zrange(
+      userCallsKey,
+      offset,
+      offset + limit - 1,
+      { rev: true }
+    );
+
     if (!callIds || callIds.length === 0) {
       return [];
     }
-    
+
     // Fetch analysis data for each call
     const analyses: CallAnalysisData[] = [];
     for (const callId of callIds as string[]) {
@@ -133,46 +145,62 @@ export async function getUserCallAnalyses(
         analyses.push(analysis);
       }
     }
-    
+
     return analyses;
   } catch (error) {
-    logger.error('REDIS', 'Failed to retrieve user call analyses', error as Error, {
-      userId: logger.maskUserId(userId),
-    });
+    logger.error(
+      'REDIS',
+      'Failed to retrieve user call analyses',
+      error as Error,
+      {
+        userId: logger.maskUserId(userId),
+      }
+    );
     return [];
   }
 }
 
 // Check if call analysis exists
-export async function hasCallAnalysis(userId: string, callId: string): Promise<boolean> {
+export async function hasCallAnalysis(
+  userId: string,
+  callId: string
+): Promise<boolean> {
   try {
     const redis = createRedisClient();
     const key = RedisKeys.callAnalysis(userId, callId);
-    
+
     const exists = await redis.exists(key);
     return exists === 1;
   } catch (error) {
-    logger.error('REDIS', 'Failed to check call analysis existence', error as Error, {
-      callId,
-      userId: logger.maskUserId(userId),
-    });
+    logger.error(
+      'REDIS',
+      'Failed to check call analysis existence',
+      error as Error,
+      {
+        callId,
+        userId: logger.maskUserId(userId),
+      }
+    );
     return false;
   }
 }
 
 // Delete call analysis (for cleanup)
-export async function deleteCallAnalysis(userId: string, callId: string): Promise<void> {
+export async function deleteCallAnalysis(
+  userId: string,
+  callId: string
+): Promise<void> {
   try {
     const redis = createRedisClient();
     const analysisKey = RedisKeys.callAnalysis(userId, callId);
     const userCallsKey = RedisKeys.userCalls(userId);
-    
+
     // Delete analysis data
     await redis.del(analysisKey);
-    
+
     // Remove from user's call set
     await redis.zrem(userCallsKey, callId);
-    
+
     logger.info('REDIS', 'Call analysis deleted successfully', {
       callId,
       userId: logger.maskUserId(userId),
@@ -184,4 +212,4 @@ export async function deleteCallAnalysis(userId: string, callId: string): Promis
     });
     throw error;
   }
-} 
+}

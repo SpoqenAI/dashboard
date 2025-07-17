@@ -180,8 +180,6 @@ function SettingsContent() {
   // Password strength score state
   const [newPasswordScore, setNewPasswordScore] = useState(0);
 
-
-
   // Load profile data when available
   useEffect(() => {
     if (dataLoaded) {
@@ -1487,38 +1485,56 @@ function SettingsContent() {
                     <div className="rounded-lg border bg-gradient-to-r from-green-50 to-emerald-50 p-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="text-lg font-semibold text-green-900">Professional Plan</h3>
+                          <h3 className="text-lg font-semibold text-green-900">
+                            Professional Plan
+                          </h3>
                           <p className="text-sm text-green-700">
-                            {subscription.status === 'trialing' ? 'Free Trial Active' : 'Active Subscription'}
+                            {subscription.status === 'trialing'
+                              ? 'Free Trial Active'
+                              : 'Active Subscription'}
                           </p>
                         </div>
                         <div className="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
-                          {subscription.status === 'trialing' ? 'Trial' : 'Active'}
+                          {subscription.status === 'trialing'
+                            ? 'Trial'
+                            : 'Active'}
                         </div>
                       </div>
-                      
+
                       <div className="mt-4 grid gap-4 sm:grid-cols-2">
                         <div>
-                          <p className="text-sm font-medium text-green-900">Billing Period</p>
+                          <p className="text-sm font-medium text-green-900">
+                            Billing Period
+                          </p>
                           <p className="text-sm text-green-700">
-                            Ends on {formatSubscriptionDate(subscription.current_period_end_at)}
+                            Ends on{' '}
+                            {formatSubscriptionDate(
+                              subscription.current_period_end_at
+                            )}
                           </p>
                         </div>
                         {subscription.quantity && (
                           <div>
-                            <p className="text-sm font-medium text-green-900">Quantity</p>
-                            <p className="text-sm text-green-700">{subscription.quantity} seats</p>
+                            <p className="text-sm font-medium text-green-900">
+                              Quantity
+                            </p>
+                            <p className="text-sm text-green-700">
+                              {subscription.quantity} seats
+                            </p>
                           </div>
                         )}
                       </div>
 
                       {subscription.cancel_at_period_end && (
-                        <div className="mt-4 rounded-md bg-amber-50 border border-amber-200 p-3">
-                          <p className="text-sm text-amber-800 font-medium">
+                        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3">
+                          <p className="text-sm font-medium text-amber-800">
                             ⚠️ Subscription will cancel at end of period
                           </p>
-                          <p className="text-xs text-amber-700 mt-1">
-                            You'll continue to have access until {formatSubscriptionDate(subscription.current_period_end_at)}
+                          <p className="mt-1 text-xs text-amber-700">
+                            You'll continue to have access until{' '}
+                            {formatSubscriptionDate(
+                              subscription.current_period_end_at
+                            )}
                           </p>
                         </div>
                       )}
@@ -1545,34 +1561,36 @@ function SettingsContent() {
 
                     {/* Current Plan Features */}
                     <div className="rounded-lg border p-4">
-                      <h4 className="font-medium mb-3">Current Plan Features</h4>
+                      <h4 className="mb-3 font-medium">
+                        Current Plan Features
+                      </h4>
                       <div className="grid gap-2 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
                           <span>Unlimited calls & minutes</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
                           <span>Advanced lead qualification</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
                           <span>CRM integrations (Webhook API)</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
                           <span>Real-time SMS & email alerts</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
                           <span>Custom call scripts & greetings</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
                           <span>Advanced analytics dashboard</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
                           <span>Priority support</span>
                         </div>
                       </div>
@@ -1583,37 +1601,44 @@ function SettingsContent() {
                   <div className="space-y-4">
                     <div className="rounded-lg border bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
                       <div className="text-center">
-                        <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                        <h3 className="mb-2 text-lg font-semibold text-blue-900">
                           Free Plan
                         </h3>
-                        <p className="text-sm text-blue-700 mb-4">
-                          You're currently on the free plan with limited features
+                        <p className="mb-4 text-sm text-blue-700">
+                          You're currently on the free plan with limited
+                          features
                         </p>
-                        
+
                         {/* Free Plan Features */}
                         <div className="mb-6 text-left">
-                          <h4 className="font-medium text-blue-900 mb-3">Current Plan Includes:</h4>
+                          <h4 className="mb-3 font-medium text-blue-900">
+                            Current Plan Includes:
+                          </h4>
                           <div className="grid gap-2 text-sm text-blue-700">
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                               <span>Up to 10 calls per month</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                               <span>Basic call summaries</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                               <span>Email notifications</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                               <span>Community support</span>
                             </div>
                           </div>
                         </div>
 
-                        <Button onClick={handleUpgradePlan} size="lg" className="w-full sm:w-auto">
+                        <Button
+                          onClick={handleUpgradePlan}
+                          size="lg"
+                          className="w-full sm:w-auto"
+                        >
                           Upgrade to Professional
                         </Button>
                       </div>
@@ -1621,44 +1646,51 @@ function SettingsContent() {
 
                     {/* Upgrade Benefits */}
                     <div className="rounded-lg border p-4">
-                      <h4 className="font-medium mb-3">Unlock with Professional Plan</h4>
+                      <h4 className="mb-3 font-medium">
+                        Unlock with Professional Plan
+                      </h4>
                       <div className="grid gap-2 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
                           <span>Unlimited calls & minutes</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
                           <span>Advanced lead qualification</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
                           <span>CRM integrations (Webhook API)</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
                           <span>Real-time SMS & email alerts</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
                           <span>Custom call scripts & greetings</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
                           <span>Advanced analytics dashboard</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
                           <span>Priority support</span>
                         </div>
                       </div>
-                      
+
                       <div className="mt-4 text-center">
-                        <p className="text-sm text-muted-foreground mb-3">
-                          Starting at <span className="font-semibold text-foreground">$39/month</span> (billed annually)
+                        <p className="mb-3 text-sm text-muted-foreground">
+                          Starting at{' '}
+                          <span className="font-semibold text-foreground">
+                            $39/month
+                          </span>{' '}
+                          (billed annually)
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          ✓ 14-day free trial • ✓ No credit card required • ✓ Cancel anytime
+                          ✓ 14-day free trial • ✓ No credit card required • ✓
+                          Cancel anytime
                         </p>
                       </div>
                     </div>

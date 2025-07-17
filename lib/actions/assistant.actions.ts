@@ -212,74 +212,83 @@ export async function syncVapiAssistant(
             : {}),
           // Custom analysis plan for better call analysis
           analysisPlan: {
-            summaryPrompt: "You are an expert call analyst. Summarize this call in 2-3 sentences, focusing on the caller's main purpose, key discussion points, and any outcomes or next steps.",
-            
-            structuredDataPrompt: "You are an expert data extractor for business calls. Extract structured data from this call transcript focusing on lead qualification, customer intent, and business opportunities.",
-            
+            summaryPrompt:
+              "You are an expert call analyst. Summarize this call in 2-3 sentences, focusing on the caller's main purpose, key discussion points, and any outcomes or next steps.",
+
+            structuredDataPrompt:
+              'You are an expert data extractor for business calls. Extract structured data from this call transcript focusing on lead qualification, customer intent, and business opportunities.',
+
             structuredDataSchema: {
-              type: "object",
+              type: 'object',
               properties: {
                 sentiment: {
-                  type: "string",
-                  enum: ["positive", "neutral", "negative"],
-                  description: "Overall sentiment of the caller"
+                  type: 'string',
+                  enum: ['positive', 'neutral', 'negative'],
+                  description: 'Overall sentiment of the caller',
                 },
                 leadQuality: {
-                  type: "string", 
-                  enum: ["hot", "warm", "cold"],
-                  description: "Quality of the lead based on interest and urgency"
+                  type: 'string',
+                  enum: ['hot', 'warm', 'cold'],
+                  description:
+                    'Quality of the lead based on interest and urgency',
                 },
                 callPurpose: {
-                  type: "string",
-                  description: "Main reason for the call"
+                  type: 'string',
+                  description: 'Main reason for the call',
                 },
                 keyPoints: {
-                  type: "array",
-                  items: { type: "string" },
-                  description: "Important points discussed during the call"
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Important points discussed during the call',
                 },
                 followUpItems: {
-                  type: "array", 
-                  items: { type: "string" },
-                  description: "Action items or follow-up tasks identified"
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Action items or follow-up tasks identified',
                 },
                 urgentConcerns: {
-                  type: "array",
-                  items: { type: "string" },
-                  description: "Any urgent issues or time-sensitive matters"
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Any urgent issues or time-sensitive matters',
                 },
                 appointmentRequested: {
-                  type: "boolean",
-                  description: "Whether the caller requested an appointment or meeting"
+                  type: 'boolean',
+                  description:
+                    'Whether the caller requested an appointment or meeting',
                 },
                 timeline: {
-                  type: "string",
-                  description: "Timeframe mentioned by caller (immediate, within a week, month, etc.)"
+                  type: 'string',
+                  description:
+                    'Timeframe mentioned by caller (immediate, within a week, month, etc.)',
                 },
                 contactPreference: {
-                  type: "string", 
-                  description: "Preferred method of contact (phone, email, text, etc.)"
+                  type: 'string',
+                  description:
+                    'Preferred method of contact (phone, email, text, etc.)',
                 },
                 businessInterest: {
-                  type: "string",
-                  description: "Specific business interest or service inquired about"
+                  type: 'string',
+                  description:
+                    'Specific business interest or service inquired about',
                 },
                 budget_mentioned: {
-                  type: "boolean",
-                  description: "Whether budget or pricing was discussed"
+                  type: 'boolean',
+                  description: 'Whether budget or pricing was discussed',
                 },
                 decision_maker: {
-                  type: "boolean", 
-                  description: "Whether the caller appears to be a decision maker"
-                }
+                  type: 'boolean',
+                  description:
+                    'Whether the caller appears to be a decision maker',
+                },
               },
-              required: ["sentiment", "leadQuality", "callPurpose"]
+              required: ['sentiment', 'leadQuality', 'callPurpose'],
             },
-            
-            successEvaluationPrompt: "Evaluate if this call was successful based on: 1) Did the caller get their questions answered? 2) Was relevant information exchanged? 3) Were next steps established? 4) Did the conversation flow naturally without technical issues?",
-            
-            successEvaluationRubric: "PassFail"
-          }
+
+            successEvaluationPrompt:
+              'Evaluate if this call was successful based on: 1) Did the caller get their questions answered? 2) Was relevant information exchanged? 3) Were next steps established? 4) Did the conversation flow naturally without technical issues?',
+
+            successEvaluationRubric: 'PassFail',
+          },
         }),
       }
     );

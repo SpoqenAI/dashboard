@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       send({ type: 'connected', timestamp: new Date().toISOString() });
 
       // Subscribe to call updates for this user
-      const unsubscribe = callEventEmitter.subscribe(userId, (event) => {
+      const unsubscribe = callEventEmitter.subscribe(userId, event => {
         send(event);
       });
 
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'Cache-Control',
     },

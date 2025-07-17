@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const cacheKey = `analytics:${searchParams.toString()}`;
     const cachedData = callCache.get(cacheKey);
-    
+
     if (cachedData) {
       logger.info('ANALYTICS', 'Returning cached analytics data', {
         requestedDays: days,
@@ -295,8 +295,11 @@ export async function GET(request: NextRequest) {
     logger.info('ANALYTICS', 'Using VAPI analysis data directly', {
       totalCalls: recentCalls.length,
       callsWithSentiment: recentCalls.filter(c => c.analysis?.sentiment).length,
-      callsWithLeadQuality: recentCalls.filter(c => c.analysis?.leadQuality).length,
-      callsWithStructuredData: recentCalls.filter(c => c.analysis?.structuredData).length,
+      callsWithLeadQuality: recentCalls.filter(c => c.analysis?.leadQuality)
+        .length,
+      callsWithStructuredData: recentCalls.filter(
+        c => c.analysis?.structuredData
+      ).length,
     });
 
     // Calculate metrics with real sentiment data (using properly mapped calls)
@@ -698,23 +701,53 @@ async function calculateMetrics(
 
   // Calculate sentiment and lead quality distributions directly from VAPI analysis data
   const sentimentDistribution = {
-    positive: calls.filter(call => call.analysis?.structuredData?.sentiment === 'positive' || call.analysis?.sentiment === 'positive').length,
-    neutral: calls.filter(call => call.analysis?.structuredData?.sentiment === 'neutral' || call.analysis?.sentiment === 'neutral').length,
-    negative: calls.filter(call => call.analysis?.structuredData?.sentiment === 'negative' || call.analysis?.sentiment === 'negative').length,
+    positive: calls.filter(
+      call =>
+        call.analysis?.structuredData?.sentiment === 'positive' ||
+        call.analysis?.sentiment === 'positive'
+    ).length,
+    neutral: calls.filter(
+      call =>
+        call.analysis?.structuredData?.sentiment === 'neutral' ||
+        call.analysis?.sentiment === 'neutral'
+    ).length,
+    negative: calls.filter(
+      call =>
+        call.analysis?.structuredData?.sentiment === 'negative' ||
+        call.analysis?.sentiment === 'negative'
+    ).length,
   };
 
   const leadQualityDistribution = {
-    hot: calls.filter(call => call.analysis?.structuredData?.leadQuality === 'hot' || call.analysis?.leadQuality === 'hot').length,
-    warm: calls.filter(call => call.analysis?.structuredData?.leadQuality === 'warm' || call.analysis?.leadQuality === 'warm').length,
-    cold: calls.filter(call => call.analysis?.structuredData?.leadQuality === 'cold' || call.analysis?.leadQuality === 'cold').length,
+    hot: calls.filter(
+      call =>
+        call.analysis?.structuredData?.leadQuality === 'hot' ||
+        call.analysis?.leadQuality === 'hot'
+    ).length,
+    warm: calls.filter(
+      call =>
+        call.analysis?.structuredData?.leadQuality === 'warm' ||
+        call.analysis?.leadQuality === 'warm'
+    ).length,
+    cold: calls.filter(
+      call =>
+        call.analysis?.structuredData?.leadQuality === 'cold' ||
+        call.analysis?.leadQuality === 'cold'
+    ).length,
   };
 
   logger.info('ANALYTICS', 'Using VAPI analysis data for distributions', {
     totalCalls: calls.length,
     sentimentDistribution,
     leadQualityDistribution,
-    callsWithSentimentAnalysis: calls.filter(call => call.analysis?.structuredData?.sentiment || call.analysis?.sentiment).length,
-    callsWithLeadQualityAnalysis: calls.filter(call => call.analysis?.structuredData?.leadQuality || call.analysis?.leadQuality).length,
+    callsWithSentimentAnalysis: calls.filter(
+      call =>
+        call.analysis?.structuredData?.sentiment || call.analysis?.sentiment
+    ).length,
+    callsWithLeadQualityAnalysis: calls.filter(
+      call =>
+        call.analysis?.structuredData?.leadQuality || call.analysis?.leadQuality
+    ).length,
   });
 
   return {
@@ -913,7 +946,7 @@ function mapVapiCallToFrontend(vapiCall: any) {
   // Extract all analysis data from VAPI's analysis
   const analysis = vapiCall.analysis || {};
   const structuredData = analysis.structuredData || {};
-  
+
   return {
     id: vapiCall.id,
     phoneNumber,
@@ -931,8 +964,16 @@ function mapVapiCallToFrontend(vapiCall: any) {
     // Complete VAPI analysis structure with all fields
     analysis: {
       summary: analysis.summary,
-      sentiment: (structuredData.sentiment || analysis.sentiment) as 'positive' | 'neutral' | 'negative' | undefined,
-      leadQuality: (structuredData.leadQuality || analysis.leadQuality) as 'hot' | 'warm' | 'cold' | undefined,
+      sentiment: (structuredData.sentiment || analysis.sentiment) as
+        | 'positive'
+        | 'neutral'
+        | 'negative'
+        | undefined,
+      leadQuality: (structuredData.leadQuality || analysis.leadQuality) as
+        | 'hot'
+        | 'warm'
+        | 'cold'
+        | undefined,
       successEvaluation: analysis.successEvaluation,
       structuredData: {
         sentiment: structuredData.sentiment,

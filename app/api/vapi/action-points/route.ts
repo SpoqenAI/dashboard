@@ -78,7 +78,9 @@ export async function POST(request: NextRequest) {
     });
 
     // Extract action points directly from VAPI's analysis (100% AI-generated)
-    const actionPoints = extractActionPointsFromVapiAnalysis(callData.analysis || {});
+    const actionPoints = extractActionPointsFromVapiAnalysis(
+      callData.analysis || {}
+    );
 
     logger.info('ACTION_POINTS', 'Successfully generated action points', {
       callId,
@@ -126,11 +128,10 @@ function extractActionPointsFromVapiAnalysis(vapiAnalysis: any): ActionPoints {
     structuredData.purpose ||
     (summary ? 'Call inquiry (see summary)' : 'General inquiry');
 
-  const sentiment =
-    structuredData.sentiment ||
-    'neutral'; // Only use VAPI's sentiment analysis
+  const sentiment = structuredData.sentiment || 'neutral'; // Only use VAPI's sentiment analysis
 
-  const keyPoints = structuredData.keyPoints ||
+  const keyPoints =
+    structuredData.keyPoints ||
     structuredData.key_points ||
     (summary ? [summary] : ['Standard inquiry']);
 
@@ -148,9 +149,7 @@ function extractActionPointsFromVapiAnalysis(vapiAnalysis: any): ActionPoints {
 
   // Use VAPI's lead quality directly, fallback to 'cold'
   const leadQuality =
-    structuredData.leadQuality ||
-    structuredData.lead_quality ||
-    'cold';
+    structuredData.leadQuality || structuredData.lead_quality || 'cold';
 
   // Extract additional analysis from VAPI's structured data only
   const appointmentRequested =
@@ -160,9 +159,7 @@ function extractActionPointsFromVapiAnalysis(vapiAnalysis: any): ActionPoints {
     false;
 
   const timeline =
-    structuredData.timeline ||
-    structuredData.timeframe ||
-    'Not specified';
+    structuredData.timeline || structuredData.timeframe || 'Not specified';
 
   const contactPreference =
     structuredData.contactPreference ||

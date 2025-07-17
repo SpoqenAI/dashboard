@@ -2,7 +2,16 @@
 
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Check, Star, Zap, Shield, Headphones, Globe, BarChart3 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  Star,
+  Zap,
+  Shield,
+  Headphones,
+  Globe,
+  BarChart3,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -138,7 +147,8 @@ function PricingContent() {
   const [isAnnual, setIsAnnual] = useState(true);
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
 
-  const hasActiveSubscription = subscription && isActiveSubscription(subscription);
+  const hasActiveSubscription =
+    subscription && isActiveSubscription(subscription);
 
   const handleSubscribe = async (tier: PricingTier) => {
     if (!user) {
@@ -162,7 +172,8 @@ function PricingContent() {
     if (!tier.priceId) {
       toast({
         title: 'Configuration Error',
-        description: 'Price ID not configured for this plan. Please contact support.',
+        description:
+          'Price ID not configured for this plan. Please contact support.',
         variant: 'destructive',
       });
       return;
@@ -198,7 +209,8 @@ function PricingContent() {
 
       toast({
         title: 'Checkout Failed',
-        description: 'Unable to start checkout. Please try again or contact support.',
+        description:
+          'Unable to start checkout. Please try again or contact support.',
         variant: 'destructive',
       });
     } finally {
@@ -225,7 +237,10 @@ function PricingContent() {
       <header className="border-b">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary">
+            <Link
+              href="/"
+              className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary"
+            >
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Home</span>
             </Link>
@@ -236,7 +251,10 @@ function PricingContent() {
                 </Button>
               ) : (
                 <>
-                  <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-primary">
+                  <Link
+                    href="/login"
+                    className="text-sm font-medium text-muted-foreground hover:text-primary"
+                  >
                     Login
                   </Link>
                   <Button asChild size="sm">
@@ -252,12 +270,13 @@ function PricingContent() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-16">
         {/* Hero Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold tracking-tight lg:text-5xl mb-6">
+        <div className="mb-16 text-center">
+          <h1 className="mb-6 text-4xl font-bold tracking-tight lg:text-5xl">
             Simple, Transparent Pricing
           </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-            Choose the perfect plan for your business. Start free, upgrade when you're ready.
+          <p className="mx-auto mb-8 max-w-3xl text-xl text-muted-foreground">
+            Choose the perfect plan for your business. Start free, upgrade when
+            you're ready.
           </p>
 
           {/* Billing Toggle */}
@@ -294,8 +313,8 @@ function PricingContent() {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid gap-8 lg:grid-cols-3 lg:gap-6 max-w-7xl mx-auto">
-          {pricingTiers.map((tier) => {
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-3 lg:gap-6">
+          {pricingTiers.map(tier => {
             const price = isAnnual ? tier.annualPrice : tier.monthlyPrice;
             const yearlyTotal = tier.annualPrice * 12;
             const monthlyTotal = tier.monthlyPrice * 12;
@@ -309,22 +328,22 @@ function PricingContent() {
                 className={cn(
                   'relative text-center transition-all duration-300 hover:scale-[1.02]',
                   tier.popular
-                    ? 'border-primary/50 bg-card/80 shadow-lg scale-105'
+                    ? 'scale-105 border-primary/50 bg-card/80 shadow-lg'
                     : 'border-border bg-card/50',
                   tierStatus === 'current' && 'ring-2 ring-primary/20'
                 )}
               >
                 {tier.popular && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1">
+                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary px-3 py-1 text-primary-foreground">
                     <Star className="mr-1 h-3 w-3" />
                     Most Popular
                   </Badge>
                 )}
 
                 {tierStatus === 'current' && (
-                  <Badge 
-                    variant="outline" 
-                    className="absolute -top-3 right-4 bg-background border-primary text-primary"
+                  <Badge
+                    variant="outline"
+                    className="absolute -top-3 right-4 border-primary bg-background text-primary"
                   >
                     Current Plan
                   </Badge>
@@ -342,18 +361,22 @@ function PricingContent() {
                   <div className="space-y-2">
                     <div className="flex items-baseline justify-center space-x-1">
                       {tier.id === 'business' ? (
-                        <span className="text-3xl font-bold">Contact Sales</span>
+                        <span className="text-3xl font-bold">
+                          Contact Sales
+                        </span>
                       ) : price === 0 ? (
                         <span className="text-4xl font-bold">Free</span>
                       ) : (
                         <>
                           <span className="text-4xl font-bold">${price}</span>
-                          <span className="text-sm text-muted-foreground">/month</span>
+                          <span className="text-sm text-muted-foreground">
+                            /month
+                          </span>
                         </>
                       )}
                     </div>
                     {isAnnual && savings > 0 && (
-                      <div className="text-sm text-green-600 font-medium">
+                      <div className="text-sm font-medium text-green-600">
                         Save ${savings}/year
                       </div>
                     )}
@@ -398,10 +421,7 @@ function PricingContent() {
                     onClick={() => handleSubscribe(tier)}
                     disabled={isLoading || tierStatus === 'current'}
                     variant={tier.popular ? 'default' : 'outline'}
-                    className={cn(
-                      'w-full',
-                      tier.popular && 'shadow-lg'
-                    )}
+                    className={cn('w-full', tier.popular && 'shadow-lg')}
                   >
                     {isLoading ? (
                       <>
@@ -425,12 +445,12 @@ function PricingContent() {
 
         {/* Features Comparison */}
         <div className="mt-20">
-          <h2 className="text-3xl font-bold text-center mb-12">
+          <h2 className="mb-12 text-center text-3xl font-bold">
             Why Choose Spoqen?
           </h2>
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-            <div className="text-center space-y-3">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+            <div className="space-y-3 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                 <Shield className="h-6 w-6 text-primary" />
               </div>
               <h3 className="font-semibold">Enterprise Security</h3>
@@ -438,8 +458,8 @@ function PricingContent() {
                 SOC2 compliant with end-to-end encryption
               </p>
             </div>
-            <div className="text-center space-y-3">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+            <div className="space-y-3 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                 <Zap className="h-6 w-6 text-primary" />
               </div>
               <h3 className="font-semibold">Lightning Fast</h3>
@@ -447,8 +467,8 @@ function PricingContent() {
                 Sub-second response times with 99.9% uptime
               </p>
             </div>
-            <div className="text-center space-y-3">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+            <div className="space-y-3 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                 <Globe className="h-6 w-6 text-primary" />
               </div>
               <h3 className="font-semibold">Global Coverage</h3>
@@ -456,8 +476,8 @@ function PricingContent() {
                 Available in 50+ countries with local numbers
               </p>
             </div>
-            <div className="text-center space-y-3">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+            <div className="space-y-3 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                 <BarChart3 className="h-6 w-6 text-primary" />
               </div>
               <h3 className="font-semibold">Advanced Analytics</h3>
@@ -470,34 +490,44 @@ function PricingContent() {
 
         {/* FAQ Section */}
         <div className="mt-20 text-center">
-          <h2 className="text-2xl font-bold mb-8">Frequently Asked Questions</h2>
-          <div className="max-w-3xl mx-auto space-y-6 text-left">
-            <div className="border rounded-lg p-6">
-              <h3 className="font-semibold mb-2">Can I change plans anytime?</h3>
+          <h2 className="mb-8 text-2xl font-bold">
+            Frequently Asked Questions
+          </h2>
+          <div className="mx-auto max-w-3xl space-y-6 text-left">
+            <div className="rounded-lg border p-6">
+              <h3 className="mb-2 font-semibold">
+                Can I change plans anytime?
+              </h3>
               <p className="text-sm text-muted-foreground">
-                Yes, you can upgrade or downgrade your plan at any time. Changes will be prorated and reflected in your next billing cycle.
+                Yes, you can upgrade or downgrade your plan at any time. Changes
+                will be prorated and reflected in your next billing cycle.
               </p>
             </div>
-            <div className="border rounded-lg p-6">
-              <h3 className="font-semibold mb-2">How does billing work?</h3>
+            <div className="rounded-lg border p-6">
+              <h3 className="mb-2 font-semibold">How does billing work?</h3>
               <p className="text-sm text-muted-foreground">
-                All plans are billed monthly or annually. You can upgrade, downgrade, or cancel anytime from your dashboard.
+                All plans are billed monthly or annually. You can upgrade,
+                downgrade, or cancel anytime from your dashboard.
               </p>
             </div>
-            <div className="border rounded-lg p-6">
-              <h3 className="font-semibold mb-2">What happens if I exceed my limits?</h3>
+            <div className="rounded-lg border p-6">
+              <h3 className="mb-2 font-semibold">
+                What happens if I exceed my limits?
+              </h3>
               <p className="text-sm text-muted-foreground">
-                On the Free plan, service will pause until the next billing cycle. Paid plans have no hard limits - we'll reach out about upgrading if usage is consistently high.
+                On the Free plan, service will pause until the next billing
+                cycle. Paid plans have no hard limits - we'll reach out about
+                upgrading if usage is consistently high.
               </p>
             </div>
           </div>
         </div>
 
         {/* Trust Indicators */}
-        <div className="mt-16 text-center space-y-6">
+        <div className="mt-16 space-y-6 text-center">
           <p className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">No setup fees</span> • 
-            <span className="mx-1">Start immediately</span> • 
+            <span className="font-medium text-foreground">No setup fees</span> •
+            <span className="mx-1">Start immediately</span> •
             <span className="mx-1">Cancel anytime</span>
           </p>
           <p className="text-xs text-muted-foreground">
@@ -511,8 +541,14 @@ function PricingContent() {
 
 export default function PricingPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          Loading...
+        </div>
+      }
+    >
       <PricingContent />
     </Suspense>
   );
-} 
+}

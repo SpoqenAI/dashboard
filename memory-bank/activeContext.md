@@ -9,7 +9,7 @@ This document tracks the current work focus, recent changes, next steps, and imp
 **NEW BUSINESS MODEL IMPLEMENTED**:
 
 1. **Free Tier - Setup Only**: No calls, no dashboard access, AI settings only
-2. **Starter Tier ($10/month)**: 30 calls/month with full dashboard access  
+2. **Starter Tier ($10/month)**: 30 calls/month with full dashboard access
 3. **Professional Tier ($30/month)**: Unlimited calls with advanced features
 4. **Business Tier**: Contact sales for enterprise features
 
@@ -22,6 +22,7 @@ This document tracks the current work focus, recent changes, next steps, and imp
 - **Documentation Updates**: Complete PADDLE_SETUP.md refresh with new pricing structure
 
 **ACCESS CONTROL MATRIX**:
+
 ```
 Feature               | Free | Starter | Pro | Business
 --------------------- |------|---------|-----|----------
@@ -40,18 +41,21 @@ Enterprise Features   |  ❌  |   ❌    | ❌  |    ✅
 **ENHANCEMENT IMPLEMENTED**: Refined free tier experience to use "preview mode" strategy for analytics tab, allowing free users to see what they're missing while maintaining upgrade incentives.
 
 **PREVIEW MODE FEATURES**:
+
 - **Analytics Tab Visible**: Free users can navigate to analytics tab
 - **Upgrade Overlay**: Prominent paywall overlay prevents data access
 - **No Data Loading**: Analytics API calls disabled for free users
 - **Clear Messaging**: "Preview Mode" language encourages exploration
 
 **PSYCHOLOGICAL STRATEGY**:
+
 - **Loss Aversion**: Users see what they're missing rather than complete restriction
 - **Value Demonstration**: Analytics interface showcases professional capabilities
 - **Upgrade Clarity**: Clear $10/month Starter tier positioning
 - **Reduced Friction**: Users can explore full dashboard structure
 
 **EXPECTED BUSINESS IMPACT**:
+
 - **Higher Conversion Rates**: Preview mode creates stronger upgrade desire than complete hiding
 - **Better User Experience**: Users understand full product value before purchasing
 - **Clear Value Ladder**: $10 entry point → $30 professional → Enterprise sales

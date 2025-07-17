@@ -97,11 +97,12 @@ export default function RecentCallsClient() {
   const [isCallDetailOpen, setIsCallDetailOpen] = useState(false);
 
   // Analytics hook for calls data - hybrid mode: initial load + events only
-  const { analytics, isLoading, error, refetch, hasCachedData } = useDashboardAnalytics({
-    days: 30,
-    refetchInterval: 0, // No polling - pure event-driven after initial load
-    enabled: !!user && !isCallDetailOpen && !isUserFree,
-  });
+  const { analytics, isLoading, error, refetch, hasCachedData } =
+    useDashboardAnalytics({
+      days: 30,
+      refetchInterval: 0, // No polling - pure event-driven after initial load
+      enabled: !!user && !isCallDetailOpen && !isUserFree,
+    });
 
   // Action points
   const { generateActionPoints } = useActionPoints();
@@ -109,29 +110,36 @@ export default function RecentCallsClient() {
   // Real-time call updates
   const { isConnected: isRealTimeConnected } = useCallUpdates({
     enabled: !!user && !isUserFree,
-    onNewCall: useCallback((event) => {
-      logger.info('RECENT_CALLS', 'New call detected via SSE', {
-        callId: event.callId,
-        timestamp: event.timestamp,
-        hasCallData: !!event.callData,
-        hasAnalysis: !!event.callData?.analysis,
-      });
+    onNewCall: useCallback(
+      event => {
+        logger.info('RECENT_CALLS', 'New call detected via SSE', {
+          callId: event.callId,
+          timestamp: event.timestamp,
+          hasCallData: !!event.callData,
+          hasAnalysis: !!event.callData?.analysis,
+        });
 
-      // Show enhanced toast notification with call details
-      const callerInfo = event.callData?.callerName || event.callData?.phoneNumber || 'Unknown caller';
-      const leadQuality = event.callData?.analysis?.structuredData?.leadQuality;
-      const sentiment = event.callData?.analysis?.structuredData?.sentiment;
-      
-      toast({
-        title: "New Call Received",
-        description: `${callerInfo}${leadQuality ? ` - ${leadQuality.toUpperCase()} lead` : ''}${sentiment ? ` - ${sentiment} sentiment` : ''}`,
-        duration: 8000,
-      });
+        // Show enhanced toast notification with call details
+        const callerInfo =
+          event.callData?.callerName ||
+          event.callData?.phoneNumber ||
+          'Unknown caller';
+        const leadQuality =
+          event.callData?.analysis?.structuredData?.leadQuality;
+        const sentiment = event.callData?.analysis?.structuredData?.sentiment;
 
-      // Immediately refetch analytics data since we have the call data from webhook
-      // No delay needed since VAPI has already processed and sent us the analysis
-      refetch();
-    }, [refetch]),
+        toast({
+          title: 'New Call Received',
+          description: `${callerInfo}${leadQuality ? ` - ${leadQuality.toUpperCase()} lead` : ''}${sentiment ? ` - ${sentiment} sentiment` : ''}`,
+          duration: 8000,
+        });
+
+        // Immediately refetch analytics data since we have the call data from webhook
+        // No delay needed since VAPI has already processed and sent us the analysis
+        refetch();
+      },
+      [refetch]
+    ),
   });
 
   // Debounced search

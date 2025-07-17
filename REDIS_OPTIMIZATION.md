@@ -10,18 +10,20 @@ This optimization replaces slow database writes to the `call_analysis` table wit
 ✅ **100% AI-Generated**: No manual pattern matching - relies purely on VAPI's analysis  
 ✅ **Automatic**: Analysis happens automatically via webhook when calls end  
 ✅ **Proper Hierarchy**: Uses VAPI's `structuredData` → `summary` → fallback pattern  
-✅ **No Fallbacks**: No manual processing needed - everything comes from VAPI AI  
+✅ **No Fallbacks**: No manual processing needed - everything comes from VAPI AI
 
 ## Architecture
 
 ### Redis Storage Schema
+
 ```
 call_analysis:{userId}:{callId}     - Individual call analysis data (90 day TTL)
-user_calls:{userId}                 - Sorted set of call IDs by timestamp  
+user_calls:{userId}                 - Sorted set of call IDs by timestamp
 call_metadata:{callId}              - Basic call metadata (if needed)
 ```
 
 ### Data Flow
+
 1. **Call Ends** → VAPI sends webhook to `/api/webhooks/vapi`
 2. **Webhook Processes** → Extracts RAW VAPI analysis data
 3. **Redis Storage** → Stores analysis with fast write performance
@@ -31,18 +33,21 @@ call_metadata:{callId}              - Basic call metadata (if needed)
 ## Implementation Details
 
 ### VAPI Webhook (`app/api/webhooks/vapi/route.ts`)
+
 - Receives `end-of-call-report` events from VAPI
 - Extracts **RAW VAPI analysis** without any processing
 - Stores complete `structuredData`, `summary`, and `successEvaluation`
 - Uses `storeCallAnalysis()` for Redis persistence
 
 ### Action Points API (`app/api/vapi/action-points/route.ts`)
+
 - Checks Redis cache first for instant retrieval
 - Falls back to VAPI API only if not cached
 - Uses `extractActionPointsFromVapiAnalysis()` with VAPI hierarchy
 - **NO manual pattern matching** - 100% VAPI AI analysis
 
 ### Analytics API (`app/api/vapi/analytics/route.ts`)
+
 - Replaced database queries with Redis lookups
 - Parallel retrieval for multiple calls
 - Aggregates sentiment and lead quality from VAPI's `structuredData`
@@ -50,6 +55,7 @@ call_metadata:{callId}              - Basic call metadata (if needed)
 ## Configuration
 
 ### Environment Variables
+
 ```bash
 # Upstash Redis for call analysis storage
 UPSTASH_REDIS_REST_URL=https://your-redis-endpoint.upstash.io
@@ -57,6 +63,7 @@ UPSTASH_REDIS_REST_TOKEN=your_redis_rest_token
 ```
 
 ### VAPI Assistant Configuration
+
 Ensure your VAPI assistant is configured with proper analysis:
 
 ```json
@@ -67,7 +74,10 @@ Ensure your VAPI assistant is configured with proper analysis:
     "structuredDataSchema": {
       "type": "object",
       "properties": {
-        "sentiment": { "type": "string", "enum": ["positive", "negative", "neutral"] },
+        "sentiment": {
+          "type": "string",
+          "enum": ["positive", "negative", "neutral"]
+        },
         "leadQuality": { "type": "string", "enum": ["hot", "warm", "cold"] },
         "callPurpose": { "type": "string" },
         "keyPoints": { "type": "array", "items": { "type": "string" } },
@@ -86,6 +96,7 @@ Ensure your VAPI assistant is configured with proper analysis:
 ## Redis Client Usage
 
 ### Storing Analysis
+
 ```typescript
 import { storeCallAnalysis } from '@/lib/redis/client';
 
@@ -105,6 +116,7 @@ await storeCallAnalysis(analysisData);
 ```
 
 ### Retrieving Analysis
+
 ```typescript
 import { getCallAnalysis } from '@/lib/redis/client';
 
@@ -116,6 +128,7 @@ if (analysis) {
 ```
 
 ### Bulk Retrieval
+
 ```typescript
 import { getUserCallAnalyses } from '@/lib/redis/client';
 
@@ -133,13 +146,16 @@ const userAnalyses = await getUserCallAnalyses(userId, 100);
 ## Monitoring
 
 ### Key Metrics to Monitor
+
 - Redis connection health
 - Cache hit rates for action points
 - Webhook processing times
 - Analysis data completeness
 
 ### Logging
+
 The system logs comprehensive metrics:
+
 - `REDIS` - All Redis operations
 - `VAPI_WEBHOOK` - Webhook processing
 - `ACTION_POINTS` - Action point generation
@@ -148,6 +164,7 @@ The system logs comprehensive metrics:
 ## Migration Notes
 
 ### What Changed
+
 1. **Removed**: Database `call_analysis` table dependencies
 2. **Added**: Redis-based storage with `@upstash/redis`
 3. **Updated**: All APIs to use Redis instead of database
@@ -155,6 +172,7 @@ The system logs comprehensive metrics:
 5. **Improved**: 100% reliance on VAPI's AI analysis
 
 ### Backward Compatibility
+
 - APIs maintain the same response format
 - Action points structure unchanged
 - Analytics endpoints work identically
@@ -163,11 +181,13 @@ The system logs comprehensive metrics:
 ## Troubleshooting
 
 ### Common Issues
+
 1. **Missing Analysis**: Ensure VAPI webhook is configured correctly
 2. **Redis Connection**: Verify `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
 3. **Empty Data**: Check VAPI assistant has proper `analysisPlan` configuration
 
 ### Debug Commands
+
 ```bash
 # Test Redis connection
 node -e "const {Redis} = require('@upstash/redis'); new Redis({url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN}).ping().then(console.log)"
@@ -178,4 +198,4 @@ node -e "const {Redis} = require('@upstash/redis'); new Redis({url: process.env.
 - [ ] Real-time analytics with Redis Streams
 - [ ] Advanced caching strategies
 - [ ] Analytics data compression
-- [ ] Redis clustering for scale 
+- [ ] Redis clustering for scale

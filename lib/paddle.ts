@@ -179,8 +179,18 @@ export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
     minutes: { perCall: 0, unlimited: false },
     analytics: { basic: false, advanced: false, customReports: false },
     integrations: { webhook: false, zapier: false, crm: false },
-    support: { community: true, email: false, priority: false, dedicated: false },
-    customization: { basicGreeting: true, customScripts: false, multiLanguage: false, aiTraining: false },
+    support: {
+      community: true,
+      email: false,
+      priority: false,
+      dedicated: false,
+    },
+    customization: {
+      basicGreeting: true,
+      customScripts: false,
+      multiLanguage: false,
+      aiTraining: false,
+    },
     dashboard: { analytics: false, fullAccess: true }, // Can see dashboard but no analytics data
   },
   starter: {
@@ -188,8 +198,18 @@ export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
     minutes: { perCall: 60, unlimited: false },
     analytics: { basic: true, advanced: false, customReports: false },
     integrations: { webhook: false, zapier: false, crm: false },
-    support: { community: true, email: true, priority: false, dedicated: false },
-    customization: { basicGreeting: true, customScripts: false, multiLanguage: false, aiTraining: false },
+    support: {
+      community: true,
+      email: true,
+      priority: false,
+      dedicated: false,
+    },
+    customization: {
+      basicGreeting: true,
+      customScripts: false,
+      multiLanguage: false,
+      aiTraining: false,
+    },
     dashboard: { analytics: true, fullAccess: true },
   },
   pro: {
@@ -198,7 +218,12 @@ export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
     analytics: { basic: true, advanced: true, customReports: false },
     integrations: { webhook: true, zapier: false, crm: true },
     support: { community: true, email: true, priority: true, dedicated: false },
-    customization: { basicGreeting: true, customScripts: true, multiLanguage: false, aiTraining: false },
+    customization: {
+      basicGreeting: true,
+      customScripts: true,
+      multiLanguage: false,
+      aiTraining: false,
+    },
     dashboard: { analytics: true, fullAccess: true },
   },
   business: {
@@ -207,7 +232,12 @@ export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
     analytics: { basic: true, advanced: true, customReports: true },
     integrations: { webhook: true, zapier: true, crm: true },
     support: { community: true, email: true, priority: true, dedicated: true },
-    customization: { basicGreeting: true, customScripts: true, multiLanguage: true, aiTraining: true },
+    customization: {
+      basicGreeting: true,
+      customScripts: true,
+      multiLanguage: true,
+      aiTraining: true,
+    },
     dashboard: { analytics: true, fullAccess: true },
   },
 };
@@ -238,11 +268,11 @@ export const getSubscriptionTier = (
   if (STARTER_PRICE_IDS.includes(subscription.price_id)) {
     return 'starter';
   }
-  
+
   if (PRO_PRICE_IDS.includes(subscription.price_id)) {
     return 'pro';
   }
-  
+
   if (BUSINESS_PRICE_IDS.includes(subscription.price_id)) {
     return 'business';
   }
@@ -278,7 +308,7 @@ export const canMakeCalls = (
   currentMonthlyUsage: number = 0
 ): boolean => {
   const limits = getFeatureLimits(subscription);
-  
+
   if (limits.calls.unlimited) {
     return true;
   }
@@ -291,7 +321,7 @@ export const getRemainingCalls = (
   currentMonthlyUsage: number = 0
 ): number | 'unlimited' => {
   const limits = getFeatureLimits(subscription);
-  
+
   if (limits.calls.unlimited) {
     return 'unlimited';
   }
@@ -302,7 +332,10 @@ export const getRemainingCalls = (
 export const shouldShowUpgradePrompt = (
   subscription: PaddleSubscription | null
 ): boolean => {
-  return isFreeUser(subscription) || (subscription ? !isActiveSubscription(subscription) : true);
+  return (
+    isFreeUser(subscription) ||
+    (subscription ? !isActiveSubscription(subscription) : true)
+  );
 };
 
 export const getUpgradeMessage = (
@@ -310,15 +343,15 @@ export const getUpgradeMessage = (
   feature: string
 ): string => {
   const tier = getSubscriptionTier(subscription);
-  
+
   if (tier === 'free') {
     return `Upgrade to Starter ($10/month) to unlock ${feature}`;
   }
-  
+
   if (tier === 'starter') {
     return `Upgrade to Pro ($30/month) to unlock ${feature}`;
   }
-  
+
   return `This feature requires a higher subscription tier`;
 };
 
@@ -336,4 +369,3 @@ export const hasAnalyticsAccess = (
   const limits = getFeatureLimits(subscription);
   return limits.dashboard.analytics;
 };
-
