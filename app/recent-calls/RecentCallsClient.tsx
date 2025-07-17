@@ -133,8 +133,8 @@ export default function RecentCallsClient() {
           description: `${callerInfo}${leadQuality ? ` - ${leadQuality.toUpperCase()} lead` : ''}${sentiment ? ` - ${sentiment} sentiment` : ''}`,
           duration: 8000,
           action: (
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => {
                 // Reset filters and go to first page to show the new call
@@ -152,7 +152,10 @@ export default function RecentCallsClient() {
 
         // Immediately refetch analytics data since we have the call data from webhook
         // No delay needed since VAPI has already processed and sent us the analysis
-        logger.info('RECENT_CALLS', 'Refreshing call data after new call detected');
+        logger.info(
+          'RECENT_CALLS',
+          'Refreshing call data after new call detected'
+        );
         refetch();
       },
       [refetch]
