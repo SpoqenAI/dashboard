@@ -18,10 +18,13 @@ The application now includes a complete, production-ready Paddle subscription bi
 Add these to your `.env.local` file:
 
 ```env
-# Paddle Sandbox Configuration (CURRENT)
-PADDLE_API_KEY=pdl_sdbx_apikey_01jy2hnhy7st3ev66x3t0g0722_WcfkWnYvjzC5eqp42kjNyV_Ap4
-PADDLE_WEBHOOK_SECRET=pdl_ntfset_01jxzwx284as14bz193q3qcyt6_EnEw2NdZoKRTnv/eCRAA+gftzzzwWM/d
-NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=test_e2ea3cd1a6ebc33b005a18552fa
+# Paddle Sandbox Configuration (EXAMPLE - REPLACE WITH YOUR VALUES)
+# ⚠️  SECURITY WARNING: These are placeholder values for documentation only
+# ⚠️  DO NOT use these in production - they are public sandbox credentials
+# ⚠️  Replace with your actual Paddle credentials and rotate them periodically
+PADDLE_API_KEY=pdl_sdbx_apikey_YOUR_SANDBOX_API_KEY_HERE
+PADDLE_WEBHOOK_SECRET=pdl_ntfset_YOUR_WEBHOOK_SECRET_HERE
+NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=test_YOUR_CLIENT_TOKEN_HERE
 NEXT_PUBLIC_PADDLE_ENVIRONMENT=sandbox
 
 # ⚠️ IMPORTANT: API Key Permissions Required
