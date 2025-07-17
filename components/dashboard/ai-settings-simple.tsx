@@ -415,7 +415,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   const handlePullSystemUpdates = useCallback(async () => {
     try {
       setIsUpdatingSystem(true);
-      
+
       const response = await fetch('/api/vapi/assistant/fix-analysis-plan', {
         method: 'POST',
         headers: {
@@ -429,7 +429,8 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
 
       toast({
         title: 'System updates applied!',
-        description: 'Your assistant now has the latest analysis capabilities and reasoning insights.',
+        description:
+          'Your assistant now has the latest analysis capabilities and reasoning insights.',
         duration: 5000,
       });
 
@@ -516,7 +517,13 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={assistantLoading || saving || isSavingLocal || isUpdatingSystem || !assistantData?.id}
+                  disabled={
+                    assistantLoading ||
+                    saving ||
+                    isSavingLocal ||
+                    isUpdatingSystem ||
+                    !assistantData?.id
+                  }
                 >
                   <Settings className="mr-2 h-4 w-4" />
                   Pull System Updates
@@ -528,16 +535,32 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                   <AlertDialogDescription asChild>
                     <div className="space-y-3">
                       <div>
-                        This will update your AI assistant with the latest Spoqen system improvements including:
+                        This will update your AI assistant with the latest
+                        Spoqen system improvements including:
                       </div>
-                      <ul className="list-disc pl-6 space-y-1 text-sm">
-                        <li><strong>Enhanced Call Analysis:</strong> Improved sentiment detection and lead quality scoring</li>
-                        <li><strong>Reasoning Insights:</strong> AI will now provide detailed explanations for its analysis decisions</li>
-                        <li><strong>Better Data Extraction:</strong> More accurate structured data from call transcripts</li>
-                        <li><strong>Optimized Prompts:</strong> Latest analysis prompts for better performance</li>
+                      <ul className="list-disc space-y-1 pl-6 text-sm">
+                        <li>
+                          <strong>Enhanced Call Analysis:</strong> Improved
+                          sentiment detection and lead quality scoring
+                        </li>
+                        <li>
+                          <strong>Reasoning Insights:</strong> AI will now
+                          provide detailed explanations for its analysis
+                          decisions
+                        </li>
+                        <li>
+                          <strong>Better Data Extraction:</strong> More accurate
+                          structured data from call transcripts
+                        </li>
+                        <li>
+                          <strong>Optimized Prompts:</strong> Latest analysis
+                          prompts for better performance
+                        </li>
                       </ul>
                       <div className="text-sm text-muted-foreground">
-                        <strong>Note:</strong> This will only update the analysis capabilities. Your assistant's personality, voice, and conversation settings will remain unchanged.
+                        <strong>Note:</strong> This will only update the
+                        analysis capabilities. Your assistant's personality,
+                        voice, and conversation settings will remain unchanged.
                       </div>
                     </div>
                   </AlertDialogDescription>
@@ -560,7 +583,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            
+
             <Button
               variant="outline"
               size="sm"
