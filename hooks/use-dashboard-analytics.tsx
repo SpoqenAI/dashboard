@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useMemo } from 'react';
 import useSWR from 'swr';
 import { DashboardAnalytics } from '@/lib/types';
 import { logger } from '@/lib/logger';
