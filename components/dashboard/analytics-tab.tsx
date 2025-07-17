@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ModernStatsCard } from '@/components/modern-stats-card';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { formatDuration } from './dashboard-helpers';
 // Pure analytics presentation component - no call data dependencies
 import {
@@ -266,6 +267,7 @@ export const AnalyticsTab = memo(
                     <CardTitle className="flex items-center gap-2">
                       <TrendingUp className="h-5 w-5" />
                       Sentiment Analysis
+                      <InfoTooltip content="This is calculated by Spoqen's state of the art AI configuration leveraging Claude Sonnet to analyze calls and generate sentiment insights based on conversation tone, language patterns, and customer responses." />
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -355,6 +357,7 @@ export const AnalyticsTab = memo(
                     <CardTitle className="flex items-center gap-2">
                       <TrendingUp className="h-5 w-5" />
                       Lead Quality
+                      <InfoTooltip content="This is calculated by Spoqen's state of the art AI configuration leveraging Claude Sonnet to analyze calls and generate lead quality scores based on customer engagement, interest level, buying signals, and conversion potential." />
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
