@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import {
   formatDateDetailed,
   formatDuration,
@@ -189,6 +190,15 @@ export const CallDetailModal = memo(
                       <div>
                         <h4 className="mb-2 flex items-center gap-2 font-semibold">
                           <Smile className="h-4 w-4" /> Call Sentiment
+                          <InfoTooltip 
+                            content={
+                              call.analysis?.structuredData?.sentimentAnalysisReasoning || 
+                              "This is calculated by Spoqen's state of the art AI configuration leveraging Claude Sonnet to analyze calls and generate sentiment insights based on conversation tone, language patterns, and customer responses."
+                            }
+                            maxWidth="max-w-sm sm:max-w-md"
+                            side="right"
+                            align="start"
+                          />
                         </h4>
                         <GetSentimentBadge
                           sentiment={
@@ -204,6 +214,15 @@ export const CallDetailModal = memo(
                       <div>
                         <h4 className="mb-2 flex items-center gap-2 font-semibold">
                           <TrendingUp className="h-4 w-4" /> Lead Quality
+                          <InfoTooltip 
+                            content={
+                              call.analysis?.structuredData?.leadQualityReasoning || 
+                              "This is calculated by Spoqen's state of the art AI configuration leveraging Claude Sonnet to analyze calls and generate lead quality scores based on customer engagement, interest level, buying signals, and conversion potential."
+                            }
+                            maxWidth="max-w-sm sm:max-w-md"
+                            side="right"
+                            align="start"
+                          />
                         </h4>
                         <GetLeadQualityBadge
                           leadQuality={
