@@ -32,6 +32,16 @@ serve(async req => {
   }
   const { assistantId, summary, phoneNumber } = (await req.json()) as Payload;
 
+  if (typeof assistantId !== 'string' || assistantId.trim().length === 0) {
+    return new Response('Invalid assistantId', { status: 400 });
+  }
+  if (typeof summary !== 'string' || summary.trim().length === 0) {
+    return new Response('Invalid summary', { status: 400 });
+  }
+  if (phoneNumber !== undefined && typeof phoneNumber !== 'string') {
+    return new Response('Invalid phoneNumber', { status: 400 });
+  }
+
   /* a. Resolve user & email preferences -------------------------------- */
   const { data: userSettings } = await supabase
     .from('user_settings')
