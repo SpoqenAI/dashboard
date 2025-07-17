@@ -159,7 +159,6 @@ async function processVapiWebhook(envelope: any) {
 }
 
 export async function POST(req: NextRequest) {
-  console.log(req.body);
 
   const requestBody = await req.text();
   const secret = process.env.VAPI_WEBHOOK_SECRET;
