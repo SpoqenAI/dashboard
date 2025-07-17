@@ -8,6 +8,17 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectTrigger,
   SelectValue,
@@ -69,6 +80,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   const [isSavingLocal, setIsSavingLocal] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdatingSystem, setIsUpdatingSystem] = useState(false);
 
   // Character limits (memoized constants)
   const MAX_FIRST_MESSAGE_LENGTH = useMemo(() => 1000, []);
@@ -399,6 +411,49 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     }
   }, [refreshAssistantData, DEFAULT_FIRST_MESSAGE, DEFAULT_SYSTEM_PROMPT]);
 
+  // Handle system updates
+  const handlePullSystemUpdates = useCallback(async () => {
+    try {
+      setIsUpdatingSystem(true);
+      
+      const response = await fetch('/api/vapi/assistant/fix-analysis-plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to pull system updates');
+      }
+
+      toast({
+        title: 'System updates applied!',
+        description: 'Your assistant now has the latest analysis capabilities and reasoning insights.',
+        duration: 5000,
+      });
+
+      // Refresh assistant data to reflect changes
+      await refreshAssistantData();
+    } catch (error) {
+      logger.error(
+        'AI_SETTINGS',
+        'Failed to pull system updates',
+        error as Error
+      );
+      toast({
+        title: 'Error applying system updates',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Failed to apply system updates. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUpdatingSystem(false);
+    }
+  }, [refreshAssistantData]);
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -455,17 +510,69 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
               </Badge>
             )}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={assistantLoading || saving || isSavingLocal}
-          >
-            <RefreshCw
-              className={`mr-2 h-4 w-4 ${assistantLoading ? 'animate-spin' : ''}`}
-            />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={assistantLoading || saving || isSavingLocal || isUpdatingSystem || !assistantData?.id}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Pull System Updates
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Pull System Updates</AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                    <div className="space-y-3">
+                      <div>
+                        This will update your AI assistant with the latest Spoqen system improvements including:
+                      </div>
+                      <ul className="list-disc pl-6 space-y-1 text-sm">
+                        <li><strong>Enhanced Call Analysis:</strong> Improved sentiment detection and lead quality scoring</li>
+                        <li><strong>Reasoning Insights:</strong> AI will now provide detailed explanations for its analysis decisions</li>
+                        <li><strong>Better Data Extraction:</strong> More accurate structured data from call transcripts</li>
+                        <li><strong>Optimized Prompts:</strong> Latest analysis prompts for better performance</li>
+                      </ul>
+                      <div className="text-sm text-muted-foreground">
+                        <strong>Note:</strong> This will only update the analysis capabilities. Your assistant's personality, voice, and conversation settings will remain unchanged.
+                      </div>
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handlePullSystemUpdates}
+                    disabled={isUpdatingSystem}
+                  >
+                    {isUpdatingSystem ? (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      'Apply Updates'
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={assistantLoading || saving || isSavingLocal}
+            >
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${assistantLoading ? 'animate-spin' : ''}`}
+              />
+              Refresh
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* First Message */}
