@@ -24,6 +24,12 @@ interface Payload {
 }
 
 serve(async req => {
+  if (req.method !== 'POST') {
+    return new Response('Method Not Allowed', {
+      status: 405,
+      headers: { Allow: 'POST' },
+    });
+  }
   const { assistantId, summary, phoneNumber } = (await req.json()) as Payload;
 
   /* a. Resolve user & email preferences -------------------------------- */
