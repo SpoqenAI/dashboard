@@ -5,6 +5,13 @@ import React from 'https://esm.sh/react@18';
 import { renderToStaticMarkup } from 'https://esm.sh/react-dom@18/server';
 import CallSummaryEmail from '../_shared/templates/call-summary.tsx';
 
+const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+for (const envVar of requiredEnvVars) {
+  if (!Deno.env.get(envVar)) {
+    throw new Error(`Missing required environment variable: ${envVar}`);
+  }
+}
+
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
