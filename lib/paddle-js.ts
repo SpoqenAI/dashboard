@@ -52,40 +52,11 @@ interface PaddleSDK {
   Checkout: PaddleCheckout;
 }
 
-let paddleInstance: PaddleSDK | null = null;
+let isInitialized = false;
 
 export async function getPaddleInstance(): Promise<PaddleSDK> {
-  if (paddleInstance) return paddleInstance;
-
   if (typeof window === 'undefined') {
     throw new Error('Paddle JS can only be initialized in the browser');
-  }
-
-  const PaddleMod = await import('@paddle/paddle-js');
-
-  // Type guard to check if the module has a default export
-  const hasDefaultExport = (mod: unknown): mod is { default: PaddleSDK } => {
-    return typeof mod === 'object' && mod !== null && 'default' in mod;
-  };
-
-  // Type guard to check if the module is a PaddleSDK
-  const isPaddleSDK = (mod: unknown): mod is PaddleSDK => {
-    return (
-      typeof mod === 'object' &&
-      mod !== null &&
-      typeof (mod as PaddleSDK).Checkout === 'object'
-    );
-  };
-
-  // Safely extract the Paddle SDK from the module
-  let Paddle: PaddleSDK;
-
-  if (hasDefaultExport(PaddleMod)) {
-    Paddle = PaddleMod.default;
-  } else if (isPaddleSDK(PaddleMod)) {
-    Paddle = PaddleMod;
-  } else {
-    throw new Error('Invalid Paddle SDK module structure');
   }
 
   // Get validated configuration
@@ -95,13 +66,28 @@ export async function getPaddleInstance(): Promise<PaddleSDK> {
     // Import and use the modern SDK v2.x initialization
     const { initializePaddle } = await import('@paddle/paddle-js');
 
-    // Initialize Paddle with the client token
-    await initializePaddle({ token: config.clientToken });
+    // Only initialize once
+    if (!isInitialized) {
+      // Initialize Paddle with the client token
+      await initializePaddle({
+        token: config.clientToken,
+        environment: config.environment as 'sandbox' | 'production',
+      });
 
-    // Set environment if needed (this might be handled differently in v2.x)
-    if (config.environment === 'sandbox') {
-      // Note: Environment setting might be handled differently in SDK v2.x
-      // Check Paddle documentation for the correct approach
+      isInitialized = true;
+
+      logger.info('PADDLE_JS', 'Paddle SDK initialized successfully', {
+        environment: config.environment,
+      });
+    }
+
+    // Return the global Paddle object (available on window after initialization)
+    if (typeof window !== 'undefined' && (window as any).Paddle) {
+      return (window as any).Paddle as PaddleSDK;
+    } else {
+      throw new Error(
+        'Paddle SDK not available on window object after initialization'
+      );
     }
   } catch (error) {
     logger.error(
@@ -114,9 +100,6 @@ export async function getPaddleInstance(): Promise<PaddleSDK> {
       `Failed to initialize Paddle SDK: ${error instanceof Error ? error.message : String(error)}`
     );
   }
-
-  paddleInstance = Paddle;
-  return Paddle;
 }
 
 export async function openPaddleCheckout(

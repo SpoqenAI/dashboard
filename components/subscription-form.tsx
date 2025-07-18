@@ -7,11 +7,7 @@ import { Button } from '@/components/ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { ArrowLeft, Check, CreditCard } from 'lucide-react';
 import Link from 'next/link';
-import {
-  initializePaddle,
-  Paddle,
-  CheckoutOpenOptions,
-} from '@paddle/paddle-js';
+import { getPaddleInstance } from '@/lib/paddle-js';
 import { logger } from '@/lib/logger';
 import useSWR from 'swr';
 
@@ -29,264 +25,89 @@ export function SubscriptionForm({
   userId,
 }: SubscriptionFormProps) {
   const router = useRouter();
-  // Add nuqs for payment parameter management
   const [, setPayment] = useQueryState('payment');
-
-  const [paddle, setPaddle] = useState<Paddle | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [initError, setInitError] = useState<string | null>(null);
   const [checkoutInProgress, setCheckoutInProgress] = useState(false);
-  const [pollingStopped, setPollingStopped] = useState(false);
-  const pollingAttemptsRef = useRef(0);
-  const MAX_POLLING_ATTEMPTS = 30; // 30 attempts * 4s = 2 minutes
+  const [initError, setInitError] = useState<string | null>(null);
 
-  // Helper function to navigate to dashboard with payment success
+  // Helper to navigate to success with payment parameter
   const navigateToSuccess = () => {
+    setPayment('success');
     router.push('/dashboard');
-    // Set payment parameter after navigation to ensure it's properly handled
-    setTimeout(() => setPayment('success'), 0);
   };
 
-  useEffect(() => {
-    const initPaddle = async () => {
-      // Safely validate environment variables (outside try block for error logging)
-      const envValue = process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
-      const environment: 'sandbox' | 'production' =
-        envValue === 'production' ? 'production' : 'sandbox';
-
-      const paddleToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
-
-      try {
-        setInitError(null); // Clear any previous errors
-
-        // Validate required environment variable
-        if (!paddleToken) {
-          throw new Error(
-            'Paddle client token is not configured. Please check your environment variables.'
-          );
-        }
-
-        const paddleInstance = await initializePaddle({
-          environment,
-          token: paddleToken,
-        });
-        if (paddleInstance) {
-          setPaddle(paddleInstance);
-        } else {
-          throw new Error('Paddle initialization returned undefined');
-        }
-      } catch (error) {
-        logger.error(
-          'SUBSCRIPTION_FORM',
-          'Failed to initialize Paddle payment system',
-          error instanceof Error ? error : new Error(String(error)),
-          {
-            environment,
-            hasToken: !!paddleToken,
-          }
-        );
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error occurred';
-        setInitError(`Payment system initialization failed: ${errorMessage}`);
-      }
-    };
-
-    initPaddle();
-  }, []);
-
-  // Set up window focus listener to check subscription after Paddle overlay closes
-  useEffect(() => {
-    if (!checkoutInProgress) return;
-
-    const checkSubscriptionStatus = async () => {
-      try {
-        const { createClient } = await import('@/lib/supabase/client');
-        const supabase = createClient();
-
-        const { data: subscription } = await supabase
-          .from('subscriptions')
-          .select('status')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        if (subscription) {
-          logger.info(
-            'SUBSCRIPTION_FORM',
-            'Subscription found after checkout',
-            {
-              userId: logger.maskUserId(userId),
-            }
-          );
-          setCheckoutInProgress(false);
-          navigateToSuccess();
-        }
-      } catch (error) {
-        logger.error(
-          'SUBSCRIPTION_FORM',
-          'Error checking subscription status',
-          error instanceof Error ? error : new Error(String(error)),
-          { userId: logger.maskUserId(userId) }
-        );
-      }
-    };
-
-    const handleFocus = () => {
-      if (checkoutInProgress) {
-        // Small delay to allow webhook processing
-        setTimeout(checkSubscriptionStatus, 1000);
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden && checkoutInProgress) {
-        // Small delay to allow webhook processing
-        setTimeout(checkSubscriptionStatus, 1000);
-      }
-    };
-
-    // Set a timeout to stop checking after 2 minutes
-    const timeout = setTimeout(() => {
-      if (checkoutInProgress) {
-        logger.warn('SUBSCRIPTION_FORM', 'Checkout progress timeout', {
-          userId: logger.maskUserId(userId),
-        });
-        setCheckoutInProgress(false);
-      }
-    }, 120000); // 2 minutes
-
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearTimeout(timeout);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [checkoutInProgress, userId, router]);
-
-  // Subscription status polling using SWR (auto-pauses in background tabs)
-  const { data: activeSubscription } = useSWR(
-    checkoutInProgress && !pollingStopped
-      ? ['subscription_status', userId]
-      : null,
-    async () => {
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('subscriptions')
-        .select('status')
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .maybeSingle();
-      return data;
-    },
+  // SWR to get pricing data
+  const { data: pricingData, error: pricingError } = useSWR(
+    '/api/paddle/pricing',
+    (url: string) => fetch(url).then(res => res.json()),
     {
-      refreshInterval: 4000,
-      refreshWhenHidden: false,
-      onSuccess: () => {
-        pollingAttemptsRef.current += 1;
-        if (pollingAttemptsRef.current >= MAX_POLLING_ATTEMPTS) {
-          setPollingStopped(true);
-        }
-      },
-      onError: () => {
-        pollingAttemptsRef.current += 1;
-        if (pollingAttemptsRef.current >= MAX_POLLING_ATTEMPTS) {
-          setPollingStopped(true);
-        }
-      },
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
     }
   );
 
-  // Reset polling state when checkout starts again
-  useEffect(() => {
-    if (checkoutInProgress) {
-      pollingAttemptsRef.current = 0;
-      setPollingStopped(false);
-    }
-  }, [checkoutInProgress]);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   useEffect(() => {
-    if (activeSubscription) {
-      logger.info('SUBSCRIPTION_FORM', 'Subscription detected via SWR', {
-        userId: logger.maskUserId(userId),
-      });
-      setCheckoutInProgress(false);
-      setPollingStopped(false);
-      pollingAttemptsRef.current = 0;
-      navigateToSuccess();
+    if (pricingData?.starterPrice) {
+      setSelectedPlan(pricingData.starterPrice);
     }
-  }, [activeSubscription, router, userId]);
+  }, [pricingData]);
 
-  const handleSubscribe = async () => {
-    if (!paddle) {
+  const handlePaddleCheckout = async () => {
+    if (!selectedPlan) {
       logger.error(
         'SUBSCRIPTION_FORM',
-        'Attempted to subscribe but Paddle is not initialized',
-        new Error('Paddle not initialized'),
-        { userId: logger.maskUserId(userId) }
+        'Cannot start Paddle checkout: No plan selected'
       );
       return;
     }
 
-    setIsLoading(true);
-
     try {
-      const priceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
+      logger.info('SUBSCRIPTION_FORM', 'Starting Paddle v2 checkout', {
+        priceId: selectedPlan,
+        userId,
+        userEmail,
+      });
 
-      if (!priceId) {
-        throw new Error('Paddle price ID not configured');
-      }
+      // Get Paddle instance
+      const Paddle = await getPaddleInstance();
 
-      const checkoutData: CheckoutOpenOptions = {
+      const checkoutOptions = {
         items: [
           {
-            priceId: priceId,
+            priceId: selectedPlan,
             quantity: 1,
           },
         ],
+        customer: {
+          email: userEmail,
+          name: userName,
+        },
         customData: {
           user_id: userId,
         },
-        settings: {
-          successUrl: `${window.location.origin}/api/paddle/success?user_id=${userId}`,
-          allowLogout: false,
+        successUrl: `${window.location.origin}/api/paddle/success?user_id=${userId}`,
+        events: {
+          close: () => {
+            setCheckoutInProgress(false);
+          },
+          complete: () => {
+            navigateToSuccess();
+            router.prefetch('/dashboard');
+          },
         },
-      } as CheckoutOpenOptions;
-
-      // Add events via type-cast to avoid TS complain (SDK lacks typings)
-      (checkoutData as any).events = {
-        close: () => {
-          setCheckoutInProgress(false);
-        },
-        complete: () => {
-          navigateToSuccess();
-          router.prefetch('/dashboard');
-        },
-      };
-
-      // Add customer info if available
-      if (userEmail) {
-        checkoutData.customer = {
-          email: userEmail,
-        };
-      }
+      } as any; // Type assertion to bypass strict typing during v2 transition
 
       setCheckoutInProgress(true);
-      paddle.Checkout.open(checkoutData);
+      Paddle.Checkout.open(checkoutOptions);
     } catch (error) {
       logger.error(
         'SUBSCRIPTION_FORM',
-        'Error opening Paddle checkout',
-        error instanceof Error ? error : new Error(String(error)),
-        {
-          userId: logger.maskUserId(userId),
-          priceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_ID,
-        }
+        'Failed to open Paddle v2 checkout',
+        error instanceof Error ? error : new Error(String(error))
       );
-    } finally {
-      setIsLoading(false);
+      setCheckoutInProgress(false);
+      setInitError('Payment system initialization failed. Please try again.');
     }
   };
 
@@ -348,7 +169,7 @@ export function SubscriptionForm({
         </div>
 
         {/* Error Message */}
-        {initError && (
+        {pricingError && (
           <div className="rounded-md border border-red-200 bg-red-50 p-4">
             <div className="flex items-start">
               <div className="flex-shrink-0">
@@ -368,7 +189,7 @@ export function SubscriptionForm({
                 <h4 className="text-sm font-medium text-red-800">
                   Subscription Unavailable
                 </h4>
-                <p className="mt-1 text-sm text-red-700">{initError}</p>
+                <p className="mt-1 text-sm text-red-700">{pricingError}</p>
                 <p className="mt-2 text-sm text-red-600">
                   Please refresh the page to try again. If the problem persists,
                   contact support.
@@ -378,7 +199,7 @@ export function SubscriptionForm({
           </div>
         )}
         {/* Polling Timeout Message */}
-        {pollingStopped && checkoutInProgress && (
+        {checkoutInProgress && (
           <div className="mt-4 rounded-md border border-yellow-200 bg-yellow-50 p-4">
             <div className="flex items-start">
               <div className="flex-shrink-0">
@@ -435,21 +256,17 @@ export function SubscriptionForm({
         </Button>
 
         <Button
-          onClick={handleSubscribe}
-          disabled={!paddle || isLoading || !!initError || checkoutInProgress}
+          onClick={handlePaddleCheckout}
+          disabled={!selectedPlan || checkoutInProgress}
           className={
-            initError
+            checkoutInProgress
               ? 'cursor-not-allowed bg-gray-400'
               : 'bg-green-600 hover:bg-green-700'
           }
-          title={initError ? 'Payment system unavailable' : undefined}
+          title={checkoutInProgress ? 'Payment processing' : undefined}
         >
-          {initError ? (
-            'Payment System Unavailable'
-          ) : checkoutInProgress ? (
+          {checkoutInProgress ? (
             'Processing Payment...'
-          ) : isLoading ? (
-            'Opening Checkout...'
           ) : (
             <>
               <CreditCard className="mr-2 h-4 w-4" />

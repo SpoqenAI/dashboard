@@ -6,10 +6,7 @@ import { useQueryState } from 'nuqs';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
-import {
-  getPaddleInstance,
-  PaddleInlineCheckoutOptions,
-} from '@/lib/paddle-js';
+import { getPaddleInstance } from '@/lib/paddle-js';
 
 // Helper function to validate Paddle price IDs
 function isValidPaddlePriceId(priceId: string): boolean {
@@ -21,68 +18,62 @@ function isValidPaddlePriceId(priceId: string): boolean {
   }
 
   // Get known price IDs from environment variables
-  const starterPriceIds =
-    process.env.NEXT_PUBLIC_PADDLE_STARTER_PRICE_IDS?.split(',') || [];
-  const proPriceIds =
-    process.env.NEXT_PUBLIC_PADDLE_PRO_PRICE_IDS?.split(',') || [];
-  const businessPriceIds =
-    process.env.NEXT_PUBLIC_PADDLE_BUSINESS_PRICE_IDS?.split(',') || [];
+  const starterPriceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
+  const proPriceId = process.env.NEXT_PUBLIC_PADDLE_PRO_PRICE_ID;
 
-  const allKnownPriceIds = [
-    ...starterPriceIds,
-    ...proPriceIds,
-    ...businessPriceIds,
-  ];
+  // Check if the priceId matches any of the known price IDs
+  const knownPriceIds = [starterPriceId, proPriceId].filter(Boolean);
 
-  // If we have known price IDs configured, validate against them
-  if (allKnownPriceIds.length > 0) {
-    return allKnownPriceIds.includes(priceId);
-  }
-
-  // If no known price IDs are configured, just validate the format
-  return true;
+  return knownPriceIds.includes(priceId);
 }
 
 export default function CheckoutPage() {
-  const { priceId } = useParams<{ priceId: string }>();
-  const { user } = useAuth();
+  const params = useParams();
   const router = useRouter();
-  // Add nuqs for payment parameter management
+  const { user } = useAuth();
   const [, setPayment] = useQueryState('payment');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string>('');
 
-  // Helper function to navigate to dashboard with payment processing
+  const priceId = params.priceId as string;
+
+  // Helper to navigate to processing with payment parameter
   const navigateToProcessing = () => {
+    setPayment('processing');
     router.push('/dashboard');
-    // Set payment parameter after navigation to ensure it's properly handled
-    setTimeout(() => setPayment('processing'), 0);
   };
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login');
-      return;
-    }
+    if (!user || !priceId) return;
 
-    if (!priceId || !isValidPaddlePriceId(priceId)) {
-      setError('Invalid price identifier');
+    if (!isValidPaddlePriceId(priceId)) {
+      setError('Invalid subscription plan selected.');
       return;
     }
 
     (async () => {
       try {
+        logger.info('CHECKOUT_PAGE', 'Opening Paddle v2 inline checkout', {
+          priceId,
+          userId: user.id,
+        });
+
         const Paddle = await getPaddleInstance();
 
-        // Render inline checkout frame
-        const checkoutOptions: PaddleInlineCheckoutOptions = {
-          items: [{ priceId, quantity: 1 }],
-          customer: { email: user.email || '' },
-          customData: { user_id: user.id },
-          settings: {
-            displayMode: 'inline',
-            frameTarget: '#checkout-container',
-            successUrl: `${window.location.origin}/api/paddle/success?user_id=${user.id}`,
+        const checkoutOptions = {
+          items: [
+            {
+              priceId: priceId,
+              quantity: 1,
+            },
+          ],
+          customer: {
+            email: user.email || '',
+            name: user.user_metadata?.name || '',
           },
+          customData: {
+            user_id: user.id,
+          },
+          successUrl: `${window.location.origin}/api/paddle/success?user_id=${user.id}`,
           events: {
             complete: () => {
               navigateToProcessing();
@@ -91,13 +82,13 @@ export default function CheckoutPage() {
               router.back();
             },
           },
-        };
+        } as any; // Type assertion for v2 transition
 
         Paddle.Checkout.open(checkoutOptions);
       } catch (err: any) {
         logger.error(
           'CHECKOUT_PAGE',
-          'Failed to open Paddle inline checkout',
+          'Failed to open Paddle v2 checkout',
           err instanceof Error ? err : new Error(String(err))
         );
         setError('Unable to start checkout. Please try again later.');
@@ -109,27 +100,42 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (error) {
       toast({
-        title: 'Checkout error',
+        title: 'Checkout Error',
         description: error,
         variant: 'destructive',
       });
     }
   }, [error]);
 
+  if (!user) {
+    return <div>Loading...</div>;
+  }
+
   if (error) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p className="text-destructive">{error}</p>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600">Checkout Error</h1>
+          <p className="mt-2 text-gray-600">{error}</p>
+          <button
+            onClick={() => router.back()}
+            className="mt-4 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          >
+            Go Back
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <h1 className="mb-6 text-center text-2xl font-semibold">
-        Secure Checkout
-      </h1>
-      <div id="checkout-container" className="mx-auto max-w-lg" />
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold">Setting up checkout...</h1>
+        <p className="mt-2 text-gray-600">
+          Please wait while we prepare your subscription.
+        </p>
+      </div>
     </div>
   );
 }

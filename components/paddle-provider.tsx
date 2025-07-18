@@ -38,13 +38,13 @@ export default function PaddleProvider({
         await getPaddleInstance();
 
         setIsInitialized(true);
-        logger.info('PADDLE_PROVIDER', 'Paddle initialized successfully');
+        logger.info('PADDLE_PROVIDER', 'Paddle v2 initialized successfully');
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
 
         logger.warn(
           'PADDLE_PROVIDER',
-          'Failed to initialize Paddle during provider setup',
+          'Failed to initialize Paddle v2 during provider setup',
           error
         );
 
