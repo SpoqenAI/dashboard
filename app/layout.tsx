@@ -9,6 +9,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import PaddleProvider from '@/components/paddle-provider';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
 export const metadata: Metadata = {
   title: 'Spoqen – AI Receptionist & Personal AI Agent',
@@ -95,9 +96,11 @@ export default function RootLayout({
         <PaddleProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <AuthProvider>
-              <GlobalHeader />
-              {children}
-              <Toaster />
+              <NuqsAdapter>
+                <GlobalHeader />
+                {children}
+                <Toaster />
+              </NuqsAdapter>
             </AuthProvider>
             {/* PERF: mark animations done after initial scroll to stop heavy keyframes */}
             <Script id="motion-done-script" strategy="afterInteractive">
