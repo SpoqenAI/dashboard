@@ -30,7 +30,7 @@ function createPaddleClient() {
 export async function createCheckoutSession(priceId: string): Promise<{
   success: boolean;
   checkoutUrl?: string; // Fallback redirect URL
-  checkoutId?: string;  // Transaction / Checkout ID for Paddle JS overlay
+  checkoutId?: string; // Transaction / Checkout ID for Paddle JS overlay
   environment?: 'sandbox' | 'production';
   error?: string;
 }> {
@@ -94,8 +94,8 @@ export async function createCheckoutSession(priceId: string): Promise<{
       process.env.PADDLE_ENVIRONMENT ||
       process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
     const isSandbox =
-      (envVar?.toLowerCase() === 'sandbox') ||
-      (process.env.PADDLE_API_KEY?.toLowerCase().startsWith('sandbox'));
+      envVar?.toLowerCase() === 'sandbox' ||
+      process.env.PADDLE_API_KEY?.toLowerCase().startsWith('sandbox');
 
     // Create Paddle client
     const paddle = createPaddleClient();

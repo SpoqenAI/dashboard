@@ -226,7 +226,10 @@ export async function POST(request: NextRequest) {
     if (!skipSig) {
       if (!signatureHeader || !webhookSecret) {
         logger.warn('PADDLE_WEBHOOK', 'Missing signature or secret');
-        return NextResponse.json({ error: 'Signature missing' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'Signature missing' },
+          { status: 400 }
+        );
       }
 
       // According to Paddle docs: HMAC-SHA256 of body using secret, base64 encoded
@@ -242,7 +245,10 @@ export async function POST(request: NextRequest) {
 
       if (!valid) {
         logger.warn('PADDLE_WEBHOOK', 'Signature verification failed');
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'Invalid signature' },
+          { status: 400 }
+        );
       }
     } else {
       logger.info('PADDLE_WEBHOOK', 'Skipping signature verification in dev');

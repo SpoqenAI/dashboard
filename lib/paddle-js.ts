@@ -66,4 +66,4 @@ export async function openPaddleCheckout(
       reject(err);
     }
   });
-} 
+}
