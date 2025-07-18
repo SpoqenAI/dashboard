@@ -38,8 +38,7 @@ const priceIds = {
       process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID ||
       process.env.NEXT_PUBLIC_PADDLE_PRICE_ID || // legacy env var fallback
       '',
-    annual:
-      process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID || '',
+    annual: process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID || '',
   },
   pro: {
     monthly: process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID || '',
