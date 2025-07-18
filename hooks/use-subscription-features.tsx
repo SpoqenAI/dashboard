@@ -14,6 +14,7 @@ import {
   hasAnalyticsAccess,
   type SubscriptionTier,
   type FeatureLimits,
+  type PaddleSubscription,
 } from '@/lib/paddle';
 
 export interface SubscriptionFeatures {
@@ -25,7 +26,7 @@ export interface SubscriptionFeatures {
   shouldShowUpgrade: boolean;
   getUpgradeMessage: (feature: string) => string;
   isLoading: boolean;
-  subscription: any;
+  subscription: PaddleSubscription | null;
 }
 
 export function useSubscriptionFeatures(): SubscriptionFeatures {

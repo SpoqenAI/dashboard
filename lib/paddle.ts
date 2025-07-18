@@ -251,18 +251,17 @@ export const getSubscriptionTier = (
   }
 
   // For paid subscriptions, determine tier based on price_id
-  // Configure these with your actual Paddle price IDs in your Paddle dashboard
-  const STARTER_PRICE_IDS = [
-    'pri_01jx94f6qywr25x1cqnh0td7fy', // Your current sandbox price ID - update for production
-    // Add starter annual price ID here when created
+  // Configure these with your actual Paddle price IDs via environment variables
+  const STARTER_PRICE_IDS = process.env.PADDLE_STARTER_PRICE_IDS?.split(',') || [
+    'pri_01jx94f6qywr25x1cqnh0td7fy', // Fallback sandbox price ID
   ];
-  const PRO_PRICE_IDS: string[] = [
-    // Add your Pro monthly/annual price IDs here when created
-    // 'pri_pro_monthly_id', 'pri_pro_annual_id'
+  const PRO_PRICE_IDS = process.env.PADDLE_PRO_PRICE_IDS?.split(',') || [
+    'pri_pro_monthly_placeholder', // Add your actual Pro price IDs to environment
+    'pri_pro_annual_placeholder'
   ];
-  const BUSINESS_PRICE_IDS: string[] = [
-    // Add your Business monthly/annual price IDs here when created
-    // 'pri_business_monthly_id', 'pri_business_annual_id'
+  const BUSINESS_PRICE_IDS = process.env.PADDLE_BUSINESS_PRICE_IDS?.split(',') || [
+    'pri_business_monthly_placeholder', // Add your actual Business price IDs to environment
+    'pri_business_annual_placeholder'
   ];
 
   if (STARTER_PRICE_IDS.includes(subscription.price_id)) {

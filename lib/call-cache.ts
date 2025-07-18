@@ -9,6 +9,8 @@ interface CacheEntry<T> {
 
 class SimpleCache<T> {
   private cache = new Map<string, CacheEntry<T>>();
+  private lastCleanup = Date.now();
+  private readonly CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
   set(key: string, data: T, ttlMs: number = 60000): void {
     this.cache.set(key, {
@@ -19,6 +21,9 @@ class SimpleCache<T> {
   }
 
   get(key: string): T | null {
+    // Cleanup on access if needed
+    this.maybeCleanup();
+    
     const entry = this.cache.get(key);
     if (!entry) return null;
 
@@ -48,15 +53,16 @@ class SimpleCache<T> {
       }
     }
   }
+
+  // Lazy cleanup - only runs when cache is accessed
+  private maybeCleanup(): void {
+    const now = Date.now();
+    if (now - this.lastCleanup > this.CLEANUP_INTERVAL) {
+      this.cleanup();
+      this.lastCleanup = now;
+    }
+  }
 }
 
 // Global cache instance for call data
 export const callCache = new SimpleCache();
-
-// Cleanup expired entries every 5 minutes
-setInterval(
-  () => {
-    callCache.cleanup();
-  },
-  5 * 60 * 1000
-);

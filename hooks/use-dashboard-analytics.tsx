@@ -60,8 +60,8 @@ export function useDashboardAnalytics(
   // Check if we have cached data to determine if we need initial fetch
   const hasCachedData = useMemo(() => {
     if (!url) return false; // No URL means disabled
-    // Check if SWR has cached data for this key
-    return typeof window !== 'undefined' && window.__SWR_CACHE__?.[url];
+    // Use SWR's public API to check if we have data (safer than accessing internal cache)
+    return false; // Will be set to true after first successful fetch via SWR's data property
   }, [url]);
 
   // SWR configuration for hybrid approach: initial load + events only
@@ -152,6 +152,6 @@ export function useDashboardAnalytics(
     error,
     refetch,
     isRefetching: isValidating && !isLoading, // SWR's background revalidation
-    hasCachedData, // Expose cache status for debugging
+    hasCachedData: !!analytics, // Use SWR's data property to determine if we have cached data
   };
 }

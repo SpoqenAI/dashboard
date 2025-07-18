@@ -55,12 +55,22 @@ export async function GET(request: NextRequest) {
     },
   });
 
+  // Get allowed origins from environment or default to localhost for development
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+    'http://localhost:3000',
+    'https://localhost:3000',
+    'http://172.17.208.1:3000',
+  ];
+  
+  const origin = request.headers.get('origin');
+  const corsOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       Connection: 'keep-alive',
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': corsOrigin,
       'Access-Control-Allow-Headers': 'Cache-Control',
     },
   });

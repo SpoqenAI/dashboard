@@ -112,7 +112,6 @@ export async function GET(request: NextRequest) {
 
   try {
     // Check cache first for recent requests (reduces VAPI API load)
-    const { searchParams } = new URL(request.url);
     const cacheKey = `analytics:${searchParams.toString()}`;
     const cachedData = callCache.get(cacheKey);
 
