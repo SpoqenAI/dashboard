@@ -78,14 +78,8 @@ export function PricingGrid({ pricingTiers }: PricingGridProps) {
         priceId: selectedPriceId,
       });
 
-      const result = await createCheckoutSession(selectedPriceId);
-
-      if (result.success && result.checkoutUrl) {
-        // Redirect to hosted Paddle checkout page (no overlay)
-        window.location.href = result.checkoutUrl;
-      } else {
-        throw new Error(result.error || 'Failed to create checkout session');
-      }
+      // Redirect to our inline checkout page
+      window.location.href = `/checkout/${selectedPriceId}`;
     } catch (error) {
       const currentRetries = retryCount[tier.id] || 0;
 
