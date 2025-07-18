@@ -66,8 +66,8 @@ export const LockedOverlay: React.FC<LockedOverlayProps> = ({
           premium AI insights.
         </p>
         <Button size="lg" className="w-full" asChild>
-          <Link href={upgradeHref} passHref legacyBehavior>
-            <a ref={buttonRef}>Upgrade&nbsp;Now</a>
+          <Link href={upgradeHref} ref={buttonRef}>
+            Upgrade&nbsp;Now
           </Link>
         </Button>
       </div>

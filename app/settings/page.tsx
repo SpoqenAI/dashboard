@@ -1479,7 +1479,7 @@ function SettingsContent() {
                       </p>
                     </div>
                   </div>
-                ) : subscription && isActiveSubscription(subscription) ? (
+                ) : subscription && isActiveSubscription(subscription) && subscription.tier_type !== 'free' ? (
                   // Active subscription
                   <div className="space-y-4">
                     <div className="rounded-lg border bg-gradient-to-r from-green-50 to-emerald-50 p-6">
