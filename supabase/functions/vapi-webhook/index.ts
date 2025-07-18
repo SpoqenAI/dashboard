@@ -33,9 +33,23 @@ serve(async req => {
 
   /* 3. Invoke mail-sending function ------------------------------------ */
   const summary = msg.summary ?? msg.analysis?.summary ?? '';
-  await supabase.functions.invoke('send-email-summary', {
-    body: { assistantId, summary, phoneNumber: msg.customer?.number },
-  });
+  try {
+    const { error: invokeErr } = await supabase.functions.invoke(
+      'send-email-summary',
+      {
+        body: { assistantId, summary, phoneNumber: msg.customer?.number },
+      }
+    );
+
+    if (invokeErr) {
+      console.error('send-email-summary invocation failed', invokeErr);
+      // Decide whether to surface error or still return 200 to acknowledge webhook
+      return new Response('Email function failed', { status: 502 });
+    }
+  } catch (err) {
+    console.error('Error invoking send-email-summary', err);
+    return new Response('Email function error', { status: 500 });
+  }
 
   return new Response(null, { status: 200 });
 });
