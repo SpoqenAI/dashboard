@@ -49,6 +49,7 @@ import {
   isActiveSubscription,
   formatSubscriptionDate,
 } from '@/lib/paddle';
+import { getSubscriptionTier } from '@/lib/paddle';
 import dynamic from 'next/dynamic';
 const PasswordStrengthBar = dynamic(
   () => import('react-password-strength-bar'),
@@ -59,6 +60,76 @@ import { logger } from '@/lib/logger';
 // Initialize content filter outside component to prevent recreation on every render
 const contentFilter = new Filter();
 contentFilter.addWords('scam', 'fraud', 'fake', 'illegal', 'drugs');
+
+// Import pricing tiers from pricing page for consistency
+const pricingTiers = [
+  {
+    id: 'free',
+    name: 'Free',
+    monthlyPrice: 0,
+    annualPrice: 0,
+    priceIdMonthly: '',
+    priceIdAnnual: '',
+  },
+  {
+    id: 'starter',
+    name: 'Starter',
+    monthlyPrice: 10,
+    annualPrice: 8,
+    priceIdMonthly: process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID || '',
+    priceIdAnnual: process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID || '',
+  },
+  {
+    id: 'pro',
+    name: 'Professional',
+    monthlyPrice: 30,
+    annualPrice: 24,
+    priceIdMonthly: process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID || '',
+    priceIdAnnual: process.env.NEXT_PUBLIC_PADDLE_PRO_ANNUAL_PRICE_ID || '',
+  },
+  {
+    id: 'business',
+    name: 'Business',
+    monthlyPrice: 0,
+    annualPrice: 0,
+    priceIdMonthly: '',
+    priceIdAnnual: '',
+  },
+];
+
+// Helper function to get the correct price and billing period for a subscription
+const getSubscriptionPriceInfo = (subscription: any) => {
+  if (!subscription || subscription.tier_type === 'free') {
+    return { price: 0, billingPeriod: 'free' };
+  }
+
+  // Find the tier that matches the subscription's price_id
+  const tier = pricingTiers.find(t => 
+    t.priceIdMonthly === subscription.price_id || 
+    t.priceIdAnnual === subscription.price_id
+  );
+
+  if (!tier) {
+    // Fallback to tier detection from paddle.ts
+    const detectedTier = getSubscriptionTier(subscription);
+    const fallbackTier = pricingTiers.find(t => t.id === detectedTier);
+    if (fallbackTier) {
+      return { 
+        price: fallbackTier.monthlyPrice, 
+        billingPeriod: 'monthly' 
+      };
+    }
+    return { price: 30, billingPeriod: 'monthly' }; // Default to Pro monthly
+  }
+
+  // Determine if it's monthly or annual based on price_id
+  const isAnnual = tier.priceIdAnnual === subscription.price_id;
+  
+  return {
+    price: isAnnual ? tier.annualPrice : tier.monthlyPrice,
+    billingPeriod: isAnnual ? 'annual' : 'monthly'
+  };
+};
 
 function SettingsContent() {
   const searchParams = useSearchParams();
@@ -1684,11 +1755,25 @@ function SettingsContent() {
 
                       <div className="mt-4 text-center">
                         <p className="mb-3 text-sm text-muted-foreground">
-                          Starting at{' '}
-                          <span className="font-semibold text-foreground">
-                            $39/month
-                          </span>{' '}
-                          (billed annually)
+                          {(() => {
+                            const priceInfo = getSubscriptionPriceInfo(subscription);
+                            if (priceInfo.billingPeriod === 'free') {
+                              return (
+                                <span className="font-semibold text-foreground">
+                                  Free
+                                </span>
+                              );
+                            }
+                            return (
+                              <>
+                                Starting at{' '}
+                                <span className="font-semibold text-foreground">
+                                  ${priceInfo.price}/{priceInfo.billingPeriod === 'annual' ? 'month' : 'month'}
+                                </span>{' '}
+                                {priceInfo.billingPeriod === 'annual' ? '(billed annually)' : '(billed monthly)'}
+                              </>
+                            );
+                          })()}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           ✓ 14-day free trial • ✓ No credit card required • ✓

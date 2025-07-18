@@ -114,7 +114,7 @@ const pricingTiers: PricingTier[] = [
     id: 'pro',
     name: 'Professional',
     description: 'For growing businesses',
-    monthlyPrice: 30,
+    monthlyPrice: 30, // Confirmed correct price
     annualPrice: 24,
     features: [
       'Unlimited calls & minutes',
