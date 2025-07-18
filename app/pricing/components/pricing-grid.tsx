@@ -80,32 +80,9 @@ export function PricingGrid({ pricingTiers }: PricingGridProps) {
 
       const result = await createCheckoutSession(selectedPriceId);
 
-      if (result.success) {
-        // Prefer Paddle JS overlay if checkoutId is available
-        if (result.checkoutId) {
-          try {
-            const { openPaddleCheckout } = await import('@/lib/paddle-js');
-            await openPaddleCheckout(
-              result.checkoutId,
-              result.environment || 'production',
-              () => {
-                window.location.href = '/dashboard?payment=processing';
-              }
-            );
-          } catch (overlayErr) {
-            // Fallback to redirect URL if overlay fails
-            if (result.checkoutUrl) {
-              window.location.href = result.checkoutUrl;
-              return;
-            }
-            throw overlayErr;
-          }
-        } else if (result.checkoutUrl) {
-          // Fallback redirect
-          window.location.href = result.checkoutUrl;
-        } else {
-          throw new Error('No checkout information returned');
-        }
+      if (result.success && result.checkoutUrl) {
+        // Redirect to hosted Paddle checkout page (no overlay)
+        window.location.href = result.checkoutUrl;
       } else {
         throw new Error(result.error || 'Failed to create checkout session');
       }
