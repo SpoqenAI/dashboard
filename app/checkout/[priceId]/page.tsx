@@ -17,14 +17,28 @@ function isValidPaddlePriceId(priceId: string): boolean {
     return false;
   }
 
-  // Get known price IDs from environment variables
-  const starterPriceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
-  const proPriceId = process.env.NEXT_PUBLIC_PADDLE_PRO_PRICE_ID;
+  // Get known price IDs from environment variables (arrays)
+  const starterPriceIds =
+    process.env.NEXT_PUBLIC_PADDLE_STARTER_PRICE_IDS?.split(',') || [];
+  const proPriceIds =
+    process.env.NEXT_PUBLIC_PADDLE_PRO_PRICE_IDS?.split(',') || [];
+  const businessPriceIds =
+    process.env.NEXT_PUBLIC_PADDLE_BUSINESS_PRICE_IDS?.split(',') || [];
 
-  // Check if the priceId matches any of the known price IDs
-  const knownPriceIds = [starterPriceId, proPriceId].filter(Boolean);
+  const allKnownPriceIds = [
+    ...starterPriceIds,
+    ...proPriceIds,
+    ...businessPriceIds,
+  ];
 
-  return knownPriceIds.includes(priceId);
+  // If we have known price IDs configured, validate against them
+  if (allKnownPriceIds.length > 0) {
+    return allKnownPriceIds.includes(priceId);
+  }
+
+  // If no known price IDs are configured, just validate the format
+  // This allows for flexible development and testing
+  return true;
 }
 
 export default function CheckoutPage() {
