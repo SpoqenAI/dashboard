@@ -4,6 +4,7 @@ import { Paddle, Environment } from '@paddle/paddle-node-sdk';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 import { validatePaddleConfig } from '@/lib/paddle';
+import { getSiteUrl } from '@/lib/site-url';
 
 // Initialize Paddle client
 function createPaddleClient() {
@@ -89,8 +90,10 @@ export async function createCheckoutSession(priceId: string): Promise<{
     // Create Paddle client
     const paddle = createPaddleClient();
 
-    // Create checkout session
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    // Determine the base site URL dynamically. This avoids hard-coded localhost values
+    // making it work correctly in all environments (local dev, Vercel preview, production).
+    // getSiteUrl() already handles NODE_ENV, Vercel URLs, ngrok etc.
+    const baseUrl = getSiteUrl();
 
     const checkoutData = {
       items: [
