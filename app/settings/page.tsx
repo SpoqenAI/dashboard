@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/protected-route';
-import { useSearchParams } from 'next/navigation';
+import { useQueryState } from 'nuqs';
 import { Filter } from 'bad-words';
 import { useMask } from '@react-input/mask';
 import { isEqual } from 'lodash-es';
@@ -134,8 +134,14 @@ const getSubscriptionPriceInfo = (subscription: any) => {
 };
 
 function SettingsContent() {
-  const searchParams = useSearchParams();
-  const tab = searchParams.get('tab') || 'profile';
+  // Replace useSearchParams with nuqs for tab parameter
+  const [tab, setTab] = useQueryState('tab', {
+    defaultValue: 'profile',
+    clearOnDefault: true,
+  });
+
+  // Replace useSearchParams with nuqs for success parameter
+  const [success, setSuccess] = useQueryState('success');
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -162,7 +168,6 @@ function SettingsContent() {
 
   // Check for successful payment return
   useEffect(() => {
-    const success = searchParams.get('success');
     if (success === 'true') {
       toast({
         title: 'Payment successful!',
@@ -190,12 +195,10 @@ function SettingsContent() {
         }
       }, 1000); // Give the page a moment to load
 
-      // Clean up the URL by removing the success parameter
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('success');
-      window.history.replaceState({}, '', newUrl.toString());
+      // Clean up URL by removing success parameter (nuqs handles this declaratively)
+      setSuccess(null);
     }
-  }, [searchParams, refetchSubscription]);
+  }, [success, refetchSubscription, setSuccess]);
 
   // Form data state - initialized from Supabase data
   const [formData, setFormData] = useState({
@@ -969,7 +972,7 @@ function SettingsContent() {
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
         </div>
-        <Tabs defaultValue={tab} className="space-y-4">
+        <Tabs value={tab} onValueChange={setTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="profile">General</TabsTrigger>
             <TabsTrigger value="billing">Billing</TabsTrigger>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryState } from 'nuqs';
 import { Button } from '@/components/ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { ArrowLeft, Check, CreditCard } from 'lucide-react';
@@ -28,6 +29,9 @@ export function SubscriptionForm({
   userId,
 }: SubscriptionFormProps) {
   const router = useRouter();
+  // Add nuqs for payment parameter management
+  const [, setPayment] = useQueryState('payment');
+
   const [paddle, setPaddle] = useState<Paddle | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
@@ -35,6 +39,13 @@ export function SubscriptionForm({
   const [pollingStopped, setPollingStopped] = useState(false);
   const pollingAttemptsRef = useRef(0);
   const MAX_POLLING_ATTEMPTS = 30; // 30 attempts * 4s = 2 minutes
+
+  // Helper function to navigate to dashboard with payment success
+  const navigateToSuccess = () => {
+    router.push('/dashboard');
+    // Set payment parameter after navigation to ensure it's properly handled
+    setTimeout(() => setPayment('success'), 0);
+  };
 
   useEffect(() => {
     const initPaddle = async () => {
@@ -108,7 +119,7 @@ export function SubscriptionForm({
             }
           );
           setCheckoutInProgress(false);
-          router.push('/dashboard?payment=success');
+          navigateToSuccess();
         }
       } catch (error) {
         logger.error(
@@ -204,7 +215,7 @@ export function SubscriptionForm({
       setCheckoutInProgress(false);
       setPollingStopped(false);
       pollingAttemptsRef.current = 0;
-      router.push('/dashboard?payment=success');
+      navigateToSuccess();
     }
   }, [activeSubscription, router, userId]);
 
@@ -250,7 +261,7 @@ export function SubscriptionForm({
           setCheckoutInProgress(false);
         },
         complete: () => {
-          router.push('/dashboard?payment=success');
+          navigateToSuccess();
           router.prefetch('/dashboard');
         },
       };
@@ -450,7 +461,7 @@ export function SubscriptionForm({
         {checkoutInProgress && (
           <Button
             variant="outline"
-            onClick={() => router.push('/dashboard?payment=success')}
+            onClick={navigateToSuccess}
             className="ml-2"
           >
             Payment Complete? Continue →

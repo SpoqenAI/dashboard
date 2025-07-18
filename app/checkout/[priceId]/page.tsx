@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useQueryState } from 'nuqs';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
@@ -46,7 +47,16 @@ export default function CheckoutPage() {
   const { priceId } = useParams<{ priceId: string }>();
   const { user } = useAuth();
   const router = useRouter();
+  // Add nuqs for payment parameter management
+  const [, setPayment] = useQueryState('payment');
   const [error, setError] = useState<string | null>(null);
+
+  // Helper function to navigate to dashboard with payment processing
+  const navigateToProcessing = () => {
+    router.push('/dashboard');
+    // Set payment parameter after navigation to ensure it's properly handled
+    setTimeout(() => setPayment('processing'), 0);
+  };
 
   useEffect(() => {
     if (!user) {
@@ -75,7 +85,7 @@ export default function CheckoutPage() {
           },
           events: {
             complete: () => {
-              router.push('/dashboard?payment=processing');
+              navigateToProcessing();
             },
             close: () => {
               router.back();
@@ -93,7 +103,7 @@ export default function CheckoutPage() {
         setError('Unable to start checkout. Please try again later.');
       }
     })();
-  }, [user, priceId, router]);
+  }, [user, priceId, router, setPayment]);
 
   // Handle error toast as a side effect
   useEffect(() => {
