@@ -22,7 +22,7 @@ export interface SubscriptionFeatures {
   limits: FeatureLimits;
   canMakeCalls: (currentUsage?: number) => boolean;
   getRemainingCalls: (currentUsage?: number) => number | 'unlimited';
-  hasFeature: (feature: keyof FeatureLimits, subFeature?: string) => boolean;
+  hasFeature: <T extends keyof FeatureLimits>(feature: T, subFeature?: keyof FeatureLimits[T]) => boolean;
   shouldShowUpgrade: boolean;
   getUpgradeMessage: (feature: string) => string;
   isLoading: boolean;
@@ -43,7 +43,7 @@ export function useSubscriptionFeatures(): SubscriptionFeatures {
         canMakeCalls(subscription, currentUsage),
       getRemainingCalls: (currentUsage = 0) =>
         getRemainingCalls(subscription, currentUsage),
-      hasFeature: (feature: keyof FeatureLimits, subFeature?: string) =>
+      hasFeature: <T extends keyof FeatureLimits>(feature: T, subFeature?: keyof FeatureLimits[T]) =>
         hasFeatureAccess(subscription, feature, subFeature),
       shouldShowUpgrade: shouldShowUpgradePrompt(subscription),
       getUpgradeMessage: (feature: string) =>
