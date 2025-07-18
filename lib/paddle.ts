@@ -252,21 +252,15 @@ export const getSubscriptionTier = (
 
   // For paid subscriptions, determine tier based on price_id
   // Configure these with your actual Paddle price IDs via environment variables
-  const STARTER_PRICE_IDS = process.env.PADDLE_STARTER_PRICE_IDS?.split(
-    ','
-  ) || [
-    'pri_01jx94f6qywr25x1cqnh0td7fy', // Fallback sandbox price ID
-  ];
-  const PRO_PRICE_IDS = process.env.PADDLE_PRO_PRICE_IDS?.split(',') || [
-    'pri_pro_monthly_placeholder', // Add your actual Pro price IDs to environment
-    'pri_pro_annual_placeholder',
-  ];
-  const BUSINESS_PRICE_IDS = process.env.PADDLE_BUSINESS_PRICE_IDS?.split(
-    ','
-  ) || [
-    'pri_business_monthly_placeholder', // Add your actual Business price IDs to environment
-    'pri_business_annual_placeholder',
-  ];
+  const STARTER_PRICE_IDS =
+    process.env.PADDLE_STARTER_PRICE_IDS?.split(',') || [];
+  const PRO_PRICE_IDS =
+    process.env.PADDLE_PRO_PRICE_IDS?.split(',') ||
+    [
+      // No fallback values; must be set in env
+    ];
+  const BUSINESS_PRICE_IDS =
+    process.env.PADDLE_BUSINESS_PRICE_IDS?.split(',') || [];
 
   if (STARTER_PRICE_IDS.includes(subscription.price_id)) {
     return 'starter';

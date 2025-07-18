@@ -3,8 +3,47 @@ import { logger } from '@/lib/logger';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { callEventEmitter } from '@/lib/events';
 import { callCache } from '@/lib/call-cache';
+import crypto from 'crypto';
+import type { VapiCall } from '@/lib/types';
 
-async function processVapiWebhook(envelope: any) {
+// Envelope for Vapi webhook POST body
+interface VapiWebhookEnvelope {
+  message: VapiWebhookMessage;
+}
+
+// Main message structure for Vapi webhook
+interface VapiWebhookMessage {
+  type: string;
+  call?: VapiCall;
+  assistant?: VapiWebhookAssistant;
+  customer?: VapiWebhookCustomer;
+  endedReason?: string;
+  recordingUrl?: string;
+  summary?: string;
+  transcript?: string;
+  analysis?: VapiCall['analysis'];
+  messages?: VapiWebhookChatMessage[];
+  [key: string]: any; // Allow for extra fields for future compatibility
+}
+
+interface VapiWebhookAssistant {
+  id?: string;
+  [key: string]: any;
+}
+
+interface VapiWebhookCustomer {
+  number?: string;
+  name?: string;
+  [key: string]: any;
+}
+
+interface VapiWebhookChatMessage {
+  role: 'assistant' | 'user';
+  message: string;
+  [key: string]: any;
+}
+
+async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
   const message = envelope.message;
 
   logger.info('VAPI_WEBHOOK', 'Processing Vapi webhook (async)', {
@@ -33,8 +72,7 @@ async function processVapiWebhook(envelope: any) {
   // === Emit real-time event for new call ===
   try {
     const callId: string | undefined = message.call?.id;
-    const assistantId: string | undefined =
-      message.assistant?.id ?? message.call?.assistantId;
+    const assistantId: string | undefined = message.assistant?.id;
 
     if (callId && assistantId) {
       const supabase = createSupabaseAdmin();
@@ -68,10 +106,8 @@ async function processVapiWebhook(envelope: any) {
             transcript: message.transcript,
             recordingUrl: message.recordingUrl,
             // Extract phone number from call object
-            phoneNumber:
-              message.call?.customer?.number ||
-              message.call?.destination?.number,
-            callerName: message.call?.customer?.name,
+            phoneNumber: message.customer?.number,
+            callerName: message.customer?.name,
             createdAt: message.call?.createdAt || new Date().toISOString(),
             startedAt: message.call?.startedAt,
             endedAt: message.call?.endedAt,
@@ -110,8 +146,7 @@ async function processVapiWebhook(envelope: any) {
 
   // === Send email summary via Supabase function ===
   try {
-    const assistantId: string | undefined =
-      message.assistant?.id ?? message.call?.assistantId;
+    const assistantId: string | undefined = message.assistant?.id;
 
     if (!assistantId) return;
 
@@ -151,7 +186,13 @@ export async function POST(req: NextRequest) {
     return new NextResponse('Configuration error', { status: 500 });
   }
 
-  if (incomingSecret !== secret) {
+  // Use timing-safe comparison to prevent timing attacks
+  const secretBuffer = Buffer.from(secret);
+  const incomingBuffer = Buffer.from(incomingSecret);
+  if (
+    secretBuffer.length !== incomingBuffer.length ||
+    !crypto.timingSafeEqual(secretBuffer, incomingBuffer)
+  ) {
     logger.warn('VAPI_WEBHOOK', 'Invalid webhook signature');
     return new NextResponse('Invalid signature', { status: 401 });
   }
