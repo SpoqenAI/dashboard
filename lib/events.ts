@@ -2,7 +2,7 @@
 // This allows the webhook to notify connected clients about new calls
 
 interface CallUpdateEvent {
-  type: 'new-call' | 'call-updated';
+  type: 'new-call' | 'call-updated' | 'connected' | 'heartbeat';
   callId: string;
   userId: string;
   timestamp: string;

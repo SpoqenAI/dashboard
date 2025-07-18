@@ -291,16 +291,16 @@ export const getFeatureLimits = (
   return TIER_LIMITS[tier];
 };
 
-export const hasFeatureAccess = (
+export const hasFeatureAccess = <T extends keyof FeatureLimits>(
   subscription: PaddleSubscription | null,
-  feature: keyof FeatureLimits,
-  subFeature?: string
+  feature: T,
+  subFeature?: keyof FeatureLimits[T]
 ): boolean => {
   const limits = getFeatureLimits(subscription);
   const featureLimits = limits[feature];
 
-  if (subFeature && typeof featureLimits === 'object') {
-    return (featureLimits as any)[subFeature] === true;
+  if (subFeature && typeof featureLimits === 'object' && featureLimits !== null) {
+    return (featureLimits as Record<string, boolean>)[subFeature as string] === true;
   }
 
   return false;

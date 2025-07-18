@@ -111,7 +111,7 @@ export default function RecentCallsClient() {
   const { isConnected: isRealTimeConnected } = useCallUpdates({
     enabled: !!user && !isUserFree,
     onNewCall: useCallback(
-      event => {
+      (event: import('@/lib/events').CallUpdateEvent) => {
         logger.info('RECENT_CALLS', 'New call detected via SSE', {
           callId: event.callId,
           timestamp: event.timestamp,
