@@ -1,3 +1,5 @@
+import React from 'https://esm.sh/react@18';
+
 interface CallSummaryEmailProps {
   summary: string;
   phoneNumber?: string;
