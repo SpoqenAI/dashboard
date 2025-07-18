@@ -1537,9 +1537,9 @@ function SettingsContent() {
           <TabsContent value="billing" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Subscription Plan</CardTitle>
+                <CardTitle>Your Subscription</CardTitle>
                 <CardDescription>
-                  Manage your subscription and billing information.
+                  Upgrade, downgrade, or update payment details anytime.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1621,7 +1621,7 @@ function SettingsContent() {
                           onClick={handleManageSubscription}
                           className="bg-white hover:bg-gray-50"
                         >
-                          Manage Billing
+                          Manage Subscription
                         </Button>
                         <Button
                           variant="outline"
@@ -1629,7 +1629,7 @@ function SettingsContent() {
                           onClick={handleUpgradePlan}
                           className="bg-white hover:bg-gray-50"
                         >
-                          View All Plans
+                          Compare Plans
                         </Button>
                       </div>
                     </div>

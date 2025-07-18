@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Paddle } from '@paddle/paddle-node-sdk';
+import crypto from 'crypto';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
 import { provisionAssistant } from '@/lib/actions/assistant.actions';
@@ -15,6 +16,10 @@ const WEBHOOK_CONFIG = {
     'subscription.created',
     'subscription.updated',
     'subscription.activated',
+    'subscription.canceled',
+    'subscription.deleted',
+    'subscription.paused',
+    'subscription.payment_failed',
   ],
   maxPayloadSize: 10 * 1024, // 10KB
 } as const;
@@ -210,10 +215,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse the webhook payload
+    // Read raw body for signature verification
+    const rawBody = await request.text();
+
+    // Verify signature (skip in dev to allow ngrok testing)
+    const signatureHeader = request.headers.get('paddle-signature');
+    const webhookSecret = process.env.PADDLE_NOTIF_WEBHOOK_SECRET;
+    const skipSig = process.env.NODE_ENV === 'development';
+
+    if (!skipSig) {
+      if (!signatureHeader || !webhookSecret) {
+        logger.warn('PADDLE_WEBHOOK', 'Missing signature or secret');
+        return NextResponse.json({ error: 'Signature missing' }, { status: 400 });
+      }
+
+      // According to Paddle docs: HMAC-SHA256 of body using secret, base64 encoded
+      const expectedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(rawBody)
+        .digest('base64');
+
+      const valid = crypto.timingSafeEqual(
+        Buffer.from(signatureHeader, 'utf8'),
+        Buffer.from(expectedSignature, 'utf8')
+      );
+
+      if (!valid) {
+        logger.warn('PADDLE_WEBHOOK', 'Signature verification failed');
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+      }
+    } else {
+      logger.info('PADDLE_WEBHOOK', 'Skipping signature verification in dev');
+    }
+
+    // Now safely parse JSON
     let webhookEvent: PaddleWebhookEvent;
     try {
-      webhookEvent = await request.json();
+      webhookEvent = JSON.parse(rawBody);
     } catch (error) {
       logger.warn('PADDLE_WEBHOOK', 'Invalid JSON payload');
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });

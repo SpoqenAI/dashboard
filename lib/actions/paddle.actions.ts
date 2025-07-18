@@ -29,7 +29,9 @@ function createPaddleClient() {
 
 export async function createCheckoutSession(priceId: string): Promise<{
   success: boolean;
-  checkoutUrl?: string;
+  checkoutUrl?: string; // Fallback redirect URL
+  checkoutId?: string;  // Transaction / Checkout ID for Paddle JS overlay
+  environment?: 'sandbox' | 'production';
   error?: string;
 }> {
   try {
@@ -86,6 +88,14 @@ export async function createCheckoutSession(priceId: string): Promise<{
         error: 'User profile not found',
       };
     }
+
+    // Determine environment again for response convenience
+    const envVar =
+      process.env.PADDLE_ENVIRONMENT ||
+      process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
+    const isSandbox =
+      (envVar?.toLowerCase() === 'sandbox') ||
+      (process.env.PADDLE_API_KEY?.toLowerCase().startsWith('sandbox'));
 
     // Create Paddle client
     const paddle = createPaddleClient();
@@ -150,6 +160,8 @@ export async function createCheckoutSession(priceId: string): Promise<{
     return {
       success: true,
       checkoutUrl: transaction.checkout.url,
+      checkoutId: transaction.id,
+      environment: isSandbox ? 'sandbox' : 'production',
     };
   } catch (error: any) {
     logger.error(
