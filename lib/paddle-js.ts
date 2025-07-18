@@ -1,4 +1,4 @@
-// Paddle JS helper for client-side overlay checkout initialization
+// Paddle JS helper for client-side checkout initialization
 // This runs only in the browser and lazily loads the @paddle/paddle-js package.
 
 import { getPaddleConfig } from './config';
@@ -15,25 +15,35 @@ export interface PaddleCheckoutCustomer {
   name?: string;
 }
 
+// Enhanced settings interface to support both inline and overlay modes
 export interface PaddleCheckoutSettings {
-  displayMode: 'inline';
-  frameTarget: string;
-  successUrl: string;
+  displayMode?: 'overlay' | 'inline';
+  frameTarget?: string; // Required when displayMode is 'inline'
+  successUrl?: string;
+  theme?: 'light' | 'dark';
+  locale?: string;
+  allowLogout?: boolean;
+  variant?: 'one-page' | 'multi-page';
 }
 
 export interface PaddleCheckoutEvents {
-  complete: () => void;
-  close: () => void;
+  complete?: () => void;
+  close?: () => void;
+  error?: (error: any) => void;
+  loaded?: () => void;
 }
 
-export interface PaddleInlineCheckoutOptions {
+// Comprehensive checkout options interface for both modes
+export interface PaddleCheckoutOptions {
   items: PaddleCheckoutItem[];
-  customer: PaddleCheckoutCustomer;
-  customData: Record<string, string>;
-  settings: PaddleCheckoutSettings;
-  events: PaddleCheckoutEvents;
+  customer?: PaddleCheckoutCustomer;
+  customData?: Record<string, string>;
+  settings?: PaddleCheckoutSettings;
+  successUrl?: string; // Can also be set at top level
+  events?: PaddleCheckoutEvents;
 }
 
+// Legacy overlay-specific interface for backwards compatibility
 export interface PaddleOverlayCheckoutOptions {
   checkoutId: string;
   events?: {
@@ -43,9 +53,7 @@ export interface PaddleOverlayCheckoutOptions {
 }
 
 interface PaddleCheckout {
-  open: (
-    options: PaddleInlineCheckoutOptions | PaddleOverlayCheckoutOptions
-  ) => void;
+  open: (options: PaddleCheckoutOptions | PaddleOverlayCheckoutOptions) => void;
 }
 
 interface PaddleSDK {
@@ -102,6 +110,70 @@ export async function getPaddleInstance(): Promise<PaddleSDK> {
   }
 }
 
+// Enhanced function for opening inline checkout
+export async function openInlineCheckout(
+  containerClass: string,
+  priceId: string,
+  customerEmail: string,
+  customData?: Record<string, string>,
+  events?: PaddleCheckoutEvents
+): Promise<void> {
+  const Paddle = await getPaddleInstance();
+
+  // Clean container class (remove '.' prefix if present)
+  const cleanContainerClass = containerClass.startsWith('.') 
+    ? containerClass.substring(1) 
+    : containerClass;
+
+  // Verify the container element exists using class selector
+  const containerElement = document.querySelector(`.${cleanContainerClass}`);
+  if (!containerElement) {
+    throw new Error(`Container element with class '${cleanContainerClass}' not found`);
+  }
+
+  const checkoutOptions: PaddleCheckoutOptions = {
+    items: [
+      {
+        priceId: priceId,
+        quantity: 1,
+      },
+    ],
+    customer: {
+      email: customerEmail,
+    },
+    customData: customData || {},
+    settings: {
+      displayMode: 'inline',
+      frameTarget: cleanContainerClass, // Just the class name, no prefix
+      theme: 'dark',
+      variant: 'one-page',
+      allowLogout: false,
+    },
+    successUrl: `${window.location.origin}/api/paddle/success${customData?.user_id ? `?user_id=${customData.user_id}` : ''}`,
+    events: events || {},
+  };
+
+  logger.info('PADDLE_JS', 'Opening inline checkout', {
+    priceId,
+    containerClass: cleanContainerClass,
+    frameTarget: cleanContainerClass,
+    theme: 'dark',
+  });
+
+  try {
+    Paddle.Checkout.open(checkoutOptions);
+  } catch (error) {
+    logger.error(
+      'PADDLE_JS',
+      'Failed to open inline checkout',
+      error instanceof Error ? error : new Error(String(error)),
+      { priceId, containerClass: cleanContainerClass }
+    );
+    throw error;
+  }
+}
+
+// Legacy function for overlay checkout (backwards compatibility)
 export async function openPaddleCheckout(
   checkoutId: string,
   onComplete?: () => void,
