@@ -81,22 +81,33 @@ serve(async req => {
   const apiKey = Deno.env.get('SENDGRID_API_KEY')!;
   const from = Deno.env.get('SENDGRID_FROM_EMAIL')!;
 
-  await fetch('https://api.sendgrid.com/v3/mail/send', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      personalizations: [{ to: [{ email: profile.email }] }],
-      from: { email: from },
-      subject: '[Spoqen] Call Summary',
-      content: [
-        { type: 'text/plain', value: summary },
-        { type: 'text/html', value: html },
-      ],
-    }),
-  });
+  try {
+    const sgResp = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: profile.email }] }],
+        from: { email: from },
+        subject: '[Spoqen] Call Summary',
+        content: [
+          { type: 'text/plain', value: summary },
+          { type: 'text/html', value: html },
+        ],
+      }),
+    });
+
+    if (!sgResp.ok) {
+      const errText = await sgResp.text();
+      console.error('SendGrid error', { status: sgResp.status, body: errText });
+      return new Response('Email send failed', { status: 502 });
+    }
+  } catch (err) {
+    console.error('SendGrid fetch threw', err);
+    return new Response('Email send encountered an error', { status: 500 });
+  }
 
   return new Response(JSON.stringify({ sent: true }), { status: 200 });
 });
