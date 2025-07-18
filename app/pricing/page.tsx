@@ -303,9 +303,22 @@ function PricingContent() {
           </p>
 
           {/* Billing Toggle */}
-          <div className="inline-flex items-center space-x-3 rounded-full border border-border bg-card/50 p-1 backdrop-blur-sm">
+          <div
+            role="group"
+            aria-label="Billing frequency selection"
+            className="inline-flex items-center space-x-3 rounded-full border border-border bg-card/50 p-1 backdrop-blur-sm"
+          >
             <button
+              type="button"
+              aria-pressed={!isAnnual}
+              aria-label="Select monthly billing"
               onClick={() => setIsAnnual(false)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setIsAnnual(false);
+                }
+              }}
               className={cn(
                 'rounded-full px-4 py-2 text-sm font-medium transition-all',
                 !isAnnual
@@ -316,7 +329,16 @@ function PricingContent() {
               Monthly
             </button>
             <button
+              type="button"
+              aria-pressed={isAnnual}
+              aria-label="Select annual billing with 20% discount"
               onClick={() => setIsAnnual(true)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setIsAnnual(true);
+                }
+              }}
               className={cn(
                 'relative rounded-full px-4 py-2 text-sm font-medium transition-all',
                 isAnnual
@@ -326,6 +348,7 @@ function PricingContent() {
             >
               Annual
               <Badge
+                aria-label="20% discount"
                 variant="secondary"
                 className="absolute -right-2 -top-2 bg-green-500 px-1.5 py-0.5 text-xs text-white"
               >
