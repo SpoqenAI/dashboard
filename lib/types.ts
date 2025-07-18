@@ -17,8 +17,23 @@ export interface VapiCall {
   summary?: string;
   recordingUrl?: string;
   analysis?: {
+    summary?: string;
     sentiment?: 'positive' | 'neutral' | 'negative';
     leadQuality?: 'hot' | 'warm' | 'cold';
+    successEvaluation?: any;
+    structuredData?: {
+      sentiment?: 'positive' | 'negative' | 'neutral';
+      leadQuality?: 'hot' | 'warm' | 'cold';
+      callPurpose?: string;
+      keyPoints?: string[];
+      followUpItems?: string[];
+      urgentConcerns?: string[];
+      appointmentRequested?: boolean;
+      timeline?: string;
+      contactPreference?: string;
+      businessInterest?: string;
+      [key: string]: any;
+    };
     actionPoints?: string[];
   };
   /**

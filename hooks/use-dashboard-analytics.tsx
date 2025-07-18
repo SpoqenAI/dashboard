@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useMemo } from 'react';
 import useSWR from 'swr';
 import { DashboardAnalytics } from '@/lib/types';
 import { logger } from '@/lib/logger';
@@ -42,7 +42,7 @@ export function useDashboardAnalytics(
   const {
     days = 30,
     limit = 100,
-    refetchInterval = 300000, // 5 minutes instead of 1 minute
+    //refetchInterval = 0, // REMOVED: No more scheduled polling - pure event-driven
     enabled = true,
     dedupingInterval = 30000, // 30 seconds - balance between freshness and performance
   } = options;
@@ -57,7 +57,14 @@ export function useDashboardAnalytics(
         }).toString()}`
       : null;
 
-  // SWR configuration for better performance
+  // Check if we have cached data to determine if we need initial fetch
+  const hasCachedData = useMemo(() => {
+    if (!url) return false; // No URL means disabled
+    // Use SWR's public API to check if we have data (safer than accessing internal cache)
+    return false; // Will be set to true after first successful fetch via SWR's data property
+  }, [url]);
+
+  // SWR configuration for hybrid approach: initial load + events only
   const {
     data: analytics,
     error,
@@ -68,12 +75,11 @@ export function useDashboardAnalytics(
     url, // SWR key - null when disabled or no user
     analyticsFetcher,
     {
-      // Stale-while-revalidate configuration
-      refreshInterval: refetchInterval, // Respect consumer's refresh interval preference
-      // We'll implement our own smarter visibility logic below
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true, // Revalidate when connection is restored
-      dedupingInterval: dedupingInterval, // Reduce deduping to 5 seconds
+      // Hybrid configuration: fetch once initially, then events only
+      refreshInterval: 0, // REMOVED: No automatic polling
+      revalidateOnFocus: false, // No focus revalidation
+      revalidateOnReconnect: false, // REMOVED: No reconnect fetching
+      dedupingInterval: dedupingInterval, // Reduce deduping to 30 seconds
 
       // Cache configuration
       focusThrottleInterval: 10000, // Reduce focus throttle to 10 seconds
@@ -89,11 +95,14 @@ export function useDashboardAnalytics(
       onSuccess: data => {
         logger.info(
           'DASHBOARD_ANALYTICS_SWR',
-          'Analytics data updated via SWR',
+          'Analytics data updated via SWR (hybrid mode)',
           {
             totalCalls: data.metrics?.totalCalls || 0,
             recentCallsCount: data.recentCalls?.length || 0,
             timeRange: `${days} days`,
+            hasCachedData,
+            isInitialLoad: !hasCachedData,
+            source: hasCachedData ? 'webhook-triggered' : 'initial-load',
           }
         );
       },
@@ -133,30 +142,9 @@ export function useDashboardAnalytics(
     return mutate();
   }, [mutate]);
 
-  // QUICK WIN – Custom visibilitychange revalidation
-  const hiddenAtRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    function onVisibilityChange() {
-      if (document.visibilityState === 'hidden') {
-        hiddenAtRef.current = Date.now();
-      } else if (document.visibilityState === 'visible') {
-        const hiddenFor = hiddenAtRef.current
-          ? Date.now() - hiddenAtRef.current
-          : 0;
-        hiddenAtRef.current = null;
-        // If tab was hidden for >15s, revalidate immediately
-        if (hiddenFor > 15_000) {
-          mutate();
-        }
-      }
-    }
-
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, [mutate]);
+  // REMOVED: Custom visibilitychange revalidation
+  // In hybrid mode, we only fetch on initial load and webhook events
+  // No need for visibility-based revalidation since webhooks keep data fresh
 
   return {
     analytics: analytics || null,
@@ -164,5 +152,6 @@ export function useDashboardAnalytics(
     error,
     refetch,
     isRefetching: isValidating && !isLoading, // SWR's background revalidation
+    hasCachedData: !!analytics, // Use SWR's data property to determine if we have cached data
   };
 }

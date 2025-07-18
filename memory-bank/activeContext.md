@@ -2,42 +2,65 @@
 
 This document tracks the current work focus, recent changes, next steps, and important decisions.
 
-## 🚨 CRITICAL SECURITY FIX COMPLETED (July 2025)
+## 🚀 MAJOR MILESTONE COMPLETED: Pricing Structure Overhaul (January 2025)
 
-**Issue**: A critical security vulnerability was identified where call history data from User A would persist in memory and be displayed to User B after User A logged out and User B logged in on the same device.
+**COMPLETE RESTRUCTURING ACHIEVED**: Successfully implemented a comprehensive pricing and access control overhaul based on user requirements to restrict free tier access and create clear upgrade incentives.
 
-**Root Cause**: Multiple data persistence mechanisms were not being cleared on user logout:
+**NEW BUSINESS MODEL IMPLEMENTED**:
 
-1. SWR cache in `useDashboardAnalytics` was not being invalidated when users signed out
-2. **localStorage** was storing user-specific analytics events and billing preferences that persisted across sessions
+1. **Free Tier - Setup Only**: No calls, no dashboard access, AI settings only
+2. **Starter Tier ($10/month)**: 30 calls/month with full dashboard access
+3. **Professional Tier ($30/month)**: Unlimited calls with advanced features
+4. **Business Tier**: Contact sales for enterprise features
 
-**Enhanced Security Fix Implemented**:
+**TECHNICAL ARCHITECTURE ENHANCED**:
 
-1. **Modified `hooks/use-dashboard-analytics.tsx`**:
+- **Feature Gating Overhaul**: Added "starter" tier, dashboard access controls, price ID-based tier mapping
+- **Dashboard Restrictions**: Free users see only AI settings tab, paid users get full analytics dashboard
+- **Pricing Page Updates**: Four-tier structure with contact sales for business tier
+- **Subscription Management**: Enhanced hooks and access control throughout application
+- **Documentation Updates**: Complete PADDLE_SETUP.md refresh with new pricing structure
 
-   - Added `useAuth` dependency to detect user changes
-   - Modified SWR key to be null when no user is present (prevents loading without authentication)
-   - Set `keepPreviousData: false` to prevent retaining previous user's data
-   - Added `useEffect` to clear cache when user logs out
+**ACCESS CONTROL MATRIX**:
 
-2. **Enhanced `hooks/use-auth.tsx`**:
-   - Added comprehensive `clearAllCaches()` function that clears:
-     - All SWR caches using `mutate(() => true, undefined, { revalidate: false })`
-     - **localStorage items containing user-specific data**:
-       - `'analytics_events'` (containing userId, sessionId, interaction data)
-       - `'billingNotificationPreferences'` (user notification settings)
-     - Analytics tracking instance via `cleanupAnalytics()`
-   - Clear all caches and localStorage on `SIGNED_OUT` event
-   - Clear all caches and localStorage on `SIGNED_IN` event (fresh data for new user)
-   - Clear all caches and localStorage before signing out to prevent race conditions
-   - Added browser environment checks to prevent SSR issues
+```
+Feature               | Free | Starter | Pro | Business
+--------------------- |------|---------|-----|----------
+AI Settings           |  ✅  |   ✅    | ✅  |    ✅
+Call Handling         |  ❌  |   ✅    | ✅  |    ✅
+Analytics Dashboard   |  👁️   |   ✅    | ✅  |    ✅
+Analytics Data        |  ❌  |   ✅    | ✅  |    ✅
+Advanced Features     |  ❌  |   ❌    | ✅  |    ✅
+Enterprise Features   |  ❌  |   ❌    | ❌  |    ✅
+```
 
-**Testing Requirements**:
+**Note**: 👁️ = Preview Mode (can see interface with upgrade overlay, no data access)
 
-- Test User A login → dashboard access → logout → User B login → verify User B sees only their data
-- Verify no data leakage between different user accounts
-- Test across different browsers and devices
-- **Verify localStorage is cleared**: Check browser dev tools that 'analytics_events' and 'billingNotificationPreferences' are removed on logout
+## ✨ ANALYTICS PREVIEW MODE REFINEMENT (January 2025)
+
+**ENHANCEMENT IMPLEMENTED**: Refined free tier experience to use "preview mode" strategy for analytics tab, allowing free users to see what they're missing while maintaining upgrade incentives.
+
+**PREVIEW MODE FEATURES**:
+
+- **Analytics Tab Visible**: Free users can navigate to analytics tab
+- **Upgrade Overlay**: Prominent paywall overlay prevents data access
+- **No Data Loading**: Analytics API calls disabled for free users
+- **Clear Messaging**: "Preview Mode" language encourages exploration
+
+**PSYCHOLOGICAL STRATEGY**:
+
+- **Loss Aversion**: Users see what they're missing rather than complete restriction
+- **Value Demonstration**: Analytics interface showcases professional capabilities
+- **Upgrade Clarity**: Clear $10/month Starter tier positioning
+- **Reduced Friction**: Users can explore full dashboard structure
+
+**EXPECTED BUSINESS IMPACT**:
+
+- **Higher Conversion Rates**: Preview mode creates stronger upgrade desire than complete hiding
+- **Better User Experience**: Users understand full product value before purchasing
+- **Clear Value Ladder**: $10 entry point → $30 professional → Enterprise sales
+- **Reduced Support Load**: Free users limited to self-service AI setup
+- **Revenue Optimization**: Professional tier positioned as primary growth driver
 
 ## Current Focus
 

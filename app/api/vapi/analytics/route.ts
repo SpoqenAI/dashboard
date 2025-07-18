@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { CallMetrics, DashboardAnalytics } from '@/lib/types';
 import { createClient } from '@/lib/supabase/server';
+import { callCache } from '@/lib/call-cache';
+// Removed Redis dependency - all analysis comes directly from VAPI
 
 /**
  * @swagger
@@ -109,6 +111,18 @@ export async function GET(request: NextRequest) {
   });
 
   try {
+    // Check cache first for recent requests (reduces VAPI API load)
+    const cacheKey = `analytics:${searchParams.toString()}`;
+    const cachedData = callCache.get(cacheKey);
+
+    if (cachedData) {
+      logger.info('ANALYTICS', 'Returning cached analytics data', {
+        requestedDays: days,
+        cacheKey,
+      });
+      return NextResponse.json(cachedData);
+    }
+
     // Maximum number of calls to fetch from VAPI in a single analytics request.
     // Chosen to balance API performance, avoid missing recent calls, and prevent excessive payloads.
     const VAPI_ANALYTICS_FETCH_LIMIT = 500;
@@ -273,112 +287,19 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b._sortTimestamp - a._sortTimestamp) // Use precomputed timestamps
       .map(({ _sortTimestamp, ...call }) => call); // Remove the temporary sorting field
 
-    // After line 163, before calculateMetrics, we need to enrich the mapped calls with database analysis data
     // Get recent calls for display (already mapped and date-filtered)
-    // Note: mappedUserCalls are already filtered by date range and user, so we use them directly
-    let recentCalls = mappedUserCalls.slice(0, 100);
+    // All analysis data comes directly from VAPI - no additional enrichment needed
+    const recentCalls = mappedUserCalls.slice(0, 100);
 
-    // Enrich calls with database analysis data if user is authenticated
-    if (user?.id && supabase && recentCalls.length > 0) {
-      try {
-        const callIds = recentCalls.map(call => call.id);
-
-        // Optimize for large datasets - batch process if too many IDs
-        const MAX_IDS_PER_QUERY = 100; // Prevent PostgreSQL IN clause performance issues
-        let analysisData: any[] = [];
-
-        if (callIds.length <= MAX_IDS_PER_QUERY) {
-          // Single query for small datasets
-          const { data, error: analysisError } = await supabase
-            .from('call_analysis')
-            .select('vapi_call_id, sentiment, lead_quality')
-            .eq('user_id', user.id)
-            .in('vapi_call_id', callIds)
-            .limit(MAX_IDS_PER_QUERY); // Additional safety limit
-
-          if (analysisError) {
-            logger.error(
-              'ANALYTICS',
-              'Database analysis query failed',
-              analysisError
-            );
-          } else {
-            analysisData = data || [];
-          }
-        } else {
-          // Batch queries for large datasets to maintain performance
-          logger.info(
-            'ANALYTICS',
-            'Using batched queries for large call dataset',
-            {
-              totalCallIds: callIds.length,
-              batchSize: MAX_IDS_PER_QUERY,
-            }
-          );
-
-          for (let i = 0; i < callIds.length; i += MAX_IDS_PER_QUERY) {
-            const batchIds = callIds.slice(i, i + MAX_IDS_PER_QUERY);
-            const { data, error: batchError } = await supabase
-              .from('call_analysis')
-              .select('vapi_call_id, sentiment, lead_quality')
-              .eq('user_id', user.id)
-              .in('vapi_call_id', batchIds);
-
-            if (batchError) {
-              logger.error(
-                'ANALYTICS',
-                `Batch query failed for calls ${i}-${i + batchIds.length}`,
-                batchError
-              );
-            } else {
-              analysisData.push(...(data || []));
-            }
-          }
-        }
-
-        if (analysisData.length > 0) {
-          // Create a map for efficient O(1) lookup
-          const analysisMap = new Map(
-            analysisData.map((item: any) => [item.vapi_call_id, item])
-          );
-
-          // Enrich the calls with database analysis data
-          // IMPORTANT: Maintains nested structure with sentiment and leadQuality under analysis
-          recentCalls = recentCalls.map(call => {
-            const dbAnalysis = analysisMap.get(call.id);
-            return {
-              ...call,
-              // Prioritize database analysis over VAPI analysis if available
-              // Keep sentiment and leadQuality nested under analysis object per OpenAPI spec
-              analysis: {
-                ...call.analysis,
-                sentiment: dbAnalysis?.sentiment || call.analysis?.sentiment,
-                leadQuality:
-                  dbAnalysis?.lead_quality || call.analysis?.leadQuality,
-              },
-            };
-          });
-
-          logger.info('ANALYTICS', 'Enriched calls with database analysis', {
-            totalCalls: recentCalls.length,
-            callsWithDbAnalysis: analysisData.length,
-            enrichmentRate: `${Math.round((analysisData.length / recentCalls.length) * 100)}%`,
-            callsWithSentiment: recentCalls.filter(c => c.analysis?.sentiment)
-              .length,
-            callsWithLeadQuality: recentCalls.filter(
-              c => c.analysis?.leadQuality
-            ).length,
-          });
-        }
-      } catch (dbError) {
-        logger.error(
-          'ANALYTICS',
-          'Failed to enrich calls with database analysis',
-          dbError as Error
-        );
-        // Continue without enrichment rather than failing the entire request
-      }
-    }
+    logger.info('ANALYTICS', 'Using VAPI analysis data directly', {
+      totalCalls: recentCalls.length,
+      callsWithSentiment: recentCalls.filter(c => c.analysis?.sentiment).length,
+      callsWithLeadQuality: recentCalls.filter(c => c.analysis?.leadQuality)
+        .length,
+      callsWithStructuredData: recentCalls.filter(
+        c => c.analysis?.structuredData
+      ).length,
+    });
 
     // Calculate metrics with real sentiment data (using properly mapped calls)
     const metrics = await calculateMetrics(
@@ -419,11 +340,19 @@ export async function GET(request: NextRequest) {
       trends,
     };
 
+    // Cache the result for longer since webhooks invalidate when new calls arrive
+    // Pure event-driven system allows longer cache without staleness concerns
+    const resultCacheKey = `analytics:${searchParams.toString()}`;
+    const cacheTtl = days <= 7 ? 1800000 : days <= 30 ? 3600000 : 7200000; // 30min-2hours
+    callCache.set(resultCacheKey, analytics, cacheTtl);
+
     logger.info('ANALYTICS', 'Successfully calculated analytics', {
       totalCalls: metrics.totalCalls,
       timeRange: `${days} days`,
       recentCallsCount: recentCalls.length,
       cutoffDate: cutoffDate.toISOString(),
+      cached: true,
+      cacheTtlMs: cacheTtl,
     });
 
     // Calculate appropriate cache duration based on time range
@@ -769,117 +698,56 @@ async function calculateMetrics(
     }).length,
   }));
 
-  // Real sentiment distribution from database
-  let sentimentDistribution = {
-    positive: 0,
-    neutral: 0,
-    negative: 0,
+  // Calculate sentiment and lead quality distributions directly from VAPI analysis data
+  const sentimentDistribution = {
+    positive: calls.filter(
+      call =>
+        call.analysis?.structuredData?.sentiment === 'positive' ||
+        call.analysis?.sentiment === 'positive'
+    ).length,
+    neutral: calls.filter(
+      call =>
+        call.analysis?.structuredData?.sentiment === 'neutral' ||
+        call.analysis?.sentiment === 'neutral'
+    ).length,
+    negative: calls.filter(
+      call =>
+        call.analysis?.structuredData?.sentiment === 'negative' ||
+        call.analysis?.sentiment === 'negative'
+    ).length,
   };
 
-  let leadQualityDistribution = {
-    hot: 0,
-    warm: 0,
-    cold: 0,
+  const leadQualityDistribution = {
+    hot: calls.filter(
+      call =>
+        call.analysis?.structuredData?.leadQuality === 'hot' ||
+        call.analysis?.leadQuality === 'hot'
+    ).length,
+    warm: calls.filter(
+      call =>
+        call.analysis?.structuredData?.leadQuality === 'warm' ||
+        call.analysis?.leadQuality === 'warm'
+    ).length,
+    cold: calls.filter(
+      call =>
+        call.analysis?.structuredData?.leadQuality === 'cold' ||
+        call.analysis?.leadQuality === 'cold'
+    ).length,
   };
 
-  // Fetch real sentiment data from database if user is authenticated
-  if (userId && supabase) {
-    try {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - (days || 30));
-
-      // Get call IDs from current VAPI data to ensure we only count analysis for existing calls
-      const currentVapiCallIds = calls.map(call => call.id);
-
-      const { data: callAnalysisData, error } = await supabase
-        .from('call_analysis')
-        .select('sentiment, lead_quality, analyzed_at, vapi_call_id')
-        .eq('user_id', userId)
-        .gte('analyzed_at', cutoffDate.toISOString())
-        .in('vapi_call_id', currentVapiCallIds); // Only include analysis for calls still in VAPI
-
-      if (error) {
-        logger.error(
-          'ANALYTICS',
-          'Failed to fetch sentiment data from database',
-          error
-        );
-        // Fall back to proportional estimates based on answered calls
-        sentimentDistribution = {
-          positive: Math.floor(answeredCalls * 0.6),
-          neutral: Math.floor(answeredCalls * 0.3),
-          negative: Math.floor(answeredCalls * 0.1),
-        };
-        leadQualityDistribution = {
-          hot: Math.floor(answeredCalls * 0.2),
-          warm: Math.floor(answeredCalls * 0.5),
-          cold: Math.floor(answeredCalls * 0.3),
-        };
-      } else {
-        // Calculate real sentiment distribution
-        sentimentDistribution = {
-          positive: callAnalysisData.filter(
-            (item: any) => item.sentiment === 'positive'
-          ).length,
-          neutral: callAnalysisData.filter(
-            (item: any) => item.sentiment === 'neutral'
-          ).length,
-          negative: callAnalysisData.filter(
-            (item: any) => item.sentiment === 'negative'
-          ).length,
-        };
-
-        // Calculate real lead quality distribution
-        leadQualityDistribution = {
-          hot: callAnalysisData.filter(
-            (item: any) => item.lead_quality === 'hot'
-          ).length,
-          warm: callAnalysisData.filter(
-            (item: any) => item.lead_quality === 'warm'
-          ).length,
-          cold: callAnalysisData.filter(
-            (item: any) => item.lead_quality === 'cold'
-          ).length,
-        };
-
-        logger.info('ANALYTICS', 'Using real sentiment data from database', {
-          totalAnalyzedCalls: callAnalysisData.length,
-          totalVapiCalls: currentVapiCallIds.length,
-          sentimentDistribution,
-          leadQualityDistribution,
-        });
-      }
-    } catch (dbError) {
-      logger.error(
-        'ANALYTICS',
-        'Database query failed for sentiment data',
-        dbError as Error
-      );
-      // Fall back to estimates
-      sentimentDistribution = {
-        positive: Math.floor(answeredCalls * 0.6),
-        neutral: Math.floor(answeredCalls * 0.3),
-        negative: Math.floor(answeredCalls * 0.1),
-      };
-      leadQualityDistribution = {
-        hot: Math.floor(answeredCalls * 0.2),
-        warm: Math.floor(answeredCalls * 0.5),
-        cold: Math.floor(answeredCalls * 0.3),
-      };
-    }
-  } else {
-    // No user authentication, use estimates
-    sentimentDistribution = {
-      positive: Math.floor(answeredCalls * 0.6),
-      neutral: Math.floor(answeredCalls * 0.3),
-      negative: Math.floor(answeredCalls * 0.1),
-    };
-    leadQualityDistribution = {
-      hot: Math.floor(answeredCalls * 0.2),
-      warm: Math.floor(answeredCalls * 0.5),
-      cold: Math.floor(answeredCalls * 0.3),
-    };
-  }
+  logger.info('ANALYTICS', 'Using VAPI analysis data for distributions', {
+    totalCalls: calls.length,
+    sentimentDistribution,
+    leadQualityDistribution,
+    callsWithSentimentAnalysis: calls.filter(
+      call =>
+        call.analysis?.structuredData?.sentiment || call.analysis?.sentiment
+    ).length,
+    callsWithLeadQualityAnalysis: calls.filter(
+      call =>
+        call.analysis?.structuredData?.leadQuality || call.analysis?.leadQuality
+    ).length,
+  });
 
   return {
     totalCalls,
@@ -1074,9 +942,9 @@ function mapVapiCallToFrontend(vapiCall: any) {
       ?.map((msg: any) => `${msg.role}: ${msg.message}`)
       .join('\n') || undefined;
 
-  // Extract sentiment and lead quality from VAPI's analysis data
-  const sentiment = vapiCall.analysis?.structuredData?.sentiment;
-  const leadQuality = vapiCall.analysis?.structuredData?.leadQuality;
+  // Extract all analysis data from VAPI's analysis
+  const analysis = vapiCall.analysis || {};
+  const structuredData = analysis.structuredData || {};
 
   return {
     id: vapiCall.id,
@@ -1091,12 +959,34 @@ function mapVapiCallToFrontend(vapiCall: any) {
     endedAt: vapiCall.endedAt,
     cost: vapiCall.cost,
     transcript,
-    summary: vapiCall.analysis?.summary,
-    // IMPORTANT: sentiment and leadQuality are nested under analysis object
-    // This structure matches the OpenAPI documentation and frontend expectations
+    summary: analysis.summary,
+    // Complete VAPI analysis structure with all fields
     analysis: {
-      sentiment: sentiment as 'positive' | 'neutral' | 'negative' | undefined,
-      leadQuality: leadQuality as 'hot' | 'warm' | 'cold' | undefined,
+      summary: analysis.summary,
+      sentiment: (structuredData.sentiment || analysis.sentiment) as
+        | 'positive'
+        | 'neutral'
+        | 'negative'
+        | undefined,
+      leadQuality: (structuredData.leadQuality || analysis.leadQuality) as
+        | 'hot'
+        | 'warm'
+        | 'cold'
+        | undefined,
+      successEvaluation: analysis.successEvaluation,
+      structuredData: {
+        sentiment: structuredData.sentiment,
+        leadQuality: structuredData.leadQuality,
+        callPurpose: structuredData.callPurpose,
+        keyPoints: structuredData.keyPoints,
+        followUpItems: structuredData.followUpItems,
+        urgentConcerns: structuredData.urgentConcerns,
+        appointmentRequested: structuredData.appointmentRequested,
+        timeline: structuredData.timeline,
+        contactPreference: structuredData.contactPreference,
+        businessInterest: structuredData.businessInterest,
+        ...structuredData, // Include any additional VAPI fields
+      },
     },
   };
 }

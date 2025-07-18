@@ -66,6 +66,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 NEXT_PUBLIC_SITE_URL=http://localhost:3000 # Or your production URL for production builds
 NEXT_PUBLIC_GEOAPIFY_API_KEY=your_geoapify_api_key # Get free API key at https://www.geoapify.com/
 
+# Upstash Redis for call analysis storage (replaces slow database writes)
+UPSTASH_REDIS_REST_URL=https://your_redis_endpoint
+UPSTASH_REDIS_REST_TOKEN=your_redis_rest_token
+
 # For GitHub Actions deployment, these are set as secrets in the repository:
 # VERCEL_TOKEN
 # VERCEL_ORG_ID
@@ -76,6 +80,8 @@ NEXT_PUBLIC_GEOAPIFY_API_KEY=your_geoapify_api_key # Get free API key at https:/
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase public anonymous key.
 - `NEXT_PUBLIC_SITE_URL`: The canonical URL for your site. Use `http://localhost:3000` for local development.
 - `NEXT_PUBLIC_GEOAPIFY_API_KEY`: Your Geoapify API key for address autocomplete functionality. Sign up for a free account at [geoapify.com](https://www.geoapify.com/).
+- `UPSTASH_REDIS_REST_URL`: Your Upstash Redis database REST URL for call analysis storage.
+- `UPSTASH_REDIS_REST_TOKEN`: Your Upstash Redis database REST token for authentication.
 
 The Vercel specific secrets (`VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`) are used by the GitHub Actions workflow for deployment and should be configured as secrets in your GitHub repository settings, not in `.env.local`.
 

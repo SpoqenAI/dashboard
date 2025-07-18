@@ -56,9 +56,7 @@ export const validatePaddleConfig = (): {
     missingVars.push('NEXT_PUBLIC_PADDLE_CLIENT_TOKEN');
   }
 
-  if (!process.env.NEXT_PUBLIC_PADDLE_PRICE_ID) {
-    missingVars.push('NEXT_PUBLIC_PADDLE_PRICE_ID');
-  }
+  // Note: NEXT_PUBLIC_PADDLE_PRICE_ID is legacy - we now use specific price IDs per tier
 
   // Only check server-only environment variables when running in Node.js environment
   const isServerSide =
@@ -67,10 +65,6 @@ export const validatePaddleConfig = (): {
     process.versions?.node;
 
   if (isServerSide) {
-    if (!process.env.PADDLE_VENDOR_ID) {
-      missingVars.push('PADDLE_VENDOR_ID');
-    }
-
     if (!process.env.PADDLE_API_KEY) {
       missingVars.push('PADDLE_API_KEY');
     }
@@ -135,4 +129,249 @@ export const getDaysUntilBilling = (
   const today = new Date();
   const diffTime = endDate.getTime() - today.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
+
+// Feature gating types
+export type SubscriptionTier = 'free' | 'starter' | 'pro' | 'business';
+
+export interface FeatureLimits {
+  calls: {
+    monthly: number;
+    unlimited: boolean;
+  };
+  minutes: {
+    perCall: number;
+    unlimited: boolean;
+  };
+  analytics: {
+    basic: boolean;
+    advanced: boolean;
+    customReports: boolean;
+  };
+  integrations: {
+    webhook: boolean;
+    zapier: boolean;
+    crm: boolean;
+  };
+  support: {
+    community: boolean;
+    email: boolean;
+    priority: boolean;
+    dedicated: boolean;
+  };
+  customization: {
+    basicGreeting: boolean;
+    customScripts: boolean;
+    multiLanguage: boolean;
+    aiTraining: boolean;
+  };
+  // New access controls
+  dashboard: {
+    analytics: boolean;
+    fullAccess: boolean;
+  };
+}
+
+// Define feature limits for each tier
+export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
+  free: {
+    calls: { monthly: 0, unlimited: false },
+    minutes: { perCall: 0, unlimited: false },
+    analytics: { basic: false, advanced: false, customReports: false },
+    integrations: { webhook: false, zapier: false, crm: false },
+    support: {
+      community: true,
+      email: false,
+      priority: false,
+      dedicated: false,
+    },
+    customization: {
+      basicGreeting: true,
+      customScripts: false,
+      multiLanguage: false,
+      aiTraining: false,
+    },
+    dashboard: { analytics: false, fullAccess: true }, // Can see dashboard but no analytics data
+  },
+  starter: {
+    calls: { monthly: 30, unlimited: false },
+    minutes: { perCall: 60, unlimited: false },
+    analytics: { basic: true, advanced: false, customReports: false },
+    integrations: { webhook: false, zapier: false, crm: false },
+    support: {
+      community: true,
+      email: true,
+      priority: false,
+      dedicated: false,
+    },
+    customization: {
+      basicGreeting: true,
+      customScripts: false,
+      multiLanguage: false,
+      aiTraining: false,
+    },
+    dashboard: { analytics: true, fullAccess: true },
+  },
+  pro: {
+    calls: { monthly: 0, unlimited: true },
+    minutes: { perCall: 0, unlimited: true },
+    analytics: { basic: true, advanced: true, customReports: false },
+    integrations: { webhook: true, zapier: false, crm: true },
+    support: { community: true, email: true, priority: true, dedicated: false },
+    customization: {
+      basicGreeting: true,
+      customScripts: true,
+      multiLanguage: false,
+      aiTraining: false,
+    },
+    dashboard: { analytics: true, fullAccess: true },
+  },
+  business: {
+    calls: { monthly: 0, unlimited: true },
+    minutes: { perCall: 0, unlimited: true },
+    analytics: { basic: true, advanced: true, customReports: true },
+    integrations: { webhook: true, zapier: true, crm: true },
+    support: { community: true, email: true, priority: true, dedicated: true },
+    customization: {
+      basicGreeting: true,
+      customScripts: true,
+      multiLanguage: true,
+      aiTraining: true,
+    },
+    dashboard: { analytics: true, fullAccess: true },
+  },
+};
+
+// Enhanced feature gating functions
+export const getSubscriptionTier = (
+  subscription: PaddleSubscription | null
+): SubscriptionTier => {
+  if (!subscription || subscription.tier_type === 'free') {
+    return 'free';
+  }
+
+  // For paid subscriptions, determine tier based on price_id
+  // Configure these with your actual Paddle price IDs via environment variables
+  const STARTER_PRICE_IDS =
+    process.env.PADDLE_STARTER_PRICE_IDS?.split(',') || [];
+  const PRO_PRICE_IDS =
+    process.env.PADDLE_PRO_PRICE_IDS?.split(',') ||
+    [
+      // No fallback values; must be set in env
+    ];
+  const BUSINESS_PRICE_IDS =
+    process.env.PADDLE_BUSINESS_PRICE_IDS?.split(',') || [];
+
+  if (STARTER_PRICE_IDS.includes(subscription.price_id)) {
+    return 'starter';
+  }
+
+  if (PRO_PRICE_IDS.includes(subscription.price_id)) {
+    return 'pro';
+  }
+
+  if (BUSINESS_PRICE_IDS.includes(subscription.price_id)) {
+    return 'business';
+  }
+
+  // Default fallback for paid subscriptions
+  console.warn(
+    `Unrecognized price_id: ${subscription.price_id}, defaulting to starter tier`
+  );
+  return 'starter';
+};
+
+export const getFeatureLimits = (
+  subscription: PaddleSubscription | null
+): FeatureLimits => {
+  const tier = getSubscriptionTier(subscription);
+  return TIER_LIMITS[tier];
+};
+
+export const hasFeatureAccess = <T extends keyof FeatureLimits>(
+  subscription: PaddleSubscription | null,
+  feature: T,
+  subFeature?: keyof FeatureLimits[T]
+): boolean => {
+  const limits = getFeatureLimits(subscription);
+  const featureLimits = limits[feature];
+
+  if (
+    subFeature &&
+    typeof featureLimits === 'object' &&
+    featureLimits !== null
+  ) {
+    return (
+      (featureLimits as Record<string, boolean>)[subFeature as string] === true
+    );
+  }
+
+  return false;
+};
+
+export const canMakeCalls = (
+  subscription: PaddleSubscription | null,
+  currentMonthlyUsage: number = 0
+): boolean => {
+  const limits = getFeatureLimits(subscription);
+
+  if (limits.calls.unlimited) {
+    return true;
+  }
+
+  return currentMonthlyUsage < limits.calls.monthly;
+};
+
+export const getRemainingCalls = (
+  subscription: PaddleSubscription | null,
+  currentMonthlyUsage: number = 0
+): number | 'unlimited' => {
+  const limits = getFeatureLimits(subscription);
+
+  if (limits.calls.unlimited) {
+    return 'unlimited';
+  }
+
+  return Math.max(0, limits.calls.monthly - currentMonthlyUsage);
+};
+
+export const shouldShowUpgradePrompt = (
+  subscription: PaddleSubscription | null
+): boolean => {
+  return (
+    isFreeUser(subscription) ||
+    (subscription ? !isActiveSubscription(subscription) : true)
+  );
+};
+
+export const getUpgradeMessage = (
+  subscription: PaddleSubscription | null,
+  feature: string
+): string => {
+  const tier = getSubscriptionTier(subscription);
+
+  if (tier === 'free') {
+    return `Upgrade to Starter ($10/month) to unlock ${feature}`;
+  }
+
+  if (tier === 'starter') {
+    return `Upgrade to Pro ($30/month) to unlock ${feature}`;
+  }
+
+  return `This feature requires a higher subscription tier`;
+};
+
+// Dashboard access helpers
+export const hasDashboardAccess = (
+  subscription: PaddleSubscription | null
+): boolean => {
+  const limits = getFeatureLimits(subscription);
+  return limits.dashboard.fullAccess;
+};
+
+export const hasAnalyticsAccess = (
+  subscription: PaddleSubscription | null
+): boolean => {
+  const limits = getFeatureLimits(subscription);
+  return limits.dashboard.analytics;
 };

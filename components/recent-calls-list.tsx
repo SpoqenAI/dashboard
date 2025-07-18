@@ -18,36 +18,9 @@ interface RecentCall {
 export function RecentCallsList() {
   const [quickPlayCallId, setQuickPlayCallId] = useState<number | null>(null);
 
-  const recentCalls: RecentCall[] = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      phone: '(555) 123-4567',
-      date: 'May 24, 2025',
-      time: '10:30 AM',
-      summary:
-        'Interested in the 3-bedroom property on Oak Street. First-time homebuyer.',
-      hasRecording: true,
-    },
-    {
-      id: 2,
-      name: 'Michael Rodriguez',
-      phone: '(555) 987-6543',
-      date: 'May 23, 2025',
-      time: '2:15 PM',
-      summary: 'Looking to sell condo in downtown. Relocating for work.',
-      hasRecording: true,
-    },
-    {
-      id: 3,
-      name: 'Emily Chen',
-      phone: '(555) 456-7890',
-      date: 'May 22, 2025',
-      time: '4:45 PM',
-      summary: 'Wants information about listings in Westside neighborhood.',
-      hasRecording: false,
-    },
-  ];
+  // Note: This component shows demo data. Real call data comes from the RecentCallsClient
+  // which fetches from VAPI API and displays analysis including leadQuality
+  const recentCalls: RecentCall[] = [];
 
   return (
     <>

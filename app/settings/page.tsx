@@ -6,7 +6,6 @@ import { useSearchParams } from 'next/navigation';
 import { Filter } from 'bad-words';
 import { useMask } from '@react-input/mask';
 import { isEqual } from 'lodash-es';
-import { initializePaddle, Paddle } from '@paddle/paddle-js';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -50,6 +49,7 @@ import {
   isActiveSubscription,
   formatSubscriptionDate,
 } from '@/lib/paddle';
+import { getSubscriptionTier } from '@/lib/paddle';
 import dynamic from 'next/dynamic';
 const PasswordStrengthBar = dynamic(
   () => import('react-password-strength-bar'),
@@ -61,12 +61,83 @@ import { logger } from '@/lib/logger';
 const contentFilter = new Filter();
 contentFilter.addWords('scam', 'fraud', 'fake', 'illegal', 'drugs');
 
+// Import pricing tiers from pricing page for consistency
+const pricingTiers = [
+  {
+    id: 'free',
+    name: 'Free',
+    monthlyPrice: 0,
+    annualPrice: 0,
+    priceIdMonthly: '',
+    priceIdAnnual: '',
+  },
+  {
+    id: 'starter',
+    name: 'Starter',
+    monthlyPrice: 10,
+    annualPrice: 8,
+    priceIdMonthly:
+      process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID || '',
+    priceIdAnnual: process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID || '',
+  },
+  {
+    id: 'pro',
+    name: 'Professional',
+    monthlyPrice: 30,
+    annualPrice: 24,
+    priceIdMonthly: process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID || '',
+    priceIdAnnual: process.env.NEXT_PUBLIC_PADDLE_PRO_ANNUAL_PRICE_ID || '',
+  },
+  {
+    id: 'business',
+    name: 'Business',
+    monthlyPrice: 0,
+    annualPrice: 0,
+    priceIdMonthly: '',
+    priceIdAnnual: '',
+  },
+];
+
+// Helper function to get the correct price and billing period for a subscription
+const getSubscriptionPriceInfo = (subscription: any) => {
+  if (!subscription || subscription.tier_type === 'free') {
+    return { price: 0, billingPeriod: 'free' };
+  }
+
+  // Find the tier that matches the subscription's price_id
+  const tier = pricingTiers.find(
+    t =>
+      t.priceIdMonthly === subscription.price_id ||
+      t.priceIdAnnual === subscription.price_id
+  );
+
+  if (!tier) {
+    // Fallback to tier detection from paddle.ts
+    const detectedTier = getSubscriptionTier(subscription);
+    const fallbackTier = pricingTiers.find(t => t.id === detectedTier);
+    if (fallbackTier) {
+      return {
+        price: fallbackTier.monthlyPrice,
+        billingPeriod: 'monthly',
+      };
+    }
+    return { price: 30, billingPeriod: 'monthly' }; // Default to Pro monthly
+  }
+
+  // Determine if it's monthly or annual based on price_id
+  const isAnnual = tier.priceIdAnnual === subscription.price_id;
+
+  return {
+    price: isAnnual ? tier.annualPrice : tier.monthlyPrice,
+    billingPeriod: isAnnual ? 'annual' : 'monthly',
+  };
+};
+
 function SettingsContent() {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab') || 'profile';
 
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [paddle, setPaddle] = useState<Paddle | undefined>();
 
   // Get user settings and profile data
   const {
@@ -181,146 +252,6 @@ function SettingsContent() {
 
   // Password strength score state
   const [newPasswordScore, setNewPasswordScore] = useState(0);
-
-  // Initialize Paddle on component mount
-  useEffect(() => {
-    if (process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) {
-      logger.debug('SETTINGS', 'Initializing Paddle payment system', {
-        hasToken: !!process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN,
-        environment: process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT,
-      });
-      initializePaddle({
-        environment:
-          (process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT as
-            | 'sandbox'
-            | 'production') || 'sandbox',
-        token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN,
-        eventCallback: data => {
-          logger.debug('SETTINGS', 'Paddle event received', {
-            eventName: data.name,
-            hasData: !!data,
-          });
-          if (data.name === 'checkout.completed') {
-            logger.info('SETTINGS', 'Checkout completed successfully');
-            toast({
-              title: 'Payment successful!',
-              description: 'Your subscription has been updated.',
-            });
-            // Simplified subscription refresh with configurable polling
-            const refreshSubscriptionWithRetry = async () => {
-              const config = {
-                initialDelay: 2000,
-                maxAttempts: 3,
-                retryDelays: [1500, 3000], // delays between attempts
-              };
-
-              logger.debug(
-                'SETTINGS',
-                'Starting subscription data refresh sequence'
-              );
-
-              // Initial delay to allow webhook processing
-              await new Promise(resolve =>
-                setTimeout(resolve, config.initialDelay)
-              );
-
-              for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
-                logger.debug('SETTINGS', 'Subscription refresh attempt', {
-                  attempt,
-                  maxAttempts: config.maxAttempts,
-                });
-
-                try {
-                  await refetchSubscription();
-                  logger.info(
-                    'SETTINGS',
-                    'Subscription refresh completed successfully'
-                  );
-                  return; // Success - exit the function
-                } catch (error) {
-                  logger.warn('SETTINGS', `Refresh attempt ${attempt} failed`, {
-                    attempt,
-                    maxAttempts: config.maxAttempts,
-                    error:
-                      error instanceof Error ? error.message : String(error),
-                  });
-
-                  // If this was the last attempt, show error message
-                  if (attempt === config.maxAttempts) {
-                    logger.warn(
-                      'SETTINGS',
-                      'All subscription refresh attempts failed'
-                    );
-                    toast({
-                      title: 'Payment processed',
-                      description:
-                        "Your payment was successful. If your subscription status doesn't update shortly, please refresh the page.",
-                      duration: 8000,
-                    });
-                    return;
-                  }
-
-                  // Wait before next attempt
-                  const delay = config.retryDelays[attempt - 1] || 2000;
-                  logger.debug('SETTINGS', `Waiting before next attempt`, {
-                    delay,
-                  });
-                  await new Promise(resolve => setTimeout(resolve, delay));
-                }
-              }
-            };
-
-            // Execute the simplified refresh logic
-            refreshSubscriptionWithRetry().catch(error => {
-              logger.error(
-                'SETTINGS',
-                'Subscription refresh sequence failed',
-                error instanceof Error ? error : new Error(String(error))
-              );
-            });
-          }
-          if (data.name === 'checkout.error') {
-            logger.error(
-              'SETTINGS',
-              'Checkout error occurred',
-              new Error(data.error?.detail || 'Checkout failed'),
-              {
-                errorDetail: data.error?.detail,
-                hasErrorData: !!data.error,
-              }
-            );
-            toast({
-              title: 'Payment failed',
-              description:
-                data.error?.detail ||
-                'There was an error processing your payment.',
-              variant: 'destructive',
-            });
-          }
-        },
-      })
-        .then((paddleInstance: Paddle | undefined) => {
-          if (paddleInstance) {
-            logger.info('SETTINGS', 'Paddle initialized successfully');
-            setPaddle(paddleInstance);
-          } else {
-            logger.error(
-              'SETTINGS',
-              'Failed to initialize Paddle - instance is undefined'
-            );
-          }
-        })
-        .catch(error => {
-          logger.error(
-            'SETTINGS',
-            'Paddle initialization error',
-            error instanceof Error ? error : new Error(String(error))
-          );
-        });
-    } else {
-      logger.error('SETTINGS', 'NEXT_PUBLIC_PADDLE_CLIENT_TOKEN not found');
-    }
-  }, []);
 
   // Load profile data when available
   useEffect(() => {
@@ -987,105 +918,10 @@ function SettingsContent() {
     setNewPasswordScore(0);
   };
 
-  // Paddle checkout handler
-  const handlePlanChange = () => {
-    const formData = getProfileFormData(); // Get current profile data
-    const priceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
-
-    logger.debug('SETTINGS', 'Starting checkout process', {
-      hasPaddle: !!paddle,
-      hasUserId: !!userId,
-      hasEmail: !!formData.email,
-      hasPriceId: !!priceId,
-      environment: process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT,
-      hasFirstName: !!formData.firstName,
-      hasLastName: !!formData.lastName,
-    });
-
-    if (paddle && userId && formData.email && priceId) {
-      try {
-        // Create a minimal, working checkout configuration
-        const checkoutData: any = {
-          items: [
-            {
-              priceId: priceId,
-              quantity: 1,
-            },
-          ],
-          customData: {
-            user_id: userId,
-          },
-          settings: {
-            successUrl: `${window.location.origin}/settings?tab=billing&success=true`,
-            allowLogout: false,
-          },
-        };
-
-        // Only add customer info if we have complete name information
-        if (formData.firstName && formData.lastName && formData.email) {
-          checkoutData.customer = {
-            email: formData.email,
-            name: `${formData.firstName} ${formData.lastName}`.trim(),
-          };
-        }
-
-        logger.debug('SETTINGS', 'Opening checkout with configuration', {
-          hasItems: !!checkoutData.items?.length,
-          hasCustomData: !!checkoutData.customData,
-          hasCustomer: !!checkoutData.customer,
-          hasSuccessUrl: !!checkoutData.settings?.successUrl,
-        });
-
-        // Add additional error logging for the checkout process
-        paddle.Checkout.open(checkoutData);
-        logger.info('SETTINGS', 'Checkout opened successfully');
-      } catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error));
-        logger.error('SETTINGS', 'Error opening checkout', err, {
-          name: err.name,
-          message: err.message,
-        });
-
-        toast({
-          title: 'Checkout Error',
-          description: `Failed to open checkout: ${err.message}`,
-          variant: 'destructive',
-        });
-      }
-    } else {
-      const missingData = {
-        paddle: !paddle,
-        userId: !userId,
-        email: !formData.email,
-        priceId: !priceId,
-      };
-
-      logger.error(
-        'SETTINGS',
-        'Missing required data for checkout',
-        new Error('Checkout prerequisites not met'),
-        missingData
-      );
-
-      // Show more specific error messages
-      let errorDescription = 'Please ensure you are logged in and try again.';
-      if (!priceId) {
-        errorDescription =
-          'Payment configuration is missing. Please contact support.';
-      } else if (!formData.email) {
-        errorDescription =
-          'Please add your email address in your profile settings.';
-      } else if (!paddle) {
-        errorDescription =
-          'Payment system is loading. Please wait a moment and try again.';
-      }
-
-      toast({
-        title: 'Unable to process payment',
-        description: errorDescription,
-        variant: 'destructive',
-      });
-    }
+  // Handle subscription upgrade via pricing page
+  const handleUpgradePlan = () => {
+    // Redirect to pricing page for comprehensive plan selection
+    window.location.href = '/pricing';
   };
 
   // Handle subscription management
@@ -1716,66 +1552,242 @@ function SettingsContent() {
                       </p>
                     </div>
                   </div>
-                ) : subscription && isActiveSubscription(subscription) ? (
+                ) : subscription &&
+                  isActiveSubscription(subscription) &&
+                  subscription.tier_type !== 'free' ? (
                   // Active subscription
-                  <div className="rounded-md border p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium">Professional Plan</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Active subscription
-                        </p>
+                  <div className="space-y-4">
+                    <div className="rounded-lg border bg-gradient-to-r from-green-50 to-emerald-50 p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-green-900">
+                            Professional Plan
+                          </h3>
+                          <p className="text-sm text-green-700">
+                            {subscription.status === 'trialing'
+                              ? 'Free Trial Active'
+                              : 'Active Subscription'}
+                          </p>
+                        </div>
+                        <div className="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
+                          {subscription.status === 'trialing'
+                            ? 'Trial'
+                            : 'Active'}
+                        </div>
                       </div>
-                      <div className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                        {subscription.status === 'trialing'
-                          ? 'Trial'
-                          : 'Active'}
-                      </div>
-                    </div>
-                    <div className="mt-4 text-sm text-muted-foreground">
-                      <p>
-                        Current period ends:{' '}
-                        {formatSubscriptionDate(
-                          subscription.current_period_end_at
+
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <p className="text-sm font-medium text-green-900">
+                            Billing Period
+                          </p>
+                          <p className="text-sm text-green-700">
+                            Ends on{' '}
+                            {formatSubscriptionDate(
+                              subscription.current_period_end_at
+                            )}
+                          </p>
+                        </div>
+                        {subscription.quantity && (
+                          <div>
+                            <p className="text-sm font-medium text-green-900">
+                              Quantity
+                            </p>
+                            <p className="text-sm text-green-700">
+                              {subscription.quantity} seats
+                            </p>
+                          </div>
                         )}
-                      </p>
+                      </div>
+
                       {subscription.cancel_at_period_end && (
-                        <p className="text-amber-600">
-                          Subscription will cancel at end of period
-                        </p>
+                        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3">
+                          <p className="text-sm font-medium text-amber-800">
+                            ⚠️ Subscription will cancel at end of period
+                          </p>
+                          <p className="mt-1 text-xs text-amber-700">
+                            You'll continue to have access until{' '}
+                            {formatSubscriptionDate(
+                              subscription.current_period_end_at
+                            )}
+                          </p>
+                        </div>
                       )}
+
+                      <div className="mt-6 flex flex-wrap gap-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleManageSubscription}
+                          className="bg-white hover:bg-gray-50"
+                        >
+                          Manage Billing
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleUpgradePlan}
+                          className="bg-white hover:bg-gray-50"
+                        >
+                          View All Plans
+                        </Button>
+                      </div>
                     </div>
-                    <div className="mt-4 flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleManageSubscription}
-                      >
-                        Manage Subscription
-                      </Button>
+
+                    {/* Current Plan Features */}
+                    <div className="rounded-lg border p-4">
+                      <h4 className="mb-3 font-medium">
+                        Current Plan Features
+                      </h4>
+                      <div className="grid gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                          <span>Unlimited calls & minutes</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                          <span>Advanced lead qualification</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                          <span>CRM integrations (Webhook API)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                          <span>Real-time SMS & email alerts</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                          <span>Custom call scripts & greetings</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                          <span>Advanced analytics dashboard</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                          <span>Priority support</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ) : (
                   // No active subscription
-                  <div className="rounded-md border p-4">
-                    <div className="py-6 text-center">
-                      <h3 className="mb-2 font-medium">
-                        No Active Subscription
-                      </h3>
-                      <p className="mb-4 text-sm text-muted-foreground">
-                        Subscribe to access premium features
-                      </p>
-                      <div className="mb-4 text-sm text-muted-foreground">
-                        <ul className="space-y-1">
-                          <li>• Unlimited AI call answering</li>
-                          <li>• Customizable greeting and questions</li>
-                          <li>• Instant email summaries</li>
-                          <li>• Basic analytics</li>
-                        </ul>
+                  <div className="space-y-4">
+                    <div className="rounded-lg border bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+                      <div className="text-center">
+                        <h3 className="mb-2 text-lg font-semibold text-blue-900">
+                          Free Plan
+                        </h3>
+                        <p className="mb-4 text-sm text-blue-700">
+                          You're currently on the free plan with limited
+                          features
+                        </p>
+
+                        {/* Free Plan Features */}
+                        <div className="mb-6 text-left">
+                          <h4 className="mb-3 font-medium text-blue-900">
+                            Current Plan Includes:
+                          </h4>
+                          <div className="grid gap-2 text-sm text-blue-700">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                              <span>Up to 10 calls per month</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                              <span>Basic call summaries</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                              <span>Email notifications</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                              <span>Community support</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Button
+                          onClick={handleUpgradePlan}
+                          size="lg"
+                          className="w-full sm:w-auto"
+                        >
+                          Upgrade to Professional
+                        </Button>
                       </div>
-                      <Button onClick={handlePlanChange} disabled={!paddle}>
-                        {!paddle ? 'Loading...' : 'Subscribe Now'}
-                      </Button>
+                    </div>
+
+                    {/* Upgrade Benefits */}
+                    <div className="rounded-lg border p-4">
+                      <h4 className="mb-3 font-medium">
+                        Unlock with Professional Plan
+                      </h4>
+                      <div className="grid gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                          <span>Unlimited calls & minutes</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                          <span>Advanced lead qualification</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                          <span>CRM integrations (Webhook API)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                          <span>Real-time SMS & email alerts</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                          <span>Custom call scripts & greetings</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                          <span>Advanced analytics dashboard</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                          <span>Priority support</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 text-center">
+                        <p className="mb-3 text-sm text-muted-foreground">
+                          {(() => {
+                            const priceInfo =
+                              getSubscriptionPriceInfo(subscription);
+                            if (priceInfo.billingPeriod === 'free') {
+                              return (
+                                <span className="font-semibold text-foreground">
+                                  Free
+                                </span>
+                              );
+                            }
+                            return (
+                              <>
+                                Starting at{' '}
+                                <span className="font-semibold text-foreground">
+                                  ${priceInfo.price}/
+                                  {priceInfo.billingPeriod === 'annual'
+                                    ? 'month'
+                                    : 'month'}
+                                </span>{' '}
+                                {priceInfo.billingPeriod === 'annual'
+                                  ? '(billed annually)'
+                                  : '(billed monthly)'}
+                              </>
+                            );
+                          })()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          ✓ 14-day free trial • ✓ No credit card required • ✓
+                          Cancel anytime
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
