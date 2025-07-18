@@ -31,6 +31,22 @@ import { logger } from '@/lib/logger';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
+// Use environment variables for Paddle price IDs (monthly/annual)
+const priceIds = {
+  starter: {
+    monthly:
+      process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID ||
+      process.env.NEXT_PUBLIC_PADDLE_PRICE_ID || // legacy env var fallback
+      '',
+    annual:
+      process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID || '',
+  },
+  pro: {
+    monthly: process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID || '',
+    annual: process.env.NEXT_PUBLIC_PADDLE_PRO_ANNUAL_PRICE_ID || '',
+  },
+};
+
 interface PricingTier {
   id: string;
   name: string;
@@ -40,7 +56,8 @@ interface PricingTier {
   features: string[];
   popular?: boolean;
   ctaText: string;
-  priceId: string;
+  priceIdMonthly: string;
+  priceIdAnnual: string;
   limits: {
     calls: string;
     minutes: string;
@@ -67,7 +84,8 @@ const pricingTiers: PricingTier[] = [
       support: 'Community',
     },
     ctaText: 'Get Started Free',
-    priceId: '', // Free tier doesn't need a price ID
+    priceIdMonthly: '',
+    priceIdAnnual: '',
   },
   {
     id: 'starter',
@@ -90,7 +108,8 @@ const pricingTiers: PricingTier[] = [
     },
     popular: true,
     ctaText: 'Get Started',
-    priceId: 'pri_01jx94f6qywr25x1cqnh0td7fy', // Your current Paddle sandbox price ID
+    priceIdMonthly: priceIds.starter.monthly,
+    priceIdAnnual: priceIds.starter.annual,
   },
   {
     id: 'pro',
@@ -113,7 +132,8 @@ const pricingTiers: PricingTier[] = [
       support: 'Priority email',
     },
     ctaText: 'Get Started',
-    priceId: '', // TODO: Create Pro tier price ID in Paddle dashboard
+    priceIdMonthly: priceIds.pro.monthly,
+    priceIdAnnual: priceIds.pro.annual,
   },
   {
     id: 'business',
@@ -137,7 +157,8 @@ const pricingTiers: PricingTier[] = [
       support: 'Dedicated manager',
     },
     ctaText: 'Contact Sales',
-    priceId: '', // Business tier is contact sales only
+    priceIdMonthly: '',
+    priceIdAnnual: '',
   },
 ];
 
@@ -169,7 +190,9 @@ function PricingContent() {
       return;
     }
 
-    if (!tier.priceId) {
+    const selectedPriceId = isAnnual ? tier.priceIdAnnual : tier.priceIdMonthly;
+
+    if (!selectedPriceId) {
       toast({
         title: 'Configuration Error',
         description:
@@ -185,10 +208,10 @@ function PricingContent() {
       logger.info('PRICING_PAGE', 'Starting checkout process', {
         userId: logger.maskUserId(user.id),
         tierId: tier.id,
-        priceId: tier.priceId,
+        priceId: selectedPriceId,
       });
 
-      const result = await createCheckoutSession(tier.priceId);
+      const result = await createCheckoutSession(selectedPriceId);
 
       if (result.success && result.checkoutUrl) {
         // Redirect to Paddle checkout
@@ -204,6 +227,7 @@ function PricingContent() {
         {
           userId: logger.maskUserId(user.id),
           tierId: tier.id,
+          priceId: selectedPriceId,
         }
       );
 
@@ -224,7 +248,7 @@ function PricingContent() {
     }
 
     // Check if current subscription matches this tier
-    if (subscription?.price_id === tier.priceId) {
+    if (subscription?.price_id === tier.priceIdMonthly) {
       return 'current';
     }
 
