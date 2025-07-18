@@ -1,6 +1,8 @@
 // Simple in-memory cache for recent calls to reduce VAPI API calls
 // This helps with real-time updates without overloading VAPI
 
+import type { DashboardAnalytics } from './types';
+
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
@@ -64,5 +66,5 @@ class SimpleCache<T> {
   }
 }
 
-// Global cache instance for call data
-export const callCache = new SimpleCache();
+// Global cache instance for call data (analytics)
+export const callCache = new SimpleCache<DashboardAnalytics>();

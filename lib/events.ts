@@ -1,6 +1,8 @@
 // Simple event emitter for real-time call updates
 // This allows the webhook to notify connected clients about new calls
 
+import { logger } from '@/lib/logger';
+
 interface CallUpdateEvent {
   type: 'new-call' | 'call-updated' | 'connected' | 'heartbeat';
   callId: string;
@@ -54,7 +56,11 @@ class CallEventEmitter {
         try {
           callback(event);
         } catch (error) {
-          console.error('Error in call event listener:', error);
+          logger.error(
+            'CALL_EVENTS',
+            'Error in call event listener',
+            error instanceof Error ? error : new Error(String(error))
+          );
         }
       });
     }

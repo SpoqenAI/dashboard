@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
 
     // Fetch fresh call details from VAPI - no caching needed since VAPI is the source of truth
 
-    // Fetch fresh call details from VAPI if not cached
     const vapiResponse = await fetch(
       `${process.env.VAPI_API_URL || 'https://api.vapi.ai'}/call/${callId}`,
       {

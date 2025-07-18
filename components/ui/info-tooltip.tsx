@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Info } from 'lucide-react';
 import {
   Tooltip,
@@ -23,17 +24,7 @@ export function InfoTooltip({
   align = 'center',
 }: InfoTooltipProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const isMobile = useIsMobile();
 
   // Mobile-optimized positioning
   const mobileProps = isMobile

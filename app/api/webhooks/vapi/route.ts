@@ -45,10 +45,12 @@ interface VapiWebhookChatMessage {
 
 async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
   const message = envelope.message;
+  const callId: string | undefined = message.call?.id;
+  const assistantId: string | undefined = message.assistant?.id;
 
   logger.info('VAPI_WEBHOOK', 'Processing Vapi webhook (async)', {
     type: message.type,
-    callId: message.call?.id,
+    callId,
   });
 
   // We only care about end-of-call reports
@@ -59,7 +61,7 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
   // Log analysis data for monitoring (no storage needed - analysis comes from VAPI API)
   if (message.analysis) {
     logger.info('VAPI_WEBHOOK', 'Call analysis received from VAPI', {
-      callId: message.call?.id,
+      callId,
       hasVapiSummary: !!message.analysis?.summary,
       hasVapiStructuredData: !!message.analysis?.structuredData,
       hasVapiSuccessEvaluation: !!message.analysis?.successEvaluation,
@@ -71,9 +73,6 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
 
   // === Emit real-time event for new call ===
   try {
-    const callId: string | undefined = message.call?.id;
-    const assistantId: string | undefined = message.assistant?.id;
-
     if (callId && assistantId) {
       const supabase = createSupabaseAdmin();
 
@@ -146,8 +145,6 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
 
   // === Send email summary via Supabase function ===
   try {
-    const assistantId: string | undefined = message.assistant?.id;
-
     if (!assistantId) return;
 
     const supabase = createSupabaseAdmin();

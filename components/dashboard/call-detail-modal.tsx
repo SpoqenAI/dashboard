@@ -67,6 +67,11 @@ export const CallDetailModal = memo(
     const GetSentimentBadge = getSentimentBadge;
     const GetLeadQualityBadge = getLeadQualityBadge;
 
+    const DEFAULT_SENTIMENT_EXPLANATION =
+      "This is calculated by Spoqen's state of the art AI configuration leveraging Claude Sonnet to analyze calls and generate sentiment insights based on conversation tone, language patterns, and customer responses.";
+    const DEFAULT_LEAD_QUALITY_EXPLANATION =
+      "This is calculated by Spoqen's state of the art AI configuration leveraging Claude Sonnet to analyze calls and generate lead quality scores based on customer engagement, interest level, buying signals, and conversion potential.";
+
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col overflow-y-auto">
@@ -194,7 +199,7 @@ export const CallDetailModal = memo(
                             content={
                               call.analysis?.structuredData
                                 ?.sentimentAnalysisReasoning ||
-                              "This is calculated by Spoqen's state of the art AI configuration leveraging Claude Sonnet to analyze calls and generate sentiment insights based on conversation tone, language patterns, and customer responses."
+                              DEFAULT_SENTIMENT_EXPLANATION
                             }
                             maxWidth="max-w-sm sm:max-w-md"
                             side="right"
@@ -219,7 +224,7 @@ export const CallDetailModal = memo(
                             content={
                               call.analysis?.structuredData
                                 ?.leadQualityReasoning ||
-                              "This is calculated by Spoqen's state of the art AI configuration leveraging Claude Sonnet to analyze calls and generate lead quality scores based on customer engagement, interest level, buying signals, and conversion potential."
+                              DEFAULT_LEAD_QUALITY_EXPLANATION
                             }
                             maxWidth="max-w-sm sm:max-w-md"
                             side="right"

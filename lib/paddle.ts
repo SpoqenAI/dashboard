@@ -275,6 +275,9 @@ export const getSubscriptionTier = (
   }
 
   // Default fallback for paid subscriptions
+  console.warn(
+    `Unrecognized price_id: ${subscription.price_id}, defaulting to starter tier`
+  );
   return 'starter';
 };
 
