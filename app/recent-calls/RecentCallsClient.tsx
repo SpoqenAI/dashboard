@@ -27,7 +27,7 @@ import { VapiCall } from '@/lib/types';
 import { AlertCircle, ArrowUp } from 'lucide-react';
 import { CallDetailModal } from '@/components/dashboard/call-detail-modal';
 import { CallHistoryTable } from '@/components/dashboard/call-history-table';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -76,6 +76,7 @@ export default function RecentCallsClient() {
   const { user } = useAuth();
   const { subscription, loading: subscriptionLoading } = useSubscription();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Unified filter state
   const [filters, dispatchFilters] = useReducer(filterReducer, initialFilters);
@@ -291,11 +292,11 @@ export default function RecentCallsClient() {
       });
 
       // Clean up the URL by removing the payment parameter
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('payment');
-      window.history.replaceState({}, '', newUrl.toString());
+      const currentParams = new URLSearchParams(window.location.search);
+      currentParams.delete('payment');
+      router.replace(`${window.location.pathname}?${currentParams.toString()}`);
     }
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   if (!user) {
     return <div className="min-h-screen bg-background" />;
