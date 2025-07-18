@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.192.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { timingSafeEqual } from 'https://deno.land/std@0.192.0/crypto/timing_safe_equal.ts';
 
 const requiredEnv = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
 for (const name of requiredEnv) {
@@ -15,9 +16,18 @@ const supabase = createClient(
 
 serve(async req => {
   /* 1. Secret header check --------------------------------------------- */
-  if (
-    req.headers.get('x-vapi-secret') !== Deno.env.get('VAPI_WEBHOOK_SECRET')
-  ) {
+  const incomingSecret = req.headers.get('x-vapi-secret') ?? '';
+  const expectedSecret = Deno.env.get('VAPI_WEBHOOK_SECRET') ?? '';
+
+  const enc = new TextEncoder();
+  const incomingBytes = enc.encode(incomingSecret);
+  const expectedBytes = enc.encode(expectedSecret);
+
+  const valid =
+    incomingBytes.length === expectedBytes.length &&
+    timingSafeEqual(incomingBytes, expectedBytes);
+
+  if (!valid) {
     return new Response('Unauthorized', { status: 401 });
   }
 
