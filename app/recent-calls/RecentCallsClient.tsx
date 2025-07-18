@@ -27,6 +27,7 @@ import { VapiCall } from '@/lib/types';
 import { AlertCircle, ArrowUp } from 'lucide-react';
 import { CallDetailModal } from '@/components/dashboard/call-detail-modal';
 import { CallHistoryTable } from '@/components/dashboard/call-history-table';
+import { useSearchParams } from 'next/navigation';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -74,6 +75,7 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
 export default function RecentCallsClient() {
   const { user } = useAuth();
   const { subscription, loading: subscriptionLoading } = useSubscription();
+  const searchParams = useSearchParams();
 
   // Unified filter state
   const [filters, dispatchFilters] = useReducer(filterReducer, initialFilters);
@@ -277,6 +279,23 @@ export default function RecentCallsClient() {
     dispatchFilters({ type: 'SET_LEAD', value: v });
   const handleStatusChange = (v: string) =>
     dispatchFilters({ type: 'SET_STATUS', value: v });
+
+  // Handle payment success from Paddle redirect
+  useEffect(() => {
+    const payment = searchParams.get('payment');
+    if (payment === 'success') {
+      toast({
+        title: 'Payment successful!',
+        description: 'Welcome to Spoqen! Your subscription is now active.',
+        duration: 6000,
+      });
+
+      // Clean up the URL by removing the payment parameter
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('payment');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+  }, [searchParams]);
 
   if (!user) {
     return <div className="min-h-screen bg-background" />;

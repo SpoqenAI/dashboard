@@ -213,7 +213,7 @@ export async function GET(request: NextRequest) {
         }
       );
       return NextResponse.redirect(
-        new URL('/onboarding/subscribe?error=invalid_callback', request.url)
+        new URL('/login?error=invalid_callback', request.url)
       );
     }
 
@@ -253,10 +253,7 @@ export async function GET(request: NextRequest) {
 
       // Redirect to processing page which will find the existing subscription
       return NextResponse.redirect(
-        new URL(
-          '/onboarding/processing?payment=success&instant=true',
-          request.url
-        )
+        new URL('/dashboard?payment=success&instant=true', request.url)
       );
     }
 
@@ -300,7 +297,7 @@ export async function GET(request: NextRequest) {
       // Still redirect to processing page for error handling
       return NextResponse.redirect(
         new URL(
-          '/onboarding/processing?payment=success&error=subscription_failed',
+          '/dashboard?payment=success&error=subscription_failed',
           request.url
         )
       );
@@ -321,7 +318,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.redirect(
         new URL(
-          '/onboarding/processing?payment=success&error=subscription_failed',
+          '/dashboard?payment=success&error=subscription_failed',
           request.url
         )
       );
@@ -393,7 +390,10 @@ export async function GET(request: NextRequest) {
     });
 
     // 6. Enhanced redirect logic with robust URL handling
-    const redirectUrl = determineRedirectUrl(request, '/onboarding/processing');
+    const redirectUrl = determineRedirectUrl(
+      request,
+      '/dashboard?payment=success'
+    );
 
     logger.info('PADDLE_SUCCESS', 'Redirecting user after successful payment', {
       userId: logger.maskUserId(userId),
@@ -425,7 +425,7 @@ export async function GET(request: NextRequest) {
     // Redirect to error page with recovery options
     const errorRedirectUrl = determineRedirectUrl(
       request,
-      `/onboarding/subscribe?error=payment_processing_failed&message=${encodeURIComponent('Payment was successful but there was an issue completing your setup. Please contact support if this persists.')}`
+      `/settings?tab=billing&error=payment_processing_failed&message=${encodeURIComponent('Payment was successful but there was an issue completing your setup. Please contact support if this persists.')}`
     );
 
     return NextResponse.redirect(errorRedirectUrl);
