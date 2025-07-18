@@ -129,6 +129,31 @@ const nextConfig = {
           },
         ],
       },
+      // CSP headers for checkout pages to allow Paddle integration
+      {
+        source: '/checkout/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' *.paddle.com *.stripe.com *.datadoghq-browser-agent.com https://js.vercel.com",
+              "style-src 'self' 'unsafe-inline' *.paddle.com *.stripe.com",
+              "frame-src 'self' *.paddle.com *.paddlecustomer.com *.stripe.com",
+              "connect-src 'self' *.paddle.com *.stripe.com *.datadoghq-browser-agent.com https://vercel.com https://vercel-insights.com *.supabase.co wss://*.supabase.co",
+              "img-src 'self' data: https: *.paddle.com *.stripe.com",
+              "font-src 'self' data: *.paddle.com *.stripe.com",
+              "worker-src 'self' blob:",
+              "child-src 'self' *.paddle.com *.stripe.com",
+              "form-action 'self' *.paddle.com *.stripe.com"
+            ].join('; ')
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN', // Allow frames for checkout pages
+          },
+        ],
+      },
       // Cache JS/CSS chunks but keep other routes fresh to avoid stale builds
       {
         source: '/_next/static/(.*)',
