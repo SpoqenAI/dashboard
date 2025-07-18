@@ -1,8 +1,7 @@
-/** Edge function: send-email-summary */
-import { serve } from 'https://deno.land/std@0.192.0/http/server.ts';
+import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import React from 'https://esm.sh/react@18';
-import { renderToStaticMarkup } from 'https://esm.sh/react-dom@18/server';
+import React from 'https://esm.sh/react@18.3.1';
+import { renderToStaticMarkup } from 'https://esm.sh/react-dom@18.3.1/server';
 import CallSummaryEmail from '../_shared/templates/call-summary.tsx';
 
 const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
