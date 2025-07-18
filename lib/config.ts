@@ -60,3 +60,32 @@ export function isDebugEnabled(): boolean {
 export function isProduction(): boolean {
   return process.env.NODE_ENV === 'production';
 }
+
+/**
+ * Paddle configuration validation
+ */
+export function getPaddleConfig() {
+  const clientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+
+  if (!clientToken) {
+    throw new Error(
+      'NEXT_PUBLIC_PADDLE_CLIENT_TOKEN environment variable is required but not set'
+    );
+  }
+
+  const environment = process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT as
+    | 'sandbox'
+    | 'production'
+    | undefined;
+
+  if (environment && !['sandbox', 'production'].includes(environment)) {
+    throw new Error(
+      `Invalid Paddle environment: ${environment}. Must be 'sandbox' or 'production'`
+    );
+  }
+
+  return {
+    clientToken,
+    environment: environment || 'production',
+  };
+}

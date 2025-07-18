@@ -5,7 +5,42 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
-import { getPaddleInstance } from '@/lib/paddle-js';
+import {
+  getPaddleInstance,
+  PaddleInlineCheckoutOptions,
+} from '@/lib/paddle-js';
+
+// Helper function to validate Paddle price IDs
+function isValidPaddlePriceId(priceId: string): boolean {
+  // Check basic format: pri_ followed by alphanumeric characters
+  const priceIdPattern = /^pri_[a-zA-Z0-9]+$/;
+
+  if (!priceIdPattern.test(priceId)) {
+    return false;
+  }
+
+  // Get known price IDs from environment variables
+  const starterPriceIds =
+    process.env.NEXT_PUBLIC_PADDLE_STARTER_PRICE_IDS?.split(',') || [];
+  const proPriceIds =
+    process.env.NEXT_PUBLIC_PADDLE_PRO_PRICE_IDS?.split(',') || [];
+  const businessPriceIds =
+    process.env.NEXT_PUBLIC_PADDLE_BUSINESS_PRICE_IDS?.split(',') || [];
+
+  const allKnownPriceIds = [
+    ...starterPriceIds,
+    ...proPriceIds,
+    ...businessPriceIds,
+  ];
+
+  // If we have known price IDs configured, validate against them
+  if (allKnownPriceIds.length > 0) {
+    return allKnownPriceIds.includes(priceId);
+  }
+
+  // If no known price IDs are configured, just validate the format
+  return true;
+}
 
 export default function CheckoutPage() {
   const { priceId } = useParams<{ priceId: string }>();
@@ -19,23 +54,19 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!priceId || !priceId.startsWith('pri_')) {
+    if (!priceId || !isValidPaddlePriceId(priceId)) {
       setError('Invalid price identifier');
       return;
     }
 
     (async () => {
       try {
-        const env =
-          (process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT as
-            | 'sandbox'
-            | 'production') || 'production';
-        const Paddle = await getPaddleInstance(env);
+        const Paddle = await getPaddleInstance();
 
         // Render inline checkout frame
-        Paddle.Checkout.open({
+        const checkoutOptions: PaddleInlineCheckoutOptions = {
           items: [{ priceId, quantity: 1 }],
-          customer: { email: user.email },
+          customer: { email: user.email || '' },
           customData: { user_id: user.id },
           settings: {
             displayMode: 'inline',
@@ -50,7 +81,9 @@ export default function CheckoutPage() {
               router.back();
             },
           },
-        } as any);
+        };
+
+        Paddle.Checkout.open(checkoutOptions);
       } catch (err: any) {
         logger.error(
           'CHECKOUT_PAGE',
@@ -62,12 +95,18 @@ export default function CheckoutPage() {
     })();
   }, [user, priceId, router]);
 
+  // Handle error toast as a side effect
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: 'Checkout error',
+        description: error,
+        variant: 'destructive',
+      });
+    }
+  }, [error]);
+
   if (error) {
-    toast({
-      title: 'Checkout error',
-      description: error,
-      variant: 'destructive',
-    });
     return (
       <div className="flex h-screen items-center justify-center">
         <p className="text-destructive">{error}</p>

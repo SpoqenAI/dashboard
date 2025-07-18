@@ -6,6 +6,25 @@ import { logger } from '@/lib/logger';
 import { validatePaddleConfig } from '@/lib/paddle';
 import { getSiteUrl } from '@/lib/site-url';
 
+// Shared helper function for Paddle environment detection
+function getPaddleEnvironment(): {
+  isSandbox: boolean;
+  environment: 'sandbox' | 'production';
+} {
+  const envVar =
+    process.env.PADDLE_ENVIRONMENT ||
+    process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
+  const isSandbox =
+    envVar?.toLowerCase() === 'sandbox' ||
+    process.env.PADDLE_API_KEY?.toLowerCase().startsWith('sandbox') ||
+    false;
+
+  return {
+    isSandbox,
+    environment: isSandbox ? 'sandbox' : 'production',
+  };
+}
+
 // Initialize Paddle client
 function createPaddleClient() {
   const apiKey = process.env.PADDLE_API_KEY;
@@ -14,13 +33,7 @@ function createPaddleClient() {
     throw new Error('PADDLE_API_KEY environment variable is required');
   }
 
-  // Determine environment
-  const envVar =
-    process.env.PADDLE_ENVIRONMENT ||
-    process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
-  const isSandbox =
-    envVar?.toLowerCase() === 'sandbox' ||
-    apiKey.toLowerCase().startsWith('sandbox');
+  const { isSandbox } = getPaddleEnvironment();
 
   return new Paddle(apiKey, {
     environment: isSandbox ? Environment.sandbox : Environment.production,
@@ -89,13 +102,8 @@ export async function createCheckoutSession(priceId: string): Promise<{
       };
     }
 
-    // Determine environment again for response convenience
-    const envVar =
-      process.env.PADDLE_ENVIRONMENT ||
-      process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
-    const isSandbox =
-      envVar?.toLowerCase() === 'sandbox' ||
-      process.env.PADDLE_API_KEY?.toLowerCase().startsWith('sandbox');
+    // Get environment for response convenience
+    const { environment } = getPaddleEnvironment();
 
     // Create Paddle client
     const paddle = createPaddleClient();
@@ -161,7 +169,7 @@ export async function createCheckoutSession(priceId: string): Promise<{
       success: true,
       checkoutUrl: transaction.checkout.url,
       checkoutId: transaction.id,
-      environment: isSandbox ? 'sandbox' : 'production',
+      environment,
     };
   } catch (error: any) {
     logger.error(

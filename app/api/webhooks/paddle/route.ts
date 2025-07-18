@@ -238,8 +238,13 @@ export async function POST(request: NextRequest) {
         .update(rawBody)
         .digest('base64');
 
+      // Remove 'sha256=' prefix if present in the signature header
+      const sanitizedSignature = signatureHeader.startsWith('sha256=')
+        ? signatureHeader.slice(7)
+        : signatureHeader;
+
       const valid = crypto.timingSafeEqual(
-        Buffer.from(signatureHeader, 'utf8'),
+        Buffer.from(sanitizedSignature, 'utf8'),
         Buffer.from(expectedSignature, 'utf8')
       );
 

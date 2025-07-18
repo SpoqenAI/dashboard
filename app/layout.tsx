@@ -97,8 +97,8 @@ export default function RootLayout({
             <AuthProvider>
               <GlobalHeader />
               {children}
+              <Toaster />
             </AuthProvider>
-            <Toaster />
             {/* PERF: mark animations done after initial scroll to stop heavy keyframes */}
             <Script id="motion-done-script" strategy="afterInteractive">
               {`
