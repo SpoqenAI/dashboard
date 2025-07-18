@@ -52,7 +52,8 @@ export function GlobalHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Don't show navigation on onboarding pages
-  const isOnboarding = pathname?.startsWith('/onboarding');
+  const isOnboarding =
+    pathname?.startsWith('/onboarding') || pathname?.startsWith('/welcome');
   const isLandingPage = pathname === '/';
   const isAuthPage =
     pathname?.includes('/login') ||

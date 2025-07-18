@@ -108,7 +108,7 @@ export function SubscriptionForm({
             }
           );
           setCheckoutInProgress(false);
-          router.push('/onboarding/processing?payment=success');
+          router.push('/dashboard?payment=success');
         }
       } catch (error) {
         logger.error(
@@ -204,7 +204,7 @@ export function SubscriptionForm({
       setCheckoutInProgress(false);
       setPollingStopped(false);
       pollingAttemptsRef.current = 0;
-      router.push('/onboarding/processing?payment=success');
+      router.push('/dashboard?payment=success');
     }
   }, [activeSubscription, router, userId]);
 
@@ -250,7 +250,7 @@ export function SubscriptionForm({
           setCheckoutInProgress(false);
         },
         complete: () => {
-          router.push('/onboarding/processing?payment=success');
+          router.push('/dashboard?payment=success');
           router.prefetch('/dashboard');
         },
       };
@@ -418,7 +418,7 @@ export function SubscriptionForm({
 
       <CardFooter className="flex justify-between">
         <Button variant="outline" asChild>
-          <Link href="/onboarding/assistant">
+          <Link href="/welcome">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Link>
         </Button>
@@ -450,9 +450,7 @@ export function SubscriptionForm({
         {checkoutInProgress && (
           <Button
             variant="outline"
-            onClick={() =>
-              router.push('/onboarding/processing?payment=success')
-            }
+            onClick={() => router.push('/dashboard?payment=success')}
             className="ml-2"
           >
             Payment Complete? Continue →

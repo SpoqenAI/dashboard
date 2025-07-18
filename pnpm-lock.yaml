@@ -228,6 +228,9 @@ importers:
       '@next/bundle-analyzer':
         specifier: ^15.3.5
         version: 15.3.5
+      '@next/eslint-plugin-next':
+        specifier: ^15.4.1
+        version: 15.4.1
       '@types/acorn':
         specifier: ^4.0.6
         version: 4.0.6
@@ -937,6 +940,12 @@ packages:
 
   /@next/eslint-plugin-next@15.4.0-canary.51:
     resolution: {integrity: sha512-o8i6nSHaPGxgycpqyAw8nu1xyO1VQhf4dhuhYx3PallA0OjbCaXRI3178DKqwiDStrpVJLvCAqVbiSeEOjbn/g==}
+    dependencies:
+      fast-glob: 3.3.1
+    dev: true
+
+  /@next/eslint-plugin-next@15.4.1:
+    resolution: {integrity: sha512-lQnHUxN7mMksK7IxgKDIXNMWFOBmksVrjamMEURXiYfo7zgsc30lnU8u4y/MJktSh+nB80ktTQeQbWdQO6c8Ow==}
     dependencies:
       fast-glob: 3.3.1
     dev: true

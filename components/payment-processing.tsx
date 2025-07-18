@@ -84,7 +84,7 @@ export function PaymentProcessing() {
       setStatusMessage('Account setup complete! Welcome to Spoqen!');
 
       const id = setTimeout(() => {
-        router.push('/dashboard?welcome=true');
+        router.push('/dashboard');
       }, 1500);
 
       return () => clearTimeout(id);

@@ -419,9 +419,7 @@ export async function middleware(request: NextRequest) {
         }
         // If user is free, redirect to onboarding/profile (legacy fallback)
         logPerformanceMetrics();
-        return NextResponse.redirect(
-          new URL('/onboarding/profile', request.url)
-        );
+        return NextResponse.redirect(new URL('/welcome', request.url));
       }
     } catch (error) {
       const errorMessage = `Middleware error: ${error instanceof Error ? error.message : 'Unknown error'}`;

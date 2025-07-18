@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/reset-password', request.url));
     } else if (type === 'signup') {
       // Email confirmation flow - redirect to onboarding for new users
-      return NextResponse.redirect(new URL('/onboarding', request.url));
+      return NextResponse.redirect(new URL('/welcome', request.url));
     } else if (type === 'email_change') {
       // Email change verification flow
       const user = data.user;
@@ -216,7 +216,7 @@ export async function GET(request: NextRequest) {
 
           if (isRecentEmailConfirmation && isRecentSignup) {
             // This is email verification for a new user - redirect to onboarding
-            return NextResponse.redirect(new URL('/onboarding', request.url));
+            return NextResponse.redirect(new URL('/welcome', request.url));
           }
         }
 
@@ -232,7 +232,7 @@ export async function GET(request: NextRequest) {
         // Redirect based on user status
         if (isNewUser) {
           // Redirect new users to onboarding
-          return NextResponse.redirect(new URL('/onboarding', request.url));
+          return NextResponse.redirect(new URL('/welcome', request.url));
         } else {
           const isValidRedirectPath = (path: string) => {
             return (
