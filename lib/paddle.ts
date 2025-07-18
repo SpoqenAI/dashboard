@@ -299,8 +299,14 @@ export const hasFeatureAccess = <T extends keyof FeatureLimits>(
   const limits = getFeatureLimits(subscription);
   const featureLimits = limits[feature];
 
-  if (subFeature && typeof featureLimits === 'object' && featureLimits !== null) {
-    return (featureLimits as Record<string, boolean>)[subFeature as string] === true;
+  if (
+    subFeature &&
+    typeof featureLimits === 'object' &&
+    featureLimits !== null
+  ) {
+    return (
+      (featureLimits as Record<string, boolean>)[subFeature as string] === true
+    );
   }
 
   return false;
