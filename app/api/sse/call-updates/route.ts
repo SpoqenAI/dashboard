@@ -61,9 +61,10 @@ export async function GET(request: NextRequest) {
     'https://localhost:3000',
     'http://172.17.208.1:3000',
   ];
-  
+
   const origin = request.headers.get('origin');
-  const corsOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  const corsOrigin =
+    origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
 
   return new Response(stream, {
     headers: {

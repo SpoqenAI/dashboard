@@ -23,7 +23,7 @@ class SimpleCache<T> {
   get(key: string): T | null {
     // Cleanup on access if needed
     this.maybeCleanup();
-    
+
     const entry = this.cache.get(key);
     if (!entry) return null;
 
