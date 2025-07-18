@@ -76,7 +76,8 @@ const pricingTiers = [
     name: 'Starter',
     monthlyPrice: 10,
     annualPrice: 8,
-    priceIdMonthly: process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID || '',
+    priceIdMonthly:
+      process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID || '',
     priceIdAnnual: process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID || '',
   },
   {
@@ -104,9 +105,10 @@ const getSubscriptionPriceInfo = (subscription: any) => {
   }
 
   // Find the tier that matches the subscription's price_id
-  const tier = pricingTiers.find(t => 
-    t.priceIdMonthly === subscription.price_id || 
-    t.priceIdAnnual === subscription.price_id
+  const tier = pricingTiers.find(
+    t =>
+      t.priceIdMonthly === subscription.price_id ||
+      t.priceIdAnnual === subscription.price_id
   );
 
   if (!tier) {
@@ -114,9 +116,9 @@ const getSubscriptionPriceInfo = (subscription: any) => {
     const detectedTier = getSubscriptionTier(subscription);
     const fallbackTier = pricingTiers.find(t => t.id === detectedTier);
     if (fallbackTier) {
-      return { 
-        price: fallbackTier.monthlyPrice, 
-        billingPeriod: 'monthly' 
+      return {
+        price: fallbackTier.monthlyPrice,
+        billingPeriod: 'monthly',
       };
     }
     return { price: 30, billingPeriod: 'monthly' }; // Default to Pro monthly
@@ -124,10 +126,10 @@ const getSubscriptionPriceInfo = (subscription: any) => {
 
   // Determine if it's monthly or annual based on price_id
   const isAnnual = tier.priceIdAnnual === subscription.price_id;
-  
+
   return {
     price: isAnnual ? tier.annualPrice : tier.monthlyPrice,
-    billingPeriod: isAnnual ? 'annual' : 'monthly'
+    billingPeriod: isAnnual ? 'annual' : 'monthly',
   };
 };
 
@@ -1756,7 +1758,8 @@ function SettingsContent() {
                       <div className="mt-4 text-center">
                         <p className="mb-3 text-sm text-muted-foreground">
                           {(() => {
-                            const priceInfo = getSubscriptionPriceInfo(subscription);
+                            const priceInfo =
+                              getSubscriptionPriceInfo(subscription);
                             if (priceInfo.billingPeriod === 'free') {
                               return (
                                 <span className="font-semibold text-foreground">
@@ -1768,9 +1771,14 @@ function SettingsContent() {
                               <>
                                 Starting at{' '}
                                 <span className="font-semibold text-foreground">
-                                  ${priceInfo.price}/{priceInfo.billingPeriod === 'annual' ? 'month' : 'month'}
+                                  ${priceInfo.price}/
+                                  {priceInfo.billingPeriod === 'annual'
+                                    ? 'month'
+                                    : 'month'}
                                 </span>{' '}
-                                {priceInfo.billingPeriod === 'annual' ? '(billed annually)' : '(billed monthly)'}
+                                {priceInfo.billingPeriod === 'annual'
+                                  ? '(billed annually)'
+                                  : '(billed monthly)'}
                               </>
                             );
                           })()}
