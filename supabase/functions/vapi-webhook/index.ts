@@ -15,7 +15,13 @@ serve(async req => {
   }
 
   /* 2. Parse message ---------------------------------------------------- */
-  const envelope = await req.json();
+  let envelope: any;
+  try {
+    envelope = await req.json();
+  } catch (err) {
+    console.error('Invalid JSON payload', err);
+    return new Response('Invalid JSON', { status: 400 });
+  }
   const msg = envelope.message;
   if (msg.type !== 'end-of-call-report')
     return new Response(null, { status: 200 });
