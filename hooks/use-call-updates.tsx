@@ -34,15 +34,16 @@ export function useCallUpdates({
 
       eventSource.onmessage = event => {
         try {
-          const data = JSON.parse(event.data) as CallUpdateEvent & {
-            type: string;
-          };
+          const raw = JSON.parse(event.data) as { type: string };
 
-          if (data.type === 'connected' || data.type === 'heartbeat') {
+          // Type guard for connection/heartbeat events
+          if (raw.type === 'connected' || raw.type === 'heartbeat') {
             // Connection/heartbeat messages - just log
             return;
           }
 
+          // Now assert as CallUpdateEvent for other types
+          const data = raw as CallUpdateEvent;
           setLastEvent(data);
 
           // Call appropriate handler
