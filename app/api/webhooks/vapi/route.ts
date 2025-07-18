@@ -1,18 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
-import { sendCallSummaryEmail } from '@/lib/email/send-call-summary';
 import { callEventEmitter } from '@/lib/events';
 import { callCache } from '@/lib/call-cache';
-// Removed Redis dependency - analysis comes directly from VAPI API calls
 
-// Run as an Edge Function (Next.js 15+) to dramatically increase concurrency and
-// (Edge Runtime removed – Node runtime is required to use the SendGrid SDK.)
-
-// Process the envelope in the background so we can respond 200 ASAP and
-// release the Vercel function slot. This greatly reduces the likelihood of
-// HTTP 429 rate-limit errors when Vapi sends many `speech-update` events in
-// rapid succession.
 async function processVapiWebhook(envelope: any) {
   const message = envelope.message;
 
@@ -117,7 +108,7 @@ async function processVapiWebhook(envelope: any) {
     );
   }
 
-  // === Attempt to email the call summary ===
+  // === Send email summary via Supabase function ===
   try {
     const assistantId: string | undefined =
       message.assistant?.id ?? message.call?.assistantId;
@@ -125,34 +116,25 @@ async function processVapiWebhook(envelope: any) {
     if (!assistantId) return;
 
     const supabase = createSupabaseAdmin();
-
-    // Single query to fetch both id and email_notifications
-    const { data: settingsRow, error: settingsErr } = await supabase
-      .from('user_settings')
-      .select('id, email_notifications')
-      .eq('vapi_assistant_id', assistantId)
-      .maybeSingle();
-
-    if (settingsErr || !settingsRow) return;
-
-    const userId = settingsRow.id;
-    const emailNotifications: boolean = settingsRow.email_notifications ?? true;
-
-    // Now, get the email from profiles
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('id', userId)
-      .single();
-
-    const email = profile?.email;
-
-    if (!email || !emailNotifications) return;
-
     const summary: string = message.summary ?? message.analysis?.summary ?? '';
     const phoneNumber: string | undefined = message.customer?.number;
 
-    await sendCallSummaryEmail({ to: email, summary, phoneNumber });
+    // Call the Supabase email function
+    const { error: emailErr } = await supabase.functions.invoke(
+      'send-email-summary',
+      {
+        body: { assistantId, summary, phoneNumber },
+      }
+    );
+
+    if (emailErr) {
+      logger.error('EMAIL', 'Failed to invoke email function', emailErr);
+    } else {
+      logger.info('EMAIL', 'Email function invoked successfully', {
+        assistantId,
+        hasPhoneNumber: !!phoneNumber,
+      });
+    }
   } catch (err) {
     logger.error('EMAIL', 'Failed in email flow', err as Error);
   }
