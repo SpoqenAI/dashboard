@@ -31,6 +31,13 @@ export interface PaddleCheckoutEvents {
   close?: () => void;
   error?: (error: any) => void;
   loaded?: () => void;
+  // Additional events for inline checkout
+  ready?: () => void;
+  success?: (data: any) => void;
+  payment?: {
+    completed?: (data: any) => void;
+    failed?: (error: any) => void;
+  };
 }
 
 // Comprehensive checkout options interface for both modes

@@ -78,8 +78,14 @@ export function PricingGrid({ pricingTiers }: PricingGridProps) {
         priceId: selectedPriceId,
       });
 
-      // Redirect to our inline checkout page
-      window.location.href = `/checkout/${selectedPriceId}`;
+      // Create URL with plan information as parameters
+      const checkoutUrl = new URL(`/checkout/${selectedPriceId}`, window.location.origin);
+      checkoutUrl.searchParams.set('plan', tier.name);
+      checkoutUrl.searchParams.set('price', (isAnnual ? tier.annualPrice : tier.monthlyPrice).toString());
+      checkoutUrl.searchParams.set('cycle', isAnnual ? 'Annual' : 'Monthly');
+      
+      // Redirect to our inline checkout page with plan info
+      window.location.href = checkoutUrl.toString();
     } catch (error) {
       const currentRetries = retryCount[tier.id] || 0;
 
@@ -158,8 +164,8 @@ export function PricingGrid({ pricingTiers }: PricingGridProps) {
       <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-3 lg:gap-6">
         {pricingTiers.map(tier => {
           const price = isAnnual ? tier.annualPrice : tier.monthlyPrice;
-          const yearlyTotal = tier.annualPrice * 12;
-          const monthlyTotal = tier.monthlyPrice * 12;
+          const yearlyTotal = tier.annualPrice; // Annual price is the actual yearly total
+          const monthlyTotal = tier.monthlyPrice * 12; // Monthly * 12 = yearly equivalent
           const savings = monthlyTotal - yearlyTotal;
           const tierStatus = getCurrentTierStatus(tier);
           const isLoading = loadingTier === tier.id;
@@ -210,7 +216,7 @@ export function PricingGrid({ pricingTiers }: PricingGridProps) {
                       <>
                         <span className="text-4xl font-bold">${price}</span>
                         <span className="text-sm text-muted-foreground">
-                          /month
+                          /{isAnnual ? 'year' : 'month'}
                         </span>
                       </>
                     )}
@@ -222,7 +228,7 @@ export function PricingGrid({ pricingTiers }: PricingGridProps) {
                   )}
                   {!isAnnual && tier.annualPrice > 0 && (
                     <div className="text-xs text-muted-foreground">
-                      ${tier.annualPrice}/month billed annually
+                      ${Math.round(tier.annualPrice / 12)}/month billed annually
                     </div>
                   )}
                 </div>

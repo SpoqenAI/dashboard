@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { ArrowLeft, ArrowRight, Check, Shield, Sparkles } from 'lucide-react';
@@ -22,38 +22,111 @@ function isValidPaddlePriceId(priceId: string): boolean {
     return false;
   }
 
-  // Get known price IDs from environment variables (arrays)
-  const starterPriceIds =
-    process.env.NEXT_PUBLIC_PADDLE_STARTER_PRICE_IDS?.split(',') || [];
-  const proPriceIds =
-    process.env.NEXT_PUBLIC_PADDLE_PRO_PRICE_IDS?.split(',') || [];
-  const businessPriceIds =
-    process.env.NEXT_PUBLIC_PADDLE_BUSINESS_PRICE_IDS?.split(',') || [];
-
-  const allKnownPriceIds = [
-    ...starterPriceIds,
-    ...proPriceIds,
-    ...businessPriceIds,
-  ];
+  // Get known price IDs from environment variables
+  const knownPriceIds = [
+    process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID,
+    process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID,
+    process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID,
+    process.env.NEXT_PUBLIC_PADDLE_PRO_ANNUAL_PRICE_ID,
+  ].filter(Boolean);
 
   // If we have known price IDs configured, validate against them
-  if (allKnownPriceIds.length > 0) {
-    return allKnownPriceIds.includes(priceId);
+  if (knownPriceIds.length > 0) {
+    return knownPriceIds.includes(priceId);
   }
 
   // If no known price IDs are configured, just validate the format
-  // This allows for flexible development and testing
   return true;
 }
 
-// Plan configuration based on price IDs
-const getPlanDetails = (priceId: string) => {
-  const starterPriceIds =
-    process.env.NEXT_PUBLIC_PADDLE_STARTER_PRICE_IDS?.split(',') || [];
-  const proPriceIds =
-    process.env.NEXT_PUBLIC_PADDLE_PRO_PRICE_IDS?.split(',') || [];
+// Security: Validate that display price matches actual price ID
+const validatePriceConsistency = (priceId: string, displayPrice: number): boolean => {
+  const starterMonthlyId = process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID;
+  const starterAnnualId = process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID;
+  const proMonthlyId = process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID;
+  const proAnnualId = process.env.NEXT_PUBLIC_PADDLE_PRO_ANNUAL_PRICE_ID;
 
-  if (starterPriceIds.includes(priceId)) {
+  // Expected prices for each price ID (actual amounts charged)
+  const expectedPrices: Record<string, number> = {
+    [starterMonthlyId || '']: 10,     // $10/month
+    [starterAnnualId || '']: 96,      // $96/year (not monthly equivalent)
+    [proMonthlyId || '']: 30,         // $30/month  
+    [proAnnualId || '']: 288,         // $288/year (not monthly equivalent)
+  };
+
+  const expectedPrice = expectedPrices[priceId];
+  if (expectedPrice && Math.abs(displayPrice - expectedPrice) > 1) {
+    console.warn(`Price mismatch detected: priceId ${priceId} shows $${displayPrice} but should be $${expectedPrice}`);
+    return false;
+  }
+
+  return true;
+};
+
+// Plan configuration based on price IDs and URL parameters
+const getPlanDetails = (priceId: string, searchParams?: { get: (key: string) => string | null }) => {
+  // First, try to get plan info from URL parameters (passed from pricing page)
+  if (searchParams) {
+    const planName = searchParams.get('plan');
+    const planPrice = searchParams.get('price');
+    const billingCycle = searchParams.get('cycle') || 'Monthly';
+    
+    if (planName && planPrice) {
+      const price = parseInt(planPrice, 10);
+      
+      // Security: Validate price consistency
+      if (!validatePriceConsistency(priceId, price)) {
+        console.warn('Price manipulation detected, falling back to price ID validation');
+        // Fall through to environment variable validation
+      } else {
+        // Return plan details based on URL parameters (validated)
+        if (planName.toLowerCase().includes('starter')) {
+          return {
+            name: 'Spoqen Starter',
+            description: 'Perfect for small businesses getting started',
+            price,
+            billingCycle,
+            features: [
+              'Up to 30 calls per month',
+              'Basic analytics dashboard',
+              'Call summaries & transcripts',
+              'Email notifications',
+              'Basic AI settings',
+              'Email support',
+            ],
+            color: 'from-blue-500 to-cyan-500',
+          };
+        }
+        
+        if (planName.toLowerCase().includes('professional') || planName.toLowerCase().includes('pro')) {
+          return {
+            name: 'Spoqen Professional',
+            description: 'For growing businesses with unlimited needs',
+            price,
+            billingCycle,
+            features: [
+              'Unlimited calls & minutes',
+              'Advanced analytics & reports',
+              'Custom AI training',
+              'Webhook integrations',
+              'CRM integrations',
+              'Priority support',
+            ],
+            color: 'from-purple-500 to-pink-500',
+          };
+        }
+      }
+    }
+  }
+
+  // Fallback to environment variable approach using specific price IDs
+  const starterMonthlyId = process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID;
+  const starterAnnualId = process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID;
+  const proMonthlyId = process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID;
+  const proAnnualId = process.env.NEXT_PUBLIC_PADDLE_PRO_ANNUAL_PRICE_ID;
+
+  // Check for starter plans
+  if (priceId === starterMonthlyId) {
     return {
       name: 'Spoqen Starter',
       description: 'Perfect for small businesses getting started',
@@ -71,7 +144,26 @@ const getPlanDetails = (priceId: string) => {
     };
   }
 
-  if (proPriceIds.includes(priceId)) {
+  if (priceId === starterAnnualId) {
+    return {
+      name: 'Spoqen Starter',
+      description: 'Perfect for small businesses getting started',
+      price: 96, // $96 per year (20% discount from $120)
+      billingCycle: 'Annual',
+      features: [
+        'Up to 30 calls per month',
+        'Basic analytics dashboard',
+        'Call summaries & transcripts',
+        'Email notifications',
+        'Basic AI settings',
+        'Email support',
+      ],
+      color: 'from-blue-500 to-cyan-500',
+    };
+  }
+
+  // Check for pro plans
+  if (priceId === proMonthlyId) {
     return {
       name: 'Spoqen Professional',
       description: 'For growing businesses with unlimited needs',
@@ -89,14 +181,40 @@ const getPlanDetails = (priceId: string) => {
     };
   }
 
-  // Default fallback
+  if (priceId === proAnnualId) {
+    return {
+      name: 'Spoqen Professional',
+      description: 'For growing businesses with unlimited needs',
+      price: 288, // $288 per year ($72 savings = 20% discount)
+      billingCycle: 'Annual',
+      features: [
+        'Unlimited calls & minutes',
+        'Advanced analytics & reports',
+        'Custom AI training',
+        'Webhook integrations',
+        'CRM integrations',
+        'Priority support',
+      ],
+      color: 'from-purple-500 to-pink-500',
+    };
+  }
+
+  // If no match found, return starter as fallback
+  console.warn(`Unknown price ID: ${priceId}, defaulting to Starter plan`);
   return {
-    name: 'Spoqen Plan',
-    description: 'Your selected subscription plan',
-    price: 0,
+    name: 'Spoqen Starter',
+    description: 'Perfect for small businesses getting started',
+    price: 10,
     billingCycle: 'Monthly',
-    features: ['Premium AI assistant features'],
-    color: 'from-gray-500 to-gray-600',
+    features: [
+      'Up to 30 calls per month',
+      'Basic analytics dashboard',
+      'Call summaries & transcripts',
+      'Email notifications',
+      'Basic AI settings',
+      'Email support',
+    ],
+    color: 'from-blue-500 to-cyan-500',
   };
 };
 
@@ -160,7 +278,7 @@ function OrderSummary({ priceId }: { priceId: string }) {
           <div className="flex justify-between border-t border-gray-600/50 pt-2 text-lg font-semibold">
             <span className="text-white">Total</span>
             <span className="text-white">
-              ${planDetails.price}.00/{planDetails.billingCycle.toLowerCase()}
+              ${planDetails.price}.00/{planDetails.billingCycle.toLowerCase() === 'annual' ? 'year' : planDetails.billingCycle.toLowerCase()}
             </span>
           </div>
         </div>
@@ -203,19 +321,90 @@ export default function CheckoutPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  
+  // nuqs query parameters for plan information
+  const [planName] = useQueryState('plan');
+  const [planPrice] = useQueryState('price');
+  const [billingCycle] = useQueryState('cycle');
   const [, setPayment] = useQueryState('payment');
+  
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [checkoutLoaded, setCheckoutLoaded] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
 
   const priceId = params.priceId as string;
-  const planDetails = useMemo(() => getPlanDetails(priceId), [priceId]);
+  const planDetails = useMemo(() => {
+    // Create a simple object for URL parameters from nuqs
+    const params = planName || planPrice || billingCycle ? {
+      get: (key: string) => {
+        switch (key) {
+          case 'plan': return planName;
+          case 'price': return planPrice;
+          case 'cycle': return billingCycle;
+          default: return null;
+        }
+      }
+    } : undefined;
+    
+    return getPlanDetails(priceId, params);
+  }, [priceId, planName, planPrice, billingCycle]);
 
   // Helper to navigate to processing with payment parameter
-  const navigateToProcessing = () => {
-    setPayment('processing');
+  const navigateToProcessing = useCallback(() => {
+    logger.info('CHECKOUT_PAGE', 'Navigating to dashboard after successful payment');
+    setPayment('success'); // Set payment status to success
     router.push('/dashboard');
-  };
+  }, [setPayment, router]);
+
+  // Auto-redirect mechanism for successful payments
+  useEffect(() => {
+    if (checkoutLoaded) {
+      // Check for success indicators in the iframe periodically
+      const checkForSuccess = () => {
+        try {
+          const iframe = document.querySelector('.paddle-checkout-container iframe') as HTMLIFrameElement;
+          if (iframe && iframe.contentWindow) {
+            // Look for success indicators in the URL or content
+            const iframeUrl = iframe.src || '';
+            if (iframeUrl.includes('success') || iframeUrl.includes('completed')) {
+              logger.info('CHECKOUT_PAGE', 'Success detected in iframe URL, redirecting');
+              navigateToProcessing();
+              return;
+            }
+          }
+        } catch (e) {
+          // Cross-origin iframe access blocked, which is expected
+        }
+
+        // Check for success text in the iframe (if accessible)
+        try {
+          const container = document.querySelector('.paddle-checkout-container');
+          if (container && container.textContent?.includes('completed successfully')) {
+            logger.info('CHECKOUT_PAGE', 'Success text detected, redirecting');
+            setPaymentCompleted(true);
+            navigateToProcessing();
+            return;
+          }
+        } catch (e) {
+          // Ignore errors
+        }
+      };
+
+      // Set up periodic checking for success
+      const successCheckInterval = setInterval(checkForSuccess, 2000);
+      
+      // Clean up interval after 5 minutes
+      const timeout = setTimeout(() => {
+        clearInterval(successCheckInterval);
+      }, 300000);
+
+      return () => {
+        clearInterval(successCheckInterval);
+        clearTimeout(timeout);
+      };
+    }
+  }, [checkoutLoaded, navigateToProcessing]);
 
   useEffect(() => {
     if (!user || !priceId) return;
@@ -256,12 +445,14 @@ export default function CheckoutPage() {
           },
           {
             complete: () => {
-              logger.info('CHECKOUT_PAGE', 'Checkout completed successfully');
-              navigateToProcessing();
+              logger.info('CHECKOUT_PAGE', 'Paddle complete event fired');
+              setPaymentCompleted(true);
+              setTimeout(() => {
+                navigateToProcessing();
+              }, 1000);
             },
             close: () => {
               logger.info('CHECKOUT_PAGE', 'Checkout closed by user');
-              // Don't navigate away on close - let user stay on page
             },
             error: (error) => {
               logger.error('CHECKOUT_PAGE', 'Checkout error', error);
@@ -272,6 +463,29 @@ export default function CheckoutPage() {
               setCheckoutLoaded(true);
               setIsLoading(false);
             },
+            ready: () => {
+              logger.info('CHECKOUT_PAGE', 'Paddle ready event fired');
+            },
+            success: (data) => {
+              logger.info('CHECKOUT_PAGE', 'Paddle success event fired', data);
+              setPaymentCompleted(true);
+              setTimeout(() => {
+                navigateToProcessing();
+              }, 1000);
+            },
+            payment: {
+              completed: (data) => {
+                logger.info('CHECKOUT_PAGE', 'Paddle payment.completed event fired', data);
+                setPaymentCompleted(true);
+                setTimeout(() => {
+                  navigateToProcessing();
+                }, 1000);
+              },
+              failed: (error) => {
+                logger.error('CHECKOUT_PAGE', 'Paddle payment.failed event fired', error);
+                setError('Payment failed. Please try again.');
+              }
+            }
           }
         );
       } catch (err: any) {
@@ -372,14 +586,38 @@ export default function CheckoutPage() {
               <CardContent className="p-0">
                 {/* Checkout Container */}
                 <div
-                  className="paddle-checkout-container min-h-[600px] w-full"
+                  className="paddle-checkout-container min-h-[600px] w-full relative"
                   style={{
                     background: 'transparent',
                   }}
                 />
-
+                
+                {/* Manual Continue Button - shows when payment completed */}
+                {paymentCompleted && (
+                  <div className="absolute inset-0 bg-white/95 backdrop-blur-sm flex items-center justify-center">
+                    <div className="text-center space-y-4">
+                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                        <Check className="w-8 h-8 text-green-600" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        Payment Successful!
+                      </h3>
+                      <p className="text-gray-600 max-w-sm">
+                        Your subscription has been activated. Click below to continue to your dashboard.
+                      </p>
+                      <Button 
+                        onClick={navigateToProcessing}
+                        className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+                      >
+                        Continue to Dashboard
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Loading State */}
-                {isLoading && !checkoutLoaded && (
+                {isLoading && !checkoutLoaded && !paymentCompleted && (
                   <div className="absolute inset-0 bg-white">
                     <CheckoutFrameSkeleton />
                   </div>
