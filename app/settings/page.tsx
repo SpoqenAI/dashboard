@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/protected-route';
-import { useSearchParams } from 'next/navigation';
+import { useQueryState } from 'nuqs';
 import { Filter } from 'bad-words';
 import { useMask } from '@react-input/mask';
 import { isEqual } from 'lodash-es';
@@ -98,6 +98,57 @@ const pricingTiers = [
   },
 ];
 
+// Helper function to get tier information based on subscription
+const getSubscriptionTierInfo = (subscription: any) => {
+  const tier = getSubscriptionTier(subscription);
+  const tierNames = {
+    free: 'Free',
+    starter: 'Starter',
+    pro: 'Professional',
+    business: 'Business',
+  };
+  const tierFeatures = {
+    free: [
+      'AI assistant setup only',
+      'Basic greeting customization',
+      'Community support',
+      'No call handling (setup only)',
+    ],
+    starter: [
+      'Up to 30 calls per month',
+      'Basic analytics dashboard',
+      'Call summaries & transcripts',
+      'Email notifications',
+      'Basic AI settings',
+      'Email support',
+    ],
+    pro: [
+      'Unlimited calls & minutes',
+      'Advanced analytics dashboard',
+      'Advanced lead qualification',
+      'CRM integrations (Webhook API)',
+      'Real-time SMS & email alerts',
+      'Custom call scripts & greetings',
+      'Priority support',
+    ],
+    business: [
+      'Everything in Professional',
+      'Multi-language support',
+      'Custom AI training & fine-tuning',
+      'Dedicated phone numbers',
+      'Advanced integrations (Zapier, etc.)',
+      'Custom reporting & analytics',
+      'Dedicated account manager',
+      'Phone & video support',
+      'SLA guarantee',
+    ],
+  };
+  return {
+    name: tierNames[tier] || 'Professional',
+    features: tierFeatures[tier] || tierFeatures.pro,
+  };
+};
+
 // Helper function to get the correct price and billing period for a subscription
 const getSubscriptionPriceInfo = (subscription: any) => {
   if (!subscription || subscription.tier_type === 'free') {
@@ -134,8 +185,14 @@ const getSubscriptionPriceInfo = (subscription: any) => {
 };
 
 function SettingsContent() {
-  const searchParams = useSearchParams();
-  const tab = searchParams.get('tab') || 'profile';
+  // Replace useSearchParams with nuqs for tab parameter
+  const [tab, setTab] = useQueryState('tab', {
+    defaultValue: 'profile',
+    clearOnDefault: true,
+  });
+
+  // Replace useSearchParams with nuqs for success parameter
+  const [success, setSuccess] = useQueryState('success');
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -162,7 +219,6 @@ function SettingsContent() {
 
   // Check for successful payment return
   useEffect(() => {
-    const success = searchParams.get('success');
     if (success === 'true') {
       toast({
         title: 'Payment successful!',
@@ -190,12 +246,10 @@ function SettingsContent() {
         }
       }, 1000); // Give the page a moment to load
 
-      // Clean up the URL by removing the success parameter
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('success');
-      window.history.replaceState({}, '', newUrl.toString());
+      // Clean up URL by removing success parameter (nuqs handles this declaratively)
+      setSuccess(null);
     }
-  }, [searchParams, refetchSubscription]);
+  }, [success, refetchSubscription, setSuccess]);
 
   // Form data state - initialized from Supabase data
   const [formData, setFormData] = useState({
@@ -969,7 +1023,7 @@ function SettingsContent() {
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
         </div>
-        <Tabs defaultValue={tab} className="space-y-4">
+        <Tabs value={tab} onValueChange={setTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="profile">General</TabsTrigger>
             <TabsTrigger value="billing">Billing</TabsTrigger>
@@ -1537,9 +1591,9 @@ function SettingsContent() {
           <TabsContent value="billing" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Subscription Plan</CardTitle>
+                <CardTitle>Your Subscription</CardTitle>
                 <CardDescription>
-                  Manage your subscription and billing information.
+                  Upgrade, downgrade, or update payment details anytime.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1561,7 +1615,7 @@ function SettingsContent() {
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="text-lg font-semibold text-green-900">
-                            Professional Plan
+                            {getSubscriptionTierInfo(subscription).name} Plan
                           </h3>
                           <p className="text-sm text-green-700">
                             {subscription.status === 'trialing'
@@ -1582,22 +1636,25 @@ function SettingsContent() {
                             Billing Period
                           </p>
                           <p className="text-sm text-green-700">
-                            Ends on{' '}
-                            {formatSubscriptionDate(
-                              subscription.current_period_end_at
-                            )}
+                            {subscription.current_period_end_at
+                              ? `Ends on ${formatSubscriptionDate(subscription.current_period_end_at)}`
+                              : 'N/A'}
                           </p>
                         </div>
-                        {subscription.quantity && (
-                          <div>
-                            <p className="text-sm font-medium text-green-900">
-                              Quantity
-                            </p>
-                            <p className="text-sm text-green-700">
-                              {subscription.quantity} seats
-                            </p>
-                          </div>
-                        )}
+                        <div>
+                          <p className="text-sm font-medium text-green-900">
+                            Price
+                          </p>
+                          <p className="text-sm text-green-700">
+                            {(() => {
+                              const priceInfo =
+                                getSubscriptionPriceInfo(subscription);
+                              return priceInfo.billingPeriod === 'free'
+                                ? 'Free'
+                                : `$${priceInfo.price}/${priceInfo.billingPeriod === 'annual' ? 'year' : 'month'}`;
+                            })()}
+                          </p>
+                        </div>
                       </div>
 
                       {subscription.cancel_at_period_end && (
@@ -1621,7 +1678,7 @@ function SettingsContent() {
                           onClick={handleManageSubscription}
                           className="bg-white hover:bg-gray-50"
                         >
-                          Manage Billing
+                          Manage Subscription
                         </Button>
                         <Button
                           variant="outline"
@@ -1629,7 +1686,7 @@ function SettingsContent() {
                           onClick={handleUpgradePlan}
                           className="bg-white hover:bg-gray-50"
                         >
-                          View All Plans
+                          Compare Plans
                         </Button>
                       </div>
                     </div>
@@ -1640,34 +1697,17 @@ function SettingsContent() {
                         Current Plan Features
                       </h4>
                       <div className="grid gap-2 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span>Unlimited calls & minutes</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span>Advanced lead qualification</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span>CRM integrations (Webhook API)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span>Real-time SMS & email alerts</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span>Custom call scripts & greetings</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span>Advanced analytics dashboard</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span>Priority support</span>
-                        </div>
+                        {getSubscriptionTierInfo(subscription).features.map(
+                          (feature, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-2"
+                            >
+                              <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                              <span>{feature}</span>
+                            </div>
+                          )
+                        )}
                       </div>
                     </div>
                   </div>

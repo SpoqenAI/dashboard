@@ -27,7 +27,7 @@ import { VapiCall } from '@/lib/types';
 import { AlertCircle, ArrowUp } from 'lucide-react';
 import { CallDetailModal } from '@/components/dashboard/call-detail-modal';
 import { CallHistoryTable } from '@/components/dashboard/call-history-table';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useQueryState } from 'nuqs';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -75,8 +75,7 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
 export default function RecentCallsClient() {
   const { user } = useAuth();
   const { subscription, loading: subscriptionLoading } = useSubscription();
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  const [payment, setPayment] = useQueryState('payment');
 
   // Unified filter state
   const [filters, dispatchFilters] = useReducer(filterReducer, initialFilters);
@@ -283,7 +282,6 @@ export default function RecentCallsClient() {
 
   // Handle payment success from Paddle redirect
   useEffect(() => {
-    const payment = searchParams.get('payment');
     if (payment === 'success') {
       toast({
         title: 'Payment successful!',
@@ -292,11 +290,9 @@ export default function RecentCallsClient() {
       });
 
       // Clean up the URL by removing the payment parameter
-      const currentParams = new URLSearchParams(window.location.search);
-      currentParams.delete('payment');
-      router.replace(`${window.location.pathname}?${currentParams.toString()}`);
+      setPayment(null);
     }
-  }, [searchParams, router]);
+  }, [payment, setPayment]);
 
   if (!user) {
     return <div className="min-h-screen bg-background" />;

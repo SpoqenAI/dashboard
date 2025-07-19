@@ -253,7 +253,12 @@ export const getSubscriptionTier = (
   // For paid subscriptions, determine tier based on price_id
   // Configure these with your actual Paddle price IDs via environment variables
   const STARTER_PRICE_IDS =
-    process.env.PADDLE_STARTER_PRICE_IDS?.split(',') || [];
+    process.env.PADDLE_STARTER_PRICE_IDS?.split(',') ||
+    [
+      process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID,
+      process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID,
+      process.env.NEXT_PUBLIC_PADDLE_PRICE_ID, // legacy fallback
+    ].filter(Boolean);
   const PRO_PRICE_IDS =
     process.env.PADDLE_PRO_PRICE_IDS?.split(',') ||
     [

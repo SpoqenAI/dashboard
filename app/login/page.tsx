@@ -5,7 +5,8 @@ import type React from 'react';
 import { useState, useEffect, Suspense } from 'react';
 import { ProtectedRoute } from '@/components/protected-route';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useQueryState } from 'nuqs';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -25,7 +26,13 @@ import Logo from '@/components/ui/logo';
 
 function LoginForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+
+  // Replace useSearchParams with nuqs for error handling parameters
+  // Note: Consider using useQueryStates for better performance when handling multiple related parameters
+  const [error] = useQueryState('error');
+  const [message] = useQueryState('message');
+  const [errorDescription] = useQueryState('error_description');
+
   const [isLoading, setIsLoading] = useState(false);
   const [showResendVerification, setShowResendVerification] = useState(false);
   const [formData, setFormData] = useState({
@@ -35,10 +42,6 @@ function LoginForm() {
 
   // Handle OAuth error messages from URL parameters
   useEffect(() => {
-    const error = searchParams.get('error');
-    const message = searchParams.get('message');
-    const errorDescription = searchParams.get('error_description');
-
     if (error && message) {
       toast({
         title: 'Authentication failed',
@@ -73,7 +76,7 @@ function LoginForm() {
         variant: 'destructive',
       });
     }
-  }, [searchParams]);
+  }, [error, message, errorDescription]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
