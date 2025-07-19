@@ -377,6 +377,13 @@ export class ProcessWebhook {
       });
 
       // Find user associated with this transaction
+      if (!eventData.data.customerId) {
+        logger.warn('PADDLE_WEBHOOK', 'Transaction has no customer ID', {
+          transactionId: eventData.data.id,
+        });
+        return; // Skip transactions without customer ID
+      }
+
       const userId = await this.findUserByTransactionCustomerId(
         supabase,
         eventData.data.customerId
