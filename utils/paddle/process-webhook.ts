@@ -10,6 +10,42 @@ import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
 
 export class ProcessWebhook {
+  private getTierFromPriceId(priceId: string | null): string {
+    if (!priceId) {
+      return 'free';
+    }
+
+    // Get price ID mappings from environment variables
+    const STARTER_PRICE_IDS = process.env.PADDLE_STARTER_PRICE_IDS?.split(',') || [
+      process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID,
+      process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID,
+      process.env.NEXT_PUBLIC_PADDLE_PRICE_ID, // legacy fallback
+    ].filter(Boolean);
+
+    const PRO_PRICE_IDS = process.env.PADDLE_PRO_PRICE_IDS?.split(',') || [
+      process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID,
+      process.env.NEXT_PUBLIC_PADDLE_PRO_ANNUAL_PRICE_ID,
+    ].filter(Boolean);
+
+    const BUSINESS_PRICE_IDS = process.env.PADDLE_BUSINESS_PRICE_IDS?.split(',') || [];
+
+    if (STARTER_PRICE_IDS.includes(priceId)) {
+      return 'starter';
+    }
+
+    if (PRO_PRICE_IDS.includes(priceId)) {
+      return 'pro';
+    }
+
+    if (BUSINESS_PRICE_IDS.includes(priceId)) {
+      return 'business';
+    }
+
+    // If it's a paid price ID but not recognized, default to starter
+    logger.warn('PADDLE_WEBHOOK', 'Unrecognized price_id, defaulting to starter tier', { priceId });
+    return 'starter';
+  }
+
   async processEvent(eventData: EventEntity) {
     switch (eventData.eventType) {
       case EventName.SubscriptionCreated:
@@ -100,7 +136,8 @@ export class ProcessWebhook {
       trial_start_at: null, // Will be set based on actual webhook data structure
       trial_end_at: null, // Will be set based on actual webhook data structure
       updated_at: new Date().toISOString(),
-      tier_type: 'paid', // Always set paid for Paddle events
+      tier_type: this.getTierFromPriceId(eventData.data.items[0]?.price?.id || null),
+      paddle_customer_id: eventData.data.customerId, // Store customer ID for billing operations
     };
 
     // Use atomic upsert function to handle webhook updates
@@ -196,17 +233,61 @@ export class ProcessWebhook {
   private async updateCustomerData(eventData: CustomerCreatedEvent | CustomerUpdatedEvent) {
     const supabase = createSupabaseAdmin();
     
-    // Find user by email and update their paddle_customer_id
-    const { error } = await supabase
-      .from('profiles')
-      .update({ paddle_customer_id: eventData.data.id })
-      .eq('email', eventData.data.email);
+    try {
+      // First, upsert into customers table following starter kit pattern
+      const { error: customerError } = await supabase
+        .from('customers')
+        .upsert({
+          customer_id: eventData.data.id,
+          email: eventData.data.email,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'customer_id'
+        });
 
-    if (error) {
+      if (customerError) {
+        logger.error(
+          'PADDLE_WEBHOOK',
+          'Failed to upsert customer data',
+          customerError,
+          {
+            customerId: eventData.data.id,
+            customerEmail: eventData.data.email,
+          }
+        );
+        throw customerError;
+      }
+
+      // Also update profiles table with paddle_customer_id for direct reference
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ paddle_customer_id: eventData.data.id })
+        .eq('email', eventData.data.email);
+
+      if (profileError) {
+        logger.warn(
+          'PADDLE_WEBHOOK',
+          'Failed to update profile with paddle_customer_id (non-critical)',
+          {
+            customerId: eventData.data.id,
+            customerEmail: eventData.data.email,
+            error: profileError.message,
+          }
+        );
+        // Don't throw here as the main customers table update succeeded
+      }
+
+      logger.info('PADDLE_WEBHOOK', 'Customer data updated successfully', {
+        customerId: eventData.data.id,
+        customerEmail: eventData.data.email,
+        profileUpdated: !profileError,
+      });
+
+    } catch (error) {
       logger.error(
         'PADDLE_WEBHOOK',
-        'Failed to update customer data',
-        error,
+        'Failed to process customer webhook',
+        error instanceof Error ? error : new Error(String(error)),
         {
           customerId: eventData.data.id,
           customerEmail: eventData.data.email,
@@ -214,10 +295,5 @@ export class ProcessWebhook {
       );
       throw error;
     }
-
-    logger.info('PADDLE_WEBHOOK', 'Customer data updated successfully', {
-      customerId: eventData.data.id,
-      customerEmail: eventData.data.email,
-    });
   }
 } 
