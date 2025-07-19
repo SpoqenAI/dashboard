@@ -1,15 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQueryState } from 'nuqs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CardContent, CardFooter } from '@/components/ui/card';
-import { ArrowLeft, Check, CreditCard } from 'lucide-react';
-import Link from 'next/link';
-import { getPaddleInstance } from '@/lib/paddle-js';
+import { Check, Loader2 } from 'lucide-react';
+import { getPaddleInstance, generateSuccessUrl } from '@/lib/paddle-js';
 import { logger } from '@/lib/logger';
-import useSWR from 'swr';
+import type { PaddleCheckoutOptions } from '@/lib/paddle-js';
 
 interface SubscriptionFormProps {
   userEmail: string;
@@ -25,27 +23,42 @@ export function SubscriptionForm({
   userId,
 }: SubscriptionFormProps) {
   const router = useRouter();
-  const [, setPayment] = useQueryState('payment');
   const [checkoutInProgress, setCheckoutInProgress] = useState(false);
+  const [pricingError, setPricingError] = useState<string | null>(null);
   const [initError, setInitError] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [pricingData, setPricingData] = useState<{
+    starterPrice: string;
+  } | null>(null);
 
-  // Helper to navigate to success with payment parameter
   const navigateToSuccess = () => {
-    setPayment('success');
-    router.push('/dashboard');
+    router.push('/checkout/success');
   };
 
-  // SWR to get pricing data
-  const { data: pricingData, error: pricingError } = useSWR(
-    '/api/paddle/pricing',
-    (url: string) => fetch(url).then(res => res.json()),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-    }
-  );
+  // Fetch pricing data
+  useEffect(() => {
+    const fetchPricing = async () => {
+      try {
+        const response = await fetch('/api/paddle/pricing');
+        if (!response.ok) {
+          throw new Error('Failed to fetch pricing data');
+        }
+        const data = await response.json();
+        setPricingData(data);
+      } catch (error) {
+        logger.error(
+          'SUBSCRIPTION_FORM',
+          'Failed to fetch pricing data',
+          error instanceof Error ? error : new Error(String(error))
+        );
+        setPricingError(
+          'Unable to load subscription options. Please refresh the page.'
+        );
+      }
+    };
 
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+    fetchPricing();
+  }, []);
 
   useEffect(() => {
     if (pricingData?.starterPrice) {
@@ -72,7 +85,7 @@ export function SubscriptionForm({
       // Get Paddle instance
       const Paddle = await getPaddleInstance();
 
-      const checkoutOptions = {
+      const checkoutOptions: PaddleCheckoutOptions = {
         items: [
           {
             priceId: selectedPlan,
@@ -86,7 +99,11 @@ export function SubscriptionForm({
         customData: {
           user_id: userId,
         },
-        successUrl: `${window.location.origin}/api/paddle/success?user_id=${userId}`,
+        settings: {
+          successUrl: generateSuccessUrl('/api/paddle/success', {
+            user_id: userId,
+          }),
+        },
         events: {
           close: () => {
             setCheckoutInProgress(false);
@@ -96,7 +113,7 @@ export function SubscriptionForm({
             router.prefetch('/dashboard');
           },
         },
-      } as any; // Type assertion to bypass strict typing during v2 transition
+      };
 
       setCheckoutInProgress(true);
       Paddle.Checkout.open(checkoutOptions);
@@ -248,43 +265,57 @@ export function SubscriptionForm({
         )}
       </CardContent>
 
-      <CardFooter className="flex justify-between">
-        <Button variant="outline" asChild>
-          <Link href="/welcome">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back
-          </Link>
-        </Button>
-
-        <Button
-          onClick={handlePaddleCheckout}
-          disabled={!selectedPlan || checkoutInProgress}
-          className={
-            checkoutInProgress
-              ? 'cursor-not-allowed bg-gray-400'
-              : 'bg-green-600 hover:bg-green-700'
-          }
-          title={checkoutInProgress ? 'Payment processing' : undefined}
-        >
-          {checkoutInProgress ? (
-            'Processing Payment...'
-          ) : (
-            <>
-              <CreditCard className="mr-2 h-4 w-4" />
-              Subscribe Now
-            </>
-          )}
-        </Button>
-
-        {checkoutInProgress && (
+      <CardHeader className="border-t bg-muted/50">
+        <div className="flex w-full items-center justify-between">
+          <div>
+            <CardTitle className="text-lg">Ready to get started?</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Complete your subscription to activate your AI assistant
+            </p>
+          </div>
           <Button
-            variant="outline"
-            onClick={navigateToSuccess}
-            className="ml-2"
+            onClick={handlePaddleCheckout}
+            disabled={checkoutInProgress || !!pricingError || !!initError}
+            className="min-w-[140px]"
           >
-            Payment Complete? Continue →
+            {checkoutInProgress ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              'Subscribe Now'
+            )}
           </Button>
-        )}
-      </CardFooter>
+        </div>
+      </CardHeader>
+
+      {/* Initialization Error */}
+      {initError && (
+        <div className="border-t bg-red-50 p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-5 w-5 text-red-400"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h4 className="text-sm font-medium text-red-800">
+                Payment System Error
+              </h4>
+              <p className="mt-1 text-sm text-red-700">{initError}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

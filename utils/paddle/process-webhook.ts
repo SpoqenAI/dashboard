@@ -12,49 +12,44 @@ import {
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
 
+// Cache price ID arrays at module level for performance
+const CACHED_STARTER_PRICE_IDS = (() => {
+  const envIds = process.env.PADDLE_STARTER_PRICE_IDS?.split(',') || [];
+  const fallbackIds = [
+    process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID,
+    process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID,
+    process.env.NEXT_PUBLIC_PADDLE_PRICE_ID, // legacy fallback
+  ].filter(Boolean);
+  return envIds.length > 0 ? envIds : fallbackIds;
+})();
+
+const CACHED_PRO_PRICE_IDS = (() => {
+  const envIds = process.env.PADDLE_PRO_PRICE_IDS?.split(',') || [];
+  const fallbackIds = [
+    process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID,
+    process.env.NEXT_PUBLIC_PADDLE_PRO_ANNUAL_PRICE_ID,
+  ].filter(Boolean);
+  return envIds.length > 0 ? envIds : fallbackIds;
+})();
+
+const CACHED_BUSINESS_PRICE_IDS =
+  process.env.PADDLE_BUSINESS_PRICE_IDS?.split(',') || [];
+
 export class ProcessWebhook {
   private getTierFromPriceId(priceId: string | null): string {
     if (!priceId) {
       return 'free';
     }
 
-    // Get price ID mappings from environment variables
-    const STARTER_PRICE_IDS =
-      process.env.PADDLE_STARTER_PRICE_IDS?.split(',') ||
-      [
-        process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID,
-        process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID,
-        process.env.NEXT_PUBLIC_PADDLE_PRICE_ID, // legacy fallback
-      ].filter(Boolean);
-
-    const PRO_PRICE_IDS =
-      process.env.PADDLE_PRO_PRICE_IDS?.split(',') ||
-      [
-        process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID,
-        process.env.NEXT_PUBLIC_PADDLE_PRO_ANNUAL_PRICE_ID,
-      ].filter(Boolean);
-
-    const BUSINESS_PRICE_IDS =
-      process.env.PADDLE_BUSINESS_PRICE_IDS?.split(',') || [];
-
-    // For current pricing page setup, also check these specific price IDs from environment
-    const pricingPageIds = [
-      process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID,
-      process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID,
-    ].filter(Boolean);
-
-    if (
-      STARTER_PRICE_IDS.includes(priceId) ||
-      pricingPageIds.includes(priceId)
-    ) {
+    if (CACHED_STARTER_PRICE_IDS.includes(priceId)) {
       return 'starter';
     }
 
-    if (PRO_PRICE_IDS.includes(priceId)) {
+    if (CACHED_PRO_PRICE_IDS.includes(priceId)) {
       return 'pro';
     }
 
-    if (BUSINESS_PRICE_IDS.includes(priceId)) {
+    if (CACHED_BUSINESS_PRICE_IDS.includes(priceId)) {
       return 'business';
     }
 
@@ -92,7 +87,8 @@ export class ProcessWebhook {
 
   private async findUserBySubscriptionId(
     supabase: any,
-    subscriptionId: string
+    subscriptionId: string,
+    paddleCustomerId: string
   ): Promise<string | null> {
     try {
       // First try to find existing subscription by exact ID match
@@ -107,10 +103,11 @@ export class ProcessWebhook {
       }
 
       // If no exact match found, we might have an ID mismatch between success callback and webhook
-      // Try to find the most recent subscription for any user that might be pending webhook confirmation
+      // Try to find the most recent subscription for the specific Paddle customer
       const { data: recentSubscription } = await supabase
         .from('subscriptions')
         .select('user_id, id, created_at')
+        .eq('paddle_customer_id', paddleCustomerId)
         .in('status', ['active', 'pending_webhook'])
         .order('created_at', { ascending: false })
         .limit(10); // Get recent subscriptions to find potential match
@@ -121,6 +118,7 @@ export class ProcessWebhook {
           'Using fallback user lookup for subscription ID mismatch',
           {
             webhookSubscriptionId: subscriptionId,
+            paddleCustomerId,
             fallbackUserId: logger.maskUserId(recentSubscription[0].user_id),
             recentSubscriptionId: recentSubscription[0].id,
           }
@@ -134,7 +132,7 @@ export class ProcessWebhook {
         'PADDLE_WEBHOOK',
         'Error finding user by subscription ID',
         error instanceof Error ? error : new Error(String(error)),
-        { subscriptionId }
+        { subscriptionId, paddleCustomerId }
       );
       return null;
     }
@@ -151,7 +149,8 @@ export class ProcessWebhook {
     // Find user associated with this subscription
     const userId = await this.findUserBySubscriptionId(
       supabase,
-      eventData.data.id
+      eventData.data.id,
+      eventData.data.customerId
     );
     if (!userId) {
       logger.warn('PADDLE_WEBHOOK', 'No user found for subscription', {
@@ -175,7 +174,7 @@ export class ProcessWebhook {
       status: eventData.data.status,
       price_id: eventData.data.items[0]?.price?.id || null,
       quantity: eventData.data.items[0]?.quantity || 1,
-      cancel_at_period_end: eventData.data.canceledAt ? true : false,
+      cancel_at_period_end: !!eventData.data.canceledAt,
       current_period_start_at:
         eventData.data.currentBillingPeriod?.startsAt || null,
       current_period_end_at:
@@ -377,8 +376,21 @@ export class ProcessWebhook {
         status: eventData.data.status,
       });
 
-      // Log transaction event for reference - we primarily use subscription events for tier management
-      // But transaction events can be useful for analytics, billing reconciliation, etc.
+      // Find user associated with this transaction
+      const userId = await this.findUserByTransactionCustomerId(
+        supabase,
+        eventData.data.customerId
+      );
+      if (!userId) {
+        logger.warn('PADDLE_WEBHOOK', 'No user found for transaction', {
+          transactionId: eventData.data.id,
+          customerId: eventData.data.customerId,
+        });
+        return; // Don't throw - transaction might be for a customer not in our system
+      }
+
+      // Note: Transaction data is now accessible via paddle.transactions foreign table
+      // No need to store locally - we get real-time access via FDW
 
       // If this transaction is for a subscription, we'll let the subscription events handle tier updates
       if (eventData.data.subscriptionId) {
@@ -413,6 +425,48 @@ export class ProcessWebhook {
         }
       );
       throw error;
+    }
+  }
+
+  private async findUserByTransactionCustomerId(
+    supabase: any,
+    customerId: string
+  ): Promise<string | null> {
+    try {
+      // First check if customer exists in our customers table
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('email')
+        .eq('customer_id', customerId)
+        .single();
+
+      if (customer?.email) {
+        // Find user by email
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', customer.email)
+          .single();
+
+        return profile?.id || null;
+      }
+
+      // Fallback: check profiles table directly for paddle_customer_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('paddle_customer_id', customerId)
+        .single();
+
+      return profile?.id || null;
+    } catch (error) {
+      logger.error(
+        'PADDLE_WEBHOOK',
+        'Error finding user for transaction customer',
+        error instanceof Error ? error : new Error(String(error)),
+        { customerId }
+      );
+      return null;
     }
   }
 }

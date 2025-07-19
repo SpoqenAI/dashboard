@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 import { validatePaddleConfig } from '@/lib/paddle';
 import { getSiteUrl } from '@/lib/site-url';
+import { generateSuccessUrl } from '@/lib/paddle-js';
 
 // Shared helper function for Paddle environment detection
 function getPaddleEnvironment(): {
@@ -131,7 +132,9 @@ export async function createCheckoutSession(priceId: string): Promise<{
           }),
       },
       settings: {
-        successUrl: `${baseUrl}/api/paddle/success?user_id=${user.id}`,
+        successUrl: generateSuccessUrl('/api/paddle/success', {
+          user_id: user.id,
+        }),
         allowLogout: false,
       },
     };

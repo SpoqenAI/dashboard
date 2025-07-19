@@ -1,8 +1,69 @@
 import { NextResponse } from 'next/server';
-import { validatePaddleConfiguration } from '@/lib/config';
+import {
+  validatePaddleConfiguration,
+  getAdminEmails,
+  isProduction,
+} from '@/lib/config';
+import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
+    // Environment-based access control
+    if (isProduction() && process.env.ENABLE_DEBUG !== 'true') {
+      logger.warn(
+        'PADDLE_CONFIG_DEBUG',
+        'Debug endpoint accessed in production without ENABLE_DEBUG flag'
+      );
+      return NextResponse.json(
+        { error: 'Debug endpoints are disabled in production' },
+        { status: 403 }
+      );
+    }
+
+    // User authentication check
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      logger.warn(
+        'PADDLE_CONFIG_DEBUG',
+        'Unauthenticated access attempt to debug endpoint'
+      );
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Admin authorization check
+    const adminEmails = getAdminEmails();
+    const userEmail = user.email;
+
+    if (!userEmail || !adminEmails.includes(userEmail)) {
+      logger.warn(
+        'PADDLE_CONFIG_DEBUG',
+        'Non-admin access attempt to debug endpoint',
+        {
+          userEmail: logger.maskEmail(userEmail),
+          adminEmails: adminEmails.map(email => logger.maskEmail(email)),
+        }
+      );
+      return NextResponse.json(
+        { error: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    // Log successful access for audit trail
+    logger.info('PADDLE_CONFIG_DEBUG', 'Admin accessed debug endpoint', {
+      userEmail: logger.maskEmail(userEmail),
+      userId: logger.maskUserId(user.id),
+    });
+
     const config = validatePaddleConfiguration();
 
     // Calculate webhook URL
@@ -17,12 +78,19 @@ export async function GET() {
       configuration: {
         ...config,
         webhookUrl,
-        priceIdMapping: {
-          pri_01k0adkgfd9m6fep0prj9gc0sb: 'Starter Monthly',
-          pri_01k0admysy9c1xxxq8g5ajfcqv: 'Starter Annual',
-          pri_01k0aeaa5te9q80a7rvpapyw4k: 'Pro Monthly',
-          pri_01k0aee7p0yvcp733ps17sr9g8: 'Pro Annual',
-        },
+        priceIdMapping:
+          process.env.NODE_ENV === 'development'
+            ? {
+                [process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID || '']:
+                  'Starter Monthly',
+                [process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID || '']:
+                  'Starter Annual',
+                [process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID || '']:
+                  'Pro Monthly',
+                [process.env.NEXT_PUBLIC_PADDLE_PRO_ANNUAL_PRICE_ID || '']:
+                  'Pro Annual',
+              }
+            : 'Hidden in production',
       },
       instructions: {
         webhookSetup: 'Configure this webhook URL in your Paddle dashboard',
@@ -32,6 +100,11 @@ export async function GET() {
       },
     });
   } catch (error) {
+    logger.error(
+      'PADDLE_CONFIG_DEBUG',
+      'Error in debug endpoint',
+      error instanceof Error ? error : new Error(String(error))
+    );
     return NextResponse.json(
       {
         error: 'Configuration validation failed',

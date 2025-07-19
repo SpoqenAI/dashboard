@@ -18,6 +18,10 @@ import {
 } from '@paddle/paddle-js';
 import type { CheckoutEventsData } from '@paddle/paddle-js/types/checkout/events';
 import throttle from 'lodash-es/throttle';
+import {
+  generateSuccessUrl,
+  type PaddleCheckoutOptions,
+} from '@/lib/paddle-js';
 
 // Helper function to validate Paddle price IDs
 function isValidPaddlePriceId(priceId: string): boolean {
@@ -50,6 +54,9 @@ export default function CheckoutPage() {
     null
   );
   const [checkoutLoaded, setCheckoutLoaded] = useState(false);
+  const [initializationError, setInitializationError] = useState<string | null>(
+    null
+  );
   const initializationRef = useRef(false);
 
   // Get price ID from URL params
@@ -128,7 +135,7 @@ export default function CheckoutPage() {
             frameInitialHeight: 450,
             frameStyle:
               'width: 100%; background-color: transparent; border: none',
-            successUrl: '/checkout/success',
+            successUrl: generateSuccessUrl('/checkout/success'),
           },
         },
       })
@@ -141,22 +148,21 @@ export default function CheckoutPage() {
               userEmail: user.email ? '[REDACTED]' : 'none',
             });
 
-            paddleInstance.Checkout.open({
+            const checkoutOptions: PaddleCheckoutOptions = {
               ...(user.email && { customer: { email: user.email } }),
               items: [{ priceId: priceId, quantity: 1 }],
-            });
+            };
+
+            paddleInstance.Checkout.open(checkoutOptions);
 
             setCheckoutLoaded(true);
           }
         })
         .catch(error => {
           logger.error('CHECKOUT_PAGE', 'Failed to initialize Paddle', error);
-          toast({
-            title: 'Checkout Error',
-            description:
-              'Failed to initialize checkout. Please refresh and try again.',
-            variant: 'destructive',
-          });
+          setInitializationError(
+            'Failed to initialize checkout. Please refresh and try again.'
+          );
           initializationRef.current = false;
         });
     }
@@ -174,6 +180,19 @@ export default function CheckoutPage() {
       updateItems(paddle, priceId, quantity);
     }
   }, [paddle, priceId, quantity, updateItems]);
+
+  // Handle initialization error toast
+  useEffect(() => {
+    if (initializationError) {
+      toast({
+        title: 'Checkout Error',
+        description: initializationError,
+        variant: 'destructive',
+      });
+      // Clear the error after showing the toast
+      setInitializationError(null);
+    }
+  }, [initializationError]);
 
   // Handle navigation
   const navigateBack = () => {

@@ -1,33 +1,16 @@
-'use client';
-
-import { useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { CheckCircle, ArrowRight } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from '@/components/ui/use-toast';
+import { CheckoutSuccessClient } from './CheckoutSuccessClient';
 
-function CheckoutSuccessContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+interface CheckoutSuccessContentProps {
+  transactionId?: string;
+}
 
-  // Get any URL parameters that Paddle might pass
-  const transactionId = searchParams.get('_ptxn');
-
-  useEffect(() => {
-    // Show success toast
-    toast({
-      title: 'Payment Successful!',
-      description: 'Welcome to Spoqen! Your subscription is now active.',
-      duration: 6000,
-    });
-  }, []);
-
-  const handleContinue = () => {
-    router.push('/dashboard');
-  };
-
+function CheckoutSuccessContent({
+  transactionId,
+}: CheckoutSuccessContentProps) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
@@ -53,10 +36,8 @@ function CheckoutSuccessContent() {
             </div>
           )}
 
-          <Button onClick={handleContinue} className="w-full">
-            Continue to Dashboard
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+          {/* Client component for interactive functionality */}
+          <CheckoutSuccessClient transactionId={transactionId} />
 
           <p className="text-xs text-muted-foreground">
             You should receive a confirmation email shortly.
@@ -87,10 +68,20 @@ function LoadingFallback() {
   );
 }
 
-export default function CheckoutSuccessPage() {
+interface CheckoutSuccessPageProps {
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+
+export default function CheckoutSuccessPage({
+  searchParams,
+}: CheckoutSuccessPageProps) {
+  // Extract transaction ID from search params server-side
+  const transactionId =
+    typeof searchParams._ptxn === 'string' ? searchParams._ptxn : undefined;
+
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <CheckoutSuccessContent />
+      <CheckoutSuccessContent transactionId={transactionId} />
     </Suspense>
   );
 }

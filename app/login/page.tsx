@@ -28,6 +28,7 @@ function LoginForm() {
   const router = useRouter();
 
   // Replace useSearchParams with nuqs for error handling parameters
+  // Note: Consider using useQueryStates for better performance when handling multiple related parameters
   const [error] = useQueryState('error');
   const [message] = useQueryState('message');
   const [errorDescription] = useQueryState('error_description');

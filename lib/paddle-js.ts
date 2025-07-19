@@ -2,6 +2,7 @@
 // This runs only in the browser and lazily loads the @paddle/paddle-js package.
 
 import { getPaddleConfig } from './config';
+import { getSiteUrl } from './site-url';
 import { logger } from '@/lib/logger';
 
 // TypeScript interfaces for Paddle SDK v2.x
@@ -68,6 +69,66 @@ interface PaddleSDK {
 
 let isInitialized = false;
 
+// Utility function for generating consistent success URLs across the application
+export function generateSuccessUrl(
+  successPath: string = '/checkout/success',
+  urlParams?: Record<string, string>
+): string {
+  const baseUrl = getSiteUrl();
+  const url = new URL(successPath, baseUrl);
+
+  if (urlParams) {
+    Object.entries(urlParams).forEach(([key, value]) => {
+      url.searchParams.set(key, value);
+    });
+  }
+
+  return url.toString();
+}
+
+// Centralized redirect logic to prevent race conditions
+class CheckoutRedirectManager {
+  private hasRedirected = false;
+  private readonly successUrl: string;
+
+  constructor(
+    successPath: string = '/checkout/success',
+    urlParams?: Record<string, string>
+  ) {
+    // Use the utility function for consistency
+    this.successUrl = generateSuccessUrl(successPath, urlParams);
+  }
+
+  redirect(eventType: string, data?: any): void {
+    if (this.hasRedirected) {
+      logger.debug(
+        'PADDLE_JS',
+        'Redirect already executed, skipping duplicate',
+        {
+          eventType,
+          successUrl: this.successUrl,
+        }
+      );
+      return;
+    }
+
+    this.hasRedirected = true;
+
+    logger.info('PADDLE_JS', 'Executing checkout redirect', {
+      eventType,
+      successUrl: this.successUrl,
+      transactionId: data?.transaction_id || 'unknown',
+    });
+
+    // Use window.location.href for reliable redirect
+    window.location.href = this.successUrl;
+  }
+
+  getSuccessUrl(): string {
+    return this.successUrl;
+  }
+}
+
 export async function getPaddleInstance(): Promise<PaddleSDK> {
   if (typeof window === 'undefined') {
     throw new Error('Paddle JS can only be initialized in the browser');
@@ -111,19 +172,23 @@ export async function getPaddleInstance(): Promise<PaddleSDK> {
   }
 }
 
-// Enhanced inline checkout function based on starter kit patterns
+// Enhanced inline checkout function with configurable success URL and centralized redirect logic
 export async function openInlineCheckout(
   containerClass: string,
   priceId: string,
   customerEmail: string,
   customData?: Record<string, string>,
-  events?: PaddleCheckoutEvents
+  events?: PaddleCheckoutEvents,
+  successPath: string = '/checkout/success',
+  urlParams?: Record<string, string>
 ): Promise<void> {
   logger.info('PADDLE_JS', 'Starting Paddle inline checkout', {
     containerClass,
     priceId,
     customerEmail: customerEmail ? '[REDACTED]' : 'empty',
     hasCustomData: !!customData,
+    successPath,
+    urlParams,
   });
 
   // Get Paddle instance
@@ -139,7 +204,10 @@ export async function openInlineCheckout(
     );
   }
 
-  // Enhanced checkout options with starter kit patterns
+  // Create centralized redirect manager to prevent race conditions
+  const redirectManager = new CheckoutRedirectManager(successPath, urlParams);
+
+  // Enhanced checkout options with configurable success URL
   const checkoutOptions: PaddleCheckoutOptions = {
     items: [
       {
@@ -159,7 +227,7 @@ export async function openInlineCheckout(
       allowLogout: false,
       frameInitialHeight: 500,
       frameStyle: 'width: 100%; background-color: transparent; border: none',
-      successUrl: '/checkout/success',
+      successUrl: redirectManager.getSuccessUrl(),
     },
     events: {
       loaded: () => {
@@ -174,24 +242,24 @@ export async function openInlineCheckout(
         logger.info('PADDLE_JS', 'Payment completed successfully', {
           transactionId: data?.transaction_id || 'unknown',
         });
-        // Redirect to success page manually
-        window.location.href = '/checkout/success';
+        // Use centralized redirect to prevent race conditions
+        redirectManager.redirect('complete', data);
         events?.complete?.(data);
       },
       success: (data: any) => {
         logger.info('PADDLE_JS', 'Payment success event fired', {
           transactionId: data?.transaction_id || 'unknown',
         });
-        // Redirect to success page manually
-        window.location.href = '/checkout/success';
+        // Use centralized redirect to prevent race conditions
+        redirectManager.redirect('success', data);
         events?.success?.(data);
       },
       'payment.completed': (data: any) => {
         logger.info('PADDLE_JS', 'Payment completed event fired', {
           transactionId: data?.transaction_id || 'unknown',
         });
-        // Redirect to success page manually
-        window.location.href = '/checkout/success';
+        // Use centralized redirect to prevent race conditions
+        redirectManager.redirect('payment.completed', data);
         events?.['payment.completed']?.(data);
       },
       error: (error: any) => {
@@ -213,6 +281,7 @@ export async function openInlineCheckout(
       containerClass: cleanContainerClass,
       theme: 'dark',
       hasEvents: true,
+      successUrl: redirectManager.getSuccessUrl(),
     }
   );
 

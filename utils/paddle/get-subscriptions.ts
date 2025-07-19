@@ -1,11 +1,21 @@
 'use server';
 
 import { getPaddleServerInstance } from '@/utils/paddle/get-paddle-instance';
-import { getErrorMessage } from '@/utils/paddle/data-helpers';
+import { getErrorMessage, ErrorMessage } from '@/utils/paddle/data-helpers';
 import { getCustomerId } from '@/utils/paddle/get-customer-id';
+import type { Subscription } from '@paddle/paddle-node-sdk';
 
+/**
+ * Type alias for subscription data returned by the Paddle SDK
+ * This represents the actual structure returned by paddle.subscriptions.list()
+ */
+export type PaddleSubscriptionData = Subscription;
+
+/**
+ * Response interface for subscription list operations
+ */
 interface SubscriptionResponse {
-  data?: any[];
+  data?: PaddleSubscriptionData[];
   hasMore: boolean;
   totalRecords: number;
   error?: string;
@@ -24,7 +34,7 @@ export async function getSubscriptions(): Promise<SubscriptionResponse> {
       const subscriptions = await subscriptionCollection.next();
 
       return {
-        data: subscriptions,
+        data: subscriptions as PaddleSubscriptionData[],
         hasMore: subscriptionCollection.hasMore,
         totalRecords: subscriptionCollection.estimatedTotal,
       };
@@ -34,5 +44,11 @@ export async function getSubscriptions(): Promise<SubscriptionResponse> {
     return getErrorMessage();
   }
 
-  return { data: [], hasMore: false, totalRecords: 0 };
+  // Return consistent structure for empty case (no customer ID found)
+  return {
+    error: 'No customer ID found',
+    data: [],
+    hasMore: false,
+    totalRecords: 0,
+  };
 }
