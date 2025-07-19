@@ -30,6 +30,7 @@ const PasswordStrengthBar = dynamic(
 import Logo from '@/components/ui/logo';
 import { CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+// Remote email-uniqueness check is done via an internal API endpoint.
 
 // CONVERSION OPTIMIZATION: Reduced form fields for better conversion
 type FormFieldName = 'email' | 'password' | 'confirmPassword' | 'firstName';
@@ -248,8 +249,49 @@ export default function SignupPage() {
     }, 300);
   };
 
+  const checkEmailExists = async (email: string): Promise<boolean> => {
+    try {
+      const res = await fetch(
+        `/api/check-email-exists?email=${encodeURIComponent(email)}`
+      );
+      if (!res.ok) {
+        console.error('Failed to verify email uniqueness', await res.text());
+        return false;
+      }
+      const json: { exists: boolean } = await res.json();
+      return json.exists;
+    } catch (err) {
+      console.error('Error contacting email check endpoint', err);
+      return false;
+    }
+  };
+
   const handleFieldBlur = (field: FormFieldName) => {
     setTouchedFields(prev => ({ ...prev, [field]: true }));
+
+    // Only run remote uniqueness check for email when the basic format is valid
+    if (field === 'email' && fieldValidStates.email) {
+      (async () => {
+        setIsValidating(prev => ({ ...prev, email: true }));
+        const exists = await checkEmailExists(formData.email);
+        setIsValidating(prev => ({ ...prev, email: false }));
+
+        if (exists) {
+          setValidationErrors(prev => ({
+            ...prev,
+            email: 'Email already in use',
+          }));
+          setFieldValidStates(prev => ({ ...prev, email: false }));
+        } else {
+          // Only clear the error if it was related to uniqueness
+          setValidationErrors(prev => ({
+            ...prev,
+            email: prev.email === 'Email already in use' ? '' : prev.email,
+          }));
+          setFieldValidStates(prev => ({ ...prev, email: true }));
+        }
+      })();
+    }
   };
 
   const handleInputChange = (field: FormFieldName, value: string) => {
@@ -351,10 +393,27 @@ export default function SignupPage() {
       newFieldValidStates[field] = !error;
     });
 
+    // Extra server-side uniqueness check for email during final submission
+    if (newFieldValidStates.email) {
+      setIsValidating(prev => ({ ...prev, email: true }));
+      const exists = await checkEmailExists(formData.email);
+      setIsValidating(prev => ({ ...prev, email: false }));
+      if (exists) {
+        newValidationErrors.email = 'Email already in use';
+        newFieldValidStates.email = false;
+      }
+    }
+
     setValidationErrors(newValidationErrors);
     setFieldValidStates(newFieldValidStates);
 
-    if (isFormValid()) {
+    if (
+      newFieldValidStates.email &&
+      newFieldValidStates.password &&
+      newFieldValidStates.confirmPassword &&
+      acceptedTerms &&
+      !isLoading
+    ) {
       await doSignup();
     }
   };
