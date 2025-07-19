@@ -5,6 +5,9 @@ import {
   EventName,
   SubscriptionCreatedEvent,
   SubscriptionUpdatedEvent,
+  TransactionCompletedEvent,
+  TransactionPaidEvent,
+  SubscriptionActivatedEvent,
 } from '@paddle/paddle-node-sdk';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
@@ -68,11 +71,16 @@ export class ProcessWebhook {
     switch (eventData.eventType) {
       case EventName.SubscriptionCreated:
       case EventName.SubscriptionUpdated:
+      case EventName.SubscriptionActivated:
         await this.updateSubscriptionData(eventData);
         break;
       case EventName.CustomerCreated:
       case EventName.CustomerUpdated:
         await this.updateCustomerData(eventData);
+        break;
+      case EventName.TransactionCompleted:
+      case EventName.TransactionPaid:
+        await this.handleTransactionEvent(eventData);
         break;
       default:
         logger.info('PADDLE_WEBHOOK', 'Unhandled event type', {
@@ -133,7 +141,10 @@ export class ProcessWebhook {
   }
 
   private async updateSubscriptionData(
-    eventData: SubscriptionCreatedEvent | SubscriptionUpdatedEvent
+    eventData:
+      | SubscriptionCreatedEvent
+      | SubscriptionUpdatedEvent
+      | SubscriptionActivatedEvent
   ) {
     const supabase = createSupabaseAdmin();
 
@@ -346,6 +357,59 @@ export class ProcessWebhook {
         {
           customerId: eventData.data.id,
           customerEmail: eventData.data.email,
+        }
+      );
+      throw error;
+    }
+  }
+
+  private async handleTransactionEvent(
+    eventData: TransactionCompletedEvent | TransactionPaidEvent
+  ) {
+    const supabase = createSupabaseAdmin();
+
+    try {
+      logger.info('PADDLE_WEBHOOK', 'Processing transaction event', {
+        eventType: eventData.eventType,
+        transactionId: eventData.data.id,
+        customerId: eventData.data.customerId,
+        subscriptionId: eventData.data.subscriptionId,
+        status: eventData.data.status,
+      });
+
+      // Log transaction event for reference - we primarily use subscription events for tier management
+      // But transaction events can be useful for analytics, billing reconciliation, etc.
+
+      // If this transaction is for a subscription, we'll let the subscription events handle tier updates
+      if (eventData.data.subscriptionId) {
+        logger.info(
+          'PADDLE_WEBHOOK',
+          'Transaction is for subscription - tier managed via subscription events',
+          {
+            transactionId: eventData.data.id,
+            subscriptionId: eventData.data.subscriptionId,
+          }
+        );
+        return;
+      }
+
+      // For one-time purchases or non-subscription transactions, you might want to handle differently
+      // For now, we'll just log them for reference
+      logger.info('PADDLE_WEBHOOK', 'Non-subscription transaction processed', {
+        transactionId: eventData.data.id,
+        customerId: eventData.data.customerId,
+        amount: eventData.data.details?.totals?.total,
+        currency: eventData.data.currencyCode,
+      });
+    } catch (error) {
+      logger.error(
+        'PADDLE_WEBHOOK',
+        'Failed to process transaction webhook',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          transactionId: eventData.data.id,
+          customerId: eventData.data.customerId,
+          subscriptionId: eventData.data.subscriptionId,
         }
       );
       throw error;
