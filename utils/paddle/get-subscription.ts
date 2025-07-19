@@ -9,11 +9,15 @@ interface SubscriptionDetailResponse {
   error?: string;
 }
 
-export async function getSubscription(subscriptionId: string): Promise<SubscriptionDetailResponse> {
+export async function getSubscription(
+  subscriptionId: string
+): Promise<SubscriptionDetailResponse> {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (!user) {
       return { error: ErrorMessage };
     }
@@ -26,11 +30,14 @@ export async function getSubscription(subscriptionId: string): Promise<Subscript
       .single();
 
     const customerId = profile?.paddle_customer_id;
-    
+
     if (customerId) {
-      const subscription = await getPaddleServerInstance().subscriptions.get(subscriptionId, {
-        include: ['next_transaction', 'recurring_transaction_details'],
-      });
+      const subscription = await getPaddleServerInstance().subscriptions.get(
+        subscriptionId,
+        {
+          include: ['next_transaction', 'recurring_transaction_details'],
+        }
+      );
 
       return { data: parseSDKResponse(subscription) };
     }
@@ -38,6 +45,6 @@ export async function getSubscription(subscriptionId: string): Promise<Subscript
     console.error('Error fetching subscription:', e);
     return { error: ErrorMessage };
   }
-  
+
   return { error: ErrorMessage };
-} 
+}

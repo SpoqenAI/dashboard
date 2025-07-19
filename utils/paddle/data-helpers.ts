@@ -32,10 +32,13 @@ const CustomBillingCycleMap = {
   year: 'years',
 };
 
-export function formatBillingCycle({ frequency, interval }: CheckoutEventsTimePeriod) {
+export function formatBillingCycle({
+  frequency,
+  interval,
+}: CheckoutEventsTimePeriod) {
   if (frequency === 1) {
     return BillingCycleMap[interval];
   } else {
     return `every ${frequency} ${CustomBillingCycleMap[interval]}`;
   }
-} 
+}

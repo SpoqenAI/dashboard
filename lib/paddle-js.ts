@@ -132,9 +132,11 @@ export async function openInlineCheckout(
   // Validate container exists
   const cleanContainerClass = containerClass.replace(/^\./, '');
   const containerElement = document.querySelector(`.${cleanContainerClass}`);
-  
+
   if (!containerElement) {
-    throw new Error(`Container element with class "${cleanContainerClass}" not found`);
+    throw new Error(
+      `Container element with class "${cleanContainerClass}" not found`
+    );
   }
 
   // Enhanced checkout options with starter kit patterns
@@ -169,24 +171,24 @@ export async function openInlineCheckout(
         events?.ready?.();
       },
       complete: (data: any) => {
-        logger.info('PADDLE_JS', 'Payment completed successfully', { 
-          transactionId: data?.transaction_id || 'unknown'
+        logger.info('PADDLE_JS', 'Payment completed successfully', {
+          transactionId: data?.transaction_id || 'unknown',
         });
         // Redirect to success page manually
         window.location.href = '/checkout/success';
         events?.complete?.(data);
       },
       success: (data: any) => {
-        logger.info('PADDLE_JS', 'Payment success event fired', { 
-          transactionId: data?.transaction_id || 'unknown'
+        logger.info('PADDLE_JS', 'Payment success event fired', {
+          transactionId: data?.transaction_id || 'unknown',
         });
         // Redirect to success page manually
         window.location.href = '/checkout/success';
         events?.success?.(data);
       },
       'payment.completed': (data: any) => {
-        logger.info('PADDLE_JS', 'Payment completed event fired', { 
-          transactionId: data?.transaction_id || 'unknown'
+        logger.info('PADDLE_JS', 'Payment completed event fired', {
+          transactionId: data?.transaction_id || 'unknown',
         });
         // Redirect to success page manually
         window.location.href = '/checkout/success';
@@ -203,18 +205,21 @@ export async function openInlineCheckout(
     },
   };
 
-  logger.info('PADDLE_JS', 'Opening inline checkout with enhanced configuration', {
-    priceId,
-    containerClass: cleanContainerClass,
-    theme: 'dark',
-    hasEvents: true,
-  });
+  logger.info(
+    'PADDLE_JS',
+    'Opening inline checkout with enhanced configuration',
+    {
+      priceId,
+      containerClass: cleanContainerClass,
+      theme: 'dark',
+      hasEvents: true,
+    }
+  );
 
   try {
     Paddle.Checkout.open(checkoutOptions);
-    
+
     logger.info('PADDLE_JS', 'Inline checkout opened successfully');
-    
   } catch (error) {
     logger.error(
       'PADDLE_JS',

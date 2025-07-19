@@ -98,6 +98,57 @@ const pricingTiers = [
   },
 ];
 
+// Helper function to get tier information based on subscription
+const getSubscriptionTierInfo = (subscription: any) => {
+  const tier = getSubscriptionTier(subscription);
+  const tierNames = {
+    free: 'Free',
+    starter: 'Starter',
+    pro: 'Professional',
+    business: 'Business',
+  };
+  const tierFeatures = {
+    free: [
+      'AI assistant setup only',
+      'Basic greeting customization',
+      'Community support',
+      'No call handling (setup only)',
+    ],
+    starter: [
+      'Up to 30 calls per month',
+      'Basic analytics dashboard',
+      'Call summaries & transcripts',
+      'Email notifications',
+      'Basic AI settings',
+      'Email support',
+    ],
+    pro: [
+      'Unlimited calls & minutes',
+      'Advanced analytics dashboard',
+      'Advanced lead qualification',
+      'CRM integrations (Webhook API)',
+      'Real-time SMS & email alerts',
+      'Custom call scripts & greetings',
+      'Priority support',
+    ],
+    business: [
+      'Everything in Professional',
+      'Multi-language support',
+      'Custom AI training & fine-tuning',
+      'Dedicated phone numbers',
+      'Advanced integrations (Zapier, etc.)',
+      'Custom reporting & analytics',
+      'Dedicated account manager',
+      'Phone & video support',
+      'SLA guarantee',
+    ],
+  };
+  return {
+    name: tierNames[tier] || 'Professional',
+    features: tierFeatures[tier] || tierFeatures.pro,
+  };
+};
+
 // Helper function to get the correct price and billing period for a subscription
 const getSubscriptionPriceInfo = (subscription: any) => {
   if (!subscription || subscription.tier_type === 'free') {
@@ -1564,7 +1615,7 @@ function SettingsContent() {
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="text-lg font-semibold text-green-900">
-                            Professional Plan
+                            {getSubscriptionTierInfo(subscription).name} Plan
                           </h3>
                           <p className="text-sm text-green-700">
                             {subscription.status === 'trialing'
@@ -1585,22 +1636,25 @@ function SettingsContent() {
                             Billing Period
                           </p>
                           <p className="text-sm text-green-700">
-                            Ends on{' '}
-                            {formatSubscriptionDate(
-                              subscription.current_period_end_at
-                            )}
+                            {subscription.current_period_end_at
+                              ? `Ends on ${formatSubscriptionDate(subscription.current_period_end_at)}`
+                              : 'N/A'}
                           </p>
                         </div>
-                        {subscription.quantity && (
-                          <div>
-                            <p className="text-sm font-medium text-green-900">
-                              Quantity
-                            </p>
-                            <p className="text-sm text-green-700">
-                              {subscription.quantity} seats
-                            </p>
-                          </div>
-                        )}
+                        <div>
+                          <p className="text-sm font-medium text-green-900">
+                            Price
+                          </p>
+                          <p className="text-sm text-green-700">
+                            {(() => {
+                              const priceInfo =
+                                getSubscriptionPriceInfo(subscription);
+                              return priceInfo.billingPeriod === 'free'
+                                ? 'Free'
+                                : `$${priceInfo.price}/${priceInfo.billingPeriod === 'annual' ? 'year' : 'month'}`;
+                            })()}
+                          </p>
+                        </div>
                       </div>
 
                       {subscription.cancel_at_period_end && (
@@ -1643,34 +1697,17 @@ function SettingsContent() {
                         Current Plan Features
                       </h4>
                       <div className="grid gap-2 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span>Unlimited calls & minutes</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span>Advanced lead qualification</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span>CRM integrations (Webhook API)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span>Real-time SMS & email alerts</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span>Custom call scripts & greetings</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span>Advanced analytics dashboard</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span>Priority support</span>
-                        </div>
+                        {getSubscriptionTierInfo(subscription).features.map(
+                          (feature, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-2"
+                            >
+                              <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                              <span>{feature}</span>
+                            </div>
+                          )
+                        )}
                       </div>
                     </div>
                   </div>

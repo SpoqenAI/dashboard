@@ -14,14 +14,15 @@ interface SubscriptionResponse {
 export async function getSubscriptions(): Promise<SubscriptionResponse> {
   try {
     const customerId = await getCustomerId();
-    
+
     if (customerId) {
-      const subscriptionCollection = getPaddleServerInstance().subscriptions.list({ 
-        customerId: [customerId], 
-        perPage: 20 
-      });
+      const subscriptionCollection =
+        getPaddleServerInstance().subscriptions.list({
+          customerId: [customerId],
+          perPage: 20,
+        });
       const subscriptions = await subscriptionCollection.next();
-      
+
       return {
         data: subscriptions,
         hasMore: subscriptionCollection.hasMore,
@@ -32,6 +33,6 @@ export async function getSubscriptions(): Promise<SubscriptionResponse> {
     console.error('Error fetching subscriptions:', e);
     return getErrorMessage();
   }
-  
+
   return { data: [], hasMore: false, totalRecords: 0 };
-} 
+}

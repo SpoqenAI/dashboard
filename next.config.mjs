@@ -145,8 +145,8 @@ const nextConfig = {
               "font-src 'self' data: *.paddle.com *.stripe.com",
               "worker-src 'self' blob:",
               "child-src 'self' *.paddle.com *.stripe.com",
-              "form-action 'self' *.paddle.com *.stripe.com"
-            ].join('; ')
+              "form-action 'self' *.paddle.com *.stripe.com",
+            ].join('; '),
           },
           {
             key: 'X-Frame-Options',
@@ -196,9 +196,9 @@ const nextConfig = {
               "font-src 'self' data: https:",
               "worker-src 'self' blob:",
               "frame-src 'self' https:",
-            ].join('; ')
-          }
-        ]
+            ].join('; '),
+          },
+        ],
       });
     }
 

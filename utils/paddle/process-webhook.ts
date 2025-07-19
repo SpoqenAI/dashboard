@@ -16,20 +16,34 @@ export class ProcessWebhook {
     }
 
     // Get price ID mappings from environment variables
-    const STARTER_PRICE_IDS = process.env.PADDLE_STARTER_PRICE_IDS?.split(',') || [
+    const STARTER_PRICE_IDS =
+      process.env.PADDLE_STARTER_PRICE_IDS?.split(',') ||
+      [
+        process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID,
+        process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID,
+        process.env.NEXT_PUBLIC_PADDLE_PRICE_ID, // legacy fallback
+      ].filter(Boolean);
+
+    const PRO_PRICE_IDS =
+      process.env.PADDLE_PRO_PRICE_IDS?.split(',') ||
+      [
+        process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID,
+        process.env.NEXT_PUBLIC_PADDLE_PRO_ANNUAL_PRICE_ID,
+      ].filter(Boolean);
+
+    const BUSINESS_PRICE_IDS =
+      process.env.PADDLE_BUSINESS_PRICE_IDS?.split(',') || [];
+
+    // For current pricing page setup, also check these specific price IDs from environment
+    const pricingPageIds = [
       process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID,
       process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID,
-      process.env.NEXT_PUBLIC_PADDLE_PRICE_ID, // legacy fallback
     ].filter(Boolean);
 
-    const PRO_PRICE_IDS = process.env.PADDLE_PRO_PRICE_IDS?.split(',') || [
-      process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID,
-      process.env.NEXT_PUBLIC_PADDLE_PRO_ANNUAL_PRICE_ID,
-    ].filter(Boolean);
-
-    const BUSINESS_PRICE_IDS = process.env.PADDLE_BUSINESS_PRICE_IDS?.split(',') || [];
-
-    if (STARTER_PRICE_IDS.includes(priceId)) {
+    if (
+      STARTER_PRICE_IDS.includes(priceId) ||
+      pricingPageIds.includes(priceId)
+    ) {
       return 'starter';
     }
 
@@ -42,7 +56,11 @@ export class ProcessWebhook {
     }
 
     // If it's a paid price ID but not recognized, default to starter
-    logger.warn('PADDLE_WEBHOOK', 'Unrecognized price_id, defaulting to starter tier', { priceId });
+    logger.warn(
+      'PADDLE_WEBHOOK',
+      'Unrecognized price_id, defaulting to starter tier',
+      { priceId }
+    );
     return 'starter';
   }
 
@@ -56,6 +74,11 @@ export class ProcessWebhook {
       case EventName.CustomerUpdated:
         await this.updateCustomerData(eventData);
         break;
+      default:
+        logger.info('PADDLE_WEBHOOK', 'Unhandled event type', {
+          eventType: eventData.eventType,
+          eventId: eventData.eventId,
+        });
     }
   }
 
@@ -109,18 +132,31 @@ export class ProcessWebhook {
     }
   }
 
-  private async updateSubscriptionData(eventData: SubscriptionCreatedEvent | SubscriptionUpdatedEvent) {
+  private async updateSubscriptionData(
+    eventData: SubscriptionCreatedEvent | SubscriptionUpdatedEvent
+  ) {
     const supabase = createSupabaseAdmin();
-    
+
     // Find user associated with this subscription
-    const userId = await this.findUserBySubscriptionId(supabase, eventData.data.id);
+    const userId = await this.findUserBySubscriptionId(
+      supabase,
+      eventData.data.id
+    );
     if (!userId) {
       logger.warn('PADDLE_WEBHOOK', 'No user found for subscription', {
         subscriptionId: eventData.data.id,
       });
       throw new Error('Subscription not found');
     }
-    
+
+    // Check if user already has a subscription (for subscription.created events)
+    const { data: existingSubscription } = await supabase
+      .from('subscriptions')
+      .select('id, status, tier_type')
+      .eq('user_id', userId)
+      .eq('current', true)
+      .single();
+
     // Prepare subscription data for upsert
     const subscriptionUpsertData = {
       id: eventData.data.id,
@@ -129,46 +165,103 @@ export class ProcessWebhook {
       price_id: eventData.data.items[0]?.price?.id || null,
       quantity: eventData.data.items[0]?.quantity || 1,
       cancel_at_period_end: eventData.data.canceledAt ? true : false,
-      current_period_start_at: eventData.data.currentBillingPeriod?.startsAt || null,
-      current_period_end_at: eventData.data.currentBillingPeriod?.endsAt || null,
+      current_period_start_at:
+        eventData.data.currentBillingPeriod?.startsAt || null,
+      current_period_end_at:
+        eventData.data.currentBillingPeriod?.endsAt || null,
       ended_at: eventData.data.canceledAt || null,
       canceled_at: eventData.data.canceledAt || null,
       trial_start_at: null, // Will be set based on actual webhook data structure
       trial_end_at: null, // Will be set based on actual webhook data structure
       updated_at: new Date().toISOString(),
-      tier_type: this.getTierFromPriceId(eventData.data.items[0]?.price?.id || null),
+      tier_type: this.getTierFromPriceId(
+        eventData.data.items[0]?.price?.id || null
+      ),
       paddle_customer_id: eventData.data.customerId, // Store customer ID for billing operations
     };
 
-    // Use atomic upsert function to handle webhook updates
-    const { data: upsertResult, error: upsertError } = await supabase.rpc(
-      'upsert_subscription',
-      {
-        p_subscription_data: subscriptionUpsertData,
-      }
-    );
+    let result;
 
-    if (upsertError) {
-      logger.error(
+    if (
+      existingSubscription &&
+      eventData.eventType === 'subscription.created'
+    ) {
+      // If user has existing subscription and this is a creation event,
+      // update the existing subscription with new Paddle data
+      logger.info(
         'PADDLE_WEBHOOK',
-        'Failed to upsert subscription',
-        upsertError,
+        'Updating existing subscription with Paddle data',
         {
           userId: logger.maskUserId(userId),
-          subscriptionId: eventData.data.id,
+          existingSubscriptionId: existingSubscription.id,
+          newPaddleSubscriptionId: eventData.data.id,
           eventType: eventData.eventType,
         }
       );
-      throw upsertError;
+
+      const { data: updateResult, error: updateError } = await supabase
+        .from('subscriptions')
+        .update({
+          id: subscriptionUpsertData.id, // Update to Paddle's subscription ID
+          price_id: subscriptionUpsertData.price_id,
+          status: subscriptionUpsertData.status,
+          tier_type: subscriptionUpsertData.tier_type,
+          paddle_customer_id: subscriptionUpsertData.paddle_customer_id,
+          current_period_start_at:
+            subscriptionUpsertData.current_period_start_at,
+          current_period_end_at: subscriptionUpsertData.current_period_end_at,
+          updated_at: subscriptionUpsertData.updated_at,
+        })
+        .eq('user_id', userId)
+        .eq('current', true)
+        .select();
+
+      if (updateError) {
+        logger.error(
+          'PADDLE_WEBHOOK',
+          'Failed to update existing subscription',
+          updateError,
+          {
+            userId: logger.maskUserId(userId),
+            subscriptionId: eventData.data.id,
+          }
+        );
+        throw updateError;
+      }
+
+      result = { success: true, operation: 'updated', data: updateResult };
+    } else {
+      // Use atomic upsert function for new subscriptions or updates
+      const { data: upsertResult, error: upsertError } = await supabase.rpc(
+        'upsert_subscription',
+        {
+          p_subscription_data: subscriptionUpsertData,
+        }
+      );
+
+      if (upsertError) {
+        logger.error(
+          'PADDLE_WEBHOOK',
+          'Failed to upsert subscription',
+          upsertError,
+          {
+            userId: logger.maskUserId(userId),
+            subscriptionId: eventData.data.id,
+            eventType: eventData.eventType,
+          }
+        );
+        throw upsertError;
+      }
+
+      result = upsertResult as any;
     }
 
-    // Check if upsert was successful
-    const result = upsertResult as any;
+    // Check if operation was successful
     if (!result?.success) {
       logger.error(
         'PADDLE_WEBHOOK',
-        'Subscription upsert returned error',
-        new Error(result?.error || 'Unknown upsert error'),
+        'Subscription operation returned error',
+        new Error(result?.error || 'Unknown operation error'),
         {
           userId: logger.maskUserId(userId),
           subscriptionId: eventData.data.id,
@@ -182,68 +275,31 @@ export class ProcessWebhook {
       userId: logger.maskUserId(userId),
       subscriptionId: eventData.data.id,
       eventType: eventData.eventType,
-      operation: result.operation,
+      operation: result.operation || 'upserted',
       status: eventData.data.status,
+      tierType: this.getTierFromPriceId(
+        eventData.data.items[0]?.price?.id || null
+      ),
     });
-
-    // Trigger Twilio number deletion if subscription is canceled or past_due
-    if (
-      eventData.data.status === 'canceled' ||
-      eventData.data.status === 'past_due'
-    ) {
-      try {
-        const { deleteTwilioNumberForUser } = await import(
-          '@/lib/actions/assistant.actions'
-        );
-        deleteTwilioNumberForUser(userId).catch(deleteError => {
-          logger.error(
-            'PADDLE_WEBHOOK',
-            'Failed to delete Twilio number after subscription cancellation',
-            deleteError instanceof Error
-              ? deleteError
-              : new Error(String(deleteError)),
-            {
-              userId: logger.maskUserId(userId),
-              subscriptionId: eventData.data.id,
-            }
-          );
-        });
-        logger.info('PADDLE_WEBHOOK', 'Twilio number deletion triggered', {
-          userId: logger.maskUserId(userId),
-          subscriptionId: eventData.data.id,
-        });
-      } catch (importError) {
-        logger.error(
-          'PADDLE_WEBHOOK',
-          'Failed to import Twilio number deletion function',
-          importError instanceof Error
-            ? importError
-            : new Error(String(importError)),
-          {
-            userId: logger.maskUserId(userId),
-            subscriptionId: eventData.data.id,
-          }
-        );
-      }
-    }
-
-    return upsertResult;
   }
 
-  private async updateCustomerData(eventData: CustomerCreatedEvent | CustomerUpdatedEvent) {
+  private async updateCustomerData(
+    eventData: CustomerCreatedEvent | CustomerUpdatedEvent
+  ) {
     const supabase = createSupabaseAdmin();
-    
+
     try {
       // First, upsert into customers table following starter kit pattern
-      const { error: customerError } = await supabase
-        .from('customers')
-        .upsert({
+      const { error: customerError } = await supabase.from('customers').upsert(
+        {
           customer_id: eventData.data.id,
           email: eventData.data.email,
           updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'customer_id'
-        });
+        },
+        {
+          onConflict: 'customer_id',
+        }
+      );
 
       if (customerError) {
         logger.error(
@@ -282,7 +338,6 @@ export class ProcessWebhook {
         customerEmail: eventData.data.email,
         profileUpdated: !profileError,
       });
-
     } catch (error) {
       logger.error(
         'PADDLE_WEBHOOK',
@@ -296,4 +351,4 @@ export class ProcessWebhook {
       throw error;
     }
   }
-} 
+}

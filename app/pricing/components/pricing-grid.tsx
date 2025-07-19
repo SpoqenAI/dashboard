@@ -79,11 +79,17 @@ export function PricingGrid({ pricingTiers }: PricingGridProps) {
       });
 
       // Create URL with plan information as parameters
-      const checkoutUrl = new URL(`/checkout/${selectedPriceId}`, window.location.origin);
+      const checkoutUrl = new URL(
+        `/checkout/${selectedPriceId}`,
+        window.location.origin
+      );
       checkoutUrl.searchParams.set('plan', tier.name);
-      checkoutUrl.searchParams.set('price', (isAnnual ? tier.annualPrice : tier.monthlyPrice).toString());
+      checkoutUrl.searchParams.set(
+        'price',
+        (isAnnual ? tier.annualPrice : tier.monthlyPrice).toString()
+      );
       checkoutUrl.searchParams.set('cycle', isAnnual ? 'Annual' : 'Monthly');
-      
+
       // Redirect to our inline checkout page with plan info
       window.location.href = checkoutUrl.toString();
     } catch (error) {

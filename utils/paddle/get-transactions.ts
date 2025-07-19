@@ -11,11 +11,16 @@ interface TransactionResponse {
   error?: string;
 }
 
-export async function getTransactions(subscriptionId: string, after: string): Promise<TransactionResponse> {
+export async function getTransactions(
+  subscriptionId: string,
+  after: string
+): Promise<TransactionResponse> {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (!user) {
       return { data: [], hasMore: false, totalRecords: 0 };
     }
@@ -28,17 +33,19 @@ export async function getTransactions(subscriptionId: string, after: string): Pr
       .single();
 
     const customerId = profile?.paddle_customer_id;
-    
+
     if (customerId) {
-      const transactionCollection = getPaddleServerInstance().transactions.list({
-        customerId: [customerId],
-        after: after,
-        perPage: 10,
-        status: ['billed', 'paid', 'past_due', 'completed', 'canceled'],
-        subscriptionId: subscriptionId ? [subscriptionId] : undefined,
-      });
+      const transactionCollection = getPaddleServerInstance().transactions.list(
+        {
+          customerId: [customerId],
+          after: after,
+          perPage: 10,
+          status: ['billed', 'paid', 'past_due', 'completed', 'canceled'],
+          subscriptionId: subscriptionId ? [subscriptionId] : undefined,
+        }
+      );
       const transactionData = await transactionCollection.next();
-      
+
       return {
         data: parseSDKResponse(transactionData ?? []),
         hasMore: transactionCollection.hasMore,
@@ -52,4 +59,4 @@ export async function getTransactions(subscriptionId: string, after: string): Pr
     console.error('Error fetching transactions:', e);
     return getErrorMessage();
   }
-} 
+}
