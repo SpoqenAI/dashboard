@@ -17,22 +17,40 @@ The project follows a Next.js App Router architecture, organizing code into `app
 - **Error Tracking:** Sentry integration with `@sentry/nextjs` for comprehensive error monitoring, including automatic Vercel Cron Monitors.
 - **Security Headers:** Implemented `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: strict-origin-when-cross-origin`.
 - **CORS:** Flexible CORS policy (`Access-Control-Allow-Origin: *`) for `/api/(.*)` routes in development to facilitate local testing with tools like ngrok.
-- **Billing Integration:** Paddle for subscription management, relying on client-side and server-side Paddle SDKs, and webhook processing for `subscription.created`, `updated`, and `canceled` events. The database schema has been updated to support Paddle billing with a `paddle_customer_id` in `profiles` and a dedicated `subscriptions` table.
+- **Billing Integration:** Paddle for subscription management, now following Next.js Paddle starter kit best practices with structured utilities under `utils/paddle/`. The new architecture includes:
+  - **Centralized SDK Management**: `utils/paddle/get-paddle-instance.ts` for consistent Paddle initialization
+  - **Data Helpers**: `utils/paddle/data-helpers.ts` for parsing, error handling, and response formatting
+  - **Money Parsing**: `utils/paddle/parse-money.ts` for consistent currency formatting and amount conversion
+  - **Subscription Management**: `utils/paddle/get-subscriptions.ts` and `utils/paddle/get-subscription.ts` for server-side data fetching
+  - **Transaction History**: `utils/paddle/get-transactions.ts` for payment history with pagination
+  - **Webhook Processing**: `utils/paddle/process-webhook.ts` with ProcessWebhook class for structured event handling
+  - **Enhanced Checkout**: Modern inline checkout using `initializePaddle` with real-time data updates and proper event handling
+  - The database schema supports Paddle billing with `paddle_customer_id` in `profiles` and a dedicated `subscriptions` table with atomic upsert functions for webhook processing.
 
 ## Design Patterns
 
 - **Functional and Declarative Programming:** Emphasis on functional components and declarative JSX.
 - **Modularization:** Code is organized into reusable components and utility functions.
+- **Structured Utility Organization:** Following Next.js Paddle starter kit patterns with specialized utility directories (`utils/paddle/`) containing focused helper functions for specific domains.
 - **Mobile-First Responsive Design:** Implemented using Tailwind CSS.
 - **Component Structure:** Exported components, subcomponents, helpers, static content, and types within files.
+- **Class-Based Processing:** Structured event processing using classes (e.g., ProcessWebhook) for better organization and maintainability.
 
 ## Component Relationships
 
 - `app/`: Contains top-level pages and route handlers, often composed of components from `components/`.
 - `components/`: Houses UI building blocks used across different pages.
 - `lib/`: Provides shared utility functions and configurations that components and pages can import.
+- `utils/`: Contains specialized utility directories organized by domain (e.g., `utils/paddle/` for payment-related utilities).
 - `hooks/`: Contains custom React hooks to encapsulate reusable logic for components.
-- `api/webhooks/paddle`: Handles incoming Paddle webhook events to update the Supabase database.
+- `api/webhooks/paddle`: Handles incoming Paddle webhook events using the ProcessWebhook class to update the Supabase database.
+- `utils/paddle/`: Centralized Paddle utilities including:
+  - `get-paddle-instance.ts`: SDK initialization and configuration
+  - `data-helpers.ts`: Data parsing, error handling, and formatting
+  - `parse-money.ts`: Currency formatting and amount conversion
+  - `get-subscriptions.ts`, `get-subscription.ts`: Server-side subscription data management
+  - `get-transactions.ts`: Transaction history with pagination support
+  - `process-webhook.ts`: Structured webhook event processing
 - `api/vapi/action-points`: Processes VAPI call data and stores AI-generated insights (sentiment, lead quality, etc.) into the `call_analysis` table.
 - `api/vapi/analytics`: Aggregates and serves analytics data from VAPI calls and the `call_analysis` table to the dashboard, ensuring data is filtered by the user's specific assistant.
 - `api/vapi/bulk-analyze`: Provides an endpoint for triggering batch processing of historical VAPI calls to populate the `call_analysis` table.

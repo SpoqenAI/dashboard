@@ -24,20 +24,19 @@ export interface PaddleCheckoutSettings {
   locale?: string;
   allowLogout?: boolean;
   variant?: 'one-page' | 'multi-page';
+  frameInitialHeight?: number;
+  frameStyle?: string;
 }
 
 export interface PaddleCheckoutEvents {
-  complete?: () => void;
+  complete?: (data: any) => void;
   close?: () => void;
   error?: (error: any) => void;
   loaded?: () => void;
   // Additional events for inline checkout
   ready?: () => void;
   success?: (data: any) => void;
-  payment?: {
-    completed?: (data: any) => void;
-    failed?: (error: any) => void;
-  };
+  'payment.completed'?: (data: any) => void;
 }
 
 // Comprehensive checkout options interface for both modes
@@ -46,7 +45,6 @@ export interface PaddleCheckoutOptions {
   customer?: PaddleCheckoutCustomer;
   customData?: Record<string, string>;
   settings?: PaddleCheckoutSettings;
-  successUrl?: string; // Can also be set at top level
   events?: PaddleCheckoutEvents;
 }
 
@@ -65,6 +63,7 @@ interface PaddleCheckout {
 
 interface PaddleSDK {
   Checkout: PaddleCheckout;
+  Initialized?: boolean;
 }
 
 let isInitialized = false;
@@ -98,26 +97,21 @@ export async function getPaddleInstance(): Promise<PaddleSDK> {
 
     // Return the global Paddle object (available on window after initialization)
     if (typeof window !== 'undefined' && (window as any).Paddle) {
-      return (window as any).Paddle as PaddleSDK;
-    } else {
-      throw new Error(
-        'Paddle SDK not available on window object after initialization'
-      );
+      return (window as any).Paddle;
     }
+
+    throw new Error('Paddle SDK not available on window object');
   } catch (error) {
     logger.error(
       'PADDLE_JS',
       'Failed to initialize Paddle SDK',
-      error instanceof Error ? error : new Error(String(error)),
-      { environment: config.environment }
+      error instanceof Error ? error : new Error(String(error))
     );
-    throw new Error(
-      `Failed to initialize Paddle SDK: ${error instanceof Error ? error.message : String(error)}`
-    );
+    throw error;
   }
 }
 
-// Enhanced function for opening inline checkout
+// Enhanced inline checkout function based on starter kit patterns
 export async function openInlineCheckout(
   containerClass: string,
   priceId: string,
@@ -125,23 +119,29 @@ export async function openInlineCheckout(
   customData?: Record<string, string>,
   events?: PaddleCheckoutEvents
 ): Promise<void> {
+  logger.info('PADDLE_JS', 'Starting Paddle inline checkout', {
+    containerClass,
+    priceId,
+    customerEmail: customerEmail ? '[REDACTED]' : 'empty',
+    hasCustomData: !!customData,
+  });
+
+  // Get Paddle instance
   const Paddle = await getPaddleInstance();
 
-  // Clean container class (remove '.' prefix if present)
-  const cleanContainerClass = containerClass.startsWith('.') 
-    ? containerClass.substring(1) 
-    : containerClass;
-
-  // Verify the container element exists using class selector
+  // Validate container exists
+  const cleanContainerClass = containerClass.replace(/^\./, '');
   const containerElement = document.querySelector(`.${cleanContainerClass}`);
+  
   if (!containerElement) {
-    throw new Error(`Container element with class '${cleanContainerClass}' not found`);
+    throw new Error(`Container element with class "${cleanContainerClass}" not found`);
   }
 
+  // Enhanced checkout options with starter kit patterns
   const checkoutOptions: PaddleCheckoutOptions = {
     items: [
       {
-        priceId: priceId,
+        priceId,
         quantity: 1,
       },
     ],
@@ -151,24 +151,70 @@ export async function openInlineCheckout(
     customData: customData || {},
     settings: {
       displayMode: 'inline',
-      frameTarget: cleanContainerClass, // Just the class name, no prefix
+      frameTarget: cleanContainerClass,
       theme: 'dark',
       variant: 'one-page',
       allowLogout: false,
+      frameInitialHeight: 500,
+      frameStyle: 'width: 100%; background-color: transparent; border: none',
+      successUrl: '/checkout/success',
     },
-    successUrl: `${window.location.origin}/api/paddle/success${customData?.user_id ? `?user_id=${customData.user_id}` : ''}`,
-    events: events || {},
+    events: {
+      loaded: () => {
+        logger.info('PADDLE_JS', 'Inline checkout loaded successfully');
+        events?.loaded?.();
+      },
+      ready: () => {
+        logger.info('PADDLE_JS', 'Inline checkout ready for interaction');
+        events?.ready?.();
+      },
+      complete: (data: any) => {
+        logger.info('PADDLE_JS', 'Payment completed successfully', { 
+          transactionId: data?.transaction_id || 'unknown'
+        });
+        // Redirect to success page manually
+        window.location.href = '/checkout/success';
+        events?.complete?.(data);
+      },
+      success: (data: any) => {
+        logger.info('PADDLE_JS', 'Payment success event fired', { 
+          transactionId: data?.transaction_id || 'unknown'
+        });
+        // Redirect to success page manually
+        window.location.href = '/checkout/success';
+        events?.success?.(data);
+      },
+      'payment.completed': (data: any) => {
+        logger.info('PADDLE_JS', 'Payment completed event fired', { 
+          transactionId: data?.transaction_id || 'unknown'
+        });
+        // Redirect to success page manually
+        window.location.href = '/checkout/success';
+        events?.['payment.completed']?.(data);
+      },
+      error: (error: any) => {
+        logger.error('PADDLE_JS', 'Checkout error occurred', error);
+        events?.error?.(error);
+      },
+      close: () => {
+        logger.info('PADDLE_JS', 'Checkout closed by user');
+        events?.close?.();
+      },
+    },
   };
 
-  logger.info('PADDLE_JS', 'Opening inline checkout', {
+  logger.info('PADDLE_JS', 'Opening inline checkout with enhanced configuration', {
     priceId,
     containerClass: cleanContainerClass,
-    frameTarget: cleanContainerClass,
     theme: 'dark',
+    hasEvents: true,
   });
 
   try {
     Paddle.Checkout.open(checkoutOptions);
+    
+    logger.info('PADDLE_JS', 'Inline checkout opened successfully');
+    
   } catch (error) {
     logger.error(
       'PADDLE_JS',
