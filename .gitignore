@@ -29,3 +29,6 @@ next-env.d.ts
 .env.sentry-build-plugin
 .amazonq/rules/Bylaws.md
 acli.exe
+
+# testing
+/coverage
