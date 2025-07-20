@@ -12,6 +12,10 @@ permissions:
   issues: write
   pull-requests: write
 
+env:
+  SENTRY_ORG: spoqen
+  SENTRY_PROJECT: javascript-nextjs
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -20,14 +24,38 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for Sentry to access git history
 
-      # Skip environment variable setting - use Vercel dashboard configuration instead
-      # - name: Set environment variables in Vercel
-      #   uses: dkershner6/vercel-set-env-action@v3
-      #   with:
-      #     token: ${{ secrets.VERCEL_TOKEN }}
-      #     projectName: dashboard
-      #     envVariableKeys: NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_SITE_URL
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test -- --passWithNoTests
+
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        with:
+          environment: production
+          version: ${{ github.sha }}
+          url_prefix: '~/'
+          strip_common_prefix: true
+          sourcemaps: '.next/static/chunks/'
+          set_commits: auto
+          finalize: true
 
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25.2.0
@@ -38,6 +66,14 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           github-comment: false
+
+      - name: Create Sentry deployment
+        run: |
+          npx @sentry/cli releases deploys ${{ github.sha }} new -e production -u https://www.spoqen.com
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: spoqen
+          SENTRY_PROJECT: javascript-nextjs
 
       - name: Create deployment status
         uses: actions/github-script@v7

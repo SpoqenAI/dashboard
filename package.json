@@ -18,7 +18,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "analyze": "cross-env ANALYZE=true next build",
-    "clean": "rm -rf .next out dist"
+    "clean": "rm -rf .next out dist",
+    "sentry:release": "sentry-cli releases new --org spoqen --project javascript-nextjs $npm_package_version && sentry-cli releases set-commits --org spoqen --project javascript-nextjs $npm_package_version --auto && sentry-cli releases finalize --org spoqen --project javascript-nextjs $npm_package_version"
   },
   "dependencies": {
     "@geoapify/geocoder-autocomplete": "^2.1.0",
