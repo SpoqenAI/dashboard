@@ -25,21 +25,95 @@ export function validateAssistantId(assistantId: string): boolean {
     return false;
   }
 
-  // VAPI assistant IDs are typically UUIDs or alphanumeric with dashes/underscores
-  // This regex allows alphanumeric characters, dashes, and underscores, 8-64 characters long
-  // The pattern is restrictive to prevent SSRF attacks
-  const isValidAssistantId = /^[a-zA-Z0-9\-_]{8,64}$/.test(assistantId);
+  // Trim whitespace and check for empty string
+  const trimmedId = assistantId.trim();
+  if (trimmedId.length === 0) {
+    logger.error(
+      'VAPI_ASSISTANT_SECURITY',
+      'Invalid assistantId: empty string after trimming',
+      new Error(`Rejected assistantId: "${assistantId}"`),
+      { assistantId }
+    );
+    return false;
+  }
+
+  // Check for common SSRF attack patterns
+  const ssrfPatterns = [
+    /:\/\//, // Protocol separators (http://, https://, etc.)
+    /localhost/i, // Localhost references
+    /127\.0\.0\.1/, // Local IP addresses
+    /0\.0\.0\.0/, // All interfaces
+    /::1/, // IPv6 localhost
+    /\.\./, // Directory traversal attempts
+    /[<>"']/, // HTML/XML injection attempts
+    /\s/, // Whitespace characters
+    /[^\x20-\x7E]/, // Non-printable ASCII characters
+  ];
+
+  for (const pattern of ssrfPatterns) {
+    if (pattern.test(trimmedId)) {
+      logger.error(
+        'VAPI_ASSISTANT_SECURITY',
+        'SSRF attack pattern detected in assistantId',
+        new Error(`Rejected assistantId with pattern ${pattern}: ${trimmedId}`),
+        { assistantId: trimmedId, pattern: pattern.toString() }
+      );
+      return false;
+    }
+  }
+
+  // VAPI assistant IDs are typically alphanumeric with dashes/underscores
+  // This regex is more restrictive and explicit about allowed characters
+  // Only allows lowercase letters, numbers, dashes, and underscores
+  // Length between 8 and 64 characters
+  const isValidAssistantId = /^[a-z0-9\-_]{8,64}$/.test(trimmedId);
 
   if (!isValidAssistantId) {
     logger.error(
       'VAPI_ASSISTANT_SECURITY',
       'Invalid assistantId format detected - potential SSRF attempt',
-      new Error(`Rejected assistantId: ${assistantId}`),
-      { assistantId }
+      new Error(`Rejected assistantId: ${trimmedId}`),
+      {
+        assistantId: trimmedId,
+        length: trimmedId.length,
+        allowedPattern: 'a-z, 0-9, -, _ (8-64 chars)',
+      }
     );
   }
 
   return isValidAssistantId;
+}
+
+/**
+ * Safely constructs a VAPI assistant URL with validated assistantId
+ * Provides an additional layer of security against SSRF attacks
+ *
+ * @param assistantId - The assistant ID to include in the URL
+ * @param endpoint - The specific endpoint (e.g., '', '/calls', etc.)
+ * @returns string - The safe URL or throws an error if validation fails
+ */
+function constructSafeVapiUrl(
+  assistantId: string,
+  endpoint: string = ''
+): string {
+  // Validate the assistantId before using it in URL construction
+  if (!validateAssistantId(assistantId)) {
+    throw new Error(`Invalid assistantId format: ${assistantId}`);
+  }
+
+  // Ensure endpoint is safe (only alphanumeric, dashes, underscores, and forward slashes)
+  const safeEndpoint = endpoint.replace(/[^a-zA-Z0-9\-_\/]/g, '');
+
+  // Construct the URL with explicit validation
+  const baseUrl = 'https://api.vapi.ai/assistant';
+  const safeUrl = `${baseUrl}/${assistantId}${safeEndpoint}`;
+
+  // Additional safety check: ensure the URL doesn't contain any suspicious patterns
+  if (safeUrl.includes('://') && !safeUrl.startsWith('https://api.vapi.ai/')) {
+    throw new Error(`Invalid URL construction detected: ${safeUrl}`);
+  }
+
+  return safeUrl;
 }
 
 /**
@@ -125,15 +199,13 @@ export async function getUserAssistantInfo(
       };
     }
 
-    // Fetch assistant from VAPI API
-    const vapiResponse = await fetch(
-      `https://api.vapi.ai/assistant/${assistantId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-      }
-    );
+    // Fetch assistant from VAPI API using safe URL construction
+    const safeUrl = constructSafeVapiUrl(assistantId);
+    const vapiResponse = await fetch(safeUrl, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
 
     if (!vapiResponse.ok) {
       const errorText = await vapiResponse.text();
@@ -207,18 +279,16 @@ export async function updateUserAssistant(
       };
     }
 
-    // Update assistant via VAPI API
-    const vapiResponse = await fetch(
-      `https://api.vapi.ai/assistant/${assistantId}`,
-      {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${vapiApiKey}`,
-        },
-        body: JSON.stringify(updates),
-      }
-    );
+    // Update assistant via VAPI API using safe URL construction
+    const safeUrl = constructSafeVapiUrl(assistantId);
+    const vapiResponse = await fetch(safeUrl, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${vapiApiKey}`,
+      },
+      body: JSON.stringify(updates),
+    });
 
     if (!vapiResponse.ok) {
       const errorText = await vapiResponse.text();

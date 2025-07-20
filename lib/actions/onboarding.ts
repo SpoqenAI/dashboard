@@ -9,6 +9,38 @@ import { logger } from '@/lib/logger';
 import { validateAssistantId } from '@/lib/vapi-assistant';
 
 /**
+ * Safely constructs a VAPI assistant URL with validated assistantId
+ * Provides an additional layer of security against SSRF attacks
+ *
+ * @param assistantId - The assistant ID to include in the URL
+ * @param endpoint - The specific endpoint (e.g., '', '/calls', etc.)
+ * @returns string - The safe URL or throws an error if validation fails
+ */
+function constructSafeVapiUrl(
+  assistantId: string,
+  endpoint: string = ''
+): string {
+  // Validate the assistantId before using it in URL construction
+  if (!validateAssistantId(assistantId)) {
+    throw new Error(`Invalid assistantId format: ${assistantId}`);
+  }
+
+  // Ensure endpoint is safe (only alphanumeric, dashes, underscores, and forward slashes)
+  const safeEndpoint = endpoint.replace(/[^a-zA-Z0-9\-_\/]/g, '');
+
+  // Construct the URL with explicit validation
+  const baseUrl = 'https://api.vapi.ai/assistant';
+  const safeUrl = `${baseUrl}/${assistantId}${safeEndpoint}`;
+
+  // Additional safety check: ensure the URL doesn't contain any suspicious patterns
+  if (safeUrl.includes('://') && !safeUrl.startsWith('https://api.vapi.ai/')) {
+    throw new Error(`Invalid URL construction detected: ${safeUrl}`);
+  }
+
+  return safeUrl;
+}
+
+/**
  * Runtime safeguard to ensure admin functions are only called from server contexts
  * @param functionName - Name of the function being called for logging
  */
@@ -297,27 +329,25 @@ export async function createAssistantAction(
       }
 
       // Assistant already exists – patch its name & greeting to match latest form
-      const patchRes = await fetch(
-        `https://api.vapi.ai/assistant/${vapiAssistantId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${vapiApiKey}`,
+      const safeUrl = constructSafeVapiUrl(vapiAssistantId);
+      const patchRes = await fetch(safeUrl, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${vapiApiKey}`,
+        },
+        body: JSON.stringify({
+          name: assistantName,
+          model: {
+            messages: [
+              {
+                role: 'system',
+                content: greeting,
+              },
+            ],
           },
-          body: JSON.stringify({
-            name: assistantName,
-            model: {
-              messages: [
-                {
-                  role: 'system',
-                  content: greeting,
-                },
-              ],
-            },
-          }),
-        }
-      );
+        }),
+      });
 
       if (!patchRes.ok) {
         const txt = await patchRes.text();
