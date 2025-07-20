@@ -9,6 +9,7 @@ import {
   deletePhoneNumber,
 } from '../twilio/provision-number';
 import { isActiveSubscription } from '../paddle';
+import { validateAssistantId } from '@/lib/vapi-assistant';
 
 /**
  * Runtime safeguard to ensure admin functions are only called from server contexts
@@ -230,7 +231,7 @@ export async function syncVapiAssistant(
 
     // Validate assistantId before using in API request to prevent SSRF
     const assistantId = settingsRow.vapi_assistant_id;
-    if (!assistantId || !/^[a-zA-Z0-9\-_]{8,64}$/.test(assistantId)) {
+    if (!assistantId || !validateAssistantId(assistantId)) {
       logger.error(
         'VAPI_SYNC_SECURITY',
         'Invalid assistantId format detected',

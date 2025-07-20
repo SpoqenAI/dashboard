@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
+import { validateAssistantId } from '@/lib/vapi-assistant';
 
 /**
  * Runtime safeguard to ensure admin functions are only called from server contexts
@@ -285,7 +286,7 @@ export async function createAssistantAction(
       if (storeErr) throw storeErr;
     } else {
       // Validate assistantId before using in API request to prevent SSRF
-      if (!vapiAssistantId || !/^[a-zA-Z0-9\-_]{8,64}$/.test(vapiAssistantId)) {
+      if (!vapiAssistantId || !validateAssistantId(vapiAssistantId)) {
         logger.error(
           'ONBOARDING_ACTIONS_SECURITY',
           'Invalid assistantId format detected',

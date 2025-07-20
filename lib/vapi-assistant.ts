@@ -9,16 +9,31 @@ import {
 /**
  * Validates assistantId to prevent SSRF attacks
  * Ensures the ID matches a safe pattern before using in URLs
+ *
+ * @param assistantId - The assistant ID to validate
+ * @returns boolean - True if the ID is valid and safe to use in URLs
  */
-function validateAssistantId(assistantId: string): boolean {
+export function validateAssistantId(assistantId: string): boolean {
+  // Input validation
+  if (!assistantId || typeof assistantId !== 'string') {
+    logger.error(
+      'VAPI_ASSISTANT_SECURITY',
+      'Invalid assistantId: null, undefined, or non-string value',
+      new Error(`Rejected assistantId: ${assistantId}`),
+      { assistantId }
+    );
+    return false;
+  }
+
   // VAPI assistant IDs are typically UUIDs or alphanumeric with dashes/underscores
   // This regex allows alphanumeric characters, dashes, and underscores, 8-64 characters long
+  // The pattern is restrictive to prevent SSRF attacks
   const isValidAssistantId = /^[a-zA-Z0-9\-_]{8,64}$/.test(assistantId);
 
   if (!isValidAssistantId) {
     logger.error(
       'VAPI_ASSISTANT_SECURITY',
-      'Invalid assistantId format detected',
+      'Invalid assistantId format detected - potential SSRF attempt',
       new Error(`Rejected assistantId: ${assistantId}`),
       { assistantId }
     );
