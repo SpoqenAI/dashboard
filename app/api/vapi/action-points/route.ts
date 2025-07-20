@@ -86,6 +86,7 @@ function validateCallId(callId: string): boolean {
 /**
  * Safely constructs a VAPI call URL with validated callId
  * Provides an additional layer of security against SSRF attacks
+ * Uses URL constructor to prevent path traversal and ensure proper encoding
  *
  * @param callId - The call ID to include in the URL
  * @returns string - The safe URL or throws an error if validation fails
@@ -96,20 +97,16 @@ function constructSafeVapiCallUrl(callId: string): string {
     throw new Error(`Invalid callId format: ${callId}`);
   }
 
-  // Construct the URL with explicit validation
+  // Use URL constructor for safe URL construction (prevents path traversal attacks)
   const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
-  const safeUrl = `${baseUrl}/call/${callId}`;
+  const url = new URL(`/call/${callId}`, baseUrl);
 
-  // Additional safety check: ensure the URL doesn't contain any suspicious patterns
-  if (
-    safeUrl.includes('://') &&
-    !safeUrl.startsWith('https://api.vapi.ai/') &&
-    !safeUrl.startsWith(baseUrl + '/')
-  ) {
-    throw new Error(`Invalid URL construction detected: ${safeUrl}`);
+  // Additional safety check: ensure the URL points to the expected VAPI domain
+  if (!url.hostname.includes('vapi.ai')) {
+    throw new Error(`Invalid URL construction detected: ${url.toString()}`);
   }
 
-  return safeUrl;
+  return url.toString();
 }
 
 export async function POST(request: NextRequest) {
