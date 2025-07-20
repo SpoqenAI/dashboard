@@ -35,25 +35,35 @@ export function SubscriptionForm({
     router.push('/checkout/success');
   };
 
-  // Fetch pricing data
+  // Fetch pricing data with retry logic
   useEffect(() => {
-    const fetchPricing = async () => {
-      try {
-        const response = await fetch('/api/paddle/pricing');
-        if (!response.ok) {
-          throw new Error('Failed to fetch pricing data');
+    const fetchPricing = async (retries = 3) => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await fetch('/api/paddle/pricing');
+          if (!response.ok) {
+            throw new Error('Failed to fetch pricing data');
+          }
+          const data = await response.json();
+          setPricingData(data);
+          return;
+        } catch (error) {
+          if (i === retries - 1) {
+            logger.error(
+              'SUBSCRIPTION_FORM',
+              'Failed to fetch pricing data',
+              error instanceof Error ? error : new Error(String(error))
+            );
+            setPricingError(
+              'Unable to load subscription options. Please refresh the page.'
+            );
+          } else {
+            // Wait before retrying (exponential backoff)
+            await new Promise(resolve =>
+              setTimeout(resolve, 1000 * Math.pow(2, i))
+            );
+          }
         }
-        const data = await response.json();
-        setPricingData(data);
-      } catch (error) {
-        logger.error(
-          'SUBSCRIPTION_FORM',
-          'Failed to fetch pricing data',
-          error instanceof Error ? error : new Error(String(error))
-        );
-        setPricingError(
-          'Unable to load subscription options. Please refresh the page.'
-        );
       }
     };
 

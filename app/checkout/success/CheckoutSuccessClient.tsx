@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, AlertCircle } from 'lucide-react';
+import { ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
 
@@ -20,11 +20,15 @@ export function CheckoutSuccessClient({
 
   useEffect(() => {
     // Show success toast
-    toast({
+    const { dismiss } = toast({
       title: 'Payment Successful!',
       description: 'Welcome to Spoqen! Your subscription is now active.',
       duration: 6000,
     });
+
+    return () => {
+      dismiss();
+    };
   }, []);
 
   const handleContinue = async () => {
@@ -34,9 +38,6 @@ export function CheckoutSuccessClient({
     try {
       await router.push('/dashboard');
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown navigation error';
-
       logger.error(
         'CHECKOUT_SUCCESS',
         'Failed to navigate to dashboard',
@@ -81,7 +82,7 @@ export function CheckoutSuccessClient({
       >
         {isNavigating ? (
           <>
-            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Navigating...
           </>
         ) : (

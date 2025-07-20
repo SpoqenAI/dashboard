@@ -1,17 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   getTransactionsByCustomerId,
-  getRecentTransactions,
   getTransactionStats,
   getTransactionById,
 } from '@/lib/paddle-transactions';
-import { createSupabaseAdmin } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
-    // For now, using admin client for transaction queries
-    // In production, you'd want to add proper user authentication and authorization
+    // Get authenticated user
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      logger.error(
+        'PADDLE_TRANSACTIONS_API',
+        'Failed to get authenticated user',
+        userError || new Error('No authenticated user'),
+        {
+          action: request.nextUrl.searchParams.get('action') || 'unknown',
+        }
+      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get user's Paddle customer ID for authorization
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('paddle_customer_id')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile) {
+      logger.error(
+        'PADDLE_TRANSACTIONS_API',
+        'Failed to get user profile',
+        profileError || new Error('Profile not found'),
+        {
+          userId: logger.maskUserId(user.id),
+          action: request.nextUrl.searchParams.get('action') || 'unknown',
+        }
+      );
+      return NextResponse.json(
+        { error: 'User profile not found' },
+        { status: 403 }
+      );
+    }
+
+    const userCustomerId = profile.paddle_customer_id;
+    if (!userCustomerId) {
+      logger.warn('PADDLE_TRANSACTIONS_API', 'User has no Paddle customer ID', {
+        userId: logger.maskUserId(user.id),
+        action: request.nextUrl.searchParams.get('action') || 'unknown',
+      });
+      return NextResponse.json(
+        { error: 'No billing data available' },
+        { status: 404 }
+      );
+    }
 
     const searchParams = request.nextUrl.searchParams;
     const action = searchParams.get('action');
@@ -25,26 +75,59 @@ export async function GET(request: NextRequest) {
       : undefined;
     const status = searchParams.get('status')?.split(',') || undefined;
 
+    // Validate that any provided customerId matches the user's customer ID
+    if (customerId && customerId !== userCustomerId) {
+      logger.warn(
+        'PADDLE_TRANSACTIONS_API',
+        'User attempted to access transactions for different customer',
+        {
+          userId: logger.maskUserId(user.id),
+          userCustomerId,
+          requestedCustomerId: customerId,
+          action,
+        }
+      );
+      return NextResponse.json(
+        { error: 'Access denied to requested customer data' },
+        { status: 403 }
+      );
+    }
+
     switch (action) {
-      case 'getById':
+      case 'getById': {
         if (!transactionId) {
           return NextResponse.json(
             { error: 'Transaction ID required' },
             { status: 400 }
           );
         }
-        const transaction = await getTransactionById(transactionId);
-        return NextResponse.json({ transaction });
 
-      case 'getByCustomer':
-        if (!customerId) {
+        // Get the transaction and verify it belongs to the user's customer
+        const transaction = await getTransactionById(transactionId);
+        if (!transaction || transaction.customer_id !== userCustomerId) {
+          logger.warn(
+            'PADDLE_TRANSACTIONS_API',
+            'User attempted to access transaction for different customer',
+            {
+              userId: logger.maskUserId(user.id),
+              userCustomerId,
+              transactionCustomerId: transaction?.customer_id,
+              transactionId,
+            }
+          );
           return NextResponse.json(
-            { error: 'Customer ID required' },
-            { status: 400 }
+            { error: 'Transaction not found or access denied' },
+            { status: 404 }
           );
         }
+
+        return NextResponse.json({ transaction });
+      }
+
+      case 'getByCustomer': {
+        // Use the authenticated user's customer ID instead of the provided one
         const customerTransactions = await getTransactionsByCustomerId(
-          customerId,
+          userCustomerId,
           {
             limit,
             status,
@@ -52,22 +135,41 @@ export async function GET(request: NextRequest) {
           }
         );
         return NextResponse.json({ transactions: customerTransactions });
+      }
 
-      case 'getRecent':
-        const recentTransactions = await getRecentTransactions({
-          limit: limit || 50,
-          days: days || 30,
-          status,
-          includeSubscriptionTransactions: true,
-        });
-        return NextResponse.json({ transactions: recentTransactions });
+      case 'getRecent': {
+        // Get recent transactions for the authenticated user's customer
+        // We'll use getTransactionsByCustomerId which already filters by customer ID
+        const recentTransactions = await getTransactionsByCustomerId(
+          userCustomerId,
+          {
+            limit: limit || 50,
+            status,
+            includeSubscriptionTransactions: true,
+          }
+        );
 
-      case 'getStats':
+        // Apply date filtering if specified
+        let filteredTransactions = recentTransactions;
+        if (days) {
+          const daysAgo = new Date();
+          daysAgo.setDate(daysAgo.getDate() - days);
+          filteredTransactions = recentTransactions.filter(
+            transaction => new Date(transaction.created_at) >= daysAgo
+          );
+        }
+
+        return NextResponse.json({ transactions: filteredTransactions });
+      }
+
+      case 'getStats': {
+        // Get stats only for the authenticated user's customer
         const stats = await getTransactionStats({
           days: days || 30,
-          customerId: customerId || undefined,
+          customerId: userCustomerId,
         });
         return NextResponse.json({ stats });
+      }
 
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

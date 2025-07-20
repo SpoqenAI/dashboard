@@ -20,10 +20,52 @@ interface GetTransactionsOptions {
 
 // Validation constants following codebase patterns
 const SUBSCRIPTION_ID_PATTERN = /^(sub_|pending_)[a-zA-Z0-9_-]+$/;
+const CURSOR_PATTERN = /^[a-zA-Z0-9_-]+$/;
 const VALIDATION_CONFIG = {
   maxParameterLength: 100,
   maxCursorLength: 200, // Cursors can be longer than subscription IDs
 } as const;
+
+// Validation helper function to reduce code duplication
+function validateParameter(
+  value: unknown,
+  paramName: string,
+  pattern: RegExp,
+  maxLength: number
+): string | null {
+  if (!value || typeof value !== 'string') {
+    logger.warn(
+      'GET_TRANSACTIONS',
+      `Invalid ${paramName}: missing or not a string`,
+      { [paramName]: value || 'undefined', [`${paramName}Type`]: typeof value }
+    );
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (trimmed === '') {
+    logger.warn('GET_TRANSACTIONS', `Invalid ${paramName}: empty string`);
+    return null;
+  }
+
+  if (trimmed.length > maxLength) {
+    logger.warn('GET_TRANSACTIONS', `${paramName} exceeds maximum length`, {
+      length: trimmed.length,
+      maxLength,
+    });
+    return null;
+  }
+
+  if (!pattern.test(trimmed)) {
+    logger.warn('GET_TRANSACTIONS', `Invalid ${paramName} format`, {
+      [paramName]: trimmed,
+      expectedPattern: pattern.source,
+    });
+    return null;
+  }
+
+  return trimmed;
+}
 
 export async function getTransactions(
   subscriptionId: string,
@@ -33,16 +75,15 @@ export async function getTransactions(
   const { statuses = ['billed', 'paid', 'completed'], perPage = 10 } = options;
 
   try {
-    // Validate subscriptionId parameter
-    if (!subscriptionId || typeof subscriptionId !== 'string') {
-      logger.warn(
-        'GET_TRANSACTIONS',
-        'Invalid subscriptionId: missing or not a string',
-        {
-          subscriptionId: subscriptionId || 'undefined',
-          subscriptionIdType: typeof subscriptionId,
-        }
-      );
+    // Validate parameters using helper function
+    const validatedSubscriptionId = validateParameter(
+      subscriptionId,
+      'subscriptionId',
+      SUBSCRIPTION_ID_PATTERN,
+      VALIDATION_CONFIG.maxParameterLength
+    );
+
+    if (!validatedSubscriptionId) {
       return {
         data: [],
         hasMore: false,
@@ -51,95 +92,14 @@ export async function getTransactions(
       };
     }
 
-    if (subscriptionId.trim() === '') {
-      logger.warn('GET_TRANSACTIONS', 'Invalid subscriptionId: empty string');
-      return {
-        data: [],
-        hasMore: false,
-        totalRecords: 0,
-        error: 'Invalid subscription ID',
-      };
-    }
+    const validatedAfter = validateParameter(
+      after,
+      'after',
+      CURSOR_PATTERN,
+      VALIDATION_CONFIG.maxCursorLength
+    );
 
-    if (subscriptionId.length > VALIDATION_CONFIG.maxParameterLength) {
-      logger.warn(
-        'GET_TRANSACTIONS',
-        'Subscription ID exceeds maximum length',
-        {
-          length: subscriptionId.length,
-          maxLength: VALIDATION_CONFIG.maxParameterLength,
-        }
-      );
-      return {
-        data: [],
-        hasMore: false,
-        totalRecords: 0,
-        error: 'Invalid subscription ID',
-      };
-    }
-
-    if (!SUBSCRIPTION_ID_PATTERN.test(subscriptionId)) {
-      logger.warn('GET_TRANSACTIONS', 'Invalid subscription ID format', {
-        subscriptionId,
-        expectedPattern: SUBSCRIPTION_ID_PATTERN.source,
-      });
-      return {
-        data: [],
-        hasMore: false,
-        totalRecords: 0,
-        error: 'Invalid subscription ID',
-      };
-    }
-
-    // Validate after parameter (cursor for pagination)
-    if (!after || typeof after !== 'string') {
-      logger.warn(
-        'GET_TRANSACTIONS',
-        'Invalid after parameter: missing or not a string',
-        {
-          after: after || 'undefined',
-          afterType: typeof after,
-        }
-      );
-      return {
-        data: [],
-        hasMore: false,
-        totalRecords: 0,
-        error: 'Invalid cursor parameter',
-      };
-    }
-
-    if (after.trim() === '') {
-      logger.warn('GET_TRANSACTIONS', 'Invalid after parameter: empty string');
-      return {
-        data: [],
-        hasMore: false,
-        totalRecords: 0,
-        error: 'Invalid cursor parameter',
-      };
-    }
-
-    if (after.length > VALIDATION_CONFIG.maxCursorLength) {
-      logger.warn('GET_TRANSACTIONS', 'After cursor exceeds maximum length', {
-        length: after.length,
-        maxLength: VALIDATION_CONFIG.maxCursorLength,
-      });
-      return {
-        data: [],
-        hasMore: false,
-        totalRecords: 0,
-        error: 'Invalid cursor parameter',
-      };
-    }
-
-    // Validate cursor format - should be alphanumeric with common cursor characters
-    // Paddle cursors are typically base64-like strings or UUIDs
-    const cursorPattern = /^[a-zA-Z0-9_-]+$/;
-    if (!cursorPattern.test(after)) {
-      logger.warn('GET_TRANSACTIONS', 'Invalid after cursor format', {
-        after,
-        expectedPattern: cursorPattern.source,
-      });
+    if (!validatedAfter) {
       return {
         data: [],
         hasMore: false,
@@ -170,10 +130,10 @@ export async function getTransactions(
       const transactionCollection = getPaddleServerInstance().transactions.list(
         {
           customerId: [customerId],
-          after: after,
+          after: validatedAfter,
           perPage,
           status: statuses,
-          subscriptionId: subscriptionId ? [subscriptionId] : undefined,
+          subscriptionId: [validatedSubscriptionId],
         }
       );
       const transactionData = await transactionCollection.next();

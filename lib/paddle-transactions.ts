@@ -1,5 +1,56 @@
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
+import { convertAmountFromLowestUnit } from '@/utils/paddle/parse-money';
+
+// Specific types for Paddle transaction fields based on actual usage
+export interface PaddleTransactionDetails {
+  totals?: {
+    total?: string;
+    subtotal?: string;
+    tax?: string;
+    discount?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+export interface PaddleTransactionItem {
+  price_id: string;
+  quantity: number;
+  unit_price?: string;
+  total?: string;
+  description?: string;
+  [key: string]: unknown;
+}
+
+export interface PaddleTransactionPayment {
+  payment_method_id: string;
+  amount: string;
+  currency_code?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+export interface PaddleTransactionCheckout {
+  url?: string;
+  completed?: boolean;
+  [key: string]: unknown;
+}
+
+export interface PaddleBillingDetails {
+  name?: string;
+  email?: string;
+  address?: {
+    line1?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    postal_code?: string;
+    country?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
 
 export interface PaddleTransaction {
   id: string;
@@ -14,12 +65,12 @@ export interface PaddleTransaction {
   discount_id: string | null;
   invoice_id: string | null;
   invoice_number: string | null;
-  details: any;
-  items: any;
-  payments: any;
-  checkout: any;
-  billing_details: any;
-  custom_data: any;
+  details: PaddleTransactionDetails;
+  items: PaddleTransactionItem[];
+  payments: PaddleTransactionPayment[];
+  checkout: PaddleTransactionCheckout;
+  billing_details: PaddleBillingDetails;
+  custom_data: Record<string, unknown>;
   created_at: string;
   updated_at: string;
   billed_at: string | null;
@@ -277,10 +328,13 @@ export async function getTransactionStats(
         // Extract total amount from details JSON
         const total = transaction.details?.totals?.total;
         if (total) {
-          const amount = parseFloat(total) / 100; // Convert from cents to main currency unit
+          const currency = transaction.currency_code || 'USD';
+          const amount = convertAmountFromLowestUnit(
+            total.toString(),
+            currency
+          );
           stats.total_revenue += amount;
 
-          const currency = transaction.currency_code || 'USD';
           stats.currencies[currency] =
             (stats.currencies[currency] || 0) + amount;
         }

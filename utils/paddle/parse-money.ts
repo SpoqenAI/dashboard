@@ -79,7 +79,6 @@ const SUPPORTED_CURRENCIES = [
   'NPR',
   'PKR',
   'LKR',
-  'MVR',
   'BTN',
   'AFN',
   'IRR',
@@ -131,29 +130,8 @@ const SUPPORTED_CURRENCIES = [
   'SDG',
   'SSP',
   'ETB',
-  'SOS',
-  'DJF',
   'ERI',
-  'GNF',
   'MLF',
-  'XOF',
-  'XAF',
-  'XPF',
-  'GMD',
-  'GNF',
-  'LRD',
-  'SLL',
-  'SLE',
-  'TND',
-  'DZD',
-  'MAD',
-  'LYD',
-  'SDG',
-  'SSP',
-  'ETB',
-  'SOS',
-  'DJF',
-  'ERI',
 ] as const;
 
 /**
@@ -168,7 +146,6 @@ const ZERO_DECIMAL_CURRENCIES = [
   'GNF',
   'ISK',
   'KMF',
-  'KRW',
   'PYG',
   'RWF',
   'UGX',
@@ -297,7 +274,7 @@ export function convertAmountFromLowestUnit(
   }
 
   // Validate the result
-  if (isNaN(convertedAmount) || !isFinite(convertedAmount)) {
+  if (isNaN(convertedAmount) || !Number.isFinite(convertedAmount)) {
     const error = new Error(`Invalid conversion result: ${convertedAmount}`);
     logger.error('PARSE_MONEY', 'Invalid conversion result', error, {
       amount,
