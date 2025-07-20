@@ -115,20 +115,18 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Fetch all calls for the user's assistant from VAPI to avoid user input in URLs
-        // This prevents SSRF attacks by using a fixed endpoint with no user input
+        // Fetch the specific call directly from VAPI using the call ID
+        // This is more efficient than fetching all calls and filtering
 
         const vapiResponse = await Sentry.startSpan(
           {
-            name: 'fetchVapiCalls',
+            name: 'fetchVapiCall',
             op: 'http.client',
           },
           async () => {
-            // Use fixed endpoint with assistant ID - no user input in URL
+            // Use specific call endpoint - no user input in URL construction
             const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
-            const url = new URL('/call', baseUrl);
-            url.searchParams.set('assistantId', userAssistantId);
-            url.searchParams.set('limit', '100'); // Reasonable limit to find recent calls
+            const url = new URL(`/call/${callId}`, baseUrl);
 
             return await fetch(url.toString(), {
               headers: {
@@ -144,10 +142,10 @@ export async function POST(request: NextRequest) {
         if (!vapiResponse.ok) {
           logger.error(
             'ACTION_POINTS',
-            'Failed to fetch calls from VAPI',
+            'Failed to fetch call from VAPI',
             undefined,
             {
-              userAssistantId,
+              callId,
               status: vapiResponse.status,
             }
           );
@@ -157,26 +155,9 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const callsData = await vapiResponse.json();
-        const calls = Array.isArray(callsData) ? callsData : [];
+        const callData = await vapiResponse.json();
 
-        // Find the specific call by ID in the fetched data
-        const callData = calls.find((call: any) => call.id === callId);
-
-        if (!callData) {
-          logger.warn('ACTION_POINTS', 'Call not found for user', {
-            callId,
-            userId: logger.maskUserId(userId),
-            userAssistantId,
-            totalCallsFetched: calls.length,
-          });
-          return NextResponse.json(
-            { error: 'Call not found or access denied' },
-            { status: 404 }
-          );
-        }
-
-        // Verify the call belongs to the user's assistant (double-check)
+        // Verify the call belongs to the user's assistant
         if (callData.assistantId !== userAssistantId) {
           logger.warn('ACTION_POINTS', 'Unauthorized access attempt', {
             callId,
@@ -216,7 +197,6 @@ export async function POST(request: NextRequest) {
           source: 'VAPI_NATIVE_ANALYSIS',
           hasVapiStructuredData: !!callData.analysis?.structuredData,
           hasVapiSummary: !!callData.analysis?.summary,
-          totalCallsFetched: calls.length,
         });
 
         return NextResponse.json({ actionPoints });
