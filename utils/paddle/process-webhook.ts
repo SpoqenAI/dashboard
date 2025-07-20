@@ -12,6 +12,9 @@ import {
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
 
+// Constants
+const THIRTY_DAYS_IN_MS = 30 * 24 * 60 * 60 * 1000;
+
 // Cache price ID arrays at module level for performance
 const CACHED_STARTER_PRICE_IDS: string[] = (() => {
   const envIds = process.env.PADDLE_STARTER_PRICE_IDS?.split(',') || [];
@@ -60,6 +63,36 @@ export class ProcessWebhook {
       { priceId }
     );
     return 'starter';
+  }
+
+  /**
+   * Helper method to create subscription data object from webhook event
+   */
+  private createSubscriptionData(
+    eventData: SubscriptionCreatedEvent | SubscriptionUpdatedEvent | SubscriptionActivatedEvent,
+    userId: string | null = null
+  ) {
+    return {
+      id: eventData.data.id,
+      user_id: userId,
+      status: eventData.data.status,
+      price_id: eventData.data.items[0]?.price?.id || null,
+      quantity: eventData.data.items[0]?.quantity || 1,
+      cancel_at_period_end: !!eventData.data.canceledAt,
+      current_period_start_at:
+        eventData.data.currentBillingPeriod?.startsAt || null,
+      current_period_end_at:
+        eventData.data.currentBillingPeriod?.endsAt || null,
+      ended_at: eventData.data.canceledAt || null,
+      canceled_at: eventData.data.canceledAt || null,
+      trial_start_at: null,
+      trial_end_at: null,
+      updated_at: new Date().toISOString(),
+      tier_type: this.getTierFromPriceId(
+        eventData.data.items[0]?.price?.id || null
+      ),
+      paddle_customer_id: eventData.data.customerId,
+    } as any; // Type assertion to allow property deletion
   }
 
   async processEvent(eventData: EventEntity) {
@@ -220,27 +253,7 @@ export class ProcessWebhook {
         );
 
         // Store subscription with null user_id for later processing
-        const pendingSubscriptionData = {
-          id: eventData.data.id,
-          user_id: null, // Will be updated when user profile is created
-          status: eventData.data.status,
-          price_id: eventData.data.items[0]?.price?.id || null,
-          quantity: eventData.data.items[0]?.quantity || 1,
-          cancel_at_period_end: !!eventData.data.canceledAt,
-          current_period_start_at:
-            eventData.data.currentBillingPeriod?.startsAt || null,
-          current_period_end_at:
-            eventData.data.currentBillingPeriod?.endsAt || null,
-          ended_at: eventData.data.canceledAt || null,
-          canceled_at: eventData.data.canceledAt || null,
-          trial_start_at: null,
-          trial_end_at: null,
-          updated_at: new Date().toISOString(),
-          tier_type: this.getTierFromPriceId(
-            eventData.data.items[0]?.price?.id || null
-          ),
-          paddle_customer_id: eventData.data.customerId,
-        };
+        const pendingSubscriptionData = this.createSubscriptionData(eventData, null);
 
         // Insert the pending subscription
         const { error: insertError } = await supabase
@@ -270,12 +283,52 @@ export class ProcessWebhook {
         );
         return; // Skip further processing for now
       } else {
-        // For other events, this is unexpected
-        logger.warn('PADDLE_WEBHOOK', 'No user found for subscription', {
-          subscriptionId: eventData.data.id,
-          eventType: eventData.eventType,
-        });
-        throw new Error('Subscription not found');
+        // For subscription.activated and subscription.updated events,
+        // update the existing pending subscription if it exists
+        logger.info(
+          'PADDLE_WEBHOOK',
+          'Updating pending subscription without user',
+          {
+            subscriptionId: eventData.data.id,
+            customerId: eventData.data.customerId,
+            eventType: eventData.eventType,
+          }
+        );
+
+        // Update the existing subscription record
+        const updateData = this.createSubscriptionData(eventData);
+        // Remove user_id and paddle_customer_id for update operation
+        delete updateData.user_id;
+        delete updateData.paddle_customer_id;
+
+        const { error: updateError } = await supabase
+          .from('subscriptions')
+          .update(updateData)
+          .eq('id', eventData.data.id);
+
+        if (updateError) {
+          logger.error(
+            'PADDLE_WEBHOOK',
+            'Failed to update pending subscription',
+            updateError,
+            {
+              subscriptionId: eventData.data.id,
+              customerId: eventData.data.customerId,
+            }
+          );
+          throw updateError;
+        }
+
+        logger.info(
+          'PADDLE_WEBHOOK',
+          'Pending subscription updated successfully',
+          {
+            subscriptionId: eventData.data.id,
+            customerId: eventData.data.customerId,
+            eventType: eventData.eventType,
+          }
+        );
+        return; // Skip further processing for now
       }
     }
 
@@ -288,27 +341,7 @@ export class ProcessWebhook {
       .single();
 
     // Prepare subscription data for upsert
-    const subscriptionUpsertData = {
-      id: eventData.data.id,
-      user_id: userId,
-      status: eventData.data.status,
-      price_id: eventData.data.items[0]?.price?.id || null,
-      quantity: eventData.data.items[0]?.quantity || 1,
-      cancel_at_period_end: !!eventData.data.canceledAt,
-      current_period_start_at:
-        eventData.data.currentBillingPeriod?.startsAt || null,
-      current_period_end_at:
-        eventData.data.currentBillingPeriod?.endsAt || null,
-      ended_at: eventData.data.canceledAt || null,
-      canceled_at: eventData.data.canceledAt || null,
-      trial_start_at: null, // Will be set based on actual webhook data structure
-      trial_end_at: null, // Will be set based on actual webhook data structure
-      updated_at: new Date().toISOString(),
-      tier_type: this.getTierFromPriceId(
-        eventData.data.items[0]?.price?.id || null
-      ),
-      paddle_customer_id: eventData.data.customerId, // Store customer ID for billing operations
-    };
+    const subscriptionUpsertData = this.createSubscriptionData(eventData, userId);
 
     // Use atomic upsert function for all subscription operations
     // This ensures atomicity and prevents partial updates
@@ -501,11 +534,10 @@ export class ProcessWebhook {
             status: subscription.status,
             price_id: subscription.price_id,
             quantity: subscription.quantity,
-            cancel_at_period_end: false,
+            cancel_at_period_end: subscription.cancel_at_period_end ?? false,
             current_period_start_at: subscription.created_at,
             current_period_end_at: new Date(
-              new Date(subscription.created_at).getTime() +
-                30 * 24 * 60 * 60 * 1000
+              new Date(subscription.created_at).getTime() + THIRTY_DAYS_IN_MS
             ).toISOString(),
             updated_at: new Date().toISOString(),
             tier_type: this.getTierFromPriceId(subscription.price_id),
