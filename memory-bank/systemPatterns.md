@@ -29,49 +29,109 @@ The project follows a Next.js App Router architecture, organizing code into `app
 
 ## Security Architecture
 
-### Admin Client Usage Pattern
+### Comprehensive User-Scoped Security Model
 
-The project follows a **layered security model** for sensitive data operations, particularly visible in the Paddle transactions system:
+The project follows a **comprehensive layered security model** with runtime safeguards and user-scoped utilities, implemented across multiple domains:
 
 **Layer 1: API Routes (Authentication & Authorization)**
+
 - Use `createClient()` for user-scoped operations
 - Handle user authentication and session validation
-- Perform authorization checks (e.g., validate customer ownership)
-- Extract and validate user-specific identifiers (customer IDs, subscription IDs)
+- Perform authorization checks (e.g., validate customer ownership, assistant ownership)
+- Extract and validate user-specific identifiers (customer IDs, subscription IDs, assistant IDs)
 
-**Layer 2: Utility Functions (Data Access)**
+**Layer 2: User-Scoped Utility Functions (Recommended)**
+
+- Primary interface for data access with built-in authentication
+- Handle user authentication and authorization internally
+- Provide clean, safe APIs that eliminate security mistakes
+- Available for: Paddle transactions, user settings, VAPI assistants
+
+**Layer 3: Admin Functions with Runtime Safeguards (Restricted)**
+
 - Use `createSupabaseAdmin()` for direct database access
+- Protected by `validateServerContext()` runtime checks
 - Assume pre-validated, trusted parameters from authenticated callers
-- Focus on efficient data operations without re-implementing auth logic
-- Provide both admin-scoped and user-scoped function variants
+- Include comprehensive audit logging
 
-**Security Benefits:**
-- **Separation of Concerns**: Authentication logic centralized in API routes
-- **Performance**: Avoid redundant auth checks in utility functions
-- **Flexibility**: Admin functions can be safely used in webhook handlers and batch operations
-- **Audit Trail**: Clear security checkpoints in calling code
+**Security Implementation Domains:**
 
-**Example Implementation:**
+#### Paddle Transactions Security
+
 ```typescript
-// API Route (handles security)
-const { data: { user } } = await supabase.auth.getUser();
-const { data: profile } = await supabase.from('profiles').select('paddle_customer_id').eq('id', user.id).single();
-const transactions = await getTransactionsByCustomerId(profile.paddle_customer_id, options);
+// RECOMMENDED: User-scoped function
+const result = await getUserTransactions(supabase, options);
 
-// Utility Function (assumes trusted caller)
-export async function getTransactionsByCustomerId(customerId: string) {
-  const supabase = createSupabaseAdmin(); // Admin access for efficiency
-  return supabase.from('paddle.transactions').select('*').eq('customer_id', customerId);
-}
+// ADMIN (with safeguards): Admin function
+const transactions = await getTransactionsByCustomerId(customerId, options); // Throws if misused
 ```
 
-**Security Requirements for Callers:**
+#### User Settings Security
+
+```typescript
+// RECOMMENDED: User-scoped function
+const result = await getUserSettings(supabase, { select: 'vapi_assistant_id' });
+
+// ADMIN (with safeguards): Admin function
+const settings = await getUserSettingsByUserId(userId, options); // Throws if misused
+```
+
+#### VAPI Assistant Security
+
+```typescript
+// RECOMMENDED: User-scoped function
+const result = await getUserAssistantInfo(supabase);
+
+// ADMIN (with safeguards): Admin function
+const ownerId = await getAssistantOwnerUserId(assistantId); // Throws if misused
+```
+
+**Runtime Security Safeguards:**
+
+- **Browser Detection**: Prevents client-side execution of admin functions
+- **Environment Validation**: Requires `SUPABASE_SERVICE_ROLE_KEY` in server context
+- **Audit Logging**: Comprehensive logging of all admin function usage
+- **Error Guidance**: Clear error messages directing to safer alternatives
+
+**Security Benefits:**
+
+- **Zero Client-Side Risk**: Runtime safeguards prevent browser execution
+- **Simplified Authentication**: User-scoped functions handle auth internally
+- **Reduced Attack Surface**: Fewer places where admin privileges are used
+- **Clear Developer Guidance**: Impossible to miss the recommended approach
+- **Comprehensive Protection**: All user-facing APIs follow consistent security patterns
+
+**API Route Migration Pattern:**
+
+```typescript
+// BEFORE: Manual auth + admin client usage
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+const admin = createSupabaseAdmin();
+const { data } = await admin
+  .from('user_settings')
+  .select('*')
+  .eq('id', user.id);
+
+// AFTER: User-scoped function
+const result = await getUserSettings(supabase);
+```
+
+**Security Requirements for Admin Function Callers:**
+
 - Must authenticate users before calling admin utility functions
 - Must validate user authorization for requested data
 - Must pass only user-owned identifiers to utility functions
-- Must handle customer ID mapping and validation
+- Must handle customer/assistant ID mapping and validation
 
-**User-Scoped Alternatives:** For cases where authentication should be built into the data layer, user-scoped function variants are available (e.g., `getUserTransactions()`) that accept an authenticated Supabase client and handle auth internally.
+**User-Scoped Function Benefits:**
+
+- Authentication and authorization handled internally
+- Consistent error handling and logging
+- Clear success/error response patterns
+- Eliminates common security mistakes
+- Preferred approach for all new development
 
 ## Design Patterns
 

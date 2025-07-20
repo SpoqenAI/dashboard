@@ -6,6 +6,52 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
 
+/**
+ * Runtime safeguard to ensure admin functions are only called from server contexts
+ * @param functionName - Name of the function being called for logging
+ */
+function validateServerContext(functionName: string): void {
+  // Check if we're in a browser environment
+  if (typeof window !== 'undefined') {
+    const error = new Error(
+      `Security violation: ${functionName} called from client-side code. ` +
+        'Admin onboarding action functions must only be used in server contexts.'
+    );
+    logger.error(
+      'ONBOARDING_ACTIONS_SECURITY',
+      'Admin function called from client context',
+      error,
+      { functionName }
+    );
+    throw error;
+  }
+
+  // Check for required server environment variables
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const error = new Error(
+      `Security violation: ${functionName} requires server environment. ` +
+        'Missing SUPABASE_SERVICE_ROLE_KEY indicates this is not a proper server context.'
+    );
+    logger.error(
+      'ONBOARDING_ACTIONS_SECURITY',
+      'Admin function called without server environment',
+      error,
+      { functionName }
+    );
+    throw error;
+  }
+
+  // Log usage for audit trail
+  logger.info(
+    'ONBOARDING_ACTIONS_ADMIN',
+    `Admin function called: ${functionName}`,
+    {
+      functionName,
+      serverContext: true,
+    }
+  );
+}
+
 // Validate critical environment variables at module load time
 const PADDLE_PRICE_ID = (() => {
   const priceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
@@ -227,6 +273,8 @@ export async function createAssistantAction(
       vapiAssistantId = vapiAssistant.id;
 
       // Persist assistant id in user_settings via admin client to bypass RLS
+      // ⚠️ ADMIN CLIENT USAGE - Add security validation
+      validateServerContext('createAssistantAction.adminClientUsage');
       const { createSupabaseAdmin } = await import('@/lib/supabase/admin');
       const adminClient = createSupabaseAdmin();
       const { error: storeErr } = await adminClient

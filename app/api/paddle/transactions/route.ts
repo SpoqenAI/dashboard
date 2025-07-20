@@ -73,7 +73,10 @@ export async function GET(request: NextRequest) {
 
         // Get the transaction and verify it belongs to the user's customer
         const transaction = await getTransactionById(transactionId);
-        if (!transaction || transaction.customer_id !== profile.paddle_customer_id) {
+        if (
+          !transaction ||
+          transaction.customer_id !== profile.paddle_customer_id
+        ) {
           logger.warn(
             'PADDLE_TRANSACTIONS_API',
             'User attempted to access transaction for different customer',

@@ -10,8 +10,55 @@ import {
 } from '../twilio/provision-number';
 import { isActiveSubscription } from '../paddle';
 
+/**
+ * Runtime safeguard to ensure admin functions are only called from server contexts
+ * @param functionName - Name of the function being called for logging
+ */
+function validateServerContext(functionName: string): void {
+  // Check if we're in a browser environment
+  if (typeof window !== 'undefined') {
+    const error = new Error(
+      `Security violation: ${functionName} called from client-side code. ` +
+        'Admin assistant action functions must only be used in server contexts.'
+    );
+    logger.error(
+      'ASSISTANT_ACTIONS_SECURITY',
+      'Admin function called from client context',
+      error,
+      { functionName }
+    );
+    throw error;
+  }
+
+  // Check for required server environment variables
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const error = new Error(
+      `Security violation: ${functionName} requires server environment. ` +
+        'Missing SUPABASE_SERVICE_ROLE_KEY indicates this is not a proper server context.'
+    );
+    logger.error(
+      'ASSISTANT_ACTIONS_SECURITY',
+      'Admin function called without server environment',
+      error,
+      { functionName }
+    );
+    throw error;
+  }
+
+  // Log usage for audit trail
+  logger.info(
+    'ASSISTANT_ACTIONS_ADMIN',
+    `Admin function called: ${functionName}`,
+    {
+      functionName,
+      serverContext: true,
+    }
+  );
+}
+
 export async function provisionAssistant(userId: string): Promise<void> {
   'use server';
+  validateServerContext('provisionAssistant');
 
   const loggerPrefix = 'PHONE_PROVISION';
 
@@ -126,6 +173,7 @@ export async function syncVapiAssistant(
   voiceId?: string
 ): Promise<void> {
   'use server';
+  validateServerContext('syncVapiAssistant');
 
   // Log the start of the sync so we can trace if the function is invoked at all
   logger.info('VAPI_SYNC', 'Starting assistant sync', {
@@ -312,6 +360,8 @@ export async function syncVapiAssistant(
 
 export async function deleteTwilioNumberForUser(userId: string): Promise<void> {
   'use server';
+  validateServerContext('deleteTwilioNumberForUser');
+
   const loggerPrefix = 'PHONE_DELETE';
   let supabase;
   try {

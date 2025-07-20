@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '@/lib/supabase/admin';
+import { updateUserAssistant } from '@/lib/vapi-assistant';
+import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 
 // PATCH /api/vapi/assistant/update - Update VAPI assistant properties like firstMessage
@@ -14,52 +15,10 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // Get currently authenticated user (via cookie) using Supabase SSR client
-    const { createClient } = await import('@/lib/supabase/server');
+    // Create authenticated Supabase client
     const supabase = await createClient();
 
-    const {
-      data: { user },
-      error: userErr,
-    } = await supabase.auth.getUser();
-
-    if (userErr || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Verify user owns this assistant
-    const admin = createSupabaseAdmin();
-    const { data: settingsRow, error: settingsErr } = await admin
-      .from('user_settings')
-      .select('vapi_assistant_id')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (settingsErr) {
-      logger.error('VAPI_UPDATE', 'Failed to fetch user settings', settingsErr);
-      return NextResponse.json(
-        { error: 'Failed to verify assistant ownership' },
-        { status: 500 }
-      );
-    }
-
-    if (settingsRow?.vapi_assistant_id !== assistantId) {
-      return NextResponse.json(
-        { error: 'Assistant not found or access denied' },
-        { status: 403 }
-      );
-    }
-
-    // Update assistant via VAPI API
-    const vapiApiKey = process.env.VAPI_PRIVATE_KEY;
-    if (!vapiApiKey) {
-      logger.error('VAPI_UPDATE', 'Missing VAPI_PRIVATE_KEY env var');
-      return NextResponse.json(
-        { error: 'Server misconfiguration — missing VAPI_PRIVATE_KEY' },
-        { status: 500 }
-      );
-    }
-
+    // Prepare update payload
     const payload: Record<string, any> = {
       firstMessage: firstMessage.trim(),
     };
@@ -72,34 +31,38 @@ export async function PATCH(req: NextRequest) {
       };
     }
 
-    const vapiRes = await fetch(
-      `https://api.vapi.ai/assistant/${assistantId}`,
-      {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${vapiApiKey}`,
-        },
-        body: JSON.stringify(payload),
+    // Use user-scoped function that handles authentication and ownership verification internally
+    const result = await updateUserAssistant(supabase, assistantId, payload);
+
+    if (result.error) {
+      // Handle different types of errors appropriately
+      if (result.error === 'User not authenticated') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
-    );
+      if (result.error === 'Assistant not found or access denied') {
+        return NextResponse.json(
+          { error: 'Assistant not found or access denied' },
+          { status: 403 }
+        );
+      }
+      if (
+        result.error === 'Server misconfiguration – missing VAPI_PRIVATE_KEY'
+      ) {
+        return NextResponse.json(
+          { error: 'Server misconfiguration — missing VAPI_PRIVATE_KEY' },
+          { status: 500 }
+        );
+      }
+      if (result.error === 'Failed to update assistant in VAPI') {
+        return NextResponse.json(
+          { error: 'Failed to update assistant in VAPI' },
+          { status: 502 }
+        );
+      }
 
-    if (!vapiRes.ok) {
-      const txt = await vapiRes.text();
-      logger.error('VAPI_UPDATE', 'VAPI API failed', new Error(txt), {
-        status: vapiRes.status,
-        assistantId,
-      });
-      return NextResponse.json(
-        { error: 'Failed to update assistant in VAPI' },
-        { status: 502 }
-      );
+      // Generic error fallback
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
-
-    logger.info('VAPI_UPDATE', 'Assistant updated successfully', {
-      userId: logger.maskUserId(user.id),
-      assistantId,
-    });
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
