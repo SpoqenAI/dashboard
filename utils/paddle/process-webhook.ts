@@ -69,7 +69,10 @@ export class ProcessWebhook {
    * Helper method to create subscription data object from webhook event
    */
   private createSubscriptionData(
-    eventData: SubscriptionCreatedEvent | SubscriptionUpdatedEvent | SubscriptionActivatedEvent,
+    eventData:
+      | SubscriptionCreatedEvent
+      | SubscriptionUpdatedEvent
+      | SubscriptionActivatedEvent,
     userId: string | null = null
   ) {
     return {
@@ -253,7 +256,10 @@ export class ProcessWebhook {
         );
 
         // Store subscription with null user_id for later processing
-        const pendingSubscriptionData = this.createSubscriptionData(eventData, null);
+        const pendingSubscriptionData = this.createSubscriptionData(
+          eventData,
+          null
+        );
 
         // Insert the pending subscription
         const { error: insertError } = await supabase
@@ -341,7 +347,10 @@ export class ProcessWebhook {
       .single();
 
     // Prepare subscription data for upsert
-    const subscriptionUpsertData = this.createSubscriptionData(eventData, userId);
+    const subscriptionUpsertData = this.createSubscriptionData(
+      eventData,
+      userId
+    );
 
     // Use atomic upsert function for all subscription operations
     // This ensures atomicity and prevents partial updates
