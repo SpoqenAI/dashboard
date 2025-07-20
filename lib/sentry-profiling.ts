@@ -23,9 +23,7 @@ export async function profileFunction<T>(
       name,
       op: 'function',
     },
-    async () => {
-      return await fn();
-    }
+    () => fn()
   );
 }
 
@@ -47,9 +45,7 @@ export async function profileDatabaseOperation<T>(
       name: `${operation} ${table}`,
       op: 'db',
     },
-    async () => {
-      return await fn();
-    }
+    () => fn()
   );
 }
 
@@ -71,9 +67,7 @@ export async function profileApiCall<T>(
       name: `${method} ${url}`,
       op: 'http.client',
     },
-    async () => {
-      return await fn();
-    }
+    () => fn()
   );
 }
 
