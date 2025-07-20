@@ -13,26 +13,26 @@ import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
 
 // Cache price ID arrays at module level for performance
-const CACHED_STARTER_PRICE_IDS = (() => {
+const CACHED_STARTER_PRICE_IDS: string[] = (() => {
   const envIds = process.env.PADDLE_STARTER_PRICE_IDS?.split(',') || [];
   const fallbackIds = [
     process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID,
     process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID,
     process.env.NEXT_PUBLIC_PADDLE_PRICE_ID, // legacy fallback
-  ].filter(Boolean);
+  ].filter(Boolean) as string[];
   return envIds.length > 0 ? envIds : fallbackIds;
 })();
 
-const CACHED_PRO_PRICE_IDS = (() => {
+const CACHED_PRO_PRICE_IDS: string[] = (() => {
   const envIds = process.env.PADDLE_PRO_PRICE_IDS?.split(',') || [];
   const fallbackIds = [
     process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID,
     process.env.NEXT_PUBLIC_PADDLE_PRO_ANNUAL_PRICE_ID,
-  ].filter(Boolean);
+  ].filter(Boolean) as string[];
   return envIds.length > 0 ? envIds : fallbackIds;
 })();
 
-const CACHED_BUSINESS_PRICE_IDS =
+const CACHED_BUSINESS_PRICE_IDS: string[] =
   process.env.PADDLE_BUSINESS_PRICE_IDS?.split(',') || [];
 
 export class ProcessWebhook {

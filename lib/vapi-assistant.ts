@@ -427,6 +427,18 @@ export async function getAssistantOwnerUserId(
   assistantId: string
 ): Promise<string | null> {
   validateServerContext('getAssistantOwnerUserId', 'vapi-assistant');
+
+  // Validate assistantId before using in database query to prevent injection
+  if (!validateAssistantId(assistantId)) {
+    logger.error(
+      'VAPI_ASSISTANT_SECURITY',
+      'Invalid assistantId format detected in getAssistantOwnerUserId',
+      new Error(`Rejected assistantId: ${assistantId}`),
+      { assistantId }
+    );
+    return null;
+  }
+
   const supabase = createSupabaseAdmin();
 
   try {
