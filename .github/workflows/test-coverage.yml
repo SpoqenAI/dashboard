@@ -8,6 +8,10 @@ on:
   schedule:
     - cron: '0 0 * * 0' # Weekly coverage report
 
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   test-coverage:
     runs-on: ubuntu-latest
