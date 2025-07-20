@@ -204,11 +204,79 @@ export class ProcessWebhook {
       eventData.data.id,
       eventData.data.customerId
     );
+
     if (!userId) {
-      logger.warn('PADDLE_WEBHOOK', 'No user found for subscription', {
-        subscriptionId: eventData.data.id,
-      });
-      throw new Error('Subscription not found');
+      // For subscription.created events, store the subscription with null user_id
+      // so it can be processed later when the user profile is created
+      if (eventData.eventType === EventName.SubscriptionCreated) {
+        logger.info(
+          'PADDLE_WEBHOOK',
+          'Storing pending subscription for later processing',
+          {
+            subscriptionId: eventData.data.id,
+            customerId: eventData.data.customerId,
+            eventType: eventData.eventType,
+          }
+        );
+
+        // Store subscription with null user_id for later processing
+        const pendingSubscriptionData = {
+          id: eventData.data.id,
+          user_id: null, // Will be updated when user profile is created
+          status: eventData.data.status,
+          price_id: eventData.data.items[0]?.price?.id || null,
+          quantity: eventData.data.items[0]?.quantity || 1,
+          cancel_at_period_end: !!eventData.data.canceledAt,
+          current_period_start_at:
+            eventData.data.currentBillingPeriod?.startsAt || null,
+          current_period_end_at:
+            eventData.data.currentBillingPeriod?.endsAt || null,
+          ended_at: eventData.data.canceledAt || null,
+          canceled_at: eventData.data.canceledAt || null,
+          trial_start_at: null,
+          trial_end_at: null,
+          updated_at: new Date().toISOString(),
+          tier_type: this.getTierFromPriceId(
+            eventData.data.items[0]?.price?.id || null
+          ),
+          paddle_customer_id: eventData.data.customerId,
+        };
+
+        // Insert the pending subscription
+        const { error: insertError } = await supabase
+          .from('subscriptions')
+          .insert(pendingSubscriptionData);
+
+        if (insertError) {
+          logger.error(
+            'PADDLE_WEBHOOK',
+            'Failed to store pending subscription',
+            insertError,
+            {
+              subscriptionId: eventData.data.id,
+              customerId: eventData.data.customerId,
+            }
+          );
+          throw insertError;
+        }
+
+        logger.info(
+          'PADDLE_WEBHOOK',
+          'Pending subscription stored successfully',
+          {
+            subscriptionId: eventData.data.id,
+            customerId: eventData.data.customerId,
+          }
+        );
+        return; // Skip further processing for now
+      } else {
+        // For other events, this is unexpected
+        logger.warn('PADDLE_WEBHOOK', 'No user found for subscription', {
+          subscriptionId: eventData.data.id,
+          eventType: eventData.eventType,
+        });
+        throw new Error('Subscription not found');
+      }
     }
 
     // Check if user already has a subscription (for subscription.created events)
@@ -335,19 +403,21 @@ export class ProcessWebhook {
         logger.warn(
           'PADDLE_WEBHOOK',
           'Failed to update profile with paddle_customer_id (non-critical)',
-          {
-            customerId: eventData.data.id,
-            customerEmail: eventData.data.email,
-            error: profileError.message,
-          }
+          profileError
         );
-        // Don't throw here as the main customers table update succeeded
       }
+
+      // Process any pending subscriptions for this customer
+      await this.processPendingSubscriptionsForCustomer(
+        supabase,
+        eventData.data.id,
+        eventData.data.email
+      );
 
       logger.info('PADDLE_WEBHOOK', 'Customer data updated successfully', {
         customerId: eventData.data.id,
         customerEmail: eventData.data.email,
-        profileUpdated: !profileError,
+        eventType: eventData.eventType,
       });
     } catch (error) {
       logger.error(
@@ -360,6 +430,142 @@ export class ProcessWebhook {
         }
       );
       throw error;
+    }
+  }
+
+  /**
+   * Process any pending subscriptions for a customer when their profile is created
+   */
+  private async processPendingSubscriptionsForCustomer(
+    supabase: any,
+    customerId: string,
+    customerEmail: string
+  ) {
+    try {
+      // Find user profile by email
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', customerEmail)
+        .maybeSingle();
+
+      if (!profile?.id) {
+        logger.info(
+          'PADDLE_WEBHOOK',
+          'No user profile found for customer, skipping pending subscription processing',
+          {
+            customerId,
+            customerEmail: logger.maskEmail(customerEmail),
+          }
+        );
+        return;
+      }
+
+      // Find any subscriptions that were created for this customer but don't have a user_id yet
+      // These would be subscriptions that arrived before the user profile was created
+      const { data: pendingSubscriptions } = await supabase
+        .from('subscriptions')
+        .select('id, status, price_id, quantity, created_at')
+        .eq('paddle_customer_id', customerId)
+        .is('user_id', null)
+        .order('created_at', { ascending: true });
+
+      if (!pendingSubscriptions || pendingSubscriptions.length === 0) {
+        logger.info(
+          'PADDLE_WEBHOOK',
+          'No pending subscriptions found for customer',
+          {
+            customerId,
+            userId: logger.maskUserId(profile.id),
+          }
+        );
+        return;
+      }
+
+      logger.info(
+        'PADDLE_WEBHOOK',
+        'Processing pending subscriptions for customer',
+        {
+          customerId,
+          userId: logger.maskUserId(profile.id),
+          pendingCount: pendingSubscriptions.length,
+        }
+      );
+
+      // Process each pending subscription
+      for (const subscription of pendingSubscriptions) {
+        try {
+          const subscriptionData = {
+            id: subscription.id,
+            user_id: profile.id,
+            status: subscription.status,
+            price_id: subscription.price_id,
+            quantity: subscription.quantity,
+            cancel_at_period_end: false,
+            current_period_start_at: subscription.created_at,
+            current_period_end_at: new Date(
+              new Date(subscription.created_at).getTime() +
+                30 * 24 * 60 * 60 * 1000
+            ).toISOString(),
+            updated_at: new Date().toISOString(),
+            tier_type: this.getTierFromPriceId(subscription.price_id),
+            paddle_customer_id: customerId,
+          };
+
+          const { data: upsertResult, error: upsertError } = await supabase.rpc(
+            'upsert_subscription',
+            {
+              p_subscription_data: subscriptionData,
+            }
+          );
+
+          if (upsertError) {
+            logger.error(
+              'PADDLE_WEBHOOK',
+              'Failed to process pending subscription',
+              upsertError,
+              {
+                subscriptionId: subscription.id,
+                userId: logger.maskUserId(profile.id),
+                customerId,
+              }
+            );
+          } else {
+            logger.info(
+              'PADDLE_WEBHOOK',
+              'Pending subscription processed successfully',
+              {
+                subscriptionId: subscription.id,
+                userId: logger.maskUserId(profile.id),
+                customerId,
+              }
+            );
+          }
+        } catch (subscriptionError) {
+          logger.error(
+            'PADDLE_WEBHOOK',
+            'Error processing individual pending subscription',
+            subscriptionError instanceof Error
+              ? subscriptionError
+              : new Error(String(subscriptionError)),
+            {
+              subscriptionId: subscription.id,
+              userId: logger.maskUserId(profile.id),
+              customerId,
+            }
+          );
+        }
+      }
+    } catch (error) {
+      logger.error(
+        'PADDLE_WEBHOOK',
+        'Error processing pending subscriptions for customer',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          customerId,
+          customerEmail: logger.maskEmail(customerEmail),
+        }
+      );
     }
   }
 
