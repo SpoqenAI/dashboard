@@ -6,6 +6,27 @@ import {
 } from '@/lib/user-settings';
 
 /**
+ * Validates assistantId to prevent SSRF attacks
+ * Ensures the ID matches a safe pattern before using in URLs
+ */
+function validateAssistantId(assistantId: string): boolean {
+  // VAPI assistant IDs are typically UUIDs or alphanumeric with dashes/underscores
+  // This regex allows alphanumeric characters, dashes, and underscores, 8-64 characters long
+  const isValidAssistantId = /^[a-zA-Z0-9\-_]{8,64}$/.test(assistantId);
+  
+  if (!isValidAssistantId) {
+    logger.error(
+      'VAPI_ASSISTANT_SECURITY',
+      'Invalid assistantId format detected',
+      new Error(`Rejected assistantId: ${assistantId}`),
+      { assistantId }
+    );
+  }
+  
+  return isValidAssistantId;
+}
+
+/**
  * USER-SCOPED VAPI ASSISTANT UTILITIES
  *
  * These utility functions use createSupabaseAdmin() for database access, which provides
@@ -121,6 +142,11 @@ export async function getUserAssistantInfo(
       return { data: null, error: 'No assistant found for user' };
     }
 
+    // Validate assistantId before using in API request to prevent SSRF
+    if (!validateAssistantId(assistantId)) {
+      return { data: null, error: 'Invalid assistantId format' };
+    }
+
     // Check for VAPI API key
     const apiKey = process.env.VAPI_PRIVATE_KEY;
     if (!apiKey) {
@@ -196,6 +222,11 @@ export async function updateUserAssistant(
 
     if (!verificationResult.isOwner) {
       return { data: null, error: 'Assistant not found or access denied' };
+    }
+
+    // Validate assistantId before using in API request to prevent SSRF
+    if (!validateAssistantId(assistantId)) {
+      return { data: null, error: 'Invalid assistantId format' };
     }
 
     // Check for VAPI API key

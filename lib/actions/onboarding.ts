@@ -284,6 +284,17 @@ export async function createAssistantAction(
 
       if (storeErr) throw storeErr;
     } else {
+      // Validate assistantId before using in API request to prevent SSRF
+      if (!vapiAssistantId || !/^[a-zA-Z0-9\-_]{8,64}$/.test(vapiAssistantId)) {
+        logger.error(
+          'ONBOARDING_ACTIONS_SECURITY',
+          'Invalid assistantId format detected',
+          new Error(`Rejected assistantId: ${vapiAssistantId}`),
+          { assistantId: vapiAssistantId, userId: logger.maskUserId(user.id) }
+        );
+        throw new Error('Invalid assistantId format');
+      }
+
       // Assistant already exists – patch its name & greeting to match latest form
       const patchRes = await fetch(
         `https://api.vapi.ai/assistant/${vapiAssistantId}`,

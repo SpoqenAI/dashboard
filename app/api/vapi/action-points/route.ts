@@ -15,6 +15,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate callId to prevent SSRF attacks
+    if (!/^[a-zA-Z0-9\-_]{8,64}$/.test(callId)) {
+      logger.error(
+        'ACTION_POINTS_SECURITY',
+        'Invalid callId format detected',
+        new Error(`Rejected callId: ${callId}`),
+        { callId }
+      );
+      return NextResponse.json(
+        { error: 'Invalid call ID format' },
+        { status: 400 }
+      );
+    }
+
     // Get authenticated user
     const supabase = await createClient();
     const {

@@ -228,9 +228,21 @@ export async function syncVapiAssistant(
       return;
     }
 
+    // Validate assistantId before using in API request to prevent SSRF
+    const assistantId = settingsRow.vapi_assistant_id;
+    if (!assistantId || !/^[a-zA-Z0-9\-_]{8,64}$/.test(assistantId)) {
+      logger.error(
+        'VAPI_SYNC_SECURITY',
+        'Invalid assistantId format detected',
+        new Error(`Rejected assistantId: ${assistantId}`),
+        { assistantId, userId: logger.maskUserId(userId) }
+      );
+      return;
+    }
+
     // Call Vapi API
     const res = await fetch(
-      `https://api.vapi.ai/assistant/${settingsRow.vapi_assistant_id}`,
+      `https://api.vapi.ai/assistant/${assistantId}`,
       {
         method: 'PATCH',
         headers: {

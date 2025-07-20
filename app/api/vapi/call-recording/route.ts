@@ -21,6 +21,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Call ID is required' }, { status: 400 });
   }
 
+  // Validate callId to prevent SSRF attacks
+  if (!/^[a-zA-Z0-9\-_]{8,64}$/.test(callId)) {
+    logger.error(
+      'CALL_RECORDING_SECURITY',
+      'Invalid callId format detected',
+      new Error(`Rejected callId: ${callId}`),
+      { callId }
+    );
+    return NextResponse.json(
+      { error: 'Invalid call ID format' },
+      { status: 400 }
+    );
+  }
+
   try {
     // Get authenticated user and their assistant ID for security
     const supabase = await createClient();
