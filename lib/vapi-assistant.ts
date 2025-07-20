@@ -193,8 +193,12 @@ function constructSafeVapiUrl(
     throw new Error(`Invalid assistantId format: ${assistantId}`);
   }
 
-  // Ensure endpoint is safe (only alphanumeric, dashes, underscores, and forward slashes)
-  const safeEndpoint = endpoint.replace(/[^a-zA-Z0-9\-_\/]/g, '');
+  // Define allowed endpoints for better security
+  const allowedEndpoints = ['', '/calls', '/logs'];
+  if (endpoint && !allowedEndpoints.includes(endpoint)) {
+    throw new Error(`Invalid endpoint: ${endpoint}`);
+  }
+  const safeEndpoint = endpoint;
 
   // Construct the URL with explicit validation
   const baseUrl = 'https://api.vapi.ai/assistant';

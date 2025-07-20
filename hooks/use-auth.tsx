@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { logger } from '@/lib/logger';
 import { mutate } from 'swr';
 
@@ -23,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
   // Create a stable Supabase client reference
   const supabase = useMemo(() => getSupabaseClient(), []);
@@ -106,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // CRITICAL SECURITY FIX: Clear all caches on sign out
             clearAllCaches();
             // Redirect to login page when signed out, but only if not already on login page
-            if (window.location.pathname !== '/login') {
+            if (pathname !== '/login') {
               router.replace('/login');
             }
             break;

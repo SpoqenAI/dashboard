@@ -2,6 +2,51 @@
 
 This document tracks the current work focus, recent changes, next steps, and important decisions.
 
+## ✅ CODE QUALITY IMPROVEMENTS COMPLETED (January 2025)
+
+**IMPLEMENTED: Nitpick comments addressing Next.js best practices and security enhancements**
+
+**IMPROVEMENTS APPLIED**:
+
+### 1. **Next.js App Router Integration Enhancement** ✅
+
+**File**: `hooks/use-auth.tsx`
+
+- **Issue**: Using `window.location.pathname` bypasses Next.js routing system
+- **Solution**: Replaced with `usePathname()` hook for better App Router integration
+- **Changes**:
+  - Added `usePathname` import from `next/navigation`
+  - Added `pathname` constant using the hook
+  - Replaced `window.location.pathname !== '/login'` with `pathname !== '/login'`
+- **Benefits**: Better integration with Next.js App Router, improved performance, and proper routing system usage
+
+### 2. **Enhanced Security Implementation** ✅
+
+**File**: `lib/vapi-assistant.ts`
+
+- **Issue**: Character removal approach for endpoint validation could be more secure
+- **Solution**: Implemented explicit whitelist validation for better security and predictability
+- **Changes**:
+  - Replaced regex-based character removal with explicit allowed endpoints list
+  - Added validation: `['', '/calls', '/logs']`
+  - Added explicit error throwing for invalid endpoints
+  - Improved security by preventing any unexpected endpoint patterns
+- **Benefits**: More predictable security model, explicit control over allowed endpoints, better error handling
+
+**SECURITY IMPROVEMENTS**:
+
+- **Defense in depth**: Maintains existing assistant ID validation while adding endpoint whitelist
+- **Explicit validation**: Clear list of allowed endpoints prevents unexpected URL patterns
+- **Better error messages**: Specific error messages for invalid endpoints
+- **Predictable behavior**: Whitelist approach is more secure than character filtering
+
+**CODE QUALITY BENEFITS**:
+
+- **Next.js best practices**: Proper use of App Router hooks
+- **Type safety**: Better integration with Next.js routing system
+- **Maintainability**: Clearer security boundaries and validation logic
+- **Performance**: More efficient routing checks using Next.js internals
+
 ## 🚨 CRITICAL WEBHOOK FIX COMPLETED (July 2025)
 
 **RESOLVED: Dashboard not updating after successful payment due to webhook subscription linking failure**
