@@ -69,6 +69,13 @@ export class ProcessWebhook {
       case EventName.SubscriptionActivated:
         await this.updateSubscriptionData(eventData);
         break;
+      // Handle subscription lifecycle events that affect access
+      case 'subscription.canceled':
+      case 'subscription.paused':
+      case 'subscription.past_due':
+      case 'subscription.resumed':
+        await this.handleSubscriptionStatusChange(eventData);
+        break;
       case EventName.CustomerCreated:
       case EventName.CustomerUpdated:
         await this.updateCustomerData(eventData);
@@ -138,16 +145,12 @@ export class ProcessWebhook {
           .maybeSingle();
 
         if (profileByEmail?.id) {
-          logger.info(
-            'PADDLE_WEBHOOK',
-            'Found user by customer email lookup',
-            {
-              webhookSubscriptionId: subscriptionId,
-              paddleCustomerId,
-              customerEmail: logger.maskEmail(customer.email),
-              userId: logger.maskUserId(profileByEmail.id),
-            }
-          );
+          logger.info('PADDLE_WEBHOOK', 'Found user by customer email lookup', {
+            webhookSubscriptionId: subscriptionId,
+            paddleCustomerId,
+            customerEmail: logger.maskEmail(customer.email),
+            userId: logger.maskUserId(profileByEmail.id),
+          });
           return profileByEmail.id;
         }
       }
@@ -243,10 +246,14 @@ export class ProcessWebhook {
 
     if (
       existingSubscription &&
-      eventData.eventType === 'subscription.created'
+      (eventData.eventType === 'subscription.created' ||
+        (eventData.eventType === 'subscription.updated' &&
+          existingSubscription.id !== eventData.data.id))
     ) {
-      // If user has existing subscription and this is a creation event,
-      // delete the old subscription and insert the new Paddle subscription
+      // If user has existing subscription and either:
+      // 1. This is a creation event, OR
+      // 2. This is an update event but subscription IDs don't match
+      // Then delete the old subscription and insert the new Paddle subscription
       logger.info(
         'PADDLE_WEBHOOK',
         'Replacing existing subscription with Paddle data',
@@ -417,6 +424,215 @@ export class ProcessWebhook {
         {
           customerId: eventData.data.id,
           customerEmail: eventData.data.email,
+        }
+      );
+      throw error;
+    }
+  }
+
+  private async handleSubscriptionStatusChange(eventData: EventEntity) {
+    const supabase = createSupabaseAdmin();
+
+    try {
+      // Type guard to ensure we're dealing with subscription data
+      const subscriptionData = eventData.data as any; // Type assertion for subscription events
+
+      logger.info('PADDLE_WEBHOOK', 'Processing subscription status change', {
+        eventType: eventData.eventType,
+        subscriptionId: subscriptionData.id,
+        status: subscriptionData.status,
+      });
+
+      // Find user associated with this subscription
+      const userId = await this.findUserBySubscriptionId(
+        supabase,
+        subscriptionData.id,
+        subscriptionData.customerId
+      );
+
+      if (!userId) {
+        logger.warn(
+          'PADDLE_WEBHOOK',
+          'No user found for subscription status change',
+          {
+            subscriptionId: subscriptionData.id,
+            eventType: eventData.eventType,
+          }
+        );
+        return; // Don't throw - this might be a subscription not in our system
+      }
+
+      // Determine the appropriate tier based on subscription status
+      let newTierType = 'free';
+      let newStatus = subscriptionData.status || 'canceled';
+
+      // For canceled, paused, past_due subscriptions, revert to free tier
+      if (
+        [
+          'subscription.canceled',
+          'subscription.paused',
+          'subscription.past_due',
+        ].includes(eventData.eventType)
+      ) {
+        newTierType = 'free';
+        newStatus =
+          eventData.eventType === 'subscription.canceled'
+            ? 'canceled'
+            : subscriptionData.status || 'canceled';
+      } else if (
+        eventData.eventType === 'subscription.resumed' &&
+        subscriptionData.status === 'active'
+      ) {
+        // For resumed subscriptions, determine tier from price ID
+        const priceId = subscriptionData.items?.[0]?.price?.id || null;
+        newTierType = this.getTierFromPriceId(priceId);
+        newStatus = 'active';
+      }
+
+      // Prepare subscription data for update
+      const subscriptionUpdateData = {
+        id: subscriptionData.id,
+        user_id: userId,
+        status: newStatus,
+        tier_type: newTierType,
+        price_id: subscriptionData.items?.[0]?.price?.id || null,
+        quantity: subscriptionData.items?.[0]?.quantity || 1,
+        cancel_at_period_end: !!subscriptionData.canceledAt,
+        current_period_start_at:
+          subscriptionData.currentBillingPeriod?.startsAt || null,
+        current_period_end_at:
+          subscriptionData.currentBillingPeriod?.endsAt || null,
+        ended_at: subscriptionData.canceledAt || null,
+        canceled_at: subscriptionData.canceledAt || null,
+        updated_at: new Date().toISOString(),
+        paddle_customer_id: subscriptionData.customerId,
+      };
+
+      // For cancellations/expirations, we want to ensure the user gets reverted to free access
+      if (newTierType === 'free') {
+        logger.info(
+          'PADDLE_WEBHOOK',
+          'Reverting user to free tier due to subscription status change',
+          {
+            userId: logger.maskUserId(userId),
+            subscriptionId: subscriptionData.id,
+            eventType: eventData.eventType,
+            newStatus: newStatus,
+          }
+        );
+
+        // First update the current subscription to reflect the status change
+        const { error: updateError } = await supabase
+          .from('subscriptions')
+          .update({
+            ...subscriptionUpdateData,
+            current: false, // Mark as not current
+          })
+          .eq('id', subscriptionData.id);
+
+        if (updateError) {
+          logger.error(
+            'PADDLE_WEBHOOK',
+            'Failed to update subscription status',
+            updateError,
+            {
+              userId: logger.maskUserId(userId),
+              subscriptionId: subscriptionData.id,
+            }
+          );
+          throw updateError;
+        }
+
+        // Create a new free subscription if one doesn't exist
+        const { data: existingFreeSubscription } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('tier_type', 'free')
+          .eq('current', true)
+          .maybeSingle();
+
+        if (!existingFreeSubscription) {
+          const { error: insertError } = await supabase
+            .from('subscriptions')
+            .insert({
+              id: `free_${Date.now()}_${userId.substring(0, 8)}`,
+              user_id: userId,
+              status: 'active',
+              tier_type: 'free',
+              current: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+
+          if (insertError) {
+            logger.error(
+              'PADDLE_WEBHOOK',
+              'Failed to create free subscription',
+              insertError,
+              {
+                userId: logger.maskUserId(userId),
+              }
+            );
+            throw insertError;
+          }
+
+          logger.info('PADDLE_WEBHOOK', 'Created free subscription for user', {
+            userId: logger.maskUserId(userId),
+          });
+        }
+      } else {
+        // For resumptions, use the standard upsert flow
+        const { data: upsertResult, error: upsertError } = await supabase.rpc(
+          'upsert_subscription',
+          {
+            p_subscription_data: subscriptionUpdateData,
+          }
+        );
+
+        if (upsertError) {
+          logger.error(
+            'PADDLE_WEBHOOK',
+            'Failed to upsert resumed subscription',
+            upsertError,
+            {
+              userId: logger.maskUserId(userId),
+              subscriptionId: subscriptionData.id,
+            }
+          );
+          throw upsertError;
+        }
+
+        logger.info(
+          'PADDLE_WEBHOOK',
+          'Resumed subscription processed successfully',
+          {
+            userId: logger.maskUserId(userId),
+            subscriptionId: subscriptionData.id,
+            newTierType,
+          }
+        );
+      }
+
+      logger.info(
+        'PADDLE_WEBHOOK',
+        'Subscription status change processed successfully',
+        {
+          userId: logger.maskUserId(userId),
+          subscriptionId: subscriptionData.id,
+          eventType: eventData.eventType,
+          newTierType,
+          newStatus,
+        }
+      );
+    } catch (error) {
+      logger.error(
+        'PADDLE_WEBHOOK',
+        'Failed to process subscription status change',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          subscriptionId: (eventData.data as any).id,
+          eventType: eventData.eventType,
         }
       );
       throw error;

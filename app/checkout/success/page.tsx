@@ -77,7 +77,7 @@ export default async function CheckoutSuccessPage({
 }: CheckoutSuccessPageProps) {
   // Await searchParams before accessing its properties
   const params = await searchParams;
-  
+
   // Extract transaction ID from search params server-side
   const transactionId =
     typeof params._ptxn === 'string' ? params._ptxn : undefined;

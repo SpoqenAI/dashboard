@@ -84,7 +84,12 @@ export const validatePaddleConfig = (): {
 export const isActiveSubscription = (
   subscription: PaddleSubscription
 ): boolean => {
-  return subscription.status === 'active' || subscription.status === 'trialing';
+  // Check both status and tier - canceled subscriptions are not active
+  const activeStatuses = ['active', 'trialing'];
+  const hasActiveStatus = activeStatuses.includes(subscription.status);
+  const hasValidTier = subscription.tier_type !== 'free';
+
+  return hasActiveStatus && hasValidTier;
 };
 
 export const isFreeUser = (
@@ -94,7 +99,19 @@ export const isFreeUser = (
   if (!subscription) return true;
 
   // Check tier_type field - if it's 'free', user is on free tier
-  return subscription.tier_type === 'free';
+  if (subscription.tier_type === 'free') return true;
+
+  // For now, treat canceled subscriptions as free to be safe
+  // This prevents infinite loops while still providing basic protection
+  if (subscription.status === 'canceled') return true;
+
+  // Check other inactive statuses
+  const inactiveStatuses = ['past_due', 'paused'];
+  if (inactiveStatuses.includes(subscription.status)) {
+    return true;
+  }
+
+  return false;
 };
 
 export const isTrialSubscription = (
@@ -246,7 +263,25 @@ export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
 export const getSubscriptionTier = (
   subscription: PaddleSubscription | null
 ): SubscriptionTier => {
-  if (!subscription || subscription.tier_type === 'free') {
+  // If no subscription, return free
+  if (!subscription) {
+    return 'free';
+  }
+
+  // If subscription is explicitly free tier, return free
+  if (subscription.tier_type === 'free') {
+    return 'free';
+  }
+
+  // Check subscription status - inactive subscriptions should be treated as free
+  const inactiveStatuses = ['canceled', 'past_due', 'paused'];
+  if (inactiveStatuses.includes(subscription.status)) {
+    return 'free';
+  }
+
+  // Only allow access for active/trialing subscriptions
+  const activeStatuses = ['active', 'trialing'];
+  if (!activeStatuses.includes(subscription.status)) {
     return 'free';
   }
 
