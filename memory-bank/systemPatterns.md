@@ -27,6 +27,52 @@ The project follows a Next.js App Router architecture, organizing code into `app
   - **Enhanced Checkout**: Modern inline checkout using `initializePaddle` with real-time data updates and proper event handling
   - The database schema supports Paddle billing with `paddle_customer_id` in `profiles` and a dedicated `subscriptions` table with atomic upsert functions for webhook processing.
 
+## Security Architecture
+
+### Admin Client Usage Pattern
+
+The project follows a **layered security model** for sensitive data operations, particularly visible in the Paddle transactions system:
+
+**Layer 1: API Routes (Authentication & Authorization)**
+- Use `createClient()` for user-scoped operations
+- Handle user authentication and session validation
+- Perform authorization checks (e.g., validate customer ownership)
+- Extract and validate user-specific identifiers (customer IDs, subscription IDs)
+
+**Layer 2: Utility Functions (Data Access)**
+- Use `createSupabaseAdmin()` for direct database access
+- Assume pre-validated, trusted parameters from authenticated callers
+- Focus on efficient data operations without re-implementing auth logic
+- Provide both admin-scoped and user-scoped function variants
+
+**Security Benefits:**
+- **Separation of Concerns**: Authentication logic centralized in API routes
+- **Performance**: Avoid redundant auth checks in utility functions
+- **Flexibility**: Admin functions can be safely used in webhook handlers and batch operations
+- **Audit Trail**: Clear security checkpoints in calling code
+
+**Example Implementation:**
+```typescript
+// API Route (handles security)
+const { data: { user } } = await supabase.auth.getUser();
+const { data: profile } = await supabase.from('profiles').select('paddle_customer_id').eq('id', user.id).single();
+const transactions = await getTransactionsByCustomerId(profile.paddle_customer_id, options);
+
+// Utility Function (assumes trusted caller)
+export async function getTransactionsByCustomerId(customerId: string) {
+  const supabase = createSupabaseAdmin(); // Admin access for efficiency
+  return supabase.from('paddle.transactions').select('*').eq('customer_id', customerId);
+}
+```
+
+**Security Requirements for Callers:**
+- Must authenticate users before calling admin utility functions
+- Must validate user authorization for requested data
+- Must pass only user-owned identifiers to utility functions
+- Must handle customer ID mapping and validation
+
+**User-Scoped Alternatives:** For cases where authentication should be built into the data layer, user-scoped function variants are available (e.g., `getUserTransactions()`) that accept an authenticated Supabase client and handle auth internally.
+
 ## Design Patterns
 
 - **Functional and Declarative Programming:** Emphasis on functional components and declarative JSX.
