@@ -7,6 +7,98 @@ import {
 } from '@/lib/user-settings';
 
 /**
+ * Get the standard analysis plan configuration for VAPI assistants
+ * This ensures consistency between assistant creation and updates
+ */
+export function getStandardAnalysisPlan() {
+  return {
+    summaryPrompt:
+      "You are an expert call analyst. Summarize this call in 2-3 sentences, focusing on the caller's main purpose, key discussion points, and any outcomes or next steps.",
+
+    structuredDataPrompt:
+      'You are an expert data extractor for business calls. Extract structured data from this call transcript focusing on lead qualification, customer intent, and business opportunities. Provide reasoning for your sentiment and lead quality assessments when possible.',
+
+    structuredDataSchema: {
+      type: 'object',
+      properties: {
+        sentiment: {
+          type: 'string',
+          enum: ['positive', 'neutral', 'negative'],
+          description: 'Overall sentiment of the caller',
+        },
+        leadQuality: {
+          type: 'string',
+          enum: ['hot', 'warm', 'cold'],
+          description: 'Quality of the lead based on interest and urgency',
+        },
+        callPurpose: {
+          type: 'string',
+          description: 'Main reason for the call',
+        },
+        keyPoints: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Important points discussed during the call',
+        },
+        followUpItems: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Action items or follow-up tasks identified',
+        },
+        urgentConcerns: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Any urgent issues or time-sensitive matters',
+        },
+        appointmentRequested: {
+          type: 'boolean',
+          description: 'Whether the caller requested an appointment or meeting',
+        },
+        timeline: {
+          type: 'string',
+          description:
+            'Timeframe mentioned by caller (immediate, within a week, month, etc.)',
+        },
+        contactPreference: {
+          type: 'string',
+          description: 'Preferred method of contact (phone, email, text, etc.)',
+        },
+        businessInterest: {
+          type: 'string',
+          description: 'Specific business interest or service inquired about',
+        },
+        budget_mentioned: {
+          type: 'boolean',
+          description: 'Whether budget or pricing was discussed',
+        },
+        decision_maker: {
+          type: 'boolean',
+          description: 'Whether the caller appears to be a decision maker',
+        },
+        // Made these optional to prevent analysis failures
+        sentimentAnalysisReasoning: {
+          type: 'string',
+          description:
+            'Brief explanation of why this sentiment was assigned based on conversation tone and language patterns.',
+        },
+        leadQualityReasoning: {
+          type: 'string',
+          description:
+            'Brief explanation of why this lead quality score was assigned based on engagement and interest signals.',
+        },
+      },
+      // Only require the core fields, make reasoning optional
+      required: ['sentiment', 'leadQuality', 'callPurpose'],
+    },
+
+    successEvaluationPrompt:
+      'Evaluate if this call was successful based on: 1) Did the caller get their questions answered? 2) Was relevant information exchanged? 3) Were next steps established? 4) Did the conversation flow naturally without technical issues?',
+
+    successEvaluationRubric: 'PassFail',
+  };
+}
+
+/**
  * Validates assistantId to prevent SSRF attacks
  * Ensures the ID matches a safe pattern before using in URLs
  *
@@ -373,7 +465,7 @@ export async function createUserAssistant(
       };
     }
 
-    // Create assistant via VAPI API
+    // Create assistant via VAPI API with analysis plan included
     const vapiResponse = await fetch('https://api.vapi.ai/assistant', {
       method: 'POST',
       headers: {
@@ -398,6 +490,8 @@ export async function createUserAssistant(
         },
         serverUrl: `${appUrl}/api/webhooks/vapi`,
         serverUrlSecret: vapiWebhookSecret,
+        // Include analysis plan configuration from the start
+        analysisPlan: getStandardAnalysisPlan(),
         ...assistantData,
       }),
     });
