@@ -5,6 +5,7 @@ import {
   getUserVapiAssistantId,
   updateUserSettings,
 } from '@/lib/user-settings';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Get the standard analysis plan configuration for VAPI assistants
@@ -266,7 +267,7 @@ function constructSafeVapiUrl(
  * @returns Promise<{ data: any, error?: string }> - Assistant data or error
  */
 export async function getUserAssistantInfo(
-  supabase: any // Type from Supabase client
+  supabase: SupabaseClient
 ): Promise<{ data: any; error?: string }> {
   try {
     // Get user's assistant ID using user-scoped function
@@ -342,7 +343,7 @@ export async function getUserAssistantInfo(
  * @returns Promise<{ data: any, error?: string }> - Success response or error
  */
 export async function updateUserAssistant(
-  supabase: any, // Type from Supabase client
+  supabase: SupabaseClient,
   assistantId: string,
   updates: any
 ): Promise<{ data: any; error?: string }> {
@@ -448,7 +449,7 @@ export async function updateUserAssistant(
  * @returns Promise<{ data: { assistantId: string }, error?: string }> - Created assistant ID or error
  */
 export async function createUserAssistant(
-  supabase: any, // Type from Supabase client
+  supabase: SupabaseClient,
   assistantData: {
     assistantName: string;
     greeting: string;
@@ -559,7 +560,7 @@ export async function createUserAssistant(
  * @returns Promise<{ isOwner: boolean, error?: string }> - Ownership verification result
  */
 export async function verifyUserOwnsAssistant(
-  supabase: any, // Type from Supabase client
+  supabase: SupabaseClient,
   assistantId: string
 ): Promise<{ isOwner: boolean; error?: string }> {
   try {
