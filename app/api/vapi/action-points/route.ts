@@ -2,119 +2,138 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { ActionPoints } from '@/lib/types';
 import { createClient } from '@/lib/supabase/server';
+import * as Sentry from '@sentry/nextjs';
 // Removed Redis dependency - all analysis comes directly from VAPI
 
 export async function POST(request: NextRequest) {
-  try {
-    const { callId } = await request.json();
+  return Sentry.startSpan(
+    {
+      name: 'POST /api/vapi/action-points',
+      op: 'http.server',
+    },
+    async () => {
+      try {
+        const { callId } = await request.json();
 
-    if (!callId) {
-      return NextResponse.json(
-        { error: 'Call ID is required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate callId to prevent SSRF attacks
-    if (!/^[a-zA-Z0-9\-_]{8,64}$/.test(callId)) {
-      logger.error(
-        'ACTION_POINTS_SECURITY',
-        'Invalid callId format detected',
-        new Error(`Rejected callId: ${callId}`),
-        { callId }
-      );
-      return NextResponse.json(
-        { error: 'Invalid call ID format' },
-        { status: 400 }
-      );
-    }
-
-    // Get authenticated user
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      logger.error(
-        'ACTION_POINTS',
-        'Failed to get authenticated user',
-        userError || new Error('No authenticated user')
-      );
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userId = user.id;
-
-    // Fetch fresh call details from VAPI - no caching needed since VAPI is the source of truth
-
-    const vapiResponse = await fetch(
-      `${process.env.VAPI_API_URL || 'https://api.vapi.ai'}/call/${callId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.VAPI_PRIVATE_KEY}`,
-          Accept: 'application/json',
-        },
-      }
-    );
-
-    if (!vapiResponse.ok) {
-      logger.error(
-        'ACTION_POINTS',
-        'Failed to fetch call details from VAPI',
-        undefined,
-        {
-          callId,
-          status: vapiResponse.status,
+        if (!callId) {
+          return NextResponse.json(
+            { error: 'Call ID is required' },
+            { status: 400 }
+          );
         }
-      );
-      return NextResponse.json(
-        { error: 'Failed to fetch call details' },
-        { status: vapiResponse.status }
-      );
+
+        // Validate callId to prevent SSRF attacks
+        if (!/^[a-zA-Z0-9\-_]{8,64}$/.test(callId)) {
+          logger.error(
+            'ACTION_POINTS_SECURITY',
+            'Invalid callId format detected',
+            new Error(`Rejected callId: ${callId}`),
+            { callId }
+          );
+          return NextResponse.json(
+            { error: 'Invalid call ID format' },
+            { status: 400 }
+          );
+        }
+
+        // Get authenticated user
+        const supabase = await createClient();
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          logger.error(
+            'ACTION_POINTS',
+            'Failed to get authenticated user',
+            userError || new Error('No authenticated user')
+          );
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const userId = user.id;
+
+        // Fetch fresh call details from VAPI - no caching needed since VAPI is the source of truth
+
+        const vapiResponse = await Sentry.startSpan(
+          {
+            name: 'fetchVapiCallDetails',
+            op: 'http.client',
+          },
+          async () => {
+            return await fetch(
+              `${process.env.VAPI_API_URL || 'https://api.vapi.ai'}/call/${callId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${process.env.VAPI_PRIVATE_KEY}`,
+                  Accept: 'application/json',
+                },
+              }
+            );
+          }
+        );
+
+        if (!vapiResponse.ok) {
+          logger.error(
+            'ACTION_POINTS',
+            'Failed to fetch call details from VAPI',
+            undefined,
+            {
+              callId,
+              status: vapiResponse.status,
+            }
+          );
+          return NextResponse.json(
+            { error: 'Failed to fetch call details' },
+            { status: vapiResponse.status }
+          );
+        }
+
+        const callData = await vapiResponse.json();
+
+        // Log VAPI analysis data to understand what's available
+        logger.info('ACTION_POINTS', 'VAPI call analysis data', {
+          callId,
+          hasAnalysis: !!callData.analysis,
+          analysisFields: callData.analysis
+            ? Object.keys(callData.analysis)
+            : null,
+          hasSummary: !!callData.analysis?.summary,
+          hasStructuredData: !!callData.analysis?.structuredData,
+          hasSuccessEvaluation: !!callData.analysis?.successEvaluation,
+          structuredDataFields: callData.analysis?.structuredData
+            ? Object.keys(callData.analysis.structuredData)
+            : null,
+        });
+
+        // Extract action points directly from VAPI's analysis (100% AI-generated)
+        const actionPoints = extractActionPointsFromVapiAnalysis(
+          callData.analysis || {}
+        );
+
+        logger.info('ACTION_POINTS', 'Successfully generated action points', {
+          callId,
+          userId: logger.maskUserId(userId),
+          source: 'VAPI_NATIVE_ANALYSIS',
+          hasVapiStructuredData: !!callData.analysis?.structuredData,
+          hasVapiSummary: !!callData.analysis?.summary,
+        });
+
+        return NextResponse.json({ actionPoints });
+      } catch (error) {
+        logger.error(
+          'ACTION_POINTS',
+          'Error generating action points',
+          error as Error
+        );
+        return NextResponse.json(
+          { error: 'Internal server error' },
+          { status: 500 }
+        );
+      }
     }
-
-    const callData = await vapiResponse.json();
-
-    // Log VAPI analysis data to understand what's available
-    logger.info('ACTION_POINTS', 'VAPI call analysis data', {
-      callId,
-      hasAnalysis: !!callData.analysis,
-      analysisFields: callData.analysis ? Object.keys(callData.analysis) : null,
-      hasSummary: !!callData.analysis?.summary,
-      hasStructuredData: !!callData.analysis?.structuredData,
-      hasSuccessEvaluation: !!callData.analysis?.successEvaluation,
-      structuredDataFields: callData.analysis?.structuredData
-        ? Object.keys(callData.analysis.structuredData)
-        : null,
-    });
-
-    // Extract action points directly from VAPI's analysis (100% AI-generated)
-    const actionPoints = extractActionPointsFromVapiAnalysis(
-      callData.analysis || {}
-    );
-
-    logger.info('ACTION_POINTS', 'Successfully generated action points', {
-      callId,
-      userId: logger.maskUserId(userId),
-      source: 'VAPI_NATIVE_ANALYSIS',
-      hasVapiStructuredData: !!callData.analysis?.structuredData,
-      hasVapiSummary: !!callData.analysis?.summary,
-    });
-
-    return NextResponse.json({ actionPoints });
-  } catch (error) {
-    logger.error(
-      'ACTION_POINTS',
-      'Error generating action points',
-      error as Error
-    );
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+  );
 }
 
 /**
