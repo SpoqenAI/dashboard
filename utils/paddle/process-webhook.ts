@@ -270,12 +270,66 @@ export class ProcessWebhook {
         );
         return; // Skip further processing for now
       } else {
-        // For other events, this is unexpected
-        logger.warn('PADDLE_WEBHOOK', 'No user found for subscription', {
-          subscriptionId: eventData.data.id,
-          eventType: eventData.eventType,
-        });
-        throw new Error('Subscription not found');
+        // For subscription.activated and subscription.updated events,
+        // update the existing pending subscription if it exists
+        logger.info(
+          'PADDLE_WEBHOOK',
+          'Updating pending subscription without user',
+          {
+            subscriptionId: eventData.data.id,
+            customerId: eventData.data.customerId,
+            eventType: eventData.eventType,
+          }
+        );
+
+        // Update the existing subscription record
+        const updateData = {
+          status: eventData.data.status,
+          price_id: eventData.data.items[0]?.price?.id || null,
+          quantity: eventData.data.items[0]?.quantity || 1,
+          cancel_at_period_end: !!eventData.data.canceledAt,
+          current_period_start_at:
+            eventData.data.currentBillingPeriod?.startsAt || null,
+          current_period_end_at:
+            eventData.data.currentBillingPeriod?.endsAt || null,
+          ended_at: eventData.data.canceledAt || null,
+          canceled_at: eventData.data.canceledAt || null,
+          trial_start_at: null,
+          trial_end_at: null,
+          updated_at: new Date().toISOString(),
+          tier_type: this.getTierFromPriceId(
+            eventData.data.items[0]?.price?.id || null
+          ),
+        };
+
+        const { error: updateError } = await supabase
+          .from('subscriptions')
+          .update(updateData)
+          .eq('id', eventData.data.id);
+
+        if (updateError) {
+          logger.error(
+            'PADDLE_WEBHOOK',
+            'Failed to update pending subscription',
+            updateError,
+            {
+              subscriptionId: eventData.data.id,
+              customerId: eventData.data.customerId,
+            }
+          );
+          throw updateError;
+        }
+
+        logger.info(
+          'PADDLE_WEBHOOK',
+          'Pending subscription updated successfully',
+          {
+            subscriptionId: eventData.data.id,
+            customerId: eventData.data.customerId,
+            eventType: eventData.eventType,
+          }
+        );
+        return; // Skip further processing for now
       }
     }
 
