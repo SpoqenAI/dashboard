@@ -220,7 +220,7 @@ export class ProcessWebhook {
         .from('subscriptions')
         .select('user_id, id, created_at')
         .eq('paddle_customer_id', paddleCustomerId)
-        .in('status', ['active', 'pending_webhook'])
+        .in('status', ['active', 'trialing'])
         .order('created_at', { ascending: false })
         .limit(10); // Get recent subscriptions to find potential match
 
