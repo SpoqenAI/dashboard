@@ -102,8 +102,57 @@ export class ProcessWebhook {
         return existingSubscription.user_id;
       }
 
-      // If no exact match found, we might have an ID mismatch between success callback and webhook
-      // Try to find the most recent subscription for the specific Paddle customer
+      // If no exact match found, try to find user by customer ID directly from profiles table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('paddle_customer_id', paddleCustomerId)
+        .maybeSingle();
+
+      if (profile?.id) {
+        logger.info(
+          'PADDLE_WEBHOOK',
+          'Found user by paddle_customer_id in profiles',
+          {
+            webhookSubscriptionId: subscriptionId,
+            paddleCustomerId,
+            userId: logger.maskUserId(profile.id),
+          }
+        );
+        return profile.id;
+      }
+
+      // If still not found, try to find via customers table by email
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('email')
+        .eq('customer_id', paddleCustomerId)
+        .maybeSingle();
+
+      if (customer?.email) {
+        // Find user profile by email
+        const { data: profileByEmail } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', customer.email)
+          .maybeSingle();
+
+        if (profileByEmail?.id) {
+          logger.info(
+            'PADDLE_WEBHOOK',
+            'Found user by customer email lookup',
+            {
+              webhookSubscriptionId: subscriptionId,
+              paddleCustomerId,
+              customerEmail: logger.maskEmail(customer.email),
+              userId: logger.maskUserId(profileByEmail.id),
+            }
+          );
+          return profileByEmail.id;
+        }
+      }
+
+      // Fallback: Try to find the most recent subscription for the specific Paddle customer
       const { data: recentSubscription } = await supabase
         .from('subscriptions')
         .select('user_id, id, created_at')
