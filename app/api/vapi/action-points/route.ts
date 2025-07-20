@@ -124,9 +124,11 @@ export async function POST(request: NextRequest) {
             op: 'http.client',
           },
           async () => {
-            // Use specific call endpoint - no user input in URL construction
+            // Use specific call endpoint - secure URL construction with proper encoding
             const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
-            const url = new URL(`/call/${callId}`, baseUrl);
+            const encodedCallId = encodeURIComponent(callId);
+            const pathname = `/call/${encodedCallId}`;
+            const url = new URL(pathname, baseUrl);
 
             return await fetch(url.toString(), {
               headers: {

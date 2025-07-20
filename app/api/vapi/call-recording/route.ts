@@ -63,7 +63,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch call details from VAPI to verify ownership and get recording URL
-    const url = new URL(`/call/${callId}`, baseUrl);
+    const encodedCallId = encodeURIComponent(callId);
+    const pathname = `/call/${encodedCallId}`;
+    const url = new URL(pathname, baseUrl);
 
     const res = await fetch(url.toString(), {
       headers: {
