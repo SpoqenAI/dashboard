@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '@/lib/supabase/admin';
+import { createUserAssistant } from '@/lib/vapi-assistant';
+import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 
 // POST /api/vapi/assistant/create
@@ -15,112 +16,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get currently authenticated user (via cookie) using Supabase SSR client
-    const { createClient } = await import('@/lib/supabase/server');
+    // Create authenticated Supabase client
     const supabase = await createClient();
 
-    const {
-      data: { user },
-      error: userErr,
-    } = await supabase.auth.getUser();
-
-    if (userErr || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    /* ------------------------------------------------------------------
-       1) Create assistant on Vapi
-    ------------------------------------------------------------------ */
-    const vapiApiKey = process.env.VAPI_PRIVATE_KEY;
-    const vapiWebhookSecret = process.env.VAPI_WEBHOOK_SECRET;
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
-
-    if (!vapiApiKey || !vapiWebhookSecret || !appUrl) {
-      logger.error('VAPI_CREATE', 'Missing Vapi env vars');
-      return NextResponse.json(
-        { error: 'Server misconfiguration — missing Vapi env vars' },
-        { status: 500 }
-      );
-    }
-
-    const vapiRes = await fetch('https://api.vapi.ai/assistant', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${vapiApiKey}`,
-      },
-      body: JSON.stringify({
-        name: assistantName,
-        model: {
-          provider: 'openai',
-          model: 'gpt-4.1-nano',
-          messages: [
-            {
-              role: 'system',
-              content: greeting,
-            },
-          ],
-        },
-        voice: {
-          provider: 'deepgram',
-          voiceId: 'luna',
-        },
-        serverUrl: `${appUrl}/api/webhooks/vapi`,
-        serverUrlSecret: vapiWebhookSecret,
-      }),
+    // Use user-scoped function that handles authentication, assistant creation, and user settings update
+    const result = await createUserAssistant(supabase, {
+      assistantName,
+      greeting,
     });
 
-    if (!vapiRes.ok) {
-      const txt = await vapiRes.text();
-      logger.error('VAPI_CREATE', 'Vapi API failed', new Error(txt), {
-        status: vapiRes.status,
-      });
-      return NextResponse.json(
-        { error: 'Failed to create assistant in Vapi' },
-        { status: 502 }
-      );
+    if (result.error) {
+      // Handle different types of errors appropriately
+      if (result.error === 'User not authenticated') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      if (
+        result.error ===
+        'Server misconfiguration – missing VAPI environment variables'
+      ) {
+        return NextResponse.json(
+          { error: 'Server misconfiguration – missing Vapi env vars' },
+          { status: 500 }
+        );
+      }
+      if (result.error === 'Failed to create assistant in VAPI') {
+        return NextResponse.json(
+          { error: 'Failed to create assistant in Vapi' },
+          { status: 502 }
+        );
+      }
+
+      // Generic error fallback
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    const vapiAssistant = (await vapiRes.json()) as { id: string };
-
-    /* ------------------------------------------------------------------
-       2) Persist assistant_id in user_settings (one assistant per user)
-    ------------------------------------------------------------------ */
-    let adminClient;
-    try {
-      adminClient = createSupabaseAdmin();
-    } catch (err) {
-      logger.error(
-        'VAPI_CREATE',
-        'Failed to init supabase admin',
-        err as Error
-      );
-      return NextResponse.json(
-        { error: 'Server misconfiguration — supabase admin' },
-        { status: 500 }
-      );
-    }
-
-    const { error: updateErr } = await adminClient
-      .from('user_settings')
-      .update({ vapi_assistant_id: vapiAssistant.id })
-      .eq('id', user.id);
-
-    if (updateErr) {
-      logger.error('VAPI_CREATE', 'Failed to store assistant_id', updateErr, {
-        userId: user.id,
-        assistantId: vapiAssistant.id,
-      });
-      // still return success because assistant is created, but warn client to retry
-    }
-
-    logger.info('VAPI_CREATE', 'Assistant created successfully', {
-      userId: user.id,
-      assistantId: vapiAssistant.id,
-    });
-
-    return NextResponse.json({ assistantId: vapiAssistant.id });
+    return NextResponse.json({ assistantId: result.data!.assistantId });
   } catch (err: any) {
     logger.error(
       'VAPI_CREATE',

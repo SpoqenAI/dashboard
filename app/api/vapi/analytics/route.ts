@@ -3,6 +3,7 @@ import { logger } from '@/lib/logger';
 import { CallMetrics, DashboardAnalytics } from '@/lib/types';
 import { createClient } from '@/lib/supabase/server';
 import { callCache } from '@/lib/call-cache';
+import * as Sentry from '@sentry/nextjs';
 // Removed Redis dependency - all analysis comes directly from VAPI
 
 /**
@@ -113,7 +114,15 @@ export async function GET(request: NextRequest) {
   try {
     // Check cache first for recent requests (reduces VAPI API load)
     const cacheKey = `analytics:${searchParams.toString()}`;
-    const cachedData = callCache.get(cacheKey);
+    const cachedData = await Sentry.startSpan(
+      {
+        name: 'checkAnalyticsCache',
+        op: 'cache',
+      },
+      async () => {
+        return callCache.get(cacheKey);
+      }
+    );
 
     if (cachedData) {
       logger.info('ANALYTICS', 'Returning cached analytics data', {
@@ -139,14 +148,22 @@ export async function GET(request: NextRequest) {
       // url.searchParams.set('createdAfter', cutoffDate.toISOString());
     }
 
-    const res = await fetch(url.toString(), {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        Accept: 'application/json',
-        'User-Agent': 'spoqen-dashboard/1.0',
+    const res = await Sentry.startSpan(
+      {
+        name: 'fetchVapiCalls',
+        op: 'http.client',
       },
-      signal: AbortSignal.timeout(15000),
-    });
+      async () => {
+        return await fetch(url.toString(), {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            Accept: 'application/json',
+            'User-Agent': 'spoqen-dashboard/1.0',
+          },
+          signal: AbortSignal.timeout(15000),
+        });
+      }
+    );
 
     if (!res.ok) {
       logger.error('ANALYTICS', 'VAPI API error', undefined, {
@@ -187,10 +204,27 @@ export async function GET(request: NextRequest) {
     });
 
     // Get authenticated user and their assistant ID in a single optimized query
-    const supabase = await createClient();
+    const supabase = await Sentry.startSpan(
+      {
+        name: 'createSupabaseClient',
+        op: 'db',
+      },
+      async () => {
+        return await createClient();
+      }
+    );
+
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await Sentry.startSpan(
+      {
+        name: 'getAuthenticatedUser',
+        op: 'auth',
+      },
+      async () => {
+        return await supabase.auth.getUser();
+      }
+    );
 
     let userAssistantId: string | null = null;
     if (user) {

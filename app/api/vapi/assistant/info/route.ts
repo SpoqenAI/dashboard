@@ -1,73 +1,82 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '@/lib/supabase/admin';
+import { getUserAssistantInfo } from '@/lib/vapi-assistant';
+import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import * as Sentry from '@sentry/nextjs';
 
 // GET /api/vapi/assistant/info – returns the assistant JSON from Vapi for the authenticated user
 export async function GET(req: NextRequest) {
-  try {
-    // Auth via SSR client (reads the cookie)
-    const { createClient } = await import('@/lib/supabase/server');
-    const supabaseSSR = await createClient();
+  return Sentry.startSpan(
+    {
+      name: 'GET /api/vapi/assistant/info',
+      op: 'http.server',
+    },
+    async () => {
+      try {
+        // Create authenticated Supabase client
+        const supabase = await Sentry.startSpan(
+          {
+            name: 'createClient',
+            op: 'db',
+          },
+          async () => {
+            return await createClient();
+          }
+        );
 
-    const {
-      data: { user },
-      error: authErr,
-    } = await supabaseSSR.auth.getUser();
+        // Use user-scoped function that handles authentication and ownership verification internally
+        const result = await Sentry.startSpan(
+          {
+            name: 'getUserAssistantInfo',
+            op: 'function',
+          },
+          async () => {
+            return await getUserAssistantInfo(supabase);
+          }
+        );
 
-    if (authErr || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+        if (result.error) {
+          // Handle different types of errors appropriately
+          if (result.error === 'User not authenticated') {
+            return NextResponse.json(
+              { error: 'Unauthorized' },
+              { status: 401 }
+            );
+          }
+          if (result.error === 'No assistant found for user') {
+            return NextResponse.json(
+              { error: 'Assistant not found' },
+              { status: 404 }
+            );
+          }
+          if (
+            result.error ===
+            'Server misconfiguration – missing VAPI_PRIVATE_KEY'
+          ) {
+            return NextResponse.json(
+              { error: 'Server misconfiguration – missing VAPI_PRIVATE_KEY' },
+              { status: 500 }
+            );
+          }
+          if (result.error === 'Failed to fetch assistant from VAPI') {
+            return NextResponse.json(
+              { error: 'Failed to fetch assistant' },
+              { status: 502 }
+            );
+          }
 
-    // Get assistant id from user_settings using admin client (bypass RLS)
-    const admin = createSupabaseAdmin();
-    const { data: settingsRow, error: settingsErr } = await admin
-      .from('user_settings')
-      .select('vapi_assistant_id')
-      .eq('id', user.id)
-      .maybeSingle();
+          // Generic error fallback
+          return NextResponse.json({ error: result.error }, { status: 400 });
+        }
 
-    if (settingsErr) throw settingsErr;
-
-    const assistantId = settingsRow?.vapi_assistant_id;
-    if (!assistantId) {
-      return NextResponse.json({ assistant: null });
-    }
-
-    const apiKey = process.env.VAPI_PRIVATE_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'Server misconfiguration – missing VAPI_PRIVATE_KEY' },
-        { status: 500 }
-      );
-    }
-
-    const vapiRes = await fetch(
-      `https://api.vapi.ai/assistant/${assistantId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
+        return NextResponse.json({ assistant: result.data });
+      } catch (err) {
+        logger.error('VAPI_INFO', 'Unhandled', err as Error);
+        return NextResponse.json(
+          { error: 'Internal server error' },
+          { status: 500 }
+        );
       }
-    );
-    if (!vapiRes.ok) {
-      const txt = await vapiRes.text();
-      logger.error('VAPI_INFO', 'Failed to get assistant', new Error(txt), {
-        status: vapiRes.status,
-        assistantId,
-      });
-      return NextResponse.json(
-        { error: 'Failed to fetch assistant' },
-        { status: 502 }
-      );
     }
-
-    const assistantJson = await vapiRes.json();
-    return NextResponse.json({ assistant: assistantJson });
-  } catch (err) {
-    logger.error('VAPI_INFO', 'Unhandled', err as Error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+  );
 }

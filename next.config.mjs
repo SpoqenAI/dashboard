@@ -129,6 +129,31 @@ const nextConfig = {
           },
         ],
       },
+      // CSP headers for checkout pages to allow Paddle integration
+      {
+        source: '/checkout/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' *.paddle.com *.stripe.com *.datadoghq-browser-agent.com https://js.vercel.com https://va.vercel-scripts.com *.sentry.io",
+              "style-src 'self' 'unsafe-inline' *.paddle.com *.stripe.com",
+              "frame-src 'self' *.paddle.com *.paddlecustomer.com *.stripe.com",
+              "connect-src 'self' *.paddle.com *.stripe.com *.datadoghq-browser-agent.com https://vercel.com https://vercel-insights.com https://va.vercel-scripts.com *.supabase.co wss://*.supabase.co *.sentry.io https://o4509398984294400.ingest.us.sentry.io",
+              "img-src 'self' data: https: *.paddle.com *.stripe.com",
+              "font-src 'self' data: *.paddle.com *.stripe.com",
+              "worker-src 'self' blob:",
+              "child-src 'self' *.paddle.com *.stripe.com",
+              "form-action 'self' *.paddle.com *.stripe.com",
+            ].join('; '),
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN', // Allow frames for checkout pages
+          },
+        ],
+      },
       // Cache JS/CSS chunks but keep other routes fresh to avoid stale builds
       {
         source: '/_next/static/(.*)',
@@ -153,6 +178,29 @@ const nextConfig = {
         ],
       },
     ];
+
+    // Add development-specific headers for reduced CSP restrictions
+    if (process.env.NODE_ENV === 'development') {
+      // More permissive CSP for development
+      headers.push({
+        source: '/((?!checkout).*)', // All pages except checkout
+        headers: [
+          {
+            key: 'Content-Security-Policy-Report-Only', // Report-only mode in development
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http: localhost:* *.vercel.com *.vercel-scripts.com *.sentry.io",
+              "style-src 'self' 'unsafe-inline' https:",
+              "connect-src 'self' https: http: ws: wss: localhost:* *.vercel.com *.sentry.io *.supabase.co",
+              "img-src 'self' data: https: http:",
+              "font-src 'self' data: https:",
+              "worker-src 'self' blob:",
+              "frame-src 'self' https:",
+            ].join('; '),
+          },
+        ],
+      });
+    }
 
     // Add development-specific CORS headers for ngrok
     if (process.env.NODE_ENV === 'development') {

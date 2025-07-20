@@ -88,7 +88,7 @@ export const pricingTiers: PricingTier[] = [
     name: 'Starter',
     description: 'For small businesses getting started',
     monthlyPrice: 10,
-    annualPrice: 8,
+    annualPrice: 96, // $96/year (20% discount from $120)
     features: [
       'Up to 30 calls per month',
       'Basic analytics dashboard',
@@ -112,7 +112,7 @@ export const pricingTiers: PricingTier[] = [
     name: 'Professional',
     description: 'For growing businesses',
     monthlyPrice: 30, // Confirmed correct price
-    annualPrice: 24,
+    annualPrice: 288, // $288/year ($24/month equivalent, $72/year savings = 20% discount)
     features: [
       'Unlimited calls & minutes',
       'Advanced analytics dashboard',

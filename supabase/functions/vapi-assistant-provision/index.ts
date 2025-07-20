@@ -199,6 +199,12 @@ Deno.serve(async (req: Request) => {
           assistantType: 'receptionist',
           version: '1.0',
         },
+        // Add webhook configuration for real-time updates
+        server: {
+          url: `${Deno.env.get('NEXT_PUBLIC_SITE_URL') || Deno.env.get('NEXT_PUBLIC_APP_URL')}/api/webhooks/vapi`,
+          timeoutSeconds: 20,
+        },
+        serverMessages: ['end-of-call-report'],
       };
 
       const vapiRes = await fetch('https://api.vapi.ai/assistant', {

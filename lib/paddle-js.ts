@@ -1,0 +1,333 @@
+// Paddle JS helper for client-side checkout initialization
+// This runs only in the browser and lazily loads the @paddle/paddle-js package.
+
+import { getPaddleConfig } from './config';
+import { getSiteUrl } from './site-url';
+import { logger } from '@/lib/logger';
+
+// TypeScript interfaces for Paddle SDK v2.x
+export interface PaddleCheckoutItem {
+  priceId: string;
+  quantity: number;
+}
+
+export interface PaddleCheckoutCustomer {
+  email: string;
+  name?: string;
+}
+
+// Enhanced settings interface to support both inline and overlay modes
+export interface PaddleCheckoutSettings {
+  displayMode?: 'overlay' | 'inline';
+  frameTarget?: string; // Required when displayMode is 'inline'
+  successUrl?: string;
+  theme?: 'light' | 'dark';
+  locale?: string;
+  allowLogout?: boolean;
+  variant?: 'one-page' | 'multi-page';
+  frameInitialHeight?: number;
+  frameStyle?: string;
+}
+
+export interface PaddleCheckoutEvents {
+  complete?: (data: any) => void;
+  close?: () => void;
+  error?: (error: any) => void;
+  loaded?: () => void;
+  // Additional events for inline checkout
+  ready?: () => void;
+  success?: (data: any) => void;
+  'payment.completed'?: (data: any) => void;
+}
+
+// Comprehensive checkout options interface for both modes
+export interface PaddleCheckoutOptions {
+  items: PaddleCheckoutItem[];
+  customer?: PaddleCheckoutCustomer;
+  customData?: Record<string, string>;
+  settings?: PaddleCheckoutSettings;
+  events?: PaddleCheckoutEvents;
+}
+
+// Legacy overlay-specific interface for backwards compatibility
+export interface PaddleOverlayCheckoutOptions {
+  checkoutId: string;
+  events?: {
+    complete?: () => void;
+    close?: () => void;
+  };
+}
+
+interface PaddleCheckout {
+  open: (options: PaddleCheckoutOptions | PaddleOverlayCheckoutOptions) => void;
+}
+
+interface PaddleSDK {
+  Checkout: PaddleCheckout;
+  Initialized?: boolean;
+}
+
+let isInitialized = false;
+
+// Utility function for generating consistent success URLs across the application
+export function generateSuccessUrl(
+  successPath: string = '/checkout/success',
+  urlParams?: Record<string, string>
+): string {
+  const baseUrl = getSiteUrl();
+  const url = new URL(successPath, baseUrl);
+
+  if (urlParams) {
+    Object.entries(urlParams).forEach(([key, value]) => {
+      url.searchParams.set(key, value);
+    });
+  }
+
+  return url.toString();
+}
+
+// Centralized redirect logic to prevent race conditions
+class CheckoutRedirectManager {
+  private hasRedirected = false;
+  private readonly successUrl: string;
+
+  constructor(
+    successPath: string = '/checkout/success',
+    urlParams?: Record<string, string>
+  ) {
+    // Use the utility function for consistency
+    this.successUrl = generateSuccessUrl(successPath, urlParams);
+  }
+
+  redirect(eventType: string, data?: any): void {
+    if (this.hasRedirected) {
+      logger.debug(
+        'PADDLE_JS',
+        'Redirect already executed, skipping duplicate',
+        {
+          eventType,
+          successUrl: this.successUrl,
+        }
+      );
+      return;
+    }
+
+    this.hasRedirected = true;
+
+    logger.info('PADDLE_JS', 'Executing checkout redirect', {
+      eventType,
+      successUrl: this.successUrl,
+      transactionId: data?.transaction_id || 'unknown',
+    });
+
+    // Use window.location.href for reliable redirect
+    window.location.href = this.successUrl;
+  }
+
+  getSuccessUrl(): string {
+    return this.successUrl;
+  }
+}
+
+export async function getPaddleInstance(): Promise<PaddleSDK> {
+  if (typeof window === 'undefined') {
+    throw new Error('Paddle JS can only be initialized in the browser');
+  }
+
+  // Get validated configuration
+  const config = getPaddleConfig();
+
+  try {
+    // Import and use the modern SDK v2.x initialization
+    const { initializePaddle } = await import('@paddle/paddle-js');
+
+    // Only initialize once
+    if (!isInitialized) {
+      // Initialize Paddle with the client token
+      await initializePaddle({
+        token: config.clientToken,
+        environment: config.environment as 'sandbox' | 'production',
+      });
+
+      isInitialized = true;
+
+      logger.info('PADDLE_JS', 'Paddle SDK initialized successfully', {
+        environment: config.environment,
+      });
+    }
+
+    // Return the global Paddle object (available on window after initialization)
+    if (typeof window !== 'undefined' && (window as any).Paddle) {
+      return (window as any).Paddle;
+    }
+
+    throw new Error('Paddle SDK not available on window object');
+  } catch (error) {
+    logger.error(
+      'PADDLE_JS',
+      'Failed to initialize Paddle SDK',
+      error instanceof Error ? error : new Error(String(error))
+    );
+    throw error;
+  }
+}
+
+// Enhanced inline checkout function with configurable success URL and centralized redirect logic
+export async function openInlineCheckout(
+  containerClass: string,
+  priceId: string,
+  customerEmail: string,
+  customData?: Record<string, string>,
+  events?: PaddleCheckoutEvents,
+  successPath: string = '/checkout/success',
+  urlParams?: Record<string, string>
+): Promise<void> {
+  logger.info('PADDLE_JS', 'Starting Paddle inline checkout', {
+    containerClass,
+    priceId,
+    customerEmail: customerEmail ? '[REDACTED]' : 'empty',
+    hasCustomData: !!customData,
+    successPath,
+    urlParams,
+  });
+
+  // Get Paddle instance
+  const Paddle = await getPaddleInstance();
+
+  // Validate container exists
+  const cleanContainerClass = containerClass.replace(/^\./, '');
+  const containerElement = document.querySelector(`.${cleanContainerClass}`);
+
+  if (!containerElement) {
+    throw new Error(
+      `Container element with class "${cleanContainerClass}" not found`
+    );
+  }
+
+  // Create centralized redirect manager to prevent race conditions
+  const redirectManager = new CheckoutRedirectManager(successPath, urlParams);
+
+  // Enhanced checkout options with configurable success URL
+  const checkoutOptions: PaddleCheckoutOptions = {
+    items: [
+      {
+        priceId,
+        quantity: 1,
+      },
+    ],
+    customer: {
+      email: customerEmail,
+    },
+    customData: customData || {},
+    settings: {
+      displayMode: 'inline',
+      frameTarget: cleanContainerClass,
+      theme: 'dark',
+      variant: 'one-page',
+      allowLogout: false,
+      frameInitialHeight: 500,
+      frameStyle: 'width: 100%; background-color: transparent; border: none',
+      successUrl: redirectManager.getSuccessUrl(),
+    },
+    events: {
+      loaded: () => {
+        logger.info('PADDLE_JS', 'Inline checkout loaded successfully');
+        events?.loaded?.();
+      },
+      ready: () => {
+        logger.info('PADDLE_JS', 'Inline checkout ready for interaction');
+        events?.ready?.();
+      },
+      complete: (data: any) => {
+        logger.info('PADDLE_JS', 'Payment completed successfully', {
+          transactionId: data?.transaction_id || 'unknown',
+        });
+        // Use centralized redirect to prevent race conditions
+        redirectManager.redirect('complete', data);
+        events?.complete?.(data);
+      },
+      success: (data: any) => {
+        logger.info('PADDLE_JS', 'Payment success event fired', {
+          transactionId: data?.transaction_id || 'unknown',
+        });
+        // Use centralized redirect to prevent race conditions
+        redirectManager.redirect('success', data);
+        events?.success?.(data);
+      },
+      'payment.completed': (data: any) => {
+        logger.info('PADDLE_JS', 'Payment completed event fired', {
+          transactionId: data?.transaction_id || 'unknown',
+        });
+        // Use centralized redirect to prevent race conditions
+        redirectManager.redirect('payment.completed', data);
+        events?.['payment.completed']?.(data);
+      },
+      error: (error: any) => {
+        logger.error('PADDLE_JS', 'Checkout error occurred', error);
+        events?.error?.(error);
+      },
+      close: () => {
+        logger.info('PADDLE_JS', 'Checkout closed by user');
+        events?.close?.();
+      },
+    },
+  };
+
+  logger.info(
+    'PADDLE_JS',
+    'Opening inline checkout with enhanced configuration',
+    {
+      priceId,
+      containerClass: cleanContainerClass,
+      theme: 'dark',
+      hasEvents: true,
+      successUrl: redirectManager.getSuccessUrl(),
+    }
+  );
+
+  try {
+    Paddle.Checkout.open(checkoutOptions);
+
+    logger.info('PADDLE_JS', 'Inline checkout opened successfully');
+  } catch (error) {
+    logger.error(
+      'PADDLE_JS',
+      'Failed to open inline checkout',
+      error instanceof Error ? error : new Error(String(error)),
+      { priceId, containerClass: cleanContainerClass }
+    );
+    throw error;
+  }
+}
+
+// Legacy function for overlay checkout (backwards compatibility)
+export async function openPaddleCheckout(
+  checkoutId: string,
+  onComplete?: () => void,
+  onClose?: () => void
+): Promise<void> {
+  const Paddle = await getPaddleInstance();
+  return new Promise<void>((resolve, reject) => {
+    try {
+      // Always attach event handlers to ensure proper Promise resolution
+      const options: PaddleOverlayCheckoutOptions = {
+        checkoutId,
+        events: {
+          complete: () => {
+            onComplete?.();
+            resolve();
+          },
+          close: () => {
+            onClose?.();
+            // still resolve; overlay closed by user
+            resolve();
+          },
+        },
+      };
+
+      Paddle.Checkout.open(options);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}

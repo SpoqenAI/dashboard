@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // CRITICAL SECURITY FIX: Clear all caches on sign out
             clearAllCaches();
             // Redirect to login page when signed out, but only if not already on login page
-            if (window.location.pathname !== '/login') {
+            if (pathname !== '/login') {
               router.replace('/login');
             }
             break;

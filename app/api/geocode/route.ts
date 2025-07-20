@@ -1,134 +1,157 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
+import * as Sentry from '@sentry/nextjs';
 
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const text = searchParams.get('text');
-    const limit = searchParams.get('limit') || '5';
+  return Sentry.startSpan(
+    {
+      name: 'GET /api/geocode',
+      op: 'http.server',
+    },
+    async () => {
+      try {
+        const { searchParams } = new URL(request.url);
+        const text = searchParams.get('text');
+        const limit = searchParams.get('limit') || '5';
 
-    // Validate input
-    if (!text || text.trim().length < 2) {
-      return NextResponse.json(
-        { error: 'Search text must be at least 2 characters long' },
-        { status: 400 }
-      );
-    }
+        // Validate input
+        if (!text || text.trim().length < 2) {
+          return NextResponse.json(
+            { error: 'Search text must be at least 2 characters long' },
+            { status: 400 }
+          );
+        }
 
-    // Get API key from server-side environment
-    const apiKey = process.env.GEOAPIFY_API_KEY;
-    if (!apiKey) {
-      logger.error('Geocode API', 'Geoapify API key not configured');
-      return NextResponse.json(
-        { error: 'Geocoding service not configured' },
-        { status: 500 }
-      );
-    }
+        // Get API key from server-side environment
+        const apiKey = process.env.GEOAPIFY_API_KEY;
+        if (!apiKey) {
+          logger.error('Geocode API', 'Geoapify API key not configured');
+          return NextResponse.json(
+            { error: 'Geocoding service not configured' },
+            { status: 500 }
+          );
+        }
 
-    // Construct Geoapify API URL
-    const geoapifyUrl = new URL('https://api.geoapify.com/v1/geocode/search');
-    geoapifyUrl.searchParams.set('text', text.trim());
-    geoapifyUrl.searchParams.set('limit', limit);
-    geoapifyUrl.searchParams.set('apiKey', apiKey);
+        // Construct Geoapify API URL
+        const geoapifyUrl = new URL(
+          'https://api.geoapify.com/v1/geocode/search'
+        );
+        geoapifyUrl.searchParams.set('text', text.trim());
+        geoapifyUrl.searchParams.set('limit', limit);
+        geoapifyUrl.searchParams.set('apiKey', apiKey);
 
-    // Optional: Add additional filters for better results
-    // geoapifyUrl.searchParams.set('type', 'amenity,building,street,locality');
-    // geoapifyUrl.searchParams.set('format', 'geojson');
+        // Optional: Add additional filters for better results
+        // geoapifyUrl.searchParams.set('type', 'amenity,building,street,locality');
+        // geoapifyUrl.searchParams.set('format', 'geojson');
 
-    logger.debug('Geocode API', 'Making request to Geoapify', {
-      searchLength: text.length,
-      limit: parseInt(limit),
-    });
+        logger.debug('Geocode API', 'Making request to Geoapify', {
+          searchLength: text.length,
+          limit: parseInt(limit),
+        });
 
-    // Make request to Geoapify
-    const response = await fetch(geoapifyUrl.toString(), {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        'User-Agent': 'spoqen-dashboard/1.0',
-      },
-      // Add timeout to prevent hanging requests
-      signal: AbortSignal.timeout(10000), // 10 second timeout
-    });
+        // Make request to Geoapify
+        const response = await Sentry.startSpan(
+          {
+            name: 'fetchGeoapifyData',
+            op: 'http.client',
+          },
+          async () => {
+            return await fetch(geoapifyUrl.toString(), {
+              method: 'GET',
+              headers: {
+                Accept: 'application/json',
+                'User-Agent': 'spoqen-dashboard/1.0',
+              },
+              // Add timeout to prevent hanging requests
+              signal: AbortSignal.timeout(10000), // 10 second timeout
+            });
+          }
+        );
 
-    if (!response.ok) {
-      logger.error('Geocode API', 'Geoapify API error', undefined, {
-        status: response.status,
-        statusText: response.statusText,
-      });
+        if (!response.ok) {
+          logger.error('Geocode API', 'Geoapify API error', undefined, {
+            status: response.status,
+            statusText: response.statusText,
+          });
 
-      // Handle specific error cases
-      if (response.status === 401) {
+          // Handle specific error cases
+          if (response.status === 401) {
+            return NextResponse.json(
+              { error: 'Authentication failed with geocoding service' },
+              { status: 500 }
+            );
+          } else if (response.status === 429) {
+            return NextResponse.json(
+              { error: 'Rate limit exceeded. Please try again later.' },
+              { status: 429 }
+            );
+          } else if (response.status >= 500) {
+            return NextResponse.json(
+              { error: 'Geocoding service temporarily unavailable' },
+              { status: 503 }
+            );
+          } else {
+            return NextResponse.json(
+              { error: 'Failed to fetch address suggestions' },
+              { status: 500 }
+            );
+          }
+        }
+
+        const data = await response.json();
+
+        // Validate response structure
+        if (!data || !data.features) {
+          logger.warn(
+            'Geocode API',
+            'Invalid response structure from Geoapify'
+          );
+          return NextResponse.json(
+            { error: 'Invalid response from geocoding service' },
+            { status: 500 }
+          );
+        }
+
+        logger.debug('Geocode API', 'Successfully fetched geocoding results', {
+          resultCount: data.features?.length || 0,
+        });
+
+        // Return the results (same format as Geoapify)
+        return NextResponse.json(data);
+      } catch (error) {
+        logger.error(
+          'Geocode API',
+          'Unexpected error',
+          error instanceof Error ? error : undefined,
+          {
+            errorMessage:
+              error instanceof Error ? error.message : 'Unknown error',
+            errorName: error instanceof Error ? error.name : 'UnknownError',
+          }
+        );
+
+        // Handle specific error types
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            return NextResponse.json(
+              { error: 'Request timeout. Please try again.' },
+              { status: 408 }
+            );
+          } else if (error.message.includes('fetch')) {
+            return NextResponse.json(
+              { error: 'Network error. Please check your connection.' },
+              { status: 503 }
+            );
+          }
+        }
+
         return NextResponse.json(
-          { error: 'Authentication failed with geocoding service' },
+          { error: 'Internal server error' },
           { status: 500 }
         );
-      } else if (response.status === 429) {
-        return NextResponse.json(
-          { error: 'Rate limit exceeded. Please try again later.' },
-          { status: 429 }
-        );
-      } else if (response.status >= 500) {
-        return NextResponse.json(
-          { error: 'Geocoding service temporarily unavailable' },
-          { status: 503 }
-        );
-      } else {
-        return NextResponse.json(
-          { error: 'Failed to fetch address suggestions' },
-          { status: 500 }
-        );
       }
     }
-
-    const data = await response.json();
-
-    // Validate response structure
-    if (!data || !data.features) {
-      logger.warn('Geocode API', 'Invalid response structure from Geoapify');
-      return NextResponse.json(
-        { error: 'Invalid response from geocoding service' },
-        { status: 500 }
-      );
-    }
-
-    logger.debug('Geocode API', 'Successfully fetched geocoding results', {
-      resultCount: data.features?.length || 0,
-    });
-
-    // Return the results (same format as Geoapify)
-    return NextResponse.json(data);
-  } catch (error) {
-    logger.error(
-      'Geocode API',
-      'Unexpected error',
-      error instanceof Error ? error : undefined,
-      {
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        errorName: error instanceof Error ? error.name : 'UnknownError',
-      }
-    );
-
-    // Handle specific error types
-    if (error instanceof Error) {
-      if (error.name === 'AbortError') {
-        return NextResponse.json(
-          { error: 'Request timeout. Please try again.' },
-          { status: 408 }
-        );
-      } else if (error.message.includes('fetch')) {
-        return NextResponse.json(
-          { error: 'Network error. Please check your connection.' },
-          { status: 503 }
-        );
-      }
-    }
-
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+  );
 }
 
 // Optional: Add autocomplete endpoint for different use cases

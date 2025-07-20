@@ -6,8 +6,10 @@ import { Toaster } from '@/components/toaster';
 import { AuthProvider } from '@/hooks/use-auth';
 import { GlobalHeader } from '@/components/global-header';
 import { ThemeProvider } from '@/components/theme-provider';
+import PaddleProvider from '@/components/paddle-provider';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
 export const metadata: Metadata = {
   title: 'Spoqen – AI Receptionist & Personal AI Agent',
@@ -91,16 +93,15 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            <GlobalHeader />
-            {children}
-            <Toaster />
+        <PaddleProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <AuthProvider>
+              <NuqsAdapter>
+                <GlobalHeader />
+                {children}
+                <Toaster />
+              </NuqsAdapter>
+            </AuthProvider>
             {/* PERF: mark animations done after initial scroll to stop heavy keyframes */}
             <Script id="motion-done-script" strategy="afterInteractive">
               {`
@@ -117,8 +118,8 @@ export default function RootLayout({
             {/* Vercel Analytics & Speed Insights */}
             <Analytics />
             <SpeedInsights />
-          </AuthProvider>
-        </ThemeProvider>
+          </ThemeProvider>
+        </PaddleProvider>
       </body>
     </html>
   );

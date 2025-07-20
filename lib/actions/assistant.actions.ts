@@ -9,9 +9,89 @@ import {
   deletePhoneNumber,
 } from '../twilio/provision-number';
 import { isActiveSubscription } from '../paddle';
+import { validateAssistantId } from '@/lib/vapi-assistant';
+
+/**
+ * Safely constructs a VAPI assistant URL with validated assistantId
+ * Provides an additional layer of security against SSRF attacks
+ *
+ * @param assistantId - The assistant ID to include in the URL
+ * @param endpoint - The specific endpoint (e.g., '', '/calls', etc.)
+ * @returns string - The safe URL or throws an error if validation fails
+ */
+function constructSafeVapiUrl(
+  assistantId: string,
+  endpoint: string = ''
+): string {
+  // Validate the assistantId before using it in URL construction
+  if (!validateAssistantId(assistantId)) {
+    throw new Error(`Invalid assistantId format: ${assistantId}`);
+  }
+
+  // Ensure endpoint is safe (only alphanumeric, dashes, underscores, and forward slashes)
+  const safeEndpoint = endpoint.replace(/[^a-zA-Z0-9\-_\/]/g, '');
+
+  // Construct the URL with explicit validation
+  const baseUrl = 'https://api.vapi.ai/assistant';
+  const safeUrl = `${baseUrl}/${assistantId}${safeEndpoint}`;
+
+  // Additional safety check: ensure the URL doesn't contain any suspicious patterns
+  if (safeUrl.includes('://') && !safeUrl.startsWith('https://api.vapi.ai/')) {
+    throw new Error(`Invalid URL construction detected: ${safeUrl}`);
+  }
+
+  return safeUrl;
+}
+
+/**
+ * Runtime safeguard to ensure admin functions are only called from server contexts
+ * @param functionName - Name of the function being called for logging
+ */
+function validateServerContext(functionName: string): void {
+  // Check if we're in a browser environment
+  if (typeof window !== 'undefined') {
+    const error = new Error(
+      `Security violation: ${functionName} called from client-side code. ` +
+        'Admin assistant action functions must only be used in server contexts.'
+    );
+    logger.error(
+      'ASSISTANT_ACTIONS_SECURITY',
+      'Admin function called from client context',
+      error,
+      { functionName }
+    );
+    throw error;
+  }
+
+  // Check for required server environment variables
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const error = new Error(
+      `Security violation: ${functionName} requires server environment. ` +
+        'Missing SUPABASE_SERVICE_ROLE_KEY indicates this is not a proper server context.'
+    );
+    logger.error(
+      'ASSISTANT_ACTIONS_SECURITY',
+      'Admin function called without server environment',
+      error,
+      { functionName }
+    );
+    throw error;
+  }
+
+  // Log usage for audit trail
+  logger.info(
+    'ASSISTANT_ACTIONS_ADMIN',
+    `Admin function called: ${functionName}`,
+    {
+      functionName,
+      serverContext: true,
+    }
+  );
+}
 
 export async function provisionAssistant(userId: string): Promise<void> {
   'use server';
+  validateServerContext('provisionAssistant');
 
   const loggerPrefix = 'PHONE_PROVISION';
 
@@ -126,6 +206,7 @@ export async function syncVapiAssistant(
   voiceId?: string
 ): Promise<void> {
   'use server';
+  validateServerContext('syncVapiAssistant');
 
   // Log the start of the sync so we can trace if the function is invoked at all
   logger.info('VAPI_SYNC', 'Starting assistant sync', {
@@ -180,118 +261,128 @@ export async function syncVapiAssistant(
       return;
     }
 
-    // Call Vapi API
-    const res = await fetch(
-      `https://api.vapi.ai/assistant/${settingsRow.vapi_assistant_id}`,
-      {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          name: assistantName,
-          model: {
-            provider: 'openai',
-            model: 'gpt-4.1-nano',
-            messages: [
-              {
-                role: 'system',
-                content: greeting,
-              },
-            ],
-          },
-          ...(voiceId
-            ? {
-                voice: {
-                  provider: 'deepgram',
-                  model: 'aura-2',
-                  voiceId,
-                },
-              }
-            : {}),
-          // Custom analysis plan for better call analysis
-          analysisPlan: {
-            summaryPrompt:
-              "You are an expert call analyst. Summarize this call in 2-3 sentences, focusing on the caller's main purpose, key discussion points, and any outcomes or next steps.",
+    // Validate assistantId before using in API request to prevent SSRF
+    const assistantId = settingsRow.vapi_assistant_id;
+    if (!assistantId || !validateAssistantId(assistantId)) {
+      logger.error(
+        'VAPI_SYNC_SECURITY',
+        'Invalid assistantId format detected',
+        new Error(`Rejected assistantId: ${assistantId}`),
+        { assistantId, userId: logger.maskUserId(userId) }
+      );
+      return;
+    }
 
-            structuredDataPrompt:
-              'You are an expert data extractor for business calls. Extract structured data from this call transcript focusing on lead qualification, customer intent, and business opportunities.',
-
-            structuredDataSchema: {
-              type: 'object',
-              properties: {
-                sentiment: {
-                  type: 'string',
-                  enum: ['positive', 'neutral', 'negative'],
-                  description: 'Overall sentiment of the caller',
-                },
-                leadQuality: {
-                  type: 'string',
-                  enum: ['hot', 'warm', 'cold'],
-                  description:
-                    'Quality of the lead based on interest and urgency',
-                },
-                callPurpose: {
-                  type: 'string',
-                  description: 'Main reason for the call',
-                },
-                keyPoints: {
-                  type: 'array',
-                  items: { type: 'string' },
-                  description: 'Important points discussed during the call',
-                },
-                followUpItems: {
-                  type: 'array',
-                  items: { type: 'string' },
-                  description: 'Action items or follow-up tasks identified',
-                },
-                urgentConcerns: {
-                  type: 'array',
-                  items: { type: 'string' },
-                  description: 'Any urgent issues or time-sensitive matters',
-                },
-                appointmentRequested: {
-                  type: 'boolean',
-                  description:
-                    'Whether the caller requested an appointment or meeting',
-                },
-                timeline: {
-                  type: 'string',
-                  description:
-                    'Timeframe mentioned by caller (immediate, within a week, month, etc.)',
-                },
-                contactPreference: {
-                  type: 'string',
-                  description:
-                    'Preferred method of contact (phone, email, text, etc.)',
-                },
-                businessInterest: {
-                  type: 'string',
-                  description:
-                    'Specific business interest or service inquired about',
-                },
-                budget_mentioned: {
-                  type: 'boolean',
-                  description: 'Whether budget or pricing was discussed',
-                },
-                decision_maker: {
-                  type: 'boolean',
-                  description:
-                    'Whether the caller appears to be a decision maker',
-                },
-              },
-              required: ['sentiment', 'leadQuality', 'callPurpose'],
+    // Call Vapi API using safe URL construction
+    const safeUrl = constructSafeVapiUrl(assistantId);
+    const res = await fetch(safeUrl, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        name: assistantName,
+        model: {
+          provider: 'openai',
+          model: 'gpt-4.1-nano',
+          messages: [
+            {
+              role: 'system',
+              content: greeting,
             },
+          ],
+        },
+        ...(voiceId
+          ? {
+              voice: {
+                provider: 'deepgram',
+                model: 'aura-2',
+                voiceId,
+              },
+            }
+          : {}),
+        // Custom analysis plan for better call analysis
+        analysisPlan: {
+          summaryPrompt:
+            "You are an expert call analyst. Summarize this call in 2-3 sentences, focusing on the caller's main purpose, key discussion points, and any outcomes or next steps.",
 
-            successEvaluationPrompt:
-              'Evaluate if this call was successful based on: 1) Did the caller get their questions answered? 2) Was relevant information exchanged? 3) Were next steps established? 4) Did the conversation flow naturally without technical issues?',
+          structuredDataPrompt:
+            'You are an expert data extractor for business calls. Extract structured data from this call transcript focusing on lead qualification, customer intent, and business opportunities.',
 
-            successEvaluationRubric: 'PassFail',
+          structuredDataSchema: {
+            type: 'object',
+            properties: {
+              sentiment: {
+                type: 'string',
+                enum: ['positive', 'neutral', 'negative'],
+                description: 'Overall sentiment of the caller',
+              },
+              leadQuality: {
+                type: 'string',
+                enum: ['hot', 'warm', 'cold'],
+                description:
+                  'Quality of the lead based on interest and urgency',
+              },
+              callPurpose: {
+                type: 'string',
+                description: 'Main reason for the call',
+              },
+              keyPoints: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Important points discussed during the call',
+              },
+              followUpItems: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Action items or follow-up tasks identified',
+              },
+              urgentConcerns: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Any urgent issues or time-sensitive matters',
+              },
+              appointmentRequested: {
+                type: 'boolean',
+                description:
+                  'Whether the caller requested an appointment or meeting',
+              },
+              timeline: {
+                type: 'string',
+                description:
+                  'Timeframe mentioned by caller (immediate, within a week, month, etc.)',
+              },
+              contactPreference: {
+                type: 'string',
+                description:
+                  'Preferred method of contact (phone, email, text, etc.)',
+              },
+              businessInterest: {
+                type: 'string',
+                description:
+                  'Specific business interest or service inquired about',
+              },
+              budget_mentioned: {
+                type: 'boolean',
+                description: 'Whether budget or pricing was discussed',
+              },
+              decision_maker: {
+                type: 'boolean',
+                description:
+                  'Whether the caller appears to be a decision maker',
+              },
+            },
+            required: ['sentiment', 'leadQuality', 'callPurpose'],
           },
-        }),
-      }
-    );
+
+          successEvaluationPrompt:
+            'Evaluate if this call was successful based on: 1) Did the caller get their questions answered? 2) Was relevant information exchanged? 3) Were next steps established? 4) Did the conversation flow naturally without technical issues?',
+
+          successEvaluationRubric: 'PassFail',
+        },
+      }),
+    });
 
     if (!res.ok) {
       const txt = await res.text();
@@ -312,6 +403,8 @@ export async function syncVapiAssistant(
 
 export async function deleteTwilioNumberForUser(userId: string): Promise<void> {
   'use server';
+  validateServerContext('deleteTwilioNumberForUser');
+
   const loggerPrefix = 'PHONE_DELETE';
   let supabase;
   try {

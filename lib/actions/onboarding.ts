@@ -1,10 +1,90 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
+import { validateAssistantId } from '@/lib/vapi-assistant';
+
+/**
+ * Safely constructs a VAPI assistant URL with validated assistantId
+ * Provides an additional layer of security against SSRF attacks
+ *
+ * @param assistantId - The assistant ID to include in the URL
+ * @param endpoint - The specific endpoint (e.g., '', '/calls', etc.)
+ * @returns string - The safe URL or throws an error if validation fails
+ */
+function constructSafeVapiUrl(
+  assistantId: string,
+  endpoint: string = ''
+): string {
+  // Validate the assistantId before using it in URL construction
+  if (!validateAssistantId(assistantId)) {
+    throw new Error(`Invalid assistantId format: ${assistantId}`);
+  }
+
+  // Ensure endpoint is safe (only alphanumeric, dashes, underscores, and forward slashes)
+  const safeEndpoint = endpoint.replace(/[^a-zA-Z0-9\-_\/]/g, '');
+
+  // Construct the URL with explicit validation
+  const baseUrl = 'https://api.vapi.ai/assistant';
+  const safeUrl = `${baseUrl}/${assistantId}${safeEndpoint}`;
+
+  // Additional safety check: ensure the URL doesn't contain any suspicious patterns
+  if (safeUrl.includes('://') && !safeUrl.startsWith('https://api.vapi.ai/')) {
+    throw new Error(`Invalid URL construction detected: ${safeUrl}`);
+  }
+
+  return safeUrl;
+}
+
+/**
+ * Runtime safeguard to ensure admin functions are only called from server contexts
+ * @param functionName - Name of the function being called for logging
+ */
+function validateServerContext(functionName: string): void {
+  // Check if we're in a browser environment
+  if (typeof window !== 'undefined') {
+    const error = new Error(
+      `Security violation: ${functionName} called from client-side code. ` +
+        'Admin onboarding action functions must only be used in server contexts.'
+    );
+    logger.error(
+      'ONBOARDING_ACTIONS_SECURITY',
+      'Admin function called from client context',
+      error,
+      { functionName }
+    );
+    throw error;
+  }
+
+  // Check for required server environment variables
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const error = new Error(
+      `Security violation: ${functionName} requires server environment. ` +
+        'Missing SUPABASE_SERVICE_ROLE_KEY indicates this is not a proper server context.'
+    );
+    logger.error(
+      'ONBOARDING_ACTIONS_SECURITY',
+      'Admin function called without server environment',
+      error,
+      { functionName }
+    );
+    throw error;
+  }
+
+  // Log usage for audit trail
+  logger.info(
+    'ONBOARDING_ACTIONS_ADMIN',
+    `Admin function called: ${functionName}`,
+    {
+      functionName,
+      serverContext: true,
+    }
+  );
+}
 
 // Validate critical environment variables at module load time
 const PADDLE_PRICE_ID = (() => {
@@ -227,7 +307,8 @@ export async function createAssistantAction(
       vapiAssistantId = vapiAssistant.id;
 
       // Persist assistant id in user_settings via admin client to bypass RLS
-      const { createSupabaseAdmin } = await import('@/lib/supabase/admin');
+      // ⚠️ ADMIN CLIENT USAGE - Add security validation
+      validateServerContext('createAssistantAction.adminClientUsage');
       const adminClient = createSupabaseAdmin();
       const { error: storeErr } = await adminClient
         .from('user_settings')
@@ -236,28 +317,37 @@ export async function createAssistantAction(
 
       if (storeErr) throw storeErr;
     } else {
+      // Validate assistantId before using in API request to prevent SSRF
+      if (!vapiAssistantId || !validateAssistantId(vapiAssistantId)) {
+        logger.error(
+          'ONBOARDING_ACTIONS_SECURITY',
+          'Invalid assistantId format detected',
+          new Error(`Rejected assistantId: ${vapiAssistantId}`),
+          { assistantId: vapiAssistantId, userId: logger.maskUserId(user.id) }
+        );
+        throw new Error('Invalid assistantId format');
+      }
+
       // Assistant already exists – patch its name & greeting to match latest form
-      const patchRes = await fetch(
-        `https://api.vapi.ai/assistant/${vapiAssistantId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${vapiApiKey}`,
+      const safeUrl = constructSafeVapiUrl(vapiAssistantId);
+      const patchRes = await fetch(safeUrl, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${vapiApiKey}`,
+        },
+        body: JSON.stringify({
+          name: assistantName,
+          model: {
+            messages: [
+              {
+                role: 'system',
+                content: greeting,
+              },
+            ],
           },
-          body: JSON.stringify({
-            name: assistantName,
-            model: {
-              messages: [
-                {
-                  role: 'system',
-                  content: greeting,
-                },
-              ],
-            },
-          }),
-        }
-      );
+        }),
+      });
 
       if (!patchRes.ok) {
         const txt = await patchRes.text();

@@ -177,9 +177,29 @@ export async function POST(req: NextRequest) {
   const secret = process.env.VAPI_WEBHOOK_SECRET;
   const incomingSecret = req.headers.get('x-vapi-secret');
 
+  // Enhanced logging for debugging
+  logger.info('VAPI_WEBHOOK', 'Webhook request received', {
+    hasSecret: !!secret,
+    hasIncomingSecret: !!incomingSecret,
+    bodyLength: requestBody.length,
+    headers: {
+      'content-type': req.headers.get('content-type'),
+      'user-agent': req.headers.get('user-agent'),
+      'x-vapi-secret': incomingSecret ? '***' : 'missing',
+    },
+  });
+
   // Validate signature
   if (!secret || !incomingSecret) {
-    logger.error('VAPI_WEBHOOK', 'Missing webhook secret');
+    logger.error(
+      'VAPI_WEBHOOK',
+      'Missing webhook secret',
+      new Error('Webhook secret validation failed'),
+      {
+        hasSecret: !!secret,
+        hasIncomingSecret: !!incomingSecret,
+      }
+    );
     return new NextResponse('Configuration error', { status: 500 });
   }
 
@@ -190,7 +210,12 @@ export async function POST(req: NextRequest) {
     secretBuffer.length !== incomingBuffer.length ||
     !crypto.timingSafeEqual(secretBuffer, incomingBuffer)
   ) {
-    logger.warn('VAPI_WEBHOOK', 'Invalid webhook signature');
+    logger.warn('VAPI_WEBHOOK', 'Invalid webhook signature', {
+      secretLength: secretBuffer.length,
+      incomingLength: incomingBuffer.length,
+      secretPrefix: secret.substring(0, 4) + '***',
+      incomingPrefix: incomingSecret.substring(0, 4) + '***',
+    });
     return new NextResponse('Invalid signature', { status: 401 });
   }
 

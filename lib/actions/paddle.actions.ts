@@ -4,6 +4,27 @@ import { Paddle, Environment } from '@paddle/paddle-node-sdk';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 import { validatePaddleConfig } from '@/lib/paddle';
+import { getSiteUrl } from '@/lib/site-url';
+import { generateSuccessUrl } from '@/lib/paddle-js';
+
+// Shared helper function for Paddle environment detection
+function getPaddleEnvironment(): {
+  isSandbox: boolean;
+  environment: 'sandbox' | 'production';
+} {
+  const envVar =
+    process.env.PADDLE_ENVIRONMENT ||
+    process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
+  const isSandbox =
+    envVar?.toLowerCase() === 'sandbox' ||
+    process.env.PADDLE_API_KEY?.toLowerCase().startsWith('sandbox') ||
+    false;
+
+  return {
+    isSandbox,
+    environment: isSandbox ? 'sandbox' : 'production',
+  };
+}
 
 // Initialize Paddle client
 function createPaddleClient() {
@@ -13,13 +34,7 @@ function createPaddleClient() {
     throw new Error('PADDLE_API_KEY environment variable is required');
   }
 
-  // Determine environment
-  const envVar =
-    process.env.PADDLE_ENVIRONMENT ||
-    process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT;
-  const isSandbox =
-    envVar?.toLowerCase() === 'sandbox' ||
-    apiKey.toLowerCase().startsWith('sandbox');
+  const { isSandbox } = getPaddleEnvironment();
 
   return new Paddle(apiKey, {
     environment: isSandbox ? Environment.sandbox : Environment.production,
@@ -28,7 +43,9 @@ function createPaddleClient() {
 
 export async function createCheckoutSession(priceId: string): Promise<{
   success: boolean;
-  checkoutUrl?: string;
+  checkoutUrl?: string; // Fallback redirect URL
+  checkoutId?: string; // Transaction / Checkout ID for Paddle JS overlay
+  environment?: 'sandbox' | 'production';
   error?: string;
 }> {
   try {
@@ -86,11 +103,16 @@ export async function createCheckoutSession(priceId: string): Promise<{
       };
     }
 
+    // Get environment for response convenience
+    const { environment } = getPaddleEnvironment();
+
     // Create Paddle client
     const paddle = createPaddleClient();
 
-    // Create checkout session
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    // Determine the base site URL dynamically. This avoids hard-coded localhost values
+    // making it work correctly in all environments (local dev, Vercel preview, production).
+    // getSiteUrl() already handles NODE_ENV, Vercel URLs, ngrok etc.
+    const baseUrl = getSiteUrl();
 
     const checkoutData = {
       items: [
@@ -110,7 +132,9 @@ export async function createCheckoutSession(priceId: string): Promise<{
           }),
       },
       settings: {
-        successUrl: `${baseUrl}/api/paddle/success?user_id=${user.id}`,
+        successUrl: generateSuccessUrl('/api/paddle/success', {
+          user_id: user.id,
+        }),
         allowLogout: false,
       },
     };
@@ -147,6 +171,8 @@ export async function createCheckoutSession(priceId: string): Promise<{
     return {
       success: true,
       checkoutUrl: transaction.checkout.url,
+      checkoutId: transaction.id,
+      environment,
     };
   } catch (error: any) {
     logger.error(
