@@ -1,5 +1,27 @@
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
+import { SupabaseClient } from '@supabase/supabase-js';
+
+// Subscription interface for type safety
+interface Subscription {
+  id: string;
+  paddle_customer_id: string | null;
+  created_at: string;
+  status: string;
+  tier_type: string;
+  price_id: string | null;
+  quantity?: number;
+  cancel_at_period_end?: boolean | null;
+  current_period_start_at?: string | null;
+  current_period_end_at?: string | null;
+  ended_at?: string | null;
+  canceled_at?: string | null;
+  trial_start_at?: string | null;
+  trial_end_at?: string | null;
+  updated_at?: string;
+  user_id?: string | null;
+  current?: boolean;
+}
 
 /**
  * Automatic recovery job to fix subscription linking issues
@@ -130,8 +152,8 @@ export async function recoverSubscriptionLinking() {
  * Helper function to link a pending subscription to a user
  */
 async function linkPendingSubscriptionToUser(
-  supabase: any,
-  subscription: any,
+  supabase: SupabaseClient,
+  subscription: Subscription,
   userId: string
 ) {
   try {

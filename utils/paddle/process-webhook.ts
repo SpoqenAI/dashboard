@@ -11,9 +11,31 @@ import {
 } from '@paddle/paddle-node-sdk';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 // Constants
 const THIRTY_DAYS_IN_MS = 30 * 24 * 60 * 60 * 1000;
+
+// Subscription interface for type safety
+interface Subscription {
+  id: string;
+  paddle_customer_id: string | null;
+  created_at: string;
+  status: string;
+  tier_type: string;
+  price_id: string | null;
+  quantity?: number;
+  cancel_at_period_end?: boolean | null;
+  current_period_start_at?: string | null;
+  current_period_end_at?: string | null;
+  ended_at?: string | null;
+  canceled_at?: string | null;
+  trial_start_at?: string | null;
+  trial_end_at?: string | null;
+  updated_at?: string;
+  user_id?: string | null;
+  current?: boolean;
+}
 
 // Cache price ID arrays at module level for performance
 const CACHED_STARTER_PRICE_IDS: string[] = (() => {
@@ -129,7 +151,7 @@ export class ProcessWebhook {
   }
 
   private async findUserBySubscriptionId(
-    supabase: any,
+    supabase: SupabaseClient,
     subscriptionId: string,
     paddleCustomerId: string
   ): Promise<string | null> {
@@ -480,8 +502,13 @@ export class ProcessWebhook {
           customerId: eventData.data.id,
           customerEmail: logger.maskEmail(eventData.data.email),
         });
-        // In a production system, you might want to queue this for retry
-        // For now, we'll just log it and continue
+
+        // Implement immediate retry with exponential backoff
+        await this.retryProfileUpdate(
+          supabase,
+          eventData.data.id,
+          eventData.data.email
+        );
       }
 
       logger.info('PADDLE_WEBHOOK', 'Customer data updated successfully', {
@@ -507,7 +534,7 @@ export class ProcessWebhook {
    * Process any pending subscriptions for a customer when their profile is created
    */
   private async processPendingSubscriptionsForCustomer(
-    supabase: any,
+    supabase: SupabaseClient,
     customerId: string,
     customerEmail: string
   ) {
@@ -557,7 +584,7 @@ export class ProcessWebhook {
   }
 
   private async linkPendingSubscriptionsToUser(
-    supabase: any,
+    supabase: SupabaseClient,
     customerId: string,
     userId: string
   ) {
@@ -633,7 +660,7 @@ export class ProcessWebhook {
       if (pendingSubscriptions.length > 1) {
         const otherIds = pendingSubscriptions
           .slice(0, -1)
-          .map((sub: any) => sub.id);
+          .map((sub: Subscription) => sub.id);
 
         const { error: cleanupError } = await supabase
           .from('subscriptions')
@@ -953,7 +980,7 @@ export class ProcessWebhook {
   }
 
   private async findUserByTransactionCustomerId(
-    supabase: any,
+    supabase: SupabaseClient,
     customerId: string
   ): Promise<string | null> {
     try {
@@ -991,6 +1018,84 @@ export class ProcessWebhook {
         { customerId }
       );
       return null;
+    }
+  }
+
+  /**
+   * Retry mechanism for failed profile updates with exponential backoff
+   */
+  private async retryProfileUpdate(
+    supabase: SupabaseClient,
+    customerId: string,
+    customerEmail: string,
+    attempt: number = 1,
+    maxAttempts: number = 3
+  ): Promise<void> {
+    try {
+      // Exponential backoff: wait 1s, 2s, 4s
+      const delay = Math.pow(2, attempt - 1) * 1000;
+      await new Promise(resolve => setTimeout(resolve, delay));
+
+      logger.info(
+        'PADDLE_WEBHOOK',
+        `Retrying profile update (attempt ${attempt}/${maxAttempts})`,
+        {
+          customerId,
+          customerEmail: logger.maskEmail(customerEmail),
+          delay,
+        }
+      );
+
+      const { error: retryError } = await supabase
+        .from('profiles')
+        .update({ paddle_customer_id: customerId })
+        .eq('email', customerEmail);
+
+      if (retryError) {
+        if (attempt < maxAttempts) {
+          logger.warn(
+            'PADDLE_WEBHOOK',
+            'Profile update retry failed, will retry again',
+            {
+              customerId,
+              customerEmail: logger.maskEmail(customerEmail),
+              attempt,
+              error: retryError,
+            }
+          );
+          await this.retryProfileUpdate(
+            supabase,
+            customerId,
+            customerEmail,
+            attempt + 1,
+            maxAttempts
+          );
+        } else {
+          logger.error(
+            'PADDLE_WEBHOOK',
+            'Profile update failed after all retry attempts',
+            retryError,
+            {
+              customerId,
+              customerEmail: logger.maskEmail(customerEmail),
+              maxAttempts,
+            }
+          );
+        }
+      } else {
+        logger.info('PADDLE_WEBHOOK', 'Profile update retry successful', {
+          customerId,
+          customerEmail: logger.maskEmail(customerEmail),
+          attempt,
+        });
+      }
+    } catch (error) {
+      logger.error(
+        'PADDLE_WEBHOOK',
+        'Error during profile update retry',
+        error instanceof Error ? error : new Error(String(error)),
+        { customerId, customerEmail: logger.maskEmail(customerEmail), attempt }
+      );
     }
   }
 }
