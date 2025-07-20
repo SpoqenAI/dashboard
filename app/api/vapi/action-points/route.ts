@@ -6,11 +6,11 @@ import * as Sentry from '@sentry/nextjs';
 // Removed Redis dependency - all analysis comes directly from VAPI
 
 /**
- * Validates callId to prevent SSRF attacks
- * Ensures the ID matches a safe pattern before using in URLs
+ * Validates callId format for basic input validation
+ * Since we no longer use callId in URLs, this is just basic format validation
  *
  * @param callId - The call ID to validate
- * @returns boolean - True if the ID is valid and safe to use in URLs
+ * @returns boolean - True if the ID has a valid format
  */
 function validateCallId(callId: string): boolean {
   // Input validation
@@ -36,77 +36,24 @@ function validateCallId(callId: string): boolean {
     return false;
   }
 
-  // Check for common SSRF attack patterns
-  const ssrfPatterns = [
-    /:\/\//, // Protocol separators (http://, https://, etc.)
-    /localhost/i, // Localhost references
-    /127\.0\.0\.1/, // Local IP addresses
-    /0\.0\.0\.0/, // All interfaces
-    /::1/, // IPv6 localhost
-    /\.\./, // Directory traversal attempts
-    /[<>"']/, // HTML/XML injection attempts
-    /\s/, // Whitespace characters
-    /[^\x20-\x7E]/, // Non-printable ASCII characters
-  ];
-
-  for (const pattern of ssrfPatterns) {
-    if (pattern.test(trimmedId)) {
-      logger.error(
-        'ACTION_POINTS_SECURITY',
-        'SSRF attack pattern detected in callId',
-        new Error(`Rejected callId with pattern ${pattern}: ${trimmedId}`),
-        { callId: trimmedId, pattern: pattern.toString() }
-      );
-      return false;
-    }
-  }
-
-  // VAPI call IDs are typically alphanumeric with dashes/underscores
-  // This regex is more restrictive and explicit about allowed characters
-  // Only allows lowercase letters, numbers, dashes, and underscores
+  // Basic format validation - VAPI call IDs are typically alphanumeric with dashes/underscores
   // Length between 8 and 64 characters
-  const isValidCallId = /^[a-z0-9\-_]{8,64}$/.test(trimmedId);
+  const isValidCallId = /^[a-zA-Z0-9\-_]{8,64}$/.test(trimmedId);
 
   if (!isValidCallId) {
     logger.error(
       'ACTION_POINTS_SECURITY',
-      'Invalid callId format detected - potential SSRF attempt',
+      'Invalid callId format detected',
       new Error(`Rejected callId: ${trimmedId}`),
       {
         callId: trimmedId,
         length: trimmedId.length,
-        allowedPattern: 'a-z, 0-9, -, _ (8-64 chars)',
+        allowedPattern: 'a-zA-Z, 0-9, -, _ (8-64 chars)',
       }
     );
   }
 
   return isValidCallId;
-}
-
-/**
- * Safely constructs a VAPI call URL with validated callId
- * Provides an additional layer of security against SSRF attacks
- * Uses URL constructor to prevent path traversal and ensure proper encoding
- *
- * @param callId - The call ID to include in the URL
- * @returns string - The safe URL or throws an error if validation fails
- */
-function constructSafeVapiCallUrl(callId: string): string {
-  // Validate the callId before using it in URL construction
-  if (!validateCallId(callId)) {
-    throw new Error(`Invalid callId format: ${callId}`);
-  }
-
-  // Use URL constructor for safe URL construction (prevents path traversal attacks)
-  const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
-  const url = new URL(`/call/${callId}`, baseUrl);
-
-  // Additional safety check: ensure the URL points to the expected VAPI domain
-  if (!url.hostname.includes('vapi.ai')) {
-    throw new Error(`Invalid URL construction detected: ${url.toString()}`);
-  }
-
-  return url.toString();
 }
 
 export async function POST(request: NextRequest) {
@@ -126,7 +73,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Validate callId to prevent SSRF attacks using comprehensive validation
+        // Validate callId format for basic input validation
         if (!validateCallId(callId)) {
           return NextResponse.json(
             { error: 'Invalid call ID format' },
@@ -168,17 +115,22 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Fetch fresh call details from VAPI - no caching needed since VAPI is the source of truth
+        // Fetch all calls for the user's assistant from VAPI to avoid user input in URLs
+        // This prevents SSRF attacks by using a fixed endpoint with no user input
 
         const vapiResponse = await Sentry.startSpan(
           {
-            name: 'fetchVapiCallDetails',
+            name: 'fetchVapiCalls',
             op: 'http.client',
           },
           async () => {
-            // Use safe URL construction to prevent SSRF attacks
-            const safeUrl = constructSafeVapiCallUrl(callId);
-            return await fetch(safeUrl, {
+            // Use fixed endpoint with assistant ID - no user input in URL
+            const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
+            const url = new URL('/call', baseUrl);
+            url.searchParams.set('assistantId', userAssistantId);
+            url.searchParams.set('limit', '100'); // Reasonable limit to find recent calls
+
+            return await fetch(url.toString(), {
               headers: {
                 Authorization: `Bearer ${process.env.VAPI_PRIVATE_KEY}`,
                 Accept: 'application/json',
@@ -192,22 +144,39 @@ export async function POST(request: NextRequest) {
         if (!vapiResponse.ok) {
           logger.error(
             'ACTION_POINTS',
-            'Failed to fetch call details from VAPI',
+            'Failed to fetch calls from VAPI',
             undefined,
             {
-              callId,
+              userAssistantId,
               status: vapiResponse.status,
             }
           );
           return NextResponse.json(
-            { error: 'Failed to fetch call details' },
+            { error: 'Failed to fetch call data' },
             { status: vapiResponse.status }
           );
         }
 
-        const callData = await vapiResponse.json();
+        const callsData = await vapiResponse.json();
+        const calls = Array.isArray(callsData) ? callsData : [];
 
-        // Verify the call belongs to the user's assistant to prevent unauthorized access
+        // Find the specific call by ID in the fetched data
+        const callData = calls.find((call: any) => call.id === callId);
+
+        if (!callData) {
+          logger.warn('ACTION_POINTS', 'Call not found for user', {
+            callId,
+            userId: logger.maskUserId(userId),
+            userAssistantId,
+            totalCallsFetched: calls.length,
+          });
+          return NextResponse.json(
+            { error: 'Call not found or access denied' },
+            { status: 404 }
+          );
+        }
+
+        // Verify the call belongs to the user's assistant (double-check)
         if (callData.assistantId !== userAssistantId) {
           logger.warn('ACTION_POINTS', 'Unauthorized access attempt', {
             callId,
@@ -247,6 +216,7 @@ export async function POST(request: NextRequest) {
           source: 'VAPI_NATIVE_ANALYSIS',
           hasVapiStructuredData: !!callData.analysis?.structuredData,
           hasVapiSummary: !!callData.analysis?.summary,
+          totalCallsFetched: calls.length,
         });
 
         return NextResponse.json({ actionPoints });
