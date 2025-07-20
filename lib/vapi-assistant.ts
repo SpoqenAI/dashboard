@@ -251,7 +251,7 @@ export async function updateUserAssistant(
   updates: any
 ): Promise<{ data: any; error?: string }> {
   try {
-    // Verify user owns this assistant
+    // Verify user owns this assistant and get trusted assistantId from database
     const verificationResult = await verifyUserOwnsAssistant(
       supabase,
       assistantId
@@ -265,9 +265,28 @@ export async function updateUserAssistant(
       return { data: null, error: 'Assistant not found or access denied' };
     }
 
-    // Validate assistantId before using in API request to prevent SSRF
-    if (!validateAssistantId(assistantId)) {
-      return { data: null, error: 'Invalid assistantId format' };
+    // Get the trusted assistantId from user settings (not user-provided input)
+    const assistantResult = await getUserVapiAssistantId(supabase);
+    if (assistantResult.error) {
+      return { data: null, error: assistantResult.error };
+    }
+
+    const trustedAssistantId = assistantResult.data;
+    if (!trustedAssistantId) {
+      return { data: null, error: 'No assistant found for user' };
+    }
+
+    // Validate the trusted assistantId format (defense in depth)
+    if (!validateAssistantId(trustedAssistantId)) {
+      logger.error(
+        'VAPI_ASSISTANT_SECURITY',
+        'Invalid trusted assistantId format in database',
+        new Error(
+          `Database contains invalid assistantId: ${trustedAssistantId}`
+        ),
+        { trustedAssistantId }
+      );
+      return { data: null, error: 'Invalid assistant configuration' };
     }
 
     // Check for VAPI API key
@@ -279,8 +298,8 @@ export async function updateUserAssistant(
       };
     }
 
-    // Update assistant via VAPI API using safe URL construction
-    const safeUrl = constructSafeVapiUrl(assistantId);
+    // Update assistant via VAPI API using trusted assistantId (no user input in URL)
+    const safeUrl = constructSafeVapiUrl(trustedAssistantId);
     const vapiResponse = await fetch(safeUrl, {
       method: 'PATCH',
       headers: {
@@ -298,7 +317,7 @@ export async function updateUserAssistant(
         new Error(errorText),
         {
           status: vapiResponse.status,
-          assistantId,
+          trustedAssistantId,
         }
       );
       return { data: null, error: 'Failed to update assistant in VAPI' };
@@ -307,7 +326,7 @@ export async function updateUserAssistant(
     const updatedAssistant = await vapiResponse.json();
 
     logger.info('VAPI_ASSISTANT', 'Assistant updated successfully', {
-      assistantId,
+      trustedAssistantId,
       updateFields: Object.keys(updates),
     });
 
