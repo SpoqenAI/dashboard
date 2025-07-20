@@ -34,6 +34,17 @@ The webhook processing was failing to link new Paddle subscriptions to existing 
    - ✅ Added comprehensive logging for each lookup strategy
    - ✅ Ensured webhooks can find users even when subscription IDs don't match initially
 
+4. **Primary Key Constraint Fix**:
+   - ✅ Fixed `duplicate key value violates unique constraint "subscriptions_pkey"` error
+   - ✅ Changed update logic to delete old subscription record and insert new one
+   - ✅ Avoided trying to update primary key directly, which violates PostgreSQL constraints
+   - ✅ Added proper error handling for delete and insert operations
+
+5. **Next.js Server Component Fix**:
+   - ✅ Fixed `searchParams._ptxn` warning in checkout success page
+   - ✅ Made component async and properly awaited searchParams
+   - ✅ Follows Next.js best practices for server components
+
 **VERIFICATION RESULTS**:
 
 - ✅ User subscription record now shows `tier_type: 'starter'` and correct Paddle subscription ID

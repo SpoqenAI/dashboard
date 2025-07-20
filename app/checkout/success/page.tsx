@@ -72,12 +72,15 @@ interface CheckoutSuccessPageProps {
   searchParams: { [key: string]: string | string[] | undefined };
 }
 
-export default function CheckoutSuccessPage({
+export default async function CheckoutSuccessPage({
   searchParams,
 }: CheckoutSuccessPageProps) {
+  // Await searchParams before accessing its properties
+  const params = await searchParams;
+  
   // Extract transaction ID from search params server-side
   const transactionId =
-    typeof searchParams._ptxn === 'string' ? searchParams._ptxn : undefined;
+    typeof params._ptxn === 'string' ? params._ptxn : undefined;
 
   return (
     <Suspense fallback={<LoadingFallback />}>
