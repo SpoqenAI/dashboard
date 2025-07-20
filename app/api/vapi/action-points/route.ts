@@ -5,6 +5,113 @@ import { createClient } from '@/lib/supabase/server';
 import * as Sentry from '@sentry/nextjs';
 // Removed Redis dependency - all analysis comes directly from VAPI
 
+/**
+ * Validates callId to prevent SSRF attacks
+ * Ensures the ID matches a safe pattern before using in URLs
+ *
+ * @param callId - The call ID to validate
+ * @returns boolean - True if the ID is valid and safe to use in URLs
+ */
+function validateCallId(callId: string): boolean {
+  // Input validation
+  if (!callId || typeof callId !== 'string') {
+    logger.error(
+      'ACTION_POINTS_SECURITY',
+      'Invalid callId: null, undefined, or non-string value',
+      new Error(`Rejected callId: ${callId}`),
+      { callId }
+    );
+    return false;
+  }
+
+  // Trim whitespace and check for empty string
+  const trimmedId = callId.trim();
+  if (trimmedId.length === 0) {
+    logger.error(
+      'ACTION_POINTS_SECURITY',
+      'Invalid callId: empty string after trimming',
+      new Error(`Rejected callId: "${callId}"`),
+      { callId }
+    );
+    return false;
+  }
+
+  // Check for common SSRF attack patterns
+  const ssrfPatterns = [
+    /:\/\//, // Protocol separators (http://, https://, etc.)
+    /localhost/i, // Localhost references
+    /127\.0\.0\.1/, // Local IP addresses
+    /0\.0\.0\.0/, // All interfaces
+    /::1/, // IPv6 localhost
+    /\.\./, // Directory traversal attempts
+    /[<>"']/, // HTML/XML injection attempts
+    /\s/, // Whitespace characters
+    /[^\x20-\x7E]/, // Non-printable ASCII characters
+  ];
+
+  for (const pattern of ssrfPatterns) {
+    if (pattern.test(trimmedId)) {
+      logger.error(
+        'ACTION_POINTS_SECURITY',
+        'SSRF attack pattern detected in callId',
+        new Error(`Rejected callId with pattern ${pattern}: ${trimmedId}`),
+        { callId: trimmedId, pattern: pattern.toString() }
+      );
+      return false;
+    }
+  }
+
+  // VAPI call IDs are typically alphanumeric with dashes/underscores
+  // This regex is more restrictive and explicit about allowed characters
+  // Only allows lowercase letters, numbers, dashes, and underscores
+  // Length between 8 and 64 characters
+  const isValidCallId = /^[a-z0-9\-_]{8,64}$/.test(trimmedId);
+
+  if (!isValidCallId) {
+    logger.error(
+      'ACTION_POINTS_SECURITY',
+      'Invalid callId format detected - potential SSRF attempt',
+      new Error(`Rejected callId: ${trimmedId}`),
+      {
+        callId: trimmedId,
+        length: trimmedId.length,
+        allowedPattern: 'a-z, 0-9, -, _ (8-64 chars)',
+      }
+    );
+  }
+
+  return isValidCallId;
+}
+
+/**
+ * Safely constructs a VAPI call URL with validated callId
+ * Provides an additional layer of security against SSRF attacks
+ *
+ * @param callId - The call ID to include in the URL
+ * @returns string - The safe URL or throws an error if validation fails
+ */
+function constructSafeVapiCallUrl(callId: string): string {
+  // Validate the callId before using it in URL construction
+  if (!validateCallId(callId)) {
+    throw new Error(`Invalid callId format: ${callId}`);
+  }
+
+  // Construct the URL with explicit validation
+  const baseUrl = process.env.VAPI_API_URL || 'https://api.vapi.ai';
+  const safeUrl = `${baseUrl}/call/${callId}`;
+
+  // Additional safety check: ensure the URL doesn't contain any suspicious patterns
+  if (
+    safeUrl.includes('://') &&
+    !safeUrl.startsWith('https://api.vapi.ai/') &&
+    !safeUrl.startsWith(baseUrl + '/')
+  ) {
+    throw new Error(`Invalid URL construction detected: ${safeUrl}`);
+  }
+
+  return safeUrl;
+}
+
 export async function POST(request: NextRequest) {
   return Sentry.startSpan(
     {
@@ -22,14 +129,8 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Validate callId to prevent SSRF attacks
-        if (!/^[a-zA-Z0-9\-_]{8,64}$/.test(callId)) {
-          logger.error(
-            'ACTION_POINTS_SECURITY',
-            'Invalid callId format detected',
-            new Error(`Rejected callId: ${callId}`),
-            { callId }
-          );
+        // Validate callId to prevent SSRF attacks using comprehensive validation
+        if (!validateCallId(callId)) {
           return NextResponse.json(
             { error: 'Invalid call ID format' },
             { status: 400 }
@@ -62,15 +163,14 @@ export async function POST(request: NextRequest) {
             op: 'http.client',
           },
           async () => {
-            return await fetch(
-              `${process.env.VAPI_API_URL || 'https://api.vapi.ai'}/call/${callId}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${process.env.VAPI_PRIVATE_KEY}`,
-                  Accept: 'application/json',
-                },
-              }
-            );
+            // Use safe URL construction to prevent SSRF attacks
+            const safeUrl = constructSafeVapiCallUrl(callId);
+            return await fetch(safeUrl, {
+              headers: {
+                Authorization: `Bearer ${process.env.VAPI_PRIVATE_KEY}`,
+                Accept: 'application/json',
+              },
+            });
           }
         );
 
