@@ -49,7 +49,7 @@ export async function PATCH(req: NextRequest) {
         result.error === 'Server misconfiguration – missing VAPI_PRIVATE_KEY'
       ) {
         return NextResponse.json(
-          { error: 'Server misconfiguration — missing VAPI_PRIVATE_KEY' },
+          { error: 'Server misconfiguration – missing VAPI_PRIVATE_KEY' },
           { status: 500 }
         );
       }

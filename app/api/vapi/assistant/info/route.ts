@@ -18,7 +18,10 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
       if (result.error === 'No assistant found for user') {
-        return NextResponse.json({ assistant: null });
+        return NextResponse.json(
+          { error: 'Assistant not found' },
+          { status: 404 }
+        );
       }
       if (
         result.error === 'Server misconfiguration – missing VAPI_PRIVATE_KEY'

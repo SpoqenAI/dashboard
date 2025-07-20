@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         'Server misconfiguration – missing VAPI environment variables'
       ) {
         return NextResponse.json(
-          { error: 'Server misconfiguration — missing Vapi env vars' },
+          { error: 'Server misconfiguration – missing Vapi env vars' },
           { status: 500 }
         );
       }

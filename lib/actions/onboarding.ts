@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -275,7 +276,6 @@ export async function createAssistantAction(
       // Persist assistant id in user_settings via admin client to bypass RLS
       // ⚠️ ADMIN CLIENT USAGE - Add security validation
       validateServerContext('createAssistantAction.adminClientUsage');
-      const { createSupabaseAdmin } = await import('@/lib/supabase/admin');
       const adminClient = createSupabaseAdmin();
       const { error: storeErr } = await adminClient
         .from('user_settings')

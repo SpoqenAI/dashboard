@@ -1,5 +1,6 @@
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
+import { validateServerContext } from '@/lib/utils';
 import {
   getUserVapiAssistantId,
   updateUserSettings,
@@ -13,7 +14,7 @@ function validateAssistantId(assistantId: string): boolean {
   // VAPI assistant IDs are typically UUIDs or alphanumeric with dashes/underscores
   // This regex allows alphanumeric characters, dashes, and underscores, 8-64 characters long
   const isValidAssistantId = /^[a-zA-Z0-9\-_]{8,64}$/.test(assistantId);
-  
+
   if (!isValidAssistantId) {
     logger.error(
       'VAPI_ASSISTANT_SECURITY',
@@ -22,7 +23,7 @@ function validateAssistantId(assistantId: string): boolean {
       { assistantId }
     );
   }
-  
+
   return isValidAssistantId;
 }
 
@@ -59,53 +60,6 @@ function validateAssistantId(assistantId: string): boolean {
  * **RECOMMENDED**: Use user-scoped alternatives (getUserAssistantInfo, updateUserAssistant)
  * whenever possible as they handle authentication internally and are inherently safer.
  */
-
-/**
- * Runtime safeguard to ensure admin functions are only called from server contexts
- * @param functionName - Name of the function being called for logging
- */
-function validateServerContext(functionName: string): void {
-  // Check if we're in a browser environment
-  if (typeof window !== 'undefined') {
-    const error = new Error(
-      `Security violation: ${functionName} called from client-side code. ` +
-        'Admin VAPI assistant functions must only be used in server contexts. ' +
-        'Use getUserAssistantInfo() or updateUserAssistant() for client-accessible operations.'
-    );
-    logger.error(
-      'VAPI_ASSISTANT_SECURITY',
-      'Admin function called from client context',
-      error,
-      { functionName }
-    );
-    throw error;
-  }
-
-  // Check for required server environment variables
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const error = new Error(
-      `Security violation: ${functionName} requires server environment. ` +
-        'Missing SUPABASE_SERVICE_ROLE_KEY indicates this is not a proper server context.'
-    );
-    logger.error(
-      'VAPI_ASSISTANT_SECURITY',
-      'Admin function called without server environment',
-      error,
-      { functionName }
-    );
-    throw error;
-  }
-
-  // Log usage for audit trail
-  logger.info(
-    'VAPI_ASSISTANT_ADMIN',
-    `Admin function called: ${functionName}`,
-    {
-      functionName,
-      serverContext: true,
-    }
-  );
-}
 
 /**
  * =============================================================================
@@ -457,7 +411,7 @@ export async function verifyUserOwnsAssistant(
 export async function getAssistantOwnerUserId(
   assistantId: string
 ): Promise<string | null> {
-  validateServerContext('getAssistantOwnerUserId');
+  validateServerContext('getAssistantOwnerUserId', 'vapi-assistant');
   const supabase = createSupabaseAdmin();
 
   try {

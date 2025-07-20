@@ -242,97 +242,30 @@ export class ProcessWebhook {
       paddle_customer_id: eventData.data.customerId, // Store customer ID for billing operations
     };
 
-    let result;
+    // Use atomic upsert function for all subscription operations
+    // This ensures atomicity and prevents partial updates
+    const { data: upsertResult, error: upsertError } = await supabase.rpc(
+      'upsert_subscription',
+      {
+        p_subscription_data: subscriptionUpsertData,
+      }
+    );
 
-    if (
-      existingSubscription &&
-      (eventData.eventType === 'subscription.created' ||
-        (eventData.eventType === 'subscription.updated' &&
-          existingSubscription.id !== eventData.data.id))
-    ) {
-      // If user has existing subscription and either:
-      // 1. This is a creation event, OR
-      // 2. This is an update event but subscription IDs don't match
-      // Then delete the old subscription and insert the new Paddle subscription
-      logger.info(
+    if (upsertError) {
+      logger.error(
         'PADDLE_WEBHOOK',
-        'Replacing existing subscription with Paddle data',
+        'Failed to upsert subscription',
+        upsertError,
         {
           userId: logger.maskUserId(userId),
-          existingSubscriptionId: existingSubscription.id,
-          newPaddleSubscriptionId: eventData.data.id,
+          subscriptionId: eventData.data.id,
           eventType: eventData.eventType,
         }
       );
-
-      // First, delete the old subscription record
-      const { error: deleteError } = await supabase
-        .from('subscriptions')
-        .delete()
-        .eq('user_id', userId)
-        .eq('current', true);
-
-      if (deleteError) {
-        logger.error(
-          'PADDLE_WEBHOOK',
-          'Failed to delete existing subscription',
-          deleteError,
-          {
-            userId: logger.maskUserId(userId),
-            existingSubscriptionId: existingSubscription.id,
-          }
-        );
-        throw deleteError;
-      }
-
-      // Now insert the new subscription with Paddle data
-      const { data: insertResult, error: insertError } = await supabase
-        .from('subscriptions')
-        .insert({
-          ...subscriptionUpsertData,
-          current: true,
-        })
-        .select();
-
-      if (insertError) {
-        logger.error(
-          'PADDLE_WEBHOOK',
-          'Failed to insert new subscription',
-          insertError,
-          {
-            userId: logger.maskUserId(userId),
-            subscriptionId: eventData.data.id,
-          }
-        );
-        throw insertError;
-      }
-
-      result = { success: true, operation: 'replaced', data: insertResult };
-    } else {
-      // Use atomic upsert function for new subscriptions or updates
-      const { data: upsertResult, error: upsertError } = await supabase.rpc(
-        'upsert_subscription',
-        {
-          p_subscription_data: subscriptionUpsertData,
-        }
-      );
-
-      if (upsertError) {
-        logger.error(
-          'PADDLE_WEBHOOK',
-          'Failed to upsert subscription',
-          upsertError,
-          {
-            userId: logger.maskUserId(userId),
-            subscriptionId: eventData.data.id,
-            eventType: eventData.eventType,
-          }
-        );
-        throw upsertError;
-      }
-
-      result = upsertResult as any;
+      throw upsertError;
     }
+
+    const result = upsertResult as any;
 
     // Check if operation was successful
     if (!result?.success) {
