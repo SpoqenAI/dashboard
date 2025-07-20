@@ -152,6 +152,22 @@ export async function POST(request: NextRequest) {
 
         const userId = user.id;
 
+        // Get the user's VAPI assistant ID from user_settings for security verification
+        const { data: userSettings } = await supabase
+          .from('user_settings')
+          .select('vapi_assistant_id')
+          .eq('id', user.id)
+          .single();
+
+        const userAssistantId = userSettings?.vapi_assistant_id;
+
+        if (!userAssistantId) {
+          return NextResponse.json(
+            { error: 'No assistant configured for user' },
+            { status: 403 }
+          );
+        }
+
         // Fetch fresh call details from VAPI - no caching needed since VAPI is the source of truth
 
         const vapiResponse = await Sentry.startSpan(
@@ -166,7 +182,9 @@ export async function POST(request: NextRequest) {
               headers: {
                 Authorization: `Bearer ${process.env.VAPI_PRIVATE_KEY}`,
                 Accept: 'application/json',
+                'User-Agent': 'spoqen-dashboard/1.0',
               },
+              signal: AbortSignal.timeout(15000),
             });
           }
         );
@@ -188,6 +206,20 @@ export async function POST(request: NextRequest) {
         }
 
         const callData = await vapiResponse.json();
+
+        // Verify the call belongs to the user's assistant to prevent unauthorized access
+        if (callData.assistantId !== userAssistantId) {
+          logger.warn('ACTION_POINTS', 'Unauthorized access attempt', {
+            callId,
+            userId: logger.maskUserId(userId),
+            callAssistantId: callData.assistantId,
+            userAssistantId,
+          });
+          return NextResponse.json(
+            { error: 'Unauthorized access to call' },
+            { status: 403 }
+          );
+        }
 
         // Log VAPI analysis data to understand what's available
         logger.info('ACTION_POINTS', 'VAPI call analysis data', {
