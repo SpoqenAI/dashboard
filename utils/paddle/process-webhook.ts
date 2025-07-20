@@ -37,44 +37,46 @@ interface Subscription {
   current?: boolean;
 }
 
-// Cache price ID arrays at module level for performance
-const CACHED_STARTER_PRICE_IDS: string[] = (() => {
-  const envIds = process.env.PADDLE_STARTER_PRICE_IDS?.split(',') || [];
-  const fallbackIds = [
-    process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID,
-    process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID,
-    process.env.NEXT_PUBLIC_PADDLE_PRICE_ID, // legacy fallback
-  ].filter(Boolean) as string[];
-  return envIds.length > 0 ? envIds : fallbackIds;
-})();
-
-const CACHED_PRO_PRICE_IDS: string[] = (() => {
-  const envIds = process.env.PADDLE_PRO_PRICE_IDS?.split(',') || [];
-  const fallbackIds = [
-    process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID,
-    process.env.NEXT_PUBLIC_PADDLE_PRO_ANNUAL_PRICE_ID,
-  ].filter(Boolean) as string[];
-  return envIds.length > 0 ? envIds : fallbackIds;
-})();
-
-const CACHED_BUSINESS_PRICE_IDS: string[] =
-  process.env.PADDLE_BUSINESS_PRICE_IDS?.split(',') || [];
+// Price ID arrays are now dynamically loaded at runtime to ensure environment variables are available
 
 export class ProcessWebhook {
+  private getStarterPriceIds(): string[] {
+    const envIds = process.env.PADDLE_STARTER_PRICE_IDS?.split(',') || [];
+    const fallbackIds = [
+      process.env.NEXT_PUBLIC_PADDLE_STARTER_MONTHLY_PRICE_ID,
+      process.env.NEXT_PUBLIC_PADDLE_STARTER_ANNUAL_PRICE_ID,
+      process.env.NEXT_PUBLIC_PADDLE_PRICE_ID, // legacy fallback
+    ].filter(Boolean) as string[];
+    return envIds.length > 0 ? envIds : fallbackIds;
+  }
+
+  private getProPriceIds(): string[] {
+    const envIds = process.env.PADDLE_PRO_PRICE_IDS?.split(',') || [];
+    const fallbackIds = [
+      process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID,
+      process.env.NEXT_PUBLIC_PADDLE_PRO_ANNUAL_PRICE_ID,
+    ].filter(Boolean) as string[];
+    return envIds.length > 0 ? envIds : fallbackIds;
+  }
+
+  private getBusinessPriceIds(): string[] {
+    return process.env.PADDLE_BUSINESS_PRICE_IDS?.split(',') || [];
+  }
+
   private getTierFromPriceId(priceId: string | null): string {
     if (!priceId) {
       return 'free';
     }
 
-    if (CACHED_STARTER_PRICE_IDS.includes(priceId)) {
+    if (this.getStarterPriceIds().includes(priceId)) {
       return 'starter';
     }
 
-    if (CACHED_PRO_PRICE_IDS.includes(priceId)) {
+    if (this.getProPriceIds().includes(priceId)) {
       return 'pro';
     }
 
-    if (CACHED_BUSINESS_PRICE_IDS.includes(priceId)) {
+    if (this.getBusinessPriceIds().includes(priceId)) {
       return 'business';
     }
 
