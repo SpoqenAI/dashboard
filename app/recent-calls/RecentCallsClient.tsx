@@ -352,6 +352,7 @@ export default function RecentCallsClient() {
                 calls={filteredAndPaginatedCalls.calls}
                 isLoading={isLoading}
                 error={error ? (error as Error).message : null}
+                onRetry={refetch}
                 searchTerm={searchTerm}
                 onSearchChange={handleSearchChange}
                 sentimentFilter={sentimentFilter}

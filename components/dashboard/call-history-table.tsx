@@ -42,6 +42,7 @@ interface CallHistoryTableProps {
   calls: VapiCall[];
   isLoading: boolean;
   error: string | null;
+  onRetry: () => void;
   searchTerm: string;
   onSearchChange: (value: string) => void;
   sentimentFilter: string;
@@ -64,6 +65,7 @@ export const CallHistoryTable = memo(
     calls,
     isLoading,
     error,
+    onRetry,
     searchTerm,
     onSearchChange,
     sentimentFilter,
@@ -117,7 +119,13 @@ export const CallHistoryTable = memo(
           </CardHeader>
           <CardContent>
             <div className="py-8 text-center">
-              <p className="text-destructive">Error loading calls: {error}</p>
+              <p className="mb-4 text-destructive">
+                We couldn't load your calls. This might be due to a network
+                issue.
+              </p>
+              <Button variant="outline" onClick={onRetry}>
+                Try again
+              </Button>
             </div>
           </CardContent>
         </Card>
