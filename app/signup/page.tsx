@@ -451,18 +451,16 @@ export default function SignupPage() {
     // Extra server-side uniqueness check for email during final submission
     if (newFieldValidStates.email) {
       setIsValidating(prev => ({ ...prev, email: true }));
-      let exists = false;
+      let exists: boolean | null = null;
       try {
         exists = await checkEmailExists(formData.email);
       } catch (err) {
-        console.error(err);
-        // surface via validation errors
-        newValidationErrors.email =
-          'Unable to verify email uniqueness. Please try again.';
-        newFieldValidStates.email = false;
+        // Network or server error – log but allow submission to proceed.
+        console.error('Email uniqueness check failed, proceeding anyway', err);
       }
-      setIsValidating(prev => ({ ...prev, email: false }));
-      if (exists) {
+
+      // Only mark invalid if check completed and email definitely exists
+      if (exists === true) {
         newValidationErrors.email = 'Email already in use';
         newFieldValidStates.email = false;
       }
