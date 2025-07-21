@@ -30,6 +30,7 @@ const PasswordStrengthBar = dynamic(
 import Logo from '@/components/ui/logo';
 import { CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+// Remote email-uniqueness check is done via an internal API endpoint.
 
 // CONVERSION OPTIMIZATION: Reduced form fields for better conversion
 type FormFieldName = 'email' | 'password' | 'confirmPassword' | 'firstName';
@@ -120,10 +121,11 @@ export default function SignupPage() {
     firstName: false,
   });
 
-  // Keep the latest password value for confirm-password comparison
   const latestPasswordRef = useRef('');
-  // Keep the latest confirm-password value to avoid stale state during re-validation
   const confirmPasswordRef = useRef('');
+
+  // Track the latest outgoing email uniqueness request to avoid race conditions
+  const emailRequestIdRef = useRef(0);
 
   const [fieldValidStates, setFieldValidStates] = useState<
     Record<FormFieldName, boolean>
@@ -248,8 +250,101 @@ export default function SignupPage() {
     }, 300);
   };
 
+  /**
+   * Queries the /api/check-email-exists endpoint to see if an email already exists.
+   * Throws on network / server errors so callers can differentiate connectivity
+   * problems from a "false" (email not taken) result.
+   *
+   * Basic retry with exponential back-off (maxAttempts = 3).
+   */
+  const checkEmailExists = async (
+    email: string,
+    maxAttempts = 3
+  ): Promise<boolean> => {
+    let attempt = 0;
+    // Doubled delay each retry: 0 ms, 250 ms, 500 ms
+    const baseDelay = 250;
+
+    while (attempt < maxAttempts) {
+      try {
+        const res = await fetch(
+          `/api/check-email-exists?email=${encodeURIComponent(email)}`
+        );
+
+        if (!res.ok) {
+          // Treat non-2xx as error (e.g., 500, 502, 404)
+          const text = await res.text();
+          throw new Error(`Endpoint error: ${res.status} — ${text}`);
+        }
+
+        const json: { exists: boolean } = await res.json();
+        // Defensive check
+        if (typeof json.exists !== 'boolean') {
+          throw new Error('Malformed response from email-exists endpoint');
+        }
+
+        return json.exists;
+      } catch (err) {
+        attempt += 1;
+        if (attempt >= maxAttempts) {
+          // Exhausted retries — rethrow to caller
+          throw err;
+        }
+        // Wait before retrying
+        await new Promise(res => setTimeout(res, baseDelay * attempt));
+      }
+    }
+
+    // Fallback — should never reach here
+    throw new Error('Retries exhausted');
+  };
+
   const handleFieldBlur = (field: FormFieldName) => {
     setTouchedFields(prev => ({ ...prev, [field]: true }));
+
+    // Only run remote uniqueness check for email when the basic format is valid
+    if (field === 'email' && fieldValidStates.email) {
+      (async () => {
+        const requestId = ++emailRequestIdRef.current;
+
+        setIsValidating(prev => ({ ...prev, email: true }));
+
+        try {
+          const exists = await checkEmailExists(formData.email);
+
+          if (requestId !== emailRequestIdRef.current) return;
+
+          setIsValidating(prev => ({ ...prev, email: false }));
+
+          if (exists) {
+            setValidationErrors(prev => ({
+              ...prev,
+              email: 'Email already in use',
+            }));
+            setFieldValidStates(prev => ({ ...prev, email: false }));
+          } else {
+            // Only clear the error if it was related to uniqueness
+            setValidationErrors(prev => ({
+              ...prev,
+              email: prev.email === 'Email already in use' ? '' : prev.email,
+            }));
+            setFieldValidStates(prev => ({ ...prev, email: true }));
+          }
+        } catch (err) {
+          if (requestId !== emailRequestIdRef.current) return;
+
+          setIsValidating(prev => ({ ...prev, email: false }));
+          console.error(err);
+          // Show generic connectivity error but keep field invalid so user cannot proceed
+          setValidationErrors(prev => ({
+            ...prev,
+            email:
+              'Unable to verify email uniqueness. Please check your connection.',
+          }));
+          setFieldValidStates(prev => ({ ...prev, email: false }));
+        }
+      })();
+    }
   };
 
   const handleInputChange = (field: FormFieldName, value: string) => {
@@ -351,10 +446,34 @@ export default function SignupPage() {
       newFieldValidStates[field] = !error;
     });
 
+    // Extra server-side uniqueness check for email during final submission
+    if (newFieldValidStates.email) {
+      setIsValidating(prev => ({ ...prev, email: true }));
+      let exists: boolean | null = null;
+      try {
+        exists = await checkEmailExists(formData.email);
+      } catch (err) {
+        // Network or server error – log but allow submission to proceed.
+        console.error('Email uniqueness check failed, proceeding anyway', err);
+      }
+
+      // Only mark invalid if check completed and email definitely exists
+      if (exists === true) {
+        newValidationErrors.email = 'Email already in use';
+        newFieldValidStates.email = false;
+      }
+    }
+
     setValidationErrors(newValidationErrors);
     setFieldValidStates(newFieldValidStates);
 
-    if (isFormValid()) {
+    if (
+      newFieldValidStates.email &&
+      newFieldValidStates.password &&
+      newFieldValidStates.confirmPassword &&
+      acceptedTerms &&
+      !isLoading
+    ) {
       await doSignup();
     }
   };
