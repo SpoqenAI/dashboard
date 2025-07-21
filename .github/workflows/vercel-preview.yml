@@ -38,6 +38,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
+      - name: Build application
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+
       - name: Create Sentry release (preview)
         uses: getsentry/action-release@v1
         env:
@@ -50,6 +57,7 @@ jobs:
           sourcemaps: '.next/static/chunks/'
           set_commits: auto
           finalize: true
+          ignore_missing: true
 
       - name: Deploy to Vercel Preview
         uses: amondnet/vercel-action@v25.2.0
