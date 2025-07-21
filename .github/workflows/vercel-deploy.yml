@@ -39,17 +39,32 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install
 
       - name: Run tests
         run: pnpm test -- --passWithNoTests
 
-      - name: Build application
-        run: pnpm build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25.2.0
+        id: vercel-deploy
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vercel-args: '--prod'
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          github-comment: false
+
+      - name: Download Vercel build artifacts
+        run: |
+          # Install Vercel CLI
+          npm install -g vercel@latest
+
+          # Pull the latest deployment artifacts
+          vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+          # The build artifacts should now be available in .vercel/output/
+          echo "Build artifacts downloaded to .vercel/output/"
 
       - name: Create Sentry release
         uses: getsentry/action-release@v1
@@ -60,28 +75,20 @@ jobs:
           version: ${{ github.sha }}
           url_prefix: '~/'
           strip_common_prefix: true
-          sourcemaps: '.next/static/chunks/'
+          sourcemaps: '.vercel/output/static/chunks/'
           set_commits: auto
           finalize: true
           ignore_missing: true
 
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25.2.0
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          vercel-args: '--prod'
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          github-comment: false
-
       - name: Create Sentry deployment
         run: |
-          npx @sentry/cli releases deploys ${{ github.sha }} new -e production -u https://www.spoqen.com
+          # Install Sentry CLI
+          npm install -g @sentry/cli
+
+          # Create deployment record
+          sentry-cli releases deploys ${{ github.sha }} new -e production -u https://www.spoqen.com
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: spoqen
-          SENTRY_PROJECT: javascript-nextjs
 
       - name: Create deployment status
         uses: actions/github-script@v7

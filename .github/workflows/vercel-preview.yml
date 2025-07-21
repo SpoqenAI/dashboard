@@ -73,8 +73,6 @@ jobs:
           npx @sentry/cli releases deploys ${{ github.sha }} new -e preview -u ${{ steps.vercel-deploy.outputs.preview-url }}
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: spoqen
-          SENTRY_PROJECT: javascript-nextjs
 
       - name: Comment Preview URL
         uses: actions/github-script@v7
