@@ -33,5 +33,8 @@ acli.exe
 # testing
 /coverage
 
-#cursor memories
+# cursor memories
 .cursor_memory.jsonl
+
+# vscode
+.vscode/

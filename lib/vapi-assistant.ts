@@ -3,7 +3,6 @@ import { logger } from '@/lib/logger';
 import { validateServerContext } from '@/lib/utils';
 import {
   getUserVapiAssistantId,
-  updateUserSettings,
 } from '@/lib/user-settings';
 import { SupabaseClient } from '@supabase/supabase-js';
 
@@ -185,7 +184,7 @@ export function validateAssistantId(assistantId: string): boolean {
  * @param endpoint - The specific endpoint (e.g., '', '/calls', etc.)
  * @returns string - The safe URL or throws an error if validation fails
  */
-function constructSafeVapiUrl(
+export function constructSafeVapiUrl(
   assistantId: string,
   endpoint: string = ''
 ): string {
@@ -435,117 +434,6 @@ export async function updateUserAssistant(
       error instanceof Error ? error : new Error(String(error))
     );
     return { data: null, error: 'Failed to update assistant' };
-  }
-}
-
-/**
- * Create VAPI assistant for the authenticated user (RECOMMENDED)
- *
- * This is the safest way to create an assistant as it handles authentication
- * and user settings updates internally.
- *
- * @param supabase - Authenticated Supabase client (from createClient())
- * @param assistantData - The assistant configuration to create
- * @returns Promise<{ data: { assistantId: string }, error?: string }> - Created assistant ID or error
- */
-export async function createUserAssistant(
-  supabase: SupabaseClient,
-  assistantData: {
-    assistantName: string;
-    greeting: string;
-    [key: string]: any;
-  }
-): Promise<{ data: { assistantId: string } | null; error?: string }> {
-  try {
-    // Check for required environment variables
-    const vapiApiKey = process.env.VAPI_PRIVATE_KEY;
-    const vapiWebhookSecret = process.env.VAPI_WEBHOOK_SECRET;
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
-
-    if (!vapiApiKey || !vapiWebhookSecret || !appUrl) {
-      return {
-        data: null,
-        error: 'Server misconfiguration – missing VAPI environment variables',
-      };
-    }
-
-    // Create assistant via VAPI API with analysis plan included
-    const vapiResponse = await fetch('https://api.vapi.ai/assistant', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${vapiApiKey}`,
-      },
-      body: JSON.stringify({
-        name: assistantData.assistantName,
-        model: {
-          provider: 'openai',
-          model: 'gpt-4.1-nano',
-          messages: [
-            {
-              role: 'system',
-              content: assistantData.greeting,
-            },
-          ],
-        },
-        voice: {
-          provider: 'deepgram',
-          voiceId: 'luna',
-        },
-        serverUrl: `${appUrl}/api/webhooks/vapi`,
-        serverUrlSecret: vapiWebhookSecret,
-        // Include analysis plan configuration from the start
-        analysisPlan: getStandardAnalysisPlan(),
-        ...assistantData,
-      }),
-    });
-
-    if (!vapiResponse.ok) {
-      const errorText = await vapiResponse.text();
-      logger.error(
-        'VAPI_ASSISTANT',
-        'Failed to create assistant in VAPI',
-        new Error(errorText),
-        {
-          status: vapiResponse.status,
-        }
-      );
-      return { data: null, error: 'Failed to create assistant in VAPI' };
-    }
-
-    const createdAssistant = await vapiResponse.json();
-    const assistantId = createdAssistant.id;
-
-    // Save assistant ID to user settings using user-scoped function
-    const updateResult = await updateUserSettings(supabase, {
-      vapi_assistant_id: assistantId,
-    });
-
-    if (updateResult.error) {
-      // Assistant was created but we couldn't save the ID - log warning but still return success
-      logger.warn(
-        'VAPI_ASSISTANT',
-        'Assistant created but failed to save ID to user settings',
-        {
-          assistantId,
-          error: updateResult.error,
-        }
-      );
-    }
-
-    logger.info('VAPI_ASSISTANT', 'Assistant created successfully', {
-      assistantId,
-    });
-
-    return { data: { assistantId } };
-  } catch (error) {
-    logger.error(
-      'VAPI_ASSISTANT',
-      'Failed to create user assistant',
-      error instanceof Error ? error : new Error(String(error))
-    );
-    return { data: null, error: 'Failed to create assistant' };
   }
 }
 
