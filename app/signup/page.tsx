@@ -123,9 +123,8 @@ export default function SignupPage() {
 
   const latestPasswordRef = useRef('');
   const confirmPasswordRef = useRef('');
-
-  // Track the latest outgoing email uniqueness request to avoid race conditions
   const emailRequestIdRef = useRef(0);
+  const emailRemotePendingRef = useRef(false);
 
   const [fieldValidStates, setFieldValidStates] = useState<
     Record<FormFieldName, boolean>
@@ -245,8 +244,21 @@ export default function SignupPage() {
     validationTimers.current[field] = setTimeout(async () => {
       const error = await validateField(field, value);
       setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
-      setFieldValidStates(prev => ({ ...prev, [field]: !error }));
-      setIsValidating(prev => ({ ...prev, [field]: false }));
+      if (field === 'email') {
+        setFieldValidStates(prev => ({
+          ...prev,
+          email: !error && !emailRemotePendingRef.current,
+        }));
+      } else {
+        setFieldValidStates(prev => ({ ...prev, [field]: !error }));
+      }
+      if (field === 'email') {
+        if (!emailRemotePendingRef.current) {
+          setIsValidating(prev => ({ ...prev, [field]: false }));
+        }
+      } else {
+        setIsValidating(prev => ({ ...prev, [field]: false }));
+      }
     }, 300);
   };
 
@@ -303,10 +315,16 @@ export default function SignupPage() {
     setTouchedFields(prev => ({ ...prev, [field]: true }));
 
     // Only run remote uniqueness check for email when the basic format is valid
-    if (field === 'email' && fieldValidStates.email) {
+    if (field === 'email') {
       (async () => {
         const requestId = ++emailRequestIdRef.current;
 
+        const regexError = await validateField('email', formData.email);
+        if (regexError) {
+          return;
+        }
+
+        emailRemotePendingRef.current = true;
         setIsValidating(prev => ({ ...prev, email: true }));
 
         try {
@@ -314,6 +332,7 @@ export default function SignupPage() {
 
           if (requestId !== emailRequestIdRef.current) return;
 
+          emailRemotePendingRef.current = false;
           setIsValidating(prev => ({ ...prev, email: false }));
 
           if (exists) {
@@ -333,6 +352,7 @@ export default function SignupPage() {
         } catch (err) {
           if (requestId !== emailRequestIdRef.current) return;
 
+          emailRemotePendingRef.current = false;
           setIsValidating(prev => ({ ...prev, email: false }));
           console.error(err);
           // Show generic connectivity error but keep field invalid so user cannot proceed
