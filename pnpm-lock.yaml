@@ -4315,7 +4315,7 @@ packages:
   /@types/connect@3.4.38:
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
     dependencies:
-      '@types/node': 22.16.3
+      '@types/node': 22.16.5
     dev: false
 
   /@types/d3-array@3.2.1:
@@ -4428,7 +4428,7 @@ packages:
   /@types/mysql@2.15.26:
     resolution: {integrity: sha512-DSLCOXhkvfS5WNNPbfn2KdICAmk8lLc+/PNvnPnF7gOdMZCxopXduqv0OQ13y/yA/zXTSikZZqVgybUxOEg6YQ==}
     dependencies:
-      '@types/node': 22.16.3
+      '@types/node': 22.16.5
     dev: false
 
   /@types/node@22.16.3:
@@ -4450,7 +4450,7 @@ packages:
   /@types/pg@8.6.1:
     resolution: {integrity: sha512-1Kc4oAGzAl7uqUStZCDvaLFqZrW9qWSjXOmBfdgyBP5La7Us6Mg4GBvRlSoaZMhQF/zSj1C8CtKMBkoiT8eL8w==}
     dependencies:
-      '@types/node': 22.16.3
+      '@types/node': 22.16.5
       pg-protocol: 1.10.3
       pg-types: 2.2.0
     dev: false
@@ -4482,7 +4482,7 @@ packages:
   /@types/tedious@4.0.14:
     resolution: {integrity: sha512-KHPsfX/FoVbUGbyYvk1q9MMQHLPeRZhRJZdO45Q4YjvFkv4hMNghCWTvy7rdKessBsmtz4euWCWAB6/tVpI1Iw==}
     dependencies:
-      '@types/node': 22.16.3
+      '@types/node': 22.16.5
     dev: false
 
   /@types/tough-cookie@4.0.5:

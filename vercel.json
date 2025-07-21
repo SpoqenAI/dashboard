@@ -5,9 +5,13 @@
   "framework": "nextjs",
   "regions": ["iad1"],
   "functions": {
-    "app/**/*.{js,ts,tsx}": {
+    "app/api/**/*.ts": {
       "maxDuration": 30
     }
+  },
+  "env": {
+    "SENTRY_ORG": "spoqen",
+    "SENTRY_PROJECT": "javascript-nextjs"
   },
   "headers": [
     {
