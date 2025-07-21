@@ -121,9 +121,7 @@ export default function SignupPage() {
     firstName: false,
   });
 
-  // Keep the latest password value for confirm-password comparison
   const latestPasswordRef = useRef('');
-  // Keep the latest confirm-password value to avoid stale state during re-validation
   const confirmPasswordRef = useRef('');
 
   // Track the latest outgoing email uniqueness request to avoid race conditions
