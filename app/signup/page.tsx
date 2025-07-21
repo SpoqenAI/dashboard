@@ -126,6 +126,9 @@ export default function SignupPage() {
   // Keep the latest confirm-password value to avoid stale state during re-validation
   const confirmPasswordRef = useRef('');
 
+  // Track the latest outgoing email uniqueness request to avoid race conditions
+  const emailRequestIdRef = useRef(0);
+
   const [fieldValidStates, setFieldValidStates] = useState<
     Record<FormFieldName, boolean>
   >({
@@ -304,9 +307,15 @@ export default function SignupPage() {
     // Only run remote uniqueness check for email when the basic format is valid
     if (field === 'email' && fieldValidStates.email) {
       (async () => {
+        const requestId = ++emailRequestIdRef.current;
+
         setIsValidating(prev => ({ ...prev, email: true }));
+
         try {
           const exists = await checkEmailExists(formData.email);
+
+          if (requestId !== emailRequestIdRef.current) return;
+
           setIsValidating(prev => ({ ...prev, email: false }));
 
           if (exists) {
@@ -324,6 +333,8 @@ export default function SignupPage() {
             setFieldValidStates(prev => ({ ...prev, email: true }));
           }
         } catch (err) {
+          if (requestId !== emailRequestIdRef.current) return;
+
           setIsValidating(prev => ({ ...prev, email: false }));
           console.error(err);
           // Show generic connectivity error but keep field invalid so user cannot proceed
