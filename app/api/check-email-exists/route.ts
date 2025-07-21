@@ -21,13 +21,12 @@ export async function GET(req: NextRequest) {
       .eq('email', email)
       .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
-      // PGRST116: No rows found – treat as not exists.
+    if (error) {
       console.error('Supabase error while checking email', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ exists: !!data });
+    return NextResponse.json({ exists: data !== null });
   } catch (err: any) {
     console.error('Unexpected error while checking email', err);
     return NextResponse.json(
