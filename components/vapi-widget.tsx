@@ -72,26 +72,30 @@ function VapiWidgetInner({
 
     // Aggressive cleanup – stop calls when tab hidden or on unmount
     const handleVisibilityChange = () => {
-      if (document.hidden) {
+      if (document.hidden && instance) {
         instance.stop();
       }
     };
     const handleBeforeUnload = () => {
-      instance.stop();
+      if (instance) {
+        instance.stop();
+      }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
-      instance.off('call-start', handleCallStart);
-      instance.off('call-end', handleCallEnd);
-      instance.off('speech-start', handleSpeechStart);
-      instance.off('speech-end', handleSpeechEnd);
-      instance.off('error', handleError);
+      if (instance) {
+        instance.off('call-start', handleCallStart);
+        instance.off('call-end', handleCallEnd);
+        instance.off('speech-start', handleSpeechStart);
+        instance.off('speech-end', handleSpeechEnd);
+        instance.off('error', handleError);
+        instance.stop();
+      }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      instance.stop();
     };
     // Note: we intentionally exclude `config` from deps to avoid recreating the
     // Vapi instance on every render when callers pass an inline object.
@@ -102,7 +106,9 @@ function VapiWidgetInner({
   }, [assistantId]);
 
   const endCall = useCallback(() => {
-    vapiRef.current?.stop();
+    if (vapiRef.current) {
+      vapiRef.current.stop();
+    }
   }, []);
 
   // SDK not yet ready – render nothing
