@@ -116,6 +116,9 @@ importers:
       '@sentry/profiling-node':
         specifier: ^9.40.0
         version: 9.40.0
+      '@supabase/sentry-js-integration':
+        specifier: ^0.2.0
+        version: 0.2.0(@supabase/supabase-js@2.50.5)
       '@supabase/ssr':
         specifier: ^0.6.1
         version: 0.6.1(@supabase/supabase-js@2.50.5)
@@ -4165,6 +4168,14 @@ packages:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+    dev: false
+
+  /@supabase/sentry-js-integration@0.2.0(@supabase/supabase-js@2.50.5):
+    resolution: {integrity: sha512-TNRknjWb442qmNoFoSemrD1uzFSYSwxRAq9vqJIRbAbl13BQyC7Uk8YVWMa3FFtyxMxk13PMfQrCzLO9IvrhLQ==}
+    peerDependencies:
+      '@supabase/supabase-js': 2.x
+    dependencies:
+      '@supabase/supabase-js': 2.50.5
     dev: false
 
   /@supabase/ssr@0.6.1(@supabase/supabase-js@2.50.5):

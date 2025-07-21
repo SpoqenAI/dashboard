@@ -60,6 +60,7 @@
     "@sentry/profiling-node": "^9.40.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "latest",
+    "@supabase/sentry-js-integration": "^0.2.0",
     "@upstash/redis": "^1.35.1",
     "@vapi-ai/web": "^2.3.8",
     "@vercel/analytics": "^1.5.0",

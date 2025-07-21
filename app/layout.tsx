@@ -10,6 +10,23 @@ import PaddleProvider from '@/components/paddle-provider';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
+import * as Sentry from '@sentry/nextjs';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { supabaseIntegration } from '@supabase/sentry-js-integration';
+
+Sentry.init({
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  integrations: [
+    supabaseIntegration(SupabaseClient, Sentry, {
+      tracing: true,
+      breadcrumbs: true,
+      errors: true,
+    }),
+    // ...other integrations (if any)
+  ],
+  tracesSampleRate: 1,
+  debug: process.env.NODE_ENV !== 'production',
+});
 
 export const metadata: Metadata = {
   title: 'Spoqen – AI Receptionist & Personal AI Agent',
