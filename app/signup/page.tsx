@@ -371,6 +371,11 @@ export default function SignupPage() {
 
     setFormData(prev => ({ ...prev, [field]: processedValue }));
 
+    // While the user is actively typing in email, consider it invalid until uniqueness check runs on blur
+    if (field === 'email') {
+      setFieldValidStates(prev => ({ ...prev, email: false }));
+    }
+
     triggerValidation(field, processedValue);
 
     // If password changed, re-validate confirmPassword with latest value to keep them in sync
