@@ -249,21 +249,53 @@ export default function SignupPage() {
     }, 300);
   };
 
-  const checkEmailExists = async (email: string): Promise<boolean> => {
-    try {
-      const res = await fetch(
-        `/api/check-email-exists?email=${encodeURIComponent(email)}`
-      );
-      if (!res.ok) {
-        console.error('Failed to verify email uniqueness', await res.text());
-        return false;
+  /**
+   * Queries the /api/check-email-exists endpoint to see if an email already exists.
+   * Throws on network / server errors so callers can differentiate connectivity
+   * problems from a "false" (email not taken) result.
+   *
+   * Basic retry with exponential back-off (maxAttempts = 3).
+   */
+  const checkEmailExists = async (
+    email: string,
+    maxAttempts = 3
+  ): Promise<boolean> => {
+    let attempt = 0;
+    // Doubled delay each retry: 0 ms, 250 ms, 500 ms
+    const baseDelay = 250;
+
+    while (attempt < maxAttempts) {
+      try {
+        const res = await fetch(
+          `/api/check-email-exists?email=${encodeURIComponent(email)}`
+        );
+
+        if (!res.ok) {
+          // Treat non-2xx as error (e.g., 500, 502, 404)
+          const text = await res.text();
+          throw new Error(`Endpoint error: ${res.status} — ${text}`);
+        }
+
+        const json: { exists: boolean } = await res.json();
+        // Defensive check
+        if (typeof json.exists !== 'boolean') {
+          throw new Error('Malformed response from email-exists endpoint');
+        }
+
+        return json.exists;
+      } catch (err) {
+        attempt += 1;
+        if (attempt >= maxAttempts) {
+          // Exhausted retries — rethrow to caller
+          throw err;
+        }
+        // Wait before retrying
+        await new Promise(res => setTimeout(res, baseDelay * attempt));
       }
-      const json: { exists: boolean } = await res.json();
-      return json.exists;
-    } catch (err) {
-      console.error('Error contacting email check endpoint', err);
-      return false;
     }
+
+    // Fallback — should never reach here
+    throw new Error('Retries exhausted');
   };
 
   const handleFieldBlur = (field: FormFieldName) => {
@@ -273,22 +305,34 @@ export default function SignupPage() {
     if (field === 'email' && fieldValidStates.email) {
       (async () => {
         setIsValidating(prev => ({ ...prev, email: true }));
-        const exists = await checkEmailExists(formData.email);
-        setIsValidating(prev => ({ ...prev, email: false }));
+        try {
+          const exists = await checkEmailExists(formData.email);
+          setIsValidating(prev => ({ ...prev, email: false }));
 
-        if (exists) {
+          if (exists) {
+            setValidationErrors(prev => ({
+              ...prev,
+              email: 'Email already in use',
+            }));
+            setFieldValidStates(prev => ({ ...prev, email: false }));
+          } else {
+            // Only clear the error if it was related to uniqueness
+            setValidationErrors(prev => ({
+              ...prev,
+              email: prev.email === 'Email already in use' ? '' : prev.email,
+            }));
+            setFieldValidStates(prev => ({ ...prev, email: true }));
+          }
+        } catch (err) {
+          setIsValidating(prev => ({ ...prev, email: false }));
+          console.error(err);
+          // Show generic connectivity error but keep field invalid so user cannot proceed
           setValidationErrors(prev => ({
             ...prev,
-            email: 'Email already in use',
+            email:
+              'Unable to verify email uniqueness. Please check your connection.',
           }));
           setFieldValidStates(prev => ({ ...prev, email: false }));
-        } else {
-          // Only clear the error if it was related to uniqueness
-          setValidationErrors(prev => ({
-            ...prev,
-            email: prev.email === 'Email already in use' ? '' : prev.email,
-          }));
-          setFieldValidStates(prev => ({ ...prev, email: true }));
         }
       })();
     }
@@ -396,7 +440,16 @@ export default function SignupPage() {
     // Extra server-side uniqueness check for email during final submission
     if (newFieldValidStates.email) {
       setIsValidating(prev => ({ ...prev, email: true }));
-      const exists = await checkEmailExists(formData.email);
+      let exists = false;
+      try {
+        exists = await checkEmailExists(formData.email);
+      } catch (err) {
+        console.error(err);
+        // surface via validation errors
+        newValidationErrors.email =
+          'Unable to verify email uniqueness. Please try again.';
+        newFieldValidStates.email = false;
+      }
       setIsValidating(prev => ({ ...prev, email: false }));
       if (exists) {
         newValidationErrors.email = 'Email already in use';
