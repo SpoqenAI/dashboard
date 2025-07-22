@@ -22,7 +22,7 @@ export const ExitIntentModal = ({
   offer = '50% OFF',
   ctaText = 'Claim My Discount',
   ctaLink = '/signup?discount=50',
-  incentive = 'Join 2,847+ founders already using Spoqen',
+  incentive = 'Start your free trial today',
   onClose,
 }: ExitIntentModalProps) => {
   const [isVisible, setIsVisible] = useState(false);
