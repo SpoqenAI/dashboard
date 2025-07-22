@@ -186,7 +186,7 @@ export function GlobalHeader() {
                 </div>
                 <div className="mt-4 flex flex-col space-y-2">
                   <Button asChild variant="outline">
-                    <Link 
+                    <Link
                       href="/login"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -194,7 +194,7 @@ export function GlobalHeader() {
                     </Link>
                   </Button>
                   <Button asChild>
-                    <Link 
+                    <Link
                       href="/signup"
                       onClick={() => setMobileMenuOpen(false)}
                     >

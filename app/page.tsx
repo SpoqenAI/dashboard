@@ -462,7 +462,10 @@ export default function Home() {
         <TestimonialStrip />
 
         {/* Help & FAQ Section */}
-        <section id="help" className="w-full bg-gradient-to-b from-card/30 to-background py-20">
+        <section
+          id="help"
+          className="w-full bg-gradient-to-b from-card/30 to-background py-20"
+        >
           <div className="container px-6">
             <div className="mb-12 text-center">
               <h2 className="mb-6 text-4xl font-bold lg:text-5xl">
@@ -473,7 +476,8 @@ export default function Home() {
                 </span>
               </h2>
               <p className="mx-auto max-w-3xl text-xl text-muted-foreground">
-                We're here to help you get the most out of Spoqen. Find answers to common questions or contact our support team.
+                We're here to help you get the most out of Spoqen. Find answers
+                to common questions or contact our support team.
               </p>
             </div>
 
@@ -486,7 +490,8 @@ export default function Home() {
                 </h3>
                 <div className="space-y-3 text-sm">
                   <p>
-                    For support, billing questions, or partnership inquiries, reach out to our team:
+                    For support, billing questions, or partnership inquiries,
+                    reach out to our team:
                   </p>
                   <div className="flex items-center space-x-2">
                     <span className="font-medium">Email:</span>
@@ -519,20 +524,38 @@ export default function Home() {
                 </h3>
                 <div className="space-y-4 text-sm">
                   <div>
-                    <p className="font-medium">How quickly can I get started?</p>
-                    <p className="text-muted-foreground">Setup takes just 5 minutes. Start with our Free plan to configure your AI assistant.</p>
+                    <p className="font-medium">
+                      How quickly can I get started?
+                    </p>
+                    <p className="text-muted-foreground">
+                      Setup takes just 5 minutes. Start with our Free plan to
+                      configure your AI assistant.
+                    </p>
                   </div>
                   <div>
-                    <p className="font-medium">Do I need a credit card for the free plan?</p>
-                    <p className="text-muted-foreground">No credit card required. Upgrade to paid plans when you're ready for call handling.</p>
+                    <p className="font-medium">
+                      Do I need a credit card for the free plan?
+                    </p>
+                    <p className="text-muted-foreground">
+                      No credit card required. Upgrade to paid plans when you're
+                      ready for call handling.
+                    </p>
                   </div>
                   <div>
-                    <p className="font-medium">How does call forwarding work?</p>
-                    <p className="text-muted-foreground">Forward calls from your existing number to your Spoqen AI. No new number needed.</p>
+                    <p className="font-medium">
+                      How does call forwarding work?
+                    </p>
+                    <p className="text-muted-foreground">
+                      Forward calls from your existing number to your Spoqen AI.
+                      No new number needed.
+                    </p>
                   </div>
                   <div>
                     <p className="font-medium">Can I cancel anytime?</p>
-                    <p className="text-muted-foreground">Yes, cancel anytime from your dashboard. No long-term contracts.</p>
+                    <p className="text-muted-foreground">
+                      Yes, cancel anytime from your dashboard. No long-term
+                      contracts.
+                    </p>
                   </div>
                 </div>
               </div>

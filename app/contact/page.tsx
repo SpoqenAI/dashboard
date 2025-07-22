@@ -35,8 +35,8 @@ export default function ContactPage() {
         <p>
           We record and securely store all call audio and transcripts generated
           by your AI receptionist in our cloud database. This information,
-          including any personal details callers provide, is used only to operate
-          and improve the service.
+          including any personal details callers provide, is used only to
+          operate and improve the service.
         </p>
         <p>
           It is accessible only to you (the account owner), authorised Spoqen
