@@ -1,5 +1,3 @@
-'use client';
-
 import { Suspense } from 'react';
 import { SimpleBackground } from '@/components/simple-background';
 import { HeroCTASection } from '@/components/hero-cta-section';
