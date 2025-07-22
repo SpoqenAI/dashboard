@@ -6,20 +6,16 @@ import { Button } from '@/components/ui/button';
 import {
   ArrowRight,
   CheckCircle,
-  PhoneCall,
-  User,
-  Play,
   Zap,
   TrendingUp,
   Shield,
   Clock,
   Target,
+  HelpCircle,
 } from 'lucide-react';
 import { PricingCard } from '@/components/pricing-card';
 import { ProblemBanner } from '@/components/ui/problem-banner';
-import Logo from '@/components/ui/logo';
 import {
-  TestimonialsSection,
   MicroTestimonial,
   TestimonialStrip,
 } from '@/components/testimonials-section';
@@ -464,6 +460,117 @@ export default function Home() {
 
         {/* Testimonial Strip after Pricing */}
         <TestimonialStrip />
+
+        {/* Help & FAQ Section */}
+        <section
+          id="help"
+          className="w-full bg-gradient-to-b from-card/30 to-background py-20"
+        >
+          <div className="container px-6">
+            <div className="mb-12 text-center">
+              <h2 className="mb-6 text-4xl font-bold lg:text-5xl">
+                Get Help &
+                <span className="bg-gradient-primary bg-clip-text text-transparent">
+                  {' '}
+                  Support
+                </span>
+              </h2>
+              <p className="mx-auto max-w-3xl text-xl text-muted-foreground">
+                We're here to help you get the most out of Spoqen. Find answers
+                to common questions or contact our support team.
+              </p>
+            </div>
+
+            <div className="mx-auto grid max-w-4xl gap-8 lg:grid-cols-2">
+              {/* Contact Information */}
+              <div className="rounded-lg border border-white/10 bg-card/20 p-6 backdrop-blur-glass">
+                <h3 className="mb-4 flex items-center text-xl font-semibold">
+                  <HelpCircle className="mr-2 h-5 w-5 text-primary" />
+                  Contact Support
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <p>
+                    For support, billing questions, or partnership inquiries,
+                    reach out to our team:
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium">Email:</span>
+                    <a
+                      href="mailto:admin@spoqen.com"
+                      className="text-primary underline hover:text-primary/80"
+                    >
+                      admin@spoqen.com
+                    </a>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium">Response Time:</span>
+                    <span>Within 1 business day</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium">Hours:</span>
+                    <span>Mon–Fri, 9:00 AM–5:00 PM ET</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    For urgent matters, include "URGENT" in your subject line
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick FAQ */}
+              <div className="rounded-lg border border-white/10 bg-card/20 p-6 backdrop-blur-glass">
+                <h3 className="mb-4 flex items-center text-xl font-semibold">
+                  <Clock className="mr-2 h-5 w-5 text-accent" />
+                  Quick Answers
+                </h3>
+                <div className="space-y-4 text-sm">
+                  <div>
+                    <p className="font-medium">
+                      How quickly can I get started?
+                    </p>
+                    <p className="text-muted-foreground">
+                      Setup takes just 5 minutes. Start with our Free plan to
+                      configure your AI assistant.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium">
+                      Do I need a credit card for the free plan?
+                    </p>
+                    <p className="text-muted-foreground">
+                      No credit card required. Upgrade to paid plans when you're
+                      ready for call handling.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium">
+                      How does call forwarding work?
+                    </p>
+                    <p className="text-muted-foreground">
+                      Forward calls from your existing number to your Spoqen AI.
+                      No new number needed.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium">Can I cancel anytime?</p>
+                    <p className="text-muted-foreground">
+                      Yes, cancel anytime from your dashboard. No long-term
+                      contracts.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 text-center">
+              <Button asChild variant="outline" size="lg">
+                <Link href="/contact">
+                  View Complete Help Center
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </section>
 
         {/* Final CTA */}
         <section className="w-full bg-gradient-to-b from-background to-card/30 py-20">
