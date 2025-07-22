@@ -31,8 +31,16 @@ export default function ContactPage() {
         subject line so we can prioritise your request accordingly.
       </p>
 
-      <section className="mt-10 space-y-4 text-sm" aria-labelledby="privacy-statement">
-        <h2 id="privacy-statement" className="text-center text-lg font-semibold">Privacy Statement</h2>
+      <section
+        className="mt-10 space-y-4 text-sm"
+        aria-labelledby="privacy-statement"
+      >
+        <h2
+          id="privacy-statement"
+          className="text-center text-lg font-semibold"
+        >
+          Privacy Statement
+        </h2>
         <p>
           We record and securely store all call audio and transcripts generated
           by your AI receptionist in our cloud database. This information—
