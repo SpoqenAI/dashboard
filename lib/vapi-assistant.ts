@@ -1,9 +1,7 @@
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
 import { validateServerContext } from '@/lib/utils';
-import {
-  getUserVapiAssistantId,
-} from '@/lib/user-settings';
+import { getUserVapiAssistantId } from '@/lib/user-settings';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 /**

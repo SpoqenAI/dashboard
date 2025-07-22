@@ -28,11 +28,11 @@ import {
 } from '../_shared/sentry.ts';
 
 // DEBUG: Log whether SERVICE_ROLE_KEY is defined and its length (do not print the key itself)
-const serviceRoleKey = Deno.env.get("SERVICE_ROLE_KEY");
+const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY');
 console.log(
-  "[DEBUG] SERVICE_ROLE_KEY defined:",
+  '[DEBUG] SERVICE_ROLE_KEY defined:',
   !!serviceRoleKey,
-  "| Length:",
+  '| Length:',
   serviceRoleKey?.length ?? 0
 );
 
@@ -175,7 +175,8 @@ Deno.serve(async (req: Request) => {
         }
       }
     } catch (e) {
-      const error = e instanceof Error ? e : new Error('Exception fetching user profile');
+      const error =
+        e instanceof Error ? e : new Error('Exception fetching user profile');
       captureException(error, {
         function: 'vapi-assistant-provision',
         operation: 'fetch_profile',
@@ -194,7 +195,10 @@ Deno.serve(async (req: Request) => {
       .select('vapi_assistant_id')
       .eq('id', user_id)
       .maybeSingle();
-    console.log('[DEBUG] user_settings query result:', { userSettings, userSettingsError });
+    console.log('[DEBUG] user_settings query result:', {
+      userSettings,
+      userSettingsError,
+    });
     if (userSettingsError) {
       captureException(userSettingsError, {
         function: 'vapi-assistant-provision',
@@ -218,9 +222,9 @@ Deno.serve(async (req: Request) => {
     // Update status to pending
     await supabase
       .from('user_settings')
-      .update({ 
+      .update({
         assistant_provisioning_status: 'pending',
-        assistant_provisioning_started_at: new Date().toISOString()
+        assistant_provisioning_started_at: new Date().toISOString(),
       })
       .eq('id', user_id);
 
@@ -293,7 +297,9 @@ Deno.serve(async (req: Request) => {
       const vapiResText = await vapiRes.text();
       console.log('[DEBUG] VAPI API response body:', vapiResText);
       if (!vapiRes.ok) {
-        const error = new Error(`VAPI API error: ${vapiRes.status} ${vapiResText}`);
+        const error = new Error(
+          `VAPI API error: ${vapiRes.status} ${vapiResText}`
+        );
         captureException(error, {
           function: 'vapi-assistant-provision',
           operation: 'create_vapi_assistant',
@@ -302,13 +308,13 @@ Deno.serve(async (req: Request) => {
           vapi_response: vapiResText,
           assistant_config: assistantConfig,
         });
-        
+
         // Update status to failed
         await supabase
           .from('user_settings')
           .update({ assistant_provisioning_status: 'failed' })
           .eq('id', user_id);
-          
+
         throw error;
       }
       const vapiData = JSON.parse(vapiResText);
@@ -316,20 +322,23 @@ Deno.serve(async (req: Request) => {
       if (!vapiAssistantId)
         throw new Error('No assistant ID returned from VAPI');
     } catch (e) {
-      const error = e instanceof Error ? e : new Error('Failed to provision VAPI assistant');
+      const error =
+        e instanceof Error
+          ? e
+          : new Error('Failed to provision VAPI assistant');
       captureException(error, {
         function: 'vapi-assistant-provision',
         operation: 'create_vapi_assistant',
         user_id,
         email,
       });
-      
+
       // Update status to failed
       await supabase
         .from('user_settings')
         .update({ assistant_provisioning_status: 'failed' })
         .eq('id', user_id);
-        
+
       return new Response(
         JSON.stringify({
           error: 'Failed to provision VAPI assistant',
@@ -342,13 +351,16 @@ Deno.serve(async (req: Request) => {
     // Update user_settings with vapi_assistant_id
     const { error: updateError, data: updateData } = await supabase
       .from('user_settings')
-      .update({ 
+      .update({
         vapi_assistant_id: vapiAssistantId,
         assistant_provisioning_status: 'completed',
-        assistant_provisioning_completed_at: new Date().toISOString()
+        assistant_provisioning_completed_at: new Date().toISOString(),
       })
       .eq('id', user_id);
-    console.log('[DEBUG] user_settings update result:', { updateData, updateError });
+    console.log('[DEBUG] user_settings update result:', {
+      updateData,
+      updateError,
+    });
     if (updateError) {
       captureException(updateError, {
         function: 'vapi-assistant-provision',

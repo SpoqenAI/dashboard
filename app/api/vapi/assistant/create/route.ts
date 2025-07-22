@@ -11,8 +11,9 @@ export async function POST(req: NextRequest) {
   );
 
   return NextResponse.json(
-    { 
-      error: 'Assistant creation endpoint deprecated. Assistants are now created automatically upon email verification.'
+    {
+      error:
+        'Assistant creation endpoint deprecated. Assistants are now created automatically upon email verification.',
     },
     { status: 410 } // Gone
   );

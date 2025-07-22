@@ -177,7 +177,8 @@ export async function createAssistantAction(
 
     if (fetchSettingsErr) throw fetchSettingsErr;
 
-    const vapiAssistantId: string | null = settingsRow?.vapi_assistant_id ?? null;
+    const vapiAssistantId: string | null =
+      settingsRow?.vapi_assistant_id ?? null;
 
     if (!vapiAssistantId) {
       // Assistant creation is now handled server-side via email verification webhook

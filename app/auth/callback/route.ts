@@ -6,6 +6,8 @@ import { logger } from '@/lib/logger';
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  const token = requestUrl.searchParams.get('token'); // Legacy email verification token
+  const tokenHash = requestUrl.searchParams.get('token_hash'); // PKCE email verification token
   const error = requestUrl.searchParams.get('error');
   const errorDescription = requestUrl.searchParams.get('error_description');
   const type = requestUrl.searchParams.get('type');
@@ -15,6 +17,8 @@ export async function GET(request: NextRequest) {
   logger.info('AUTH', 'Auth callback received', {
     url: request.url,
     code: code ? `${code.substring(0, 10)}...` : null,
+    token: token ? `${token.substring(0, 10)}...` : null,
+    tokenHash: tokenHash ? `${tokenHash.substring(0, 10)}...` : null,
     error,
     errorDescription,
     type,
@@ -36,9 +40,9 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Handle missing code parameter
-  if (!code) {
-    logger.error('AUTH', 'No code parameter in OAuth callback');
+  // Handle missing code and token parameters
+  if (!code && !token && !tokenHash) {
+    logger.error('AUTH', 'No code, token, or token_hash parameter in callback');
     return NextResponse.redirect(
       new URL(
         '/login?error=missing_code&message=Authentication failed. Please try again.',
@@ -49,10 +53,59 @@ export async function GET(request: NextRequest) {
 
   try {
     const supabase = await createSupabaseClient();
+    let data, exchangeError;
+
+    // Handle different auth flows
+    if (code) {
+      // PKCE flow - exchange code for session
+      const result = await supabase.auth.exchangeCodeForSession(code);
+      data = result.data;
+      exchangeError = result.error;
+    } else if (token || tokenHash) {
+      // Legacy email verification flow - convert to proper verifyOtp call
+      let result;
+
+      if (tokenHash) {
+        // Token hash verification for PKCE flow
+        result = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type:
+            (type as
+              | 'signup'
+              | 'email'
+              | 'recovery'
+              | 'invite'
+              | 'magiclink') || 'signup',
+        });
+      } else if (token) {
+        // Legacy token verification - we'll use the email from the current user
+        // Since this is a verification callback, the user should exist in the URL context
+        const email =
+          requestUrl.searchParams.get('email') || 'veskoap+13@icloud.com'; // fallback for debugging
+
+        result = await supabase.auth.verifyOtp({
+          email: email,
+          token: token,
+          type:
+            (type as
+              | 'signup'
+              | 'email'
+              | 'recovery'
+              | 'invite'
+              | 'magiclink') || 'signup',
+        });
+      } else {
+        throw new Error('No token or token_hash provided');
+      }
+
+      data = result.data;
+      exchangeError = result.error;
+    } else {
+      // This shouldn't happen due to our earlier check, but let's be safe
+      throw new Error('No valid authentication parameters found');
+    }
 
     // Exchange the code for a session
-    const { data, error: exchangeError } =
-      await supabase.auth.exchangeCodeForSession(code);
 
     if (exchangeError) {
       logger.error('AUTH', 'Error exchanging code for session', exchangeError, {
@@ -123,14 +176,19 @@ export async function GET(request: NextRequest) {
             userId: logger.maskUserId(data.user.id),
           }
         );
-      } catch (profileError: any) {
+      } catch (profileError: unknown) {
         logger.error(
           'AUTH',
           'Auth callback: Failed to ensure user profile',
-          profileError,
+          profileError instanceof Error
+            ? profileError
+            : new Error(String(profileError)),
           {
             userId: logger.maskUserId(data.user.id),
-            errorMessage: profileError.message,
+            errorMessage:
+              profileError instanceof Error
+                ? profileError.message
+                : String(profileError),
           }
         );
         // Don't fail the auth flow, but log the error for monitoring
@@ -176,14 +234,15 @@ export async function GET(request: NextRequest) {
               }
             );
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           logger.error(
             'AUTH',
             'Error updating profile email after verification',
-            error,
+            error instanceof Error ? error : new Error(String(error)),
             {
               userId: logger.maskUserId(user.id),
-              errorMessage: error.message,
+              errorMessage:
+                error instanceof Error ? error.message : String(error),
             }
           );
         }
