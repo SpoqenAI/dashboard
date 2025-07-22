@@ -57,7 +57,7 @@ const conversationFlow: ConversationStep[] = [
     id: 1,
     speaker: 'ai',
     message:
-      "Hi there! Thanks for calling TechFlow Digital. I'm Sarah, your AI assistant. How can I help you today?",
+      "Hi there! Thanks for calling. I'm Sarah, your AI assistant. How can I help you today?",
     analysis: {
       sentiment: 'positive',
       leadQuality: 'medium',

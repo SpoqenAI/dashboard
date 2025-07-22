@@ -106,7 +106,7 @@ const STATS_DATA: StatData[] = [
   },
   {
     label: 'Revenue Impact',
-    value: '$2,847',
+    value: '$1,250',
     change: '+23%',
     icon: DollarSign,
     variant: 'accent',
@@ -377,7 +377,7 @@ export const DashboardPreview = memo(() => {
                     <span className="text-muted-foreground">
                       Revenue Generated
                     </span>
-                    <span className="font-medium text-emerald-500">$2,847</span>
+                    <span className="font-medium text-emerald-500">$1,250</span>
                   </div>
                 </div>
               </Card>
@@ -460,7 +460,7 @@ export const DashboardPreview = memo(() => {
                       <span className="text-muted-foreground">
                         Satisfaction
                       </span>
-                      <span className="text-foreground">4.8/5</span>
+                      <span className="text-foreground">Early Access</span>
                     </div>
                   </div>
                 </div>
@@ -473,7 +473,7 @@ export const DashboardPreview = memo(() => {
                 <div className="space-y-2">
                   <div className="text-center">
                     <div className="text-xl font-bold text-emerald-500">
-                      $2,847
+                      $1,250
                     </div>
                     <div className="text-xs text-muted-foreground">
                       Generated Today
