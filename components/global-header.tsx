@@ -249,7 +249,7 @@ export function GlobalHeader() {
                       href="#help"
                       className="text-sm font-medium transition-colors hover:text-primary"
                     >
-                      Help
+                      FAQ
                     </Link>
                   </>
                 )}
