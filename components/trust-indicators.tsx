@@ -22,7 +22,7 @@ export function TrustIndicators() {
 }
 
 export function TrustBadges() {
-  // Removed fake certifications - will add real ones when obtained
+  // TODO: Add real certifications once they are obtained.
   return null;
 }
 
