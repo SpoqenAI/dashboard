@@ -145,8 +145,79 @@ export function GlobalHeader() {
           </Sheet>
         )}
 
+        {/* Mobile menu button for non-authenticated users */}
+        {!user && !loading && !isAuthPage && (
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="sm" className="md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <nav className="flex flex-col space-y-4">
+                {isLandingPage && (
+                  <>
+                    <Link
+                      href="#features"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                    >
+                      Features
+                    </Link>
+                    <Link
+                      href="#pricing"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                    >
+                      Pricing
+                    </Link>
+                  </>
+                )}
+                <div className="border-t pt-4">
+                  <Link
+                    href="/contact"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                  >
+                    <HelpCircle className="h-5 w-5" />
+                    <span>Help & Support</span>
+                  </Link>
+                </div>
+                <div className="mt-4 flex flex-col space-y-2">
+                  <Button asChild variant="outline">
+                    <Link 
+                      href="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Login
+                    </Link>
+                  </Button>
+                  <Button asChild>
+                    <Link 
+                      href="/signup"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Sign Up
+                    </Link>
+                  </Button>
+                </div>
+              </nav>
+            </SheetContent>
+          </Sheet>
+        )}
+
         {/* Right side actions */}
         <div className="flex items-center gap-4">
+          {/* Help/Support link - always visible to all users */}
+          <Link
+            href="/contact"
+            className="hidden items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary sm:flex"
+          >
+            <HelpCircle className="h-4 w-4" />
+            <span>Help</span>
+          </Link>
+
           {/* Theme toggle - always visible */}
           <ThemeToggle />
 
@@ -154,14 +225,6 @@ export function GlobalHeader() {
             <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
           ) : user ? (
             <>
-              {/* Help/Support link for authenticated users */}
-              <Link
-                href="/contact"
-                className="hidden items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary sm:flex"
-              >
-                <HelpCircle className="h-4 w-4" />
-                <span>Help</span>
-              </Link>
               <UserNav />
             </>
           ) : (
@@ -181,6 +244,12 @@ export function GlobalHeader() {
                       className="text-sm font-medium transition-colors hover:text-primary"
                     >
                       Pricing
+                    </Link>
+                    <Link
+                      href="#help"
+                      className="text-sm font-medium transition-colors hover:text-primary"
+                    >
+                      Help
                     </Link>
                   </>
                 )}
