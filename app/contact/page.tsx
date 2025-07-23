@@ -7,9 +7,9 @@ export default function ContactPage() {
       <p className="mb-6 text-center text-lg">
         Thank you for your interest in{' '}
         <span className="font-semibold">Spoqen</span>, the AI-powered
-        receptionist built exclusively for real&nbsp;estate professionals. We
-        value every opportunity to connect with current and prospective clients
-        and welcome your questions, feedback, and partnership inquiries.
+        receptionist for modern businesses. We value every opportunity to
+        connect with startups, SaaS companies, and service providers alike, and
+        welcome your questions, feedback, and partnership inquiries.
       </p>
 
       <p className="mb-6 text-center text-lg">
