@@ -51,7 +51,6 @@ const customJestConfig = {
     '!**/PADDLE_SETUP.md',
     '!**/README.md',
     '!**/TESTING.md',
-    '!**/REDIS_OPTIMIZATION.md',
     '!**/SENTRY_PROFILING.md',
   ],
   coverageDirectory: 'coverage',
