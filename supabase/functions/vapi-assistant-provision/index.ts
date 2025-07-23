@@ -45,6 +45,15 @@ const VAPI_API_KEY = globalThis.Deno.env.get('VAPI_PRIVATE_KEY');
 const VAPI_WEBHOOK_SECRET = globalThis.Deno.env.get('VAPI_WEBHOOK_SECRET');
 const WEBHOOK_SECRET = globalThis.Deno.env.get('WEBHOOK_SECRET');
 
+// For debugging
+console.log('[DEBUG] Environment variables check:', {
+  SUPABASE_URL: !!SUPABASE_URL,
+  SERVICE_ROLE_KEY: !!SERVICE_ROLE_KEY,
+  VAPI_PRIVATE_KEY: !!VAPI_API_KEY,
+  VAPI_WEBHOOK_SECRET: !!VAPI_WEBHOOK_SECRET,
+  WEBHOOK_SECRET: !!WEBHOOK_SECRET,
+});
+
 if (
   !SUPABASE_URL ||
   !SERVICE_ROLE_KEY ||

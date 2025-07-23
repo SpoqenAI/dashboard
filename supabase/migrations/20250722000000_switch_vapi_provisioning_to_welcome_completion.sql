@@ -60,7 +60,7 @@ BEGIN
                 headers := jsonb_build_object(
                     'Content-Type', 'application/json',
                     'Authorization', 'Bearer ' || service_role_key,
-                    'x-webhook-secret', current_setting('app.settings.webhook_secret', true)
+                    'x-webhook-secret', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'WEBHOOK_SECRET' LIMIT 1)
                 ),
                 body := jsonb_build_object(
                     'user_id', NEW.id::text,
