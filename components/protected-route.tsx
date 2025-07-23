@@ -42,13 +42,13 @@ export function ProtectedRoute({
     } else if (!requireAuth && user) {
       // User is authenticated but shouldn't be (e.g., on login page)
       // Only redirect if not already on dashboard
-      if (pathname !== '/dashboard') {
+      if (pathname !== '/recent-calls') {
         logger.info(
           'ProtectedRoute',
           'User already authenticated, redirecting to dashboard'
         );
         setIsRedirecting(true);
-        router.replace('/dashboard');
+        router.replace('/recent-calls');
       }
     }
   }, [user, loading, requireAuth, redirectTo, pathname, isRedirecting]);

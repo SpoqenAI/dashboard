@@ -36,26 +36,26 @@ export function CheckoutSuccessClient({
     setNavigationError(null);
 
     try {
-      await router.push('/dashboard');
+      await router.push('/recent-calls');
     } catch (error) {
       logger.error(
         'CHECKOUT_SUCCESS',
-        'Failed to navigate to dashboard',
+        'Failed to navigate to recent calls',
         error instanceof Error ? error : new Error(String(error)),
         {
           transactionId,
-          targetRoute: '/dashboard',
+          targetRoute: '/recent-calls',
         }
       );
 
       setNavigationError(
-        'Unable to navigate to dashboard. Please try again or refresh the page.'
+        'Unable to navigate to recent calls. Please try again or refresh the page.'
       );
 
       // Show error toast to user
       toast({
         title: 'Navigation Error',
-        description: 'Unable to navigate to dashboard. Please try again.',
+        description: 'Unable to navigate to recent calls. Please try again.',
         variant: 'destructive',
         duration: 5000,
       });
@@ -87,7 +87,7 @@ export function CheckoutSuccessClient({
           </>
         ) : (
           <>
-            Continue to Dashboard
+            Continue to Recent Calls
             <ArrowRight className="ml-2 h-4 w-4" />
           </>
         )}

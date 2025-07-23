@@ -29,6 +29,7 @@ Sentry.init({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://www.spoqen.com'),
   title: 'Spoqen – AI Receptionist & Personal AI Agent',
   description:
     'Never miss a lead again with Spoqen – your personal AI receptionist that answers calls 24/7, qualifies prospects, and syncs voicemails to your CRM.',

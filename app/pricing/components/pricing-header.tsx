@@ -22,7 +22,7 @@ export function PricingHeader() {
           <div className="flex items-center space-x-4">
             {user ? (
               <Button asChild size="sm">
-                <Link href="/dashboard">Dashboard</Link>
+                <Link href="/recent-calls">Dashboard</Link>
               </Button>
             ) : (
               <>

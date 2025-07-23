@@ -110,7 +110,7 @@ function LoginForm() {
       });
 
       // Redirect to dashboard
-      router.push('/dashboard');
+      router.push('/recent-calls');
     } catch (error: any) {
       let title = 'Login failed';
       let description = 'Invalid email or password. Please try again.';

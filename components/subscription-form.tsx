@@ -120,7 +120,7 @@ export function SubscriptionForm({
           },
           complete: () => {
             navigateToSuccess();
-            router.prefetch('/dashboard');
+            router.prefetch('/recent-calls');
           },
         },
       };
