@@ -17,7 +17,7 @@ export default function ExitIntentModalLoader() {
       offer="50% OFF"
       ctaText="Claim My Discount"
       ctaLink="/signup?discount=50"
-      incentive="Join 2,847+ founders already using Spoqen"
+      incentive="Start your free trial today"
     />
   );
 }
