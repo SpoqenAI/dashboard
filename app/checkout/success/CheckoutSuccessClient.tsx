@@ -36,7 +36,7 @@ export function CheckoutSuccessClient({
     setNavigationError(null);
 
     try {
-              await router.push('/recent-calls');
+      await router.push('/recent-calls');
     } catch (error) {
       logger.error(
         'CHECKOUT_SUCCESS',

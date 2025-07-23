@@ -207,7 +207,8 @@ export async function middleware(request: NextRequest) {
   const isSettingsPage = request.nextUrl.pathname.startsWith('/settings');
   const isWelcomePage = request.nextUrl.pathname.startsWith('/welcome');
   // Dashboard pages are now separate: /recent-calls, /call-analytics, /ai-configuration
-  const isDashboardPage = request.nextUrl.pathname.startsWith('/recent-calls') ||
+  const isDashboardPage =
+    request.nextUrl.pathname.startsWith('/recent-calls') ||
     request.nextUrl.pathname.startsWith('/call-analytics') ||
     request.nextUrl.pathname.startsWith('/ai-configuration');
 

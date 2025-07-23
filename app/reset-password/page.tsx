@@ -208,7 +208,7 @@ function ResetPasswordForm() {
       });
 
       // Redirect to dashboard after successful password reset
-              router.push('/recent-calls');
+      router.push('/recent-calls');
     } catch (error: any) {
       toast({
         title: 'Error updating password',

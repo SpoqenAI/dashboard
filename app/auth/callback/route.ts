@@ -244,7 +244,9 @@ export async function GET(request: NextRequest) {
           };
 
           // Redirect existing users to dashboard or specified next URL
-          const redirectUrl = isValidRedirectPath(next) ? next : '/recent-calls';
+          const redirectUrl = isValidRedirectPath(next)
+            ? next
+            : '/recent-calls';
           return NextResponse.redirect(new URL(redirectUrl, request.url));
         }
       } else {

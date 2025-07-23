@@ -46,7 +46,7 @@ export function PricingGrid({ pricingTiers }: PricingGridProps) {
 
     if (tier.id === 'free') {
       // Redirect to dashboard for free tier
-                window.location.href = '/recent-calls';
+      window.location.href = '/recent-calls';
       return;
     }
 
