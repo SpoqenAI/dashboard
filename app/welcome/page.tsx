@@ -20,7 +20,7 @@ function WelcomeContent() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Client-side check: if welcome_completed is already true, redirect to /dashboard
+  // Client-side check: if welcome_completed is already true, redirect to /ai-configuration
   useEffect(() => {
     let isMounted = true;
     async function checkWelcomeCompleted() {
@@ -36,7 +36,7 @@ function WelcomeContent() {
         .eq('id', user.id)
         .maybeSingle();
       if (isMounted && settings?.welcome_completed) {
-        router.replace('/dashboard');
+        router.replace('/ai-configuration');
       }
     }
     checkWelcomeCompleted();
@@ -91,7 +91,7 @@ function WelcomeContent() {
               <Button
                 variant="default"
                 disabled={loading || isPending}
-                onClick={() => handleComplete('/dashboard')}
+                onClick={() => handleComplete('/ai-configuration')}
                 className="w-full"
               >
                 {loading || isPending ? (

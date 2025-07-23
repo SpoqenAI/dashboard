@@ -120,10 +120,12 @@ export async function provisionAssistant(userId: string): Promise<void> {
     return;
   }
 
+  // Only provision phone numbers for paid subscriptions
+  // Free users can use everything except the actual phone number
   if (!subscription || !isActiveSubscription(subscription)) {
     logger.info(
       loggerPrefix,
-      'No active subscription, skipping phone provisioning',
+      'No active paid subscription, skipping phone provisioning (free users can use widget)',
       {
         userId: logger.maskUserId(userId),
         subscriptionStatus: subscription?.status,

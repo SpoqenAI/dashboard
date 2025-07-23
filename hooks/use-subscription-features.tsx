@@ -22,10 +22,7 @@ export interface SubscriptionFeatures {
   limits: FeatureLimits;
   canMakeCalls: (currentUsage?: number) => boolean;
   getRemainingCalls: (currentUsage?: number) => number | 'unlimited';
-  hasFeature: <T extends keyof FeatureLimits>(
-    feature: T,
-    subFeature?: keyof FeatureLimits[T]
-  ) => boolean;
+  hasFeature: (feature: string, subFeature?: string) => boolean;
   shouldShowUpgrade: boolean;
   getUpgradeMessage: (feature: string) => string;
   isLoading: boolean;
@@ -46,10 +43,8 @@ export function useSubscriptionFeatures(): SubscriptionFeatures {
         canMakeCalls(subscription, currentUsage),
       getRemainingCalls: (currentUsage = 0) =>
         getRemainingCalls(subscription, currentUsage),
-      hasFeature: <T extends keyof FeatureLimits>(
-        feature: T,
-        subFeature?: keyof FeatureLimits[T]
-      ) => hasFeatureAccess(subscription, feature, subFeature),
+      hasFeature: (feature: string, subFeature?: string) =>
+        hasFeatureAccess(subscription, feature, subFeature),
       shouldShowUpgrade: shouldShowUpgradePrompt(subscription),
       getUpgradeMessage: (feature: string) =>
         getUpgradeMessage(subscription, feature),
@@ -67,12 +62,10 @@ export function useAnalyticsFeatures() {
     useSubscriptionFeatures();
 
   return {
-    canViewBasic: hasFeature('analytics', 'basic'),
-    canViewAdvanced: hasFeature('analytics', 'advanced'),
-    canViewCustomReports: hasFeature('analytics', 'customReports'),
+    canViewAnalytics: true, // Everyone can view analytics (free and paid)
     shouldShowUpgrade: shouldShowUpgrade,
     getUpgradeMessage: (feature: string) =>
-      getUpgradeMessage(`advanced analytics - ${feature}`),
+      getUpgradeMessage(`analytics - ${feature}`),
   };
 }
 
@@ -81,9 +74,7 @@ export function useIntegrationFeatures() {
     useSubscriptionFeatures();
 
   return {
-    canUseWebhook: hasFeature('integrations', 'webhook'),
-    canUseZapier: hasFeature('integrations', 'zapier'),
-    canUseCRM: hasFeature('integrations', 'crm'),
+    canUseWebhook: true, // Everyone can use webhook integrations (free and paid)
     shouldShowUpgrade: shouldShowUpgrade,
     getUpgradeMessage: (integration: string) =>
       getUpgradeMessage(`${integration} integration`),
@@ -95,10 +86,7 @@ export function useCustomizationFeatures() {
     useSubscriptionFeatures();
 
   return {
-    canUseBasicGreeting: hasFeature('customization', 'basicGreeting'),
-    canUseCustomScripts: hasFeature('customization', 'customScripts'),
-    canUseMultiLanguage: hasFeature('customization', 'multiLanguage'),
-    canUseAITraining: hasFeature('customization', 'aiTraining'),
+    canUseBasicGreeting: true, // Everyone can customize their AI assistant (free and paid)
     shouldShowUpgrade: shouldShowUpgrade,
     getUpgradeMessage: (feature: string) =>
       getUpgradeMessage(`custom ${feature}`),

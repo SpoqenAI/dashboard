@@ -8,7 +8,7 @@ import { DashboardShell } from '@/components/dashboard-shell';
 import { useAuth } from '@/hooks/use-auth';
 import { useSubscription } from '@/hooks/use-subscription';
 import { isFreeUser } from '@/lib/paddle';
-import { LockedOverlay } from '@/components/dashboard/locked-overlay';
+// Removed LockedOverlay - free users now have full access
 import { useDashboardAnalytics } from '@/hooks/use-dashboard-analytics';
 import { AlertCircle, ArrowUp } from 'lucide-react';
 import { AnalyticsTab } from '@/components/dashboard/analytics-tab';
@@ -53,7 +53,7 @@ export default function CallAnalyticsClient() {
   const { analytics, isLoading, error } = useDashboardAnalytics({
     days: Number(timeRange),
     refetchInterval: 300_000,
-    enabled: !!user && !isUserFree,
+    enabled: !!user, // Free users now have access to analytics
   });
 
   if (!user) {
@@ -67,33 +67,7 @@ export default function CallAnalyticsClient() {
           <div className="mx-auto max-w-7xl space-y-6 py-6">
             {/* Page title removed to avoid duplication with AnalyticsTab header */}
 
-            {isUserFree && (
-              <Card className="border-orange-200 bg-orange-50">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <AlertCircle className="h-5 w-5 text-orange-600" />
-                      <div>
-                        <h3 className="font-semibold text-orange-900">
-                          You're on the Free Plan
-                        </h3>
-                        <p className="text-sm text-orange-700">
-                          Upgrade to unlock advanced analytics and insights.
-                        </p>
-                      </div>
-                    </div>
-                    <Button asChild>
-                      <a href="/settings?tab=billing">
-                        <ArrowUp className="mr-2 h-4 w-4" /> Upgrade Now
-                      </a>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             <div className="relative space-y-6">
-              {isUserFree && <LockedOverlay />}
               <AnalyticsTab
                 analytics={analytics as AnalyticsData | null}
                 isLoading={isLoading}
