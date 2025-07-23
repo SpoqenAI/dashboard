@@ -204,10 +204,7 @@ Deno.serve(async (req: Request) => {
       .select('vapi_assistant_id')
       .eq('id', user_id)
       .maybeSingle();
-    console.log('[DEBUG] user_settings query result:', {
-      userSettings,
-      userSettingsError,
-    });
+        // ...existing code...
     if (userSettingsError) {
       captureException(userSettingsError, {
         function: 'vapi-assistant-provision',
@@ -287,13 +284,13 @@ Deno.serve(async (req: Request) => {
           version: '1.0',
         },
         server: {
-          url: `${globalThis.Deno.env.get('NEXT_PUBLIC_SITE_URL') || globalThis.Deno.env.get('NEXT_PUBLIC_APP_URL') || 'https://spoqen.ai'}/api/webhooks/vapi`,
+          url: `${globalThis.Deno.env.get('NEXT_PUBLIC_SITE_URL') || globalThis.Deno.env.get('NEXT_PUBLIC_APP_URL') || 'https://spoqen.com'}/api/webhooks/vapi`,
           timeoutSeconds: 20,
         },
         serverMessages: ['end-of-call-report'],
       };
 
-      console.log('[DEBUG] VAPI API request payload:', assistantConfig);
+            // ...existing code...
       const vapiRes = await fetch('https://api.vapi.ai/assistant', {
         method: 'POST',
         headers: {
@@ -302,9 +299,9 @@ Deno.serve(async (req: Request) => {
         },
         body: JSON.stringify(assistantConfig),
       });
-      console.log('[DEBUG] VAPI API response status:', vapiRes.status);
+            // ...existing code...
       const vapiResText = await vapiRes.text();
-      console.log('[DEBUG] VAPI API response body:', vapiResText);
+            // ...existing code...
       if (!vapiRes.ok) {
         const error = new Error(
           `VAPI API error: ${vapiRes.status} ${vapiResText}`
@@ -366,10 +363,7 @@ Deno.serve(async (req: Request) => {
         assistant_provisioning_completed_at: new Date().toISOString(),
       })
       .eq('id', user_id);
-    console.log('[DEBUG] user_settings update result:', {
-      updateData,
-      updateError,
-    });
+        // ...existing code...
     if (updateError) {
       captureException(updateError, {
         function: 'vapi-assistant-provision',
