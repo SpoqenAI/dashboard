@@ -204,7 +204,7 @@ Deno.serve(async (req: Request) => {
       .select('vapi_assistant_id')
       .eq('id', user_id)
       .maybeSingle();
-        // ...existing code...
+    // ...existing code...
     if (userSettingsError) {
       captureException(userSettingsError, {
         function: 'vapi-assistant-provision',
@@ -290,7 +290,7 @@ Deno.serve(async (req: Request) => {
         serverMessages: ['end-of-call-report'],
       };
 
-            // ...existing code...
+      // ...existing code...
       const vapiRes = await fetch('https://api.vapi.ai/assistant', {
         method: 'POST',
         headers: {
@@ -299,9 +299,9 @@ Deno.serve(async (req: Request) => {
         },
         body: JSON.stringify(assistantConfig),
       });
-            // ...existing code...
+      // ...existing code...
       const vapiResText = await vapiRes.text();
-            // ...existing code...
+      // ...existing code...
       if (!vapiRes.ok) {
         const error = new Error(
           `VAPI API error: ${vapiRes.status} ${vapiResText}`
@@ -363,7 +363,7 @@ Deno.serve(async (req: Request) => {
         assistant_provisioning_completed_at: new Date().toISOString(),
       })
       .eq('id', user_id);
-        // ...existing code...
+    // ...existing code...
     if (updateError) {
       captureException(updateError, {
         function: 'vapi-assistant-provision',

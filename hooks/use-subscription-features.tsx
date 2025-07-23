@@ -62,7 +62,7 @@ export function useAnalyticsFeatures() {
     useSubscriptionFeatures();
 
   return {
-    canViewAnalytics: hasFeature('analytics', 'enabled'),
+    canViewAnalytics: true, // Everyone can view analytics (free and paid)
     shouldShowUpgrade: shouldShowUpgrade,
     getUpgradeMessage: (feature: string) =>
       getUpgradeMessage(`analytics - ${feature}`),
@@ -74,7 +74,7 @@ export function useIntegrationFeatures() {
     useSubscriptionFeatures();
 
   return {
-    canUseWebhook: hasFeature('integrations', 'webhook'),
+    canUseWebhook: true, // Everyone can use webhook integrations (free and paid)
     shouldShowUpgrade: shouldShowUpgrade,
     getUpgradeMessage: (integration: string) =>
       getUpgradeMessage(`${integration} integration`),
@@ -86,7 +86,7 @@ export function useCustomizationFeatures() {
     useSubscriptionFeatures();
 
   return {
-    canUseBasicGreeting: hasFeature('customization', 'basicGreeting'),
+    canUseBasicGreeting: true, // Everyone can customize their AI assistant (free and paid)
     shouldShowUpgrade: shouldShowUpgrade,
     getUpgradeMessage: (feature: string) =>
       getUpgradeMessage(`custom ${feature}`),
