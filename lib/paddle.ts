@@ -160,21 +160,8 @@ export interface FeatureLimits {
   dashboard: {
     fullAccess: boolean; // Always true - everyone gets full access
   };
-  analytics: {
-    enabled: boolean; // Always true - everyone gets analytics
-  };
-  integrations: {
-    webhook: boolean; // Always true - everyone gets integrations
-  };
-  customization: {
-    basicGreeting: boolean; // Always true - everyone gets customization
-  };
-  support: {
-    community: boolean; // Always true - everyone gets community support
-    email: boolean; // Always true - everyone gets email support
-    priority: boolean; // Always true - everyone gets priority support
-    dedicated: boolean; // Always true - everyone gets dedicated support
-  };
+  // Allow any other feature access - everyone gets everything
+  [key: string]: any;
 }
 
 // SIMPLIFIED: Only phone number provisioning matters
@@ -182,34 +169,18 @@ export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
   free: {
     phoneNumber: { provisioned: false }, // No phone number - widget testing only
     dashboard: { fullAccess: true }, // Full access to everything else
-    analytics: { enabled: true }, // Full access to analytics
-    integrations: { webhook: true }, // Full access to integrations
-    customization: { basicGreeting: true }, // Full access to customization
-    support: { community: true, email: true, priority: true, dedicated: true }, // Full support access
   },
   starter: {
     phoneNumber: { provisioned: true }, // Gets phone number
     dashboard: { fullAccess: true }, // Full access to everything
-    analytics: { enabled: true }, // Full access to analytics
-    integrations: { webhook: true }, // Full access to integrations
-    customization: { basicGreeting: true }, // Full access to customization
-    support: { community: true, email: true, priority: true, dedicated: true }, // Full support access
   },
   pro: {
     phoneNumber: { provisioned: true }, // Gets phone number
     dashboard: { fullAccess: true }, // Full access to everything
-    analytics: { enabled: true }, // Full access to analytics
-    integrations: { webhook: true }, // Full access to integrations
-    customization: { basicGreeting: true }, // Full access to customization
-    support: { community: true, email: true, priority: true, dedicated: true }, // Full support access
   },
   business: {
     phoneNumber: { provisioned: true }, // Gets phone number
     dashboard: { fullAccess: true }, // Full access to everything
-    analytics: { enabled: true }, // Full access to analytics
-    integrations: { webhook: true }, // Full access to integrations
-    customization: { basicGreeting: true }, // Full access to customization
-    support: { community: true, email: true, priority: true, dedicated: true }, // Full support access
   },
 };
 
@@ -349,23 +320,13 @@ export const hasAnalyticsAccess = (
   return true;
 };
 
-// Generic feature access checker
-export const hasFeatureAccess = <T extends keyof FeatureLimits>(
+// Simple feature access checker - everyone gets access to everything except phone provisioning
+export const hasFeatureAccess = (
   subscription: PaddleSubscription | null,
-  feature: T,
-  subFeature?: keyof FeatureLimits[T]
+  feature: string,
+  subFeature?: string
 ): boolean => {
-  const limits = getFeatureLimits(subscription);
-  
-  if (subFeature) {
-    return Boolean(limits[feature][subFeature]);
-  }
-  
-  // If no subFeature specified, check if the feature object has any truthy values
-  const featureObj = limits[feature];
-  if (typeof featureObj === 'object' && featureObj !== null) {
-    return Object.values(featureObj).some(value => Boolean(value));
-  }
-  
-  return Boolean(featureObj);
+  // Everyone gets access to all features - the only restriction is phone number provisioning
+  // which is handled by the hasPhoneNumber function
+  return true;
 };
