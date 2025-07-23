@@ -14,6 +14,7 @@ import {
   Settings,
   Cog,
   HelpCircle,
+  BookOpen,
   Menu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -130,7 +131,15 @@ export function GlobalHeader() {
                     </Link>
                   );
                 })}
-                <div className="border-t pt-4">
+                <div className="space-y-2 border-t pt-4">
+                  <Link
+                    href="/faq"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                  >
+                    <BookOpen className="h-5 w-5" />
+                    <span>FAQ</span>
+                  </Link>
                   <Link
                     href="/contact"
                     onClick={() => setMobileMenuOpen(false)}
@@ -174,7 +183,15 @@ export function GlobalHeader() {
                     </Link>
                   </>
                 )}
-                <div className="border-t pt-4">
+                <div className="space-y-2 border-t pt-4">
+                  <Link
+                    href="/faq"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                  >
+                    <BookOpen className="h-5 w-5" />
+                    <span>FAQ</span>
+                  </Link>
                   <Link
                     href="/contact"
                     onClick={() => setMobileMenuOpen(false)}
@@ -209,7 +226,14 @@ export function GlobalHeader() {
 
         {/* Right side actions */}
         <div className="flex items-center gap-4">
-          {/* Help/Support link - always visible to all users */}
+          {/* FAQ & Help links - always visible to all users */}
+          <Link
+            href="/faq"
+            className="hidden items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary sm:flex"
+          >
+            <BookOpen className="h-4 w-4" />
+            <span>FAQ</span>
+          </Link>
           <Link
             href="/contact"
             className="hidden items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary sm:flex"
@@ -246,7 +270,7 @@ export function GlobalHeader() {
                       Pricing
                     </Link>
                     <Link
-                      href="#help"
+                      href="/faq"
                       className="text-sm font-medium transition-colors hover:text-primary"
                     >
                       FAQ
