@@ -206,9 +206,10 @@ export async function middleware(request: NextRequest) {
   const isOnboardingPage = request.nextUrl.pathname.startsWith('/onboarding');
   const isSettingsPage = request.nextUrl.pathname.startsWith('/settings');
   const isWelcomePage = request.nextUrl.pathname.startsWith('/welcome');
-  const isDashboardPage = request.nextUrl.pathname.startsWith('/dashboard');
-  const isDashboardAISettingsTab =
-    isDashboardPage && request.nextUrl.searchParams.get('tab') === 'ai';
+  // Dashboard pages are now separate: /recent-calls, /call-analytics, /ai-configuration
+  const isDashboardPage = request.nextUrl.pathname.startsWith('/recent-calls') ||
+    request.nextUrl.pathname.startsWith('/call-analytics') ||
+    request.nextUrl.pathname.startsWith('/ai-configuration');
 
   // Allow public pages, API routes, and auth pages without authentication
   if (isPublicPage || isApiRoute || (isAuthPage && !user)) {
@@ -384,14 +385,9 @@ export async function middleware(request: NextRequest) {
         setCachedSubscriptionStatus(user.id, hasValidSubscription, cacheConfig);
       }
 
-      // --- /dashboard Logic ---
+      // --- Dashboard Pages Logic ---
       if (isDashboardPage) {
-        // AI settings tab is always allowed
-        if (isDashboardAISettingsTab) {
-          logPerformanceMetrics();
-          return response;
-        }
-        // If user has valid subscription, allow full dashboard
+        // If user has valid subscription, allow full dashboard access
         if (hasValidSubscription) {
           logPerformanceMetrics();
           return response;

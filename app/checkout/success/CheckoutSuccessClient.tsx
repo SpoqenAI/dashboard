@@ -36,7 +36,7 @@ export function CheckoutSuccessClient({
     setNavigationError(null);
 
     try {
-      await router.push('/dashboard');
+              await router.push('/recent-calls');
     } catch (error) {
       logger.error(
         'CHECKOUT_SUCCESS',
@@ -44,7 +44,7 @@ export function CheckoutSuccessClient({
         error instanceof Error ? error : new Error(String(error)),
         {
           transactionId,
-          targetRoute: '/dashboard',
+          targetRoute: '/recent-calls',
         }
       );
 

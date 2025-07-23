@@ -253,7 +253,7 @@ export async function GET(request: NextRequest) {
 
       // Redirect to processing page which will find the existing subscription
       return NextResponse.redirect(
-        new URL('/dashboard?payment=success&instant=true', request.url)
+        new URL('/recent-calls?payment=success&instant=true', request.url)
       );
     }
 
@@ -297,7 +297,7 @@ export async function GET(request: NextRequest) {
       // Still redirect to processing page for error handling
       return NextResponse.redirect(
         new URL(
-          '/dashboard?payment=success&error=subscription_failed',
+          '/recent-calls?payment=success&error=subscription_failed',
           request.url
         )
       );
@@ -318,7 +318,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.redirect(
         new URL(
-          '/dashboard?payment=success&error=subscription_failed',
+          '/recent-calls?payment=success&error=subscription_failed',
           request.url
         )
       );
@@ -392,7 +392,7 @@ export async function GET(request: NextRequest) {
     // 6. Enhanced redirect logic with robust URL handling
     const redirectUrl = determineRedirectUrl(
       request,
-      '/dashboard?payment=success'
+      '/recent-calls?payment=success'
     );
 
     logger.info('PADDLE_SUCCESS', 'Redirecting user after successful payment', {
