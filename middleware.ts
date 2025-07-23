@@ -289,10 +289,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/welcome', request.url));
     }
 
-    // /welcome should only be accessible if welcome_completed is false/null; otherwise, redirect to /dashboard
+    // /welcome should only be accessible if welcome_completed is false/null; otherwise, redirect to /ai-configuration
     if (isWelcomePage && welcomeCompleted === true) {
       logPerformanceMetrics();
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL('/ai-configuration', request.url));
     }
 
     // --- Subscription Logic ---
@@ -405,9 +405,9 @@ export async function middleware(request: NextRequest) {
 
       // --- Onboarding Pages ---
       if (isOnboardingPage) {
-        // Legacy onboarding is deprecated; always redirect to /dashboard
+        // Legacy onboarding is deprecated; always redirect to /ai-configuration
         logPerformanceMetrics();
-        return NextResponse.redirect(new URL('/dashboard', request.url));
+        return NextResponse.redirect(new URL('/ai-configuration', request.url));
       }
 
       // --- All Other Protected Routes ---

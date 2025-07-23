@@ -16,7 +16,7 @@ import { DashboardShell } from '@/components/dashboard-shell';
 import { useAuth } from '@/hooks/use-auth';
 import { useSubscription } from '@/hooks/use-subscription';
 import { isFreeUser } from '@/lib/paddle';
-import { LockedOverlay } from '@/components/dashboard/locked-overlay';
+// Removed LockedOverlay - free users now have full access
 import { useDashboardAnalytics } from '@/hooks/use-dashboard-analytics';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useActionPoints } from '@/hooks/use-action-points';
@@ -103,7 +103,7 @@ export default function RecentCallsClient() {
     useDashboardAnalytics({
       days: 30,
       refetchInterval: 0, // No polling - pure event-driven after initial load
-      enabled: !!user && !isCallDetailOpen && !isUserFree,
+      enabled: !!user && !isCallDetailOpen, // Free users now get analytics
     });
 
   // Action points
@@ -111,7 +111,7 @@ export default function RecentCallsClient() {
 
   // Real-time call updates
   const { isConnected: isRealTimeConnected } = useCallUpdates({
-    enabled: !!user && !isUserFree,
+    enabled: !!user, // Free users now get action points
     onNewCall: useCallback(
       (event: import('@/lib/events').CallUpdateEvent) => {
         logger.info('RECENT_CALLS', 'New call detected via SSE', {
@@ -322,23 +322,24 @@ export default function RecentCallsClient() {
             </div>
 
             {isUserFree && (
-              <Card className="border-orange-200 bg-orange-50">
+              <Card className="border-blue-200 bg-blue-50">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <AlertCircle className="h-5 w-5 text-orange-600" />
+                      <AlertCircle className="h-5 w-5 text-blue-600" />
                       <div>
-                        <h3 className="font-semibold text-orange-900">
+                        <h3 className="font-semibold text-blue-900">
                           You're on the Free Plan
                         </h3>
-                        <p className="text-sm text-orange-700">
-                          Upgrade to view your call history and details.
+                        <p className="text-sm text-blue-700">
+                          Get your dedicated phone number and start receiving
+                          real customer calls.
                         </p>
                       </div>
                     </div>
                     <Button asChild>
                       <a href="/settings?tab=billing">
-                        <ArrowUp className="mr-2 h-4 w-4" /> Upgrade Now
+                        <ArrowUp className="mr-2 h-4 w-4" /> Get Your Number
                       </a>
                     </Button>
                   </div>
@@ -347,7 +348,6 @@ export default function RecentCallsClient() {
             )}
 
             <div className="relative space-y-6">
-              {isUserFree && <LockedOverlay />}
               <CallHistoryTable
                 calls={filteredAndPaginatedCalls.calls}
                 isLoading={isLoading}

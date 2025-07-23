@@ -493,8 +493,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            You're on the free plan. You can edit your AI assistant settings,
-            but some advanced features may be limited.
+            You're on the free plan with full access to configure and test your
+            AI assistant via the widget below. Upgrade to get a dedicated phone
+            number for real incoming calls.
           </AlertDescription>
         </Alert>
       )}

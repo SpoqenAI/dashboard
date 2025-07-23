@@ -152,110 +152,33 @@ export const getDaysUntilBilling = (
 export type SubscriptionTier = 'free' | 'starter' | 'pro' | 'business';
 
 export interface FeatureLimits {
-  calls: {
-    monthly: number;
-    unlimited: boolean;
+  // The ONLY difference between free and paid users
+  phoneNumber: {
+    provisioned: boolean; // Only paid users get actual phone numbers
   };
-  minutes: {
-    perCall: number;
-    unlimited: boolean;
-  };
-  analytics: {
-    basic: boolean;
-    advanced: boolean;
-    customReports: boolean;
-  };
-  integrations: {
-    webhook: boolean;
-    zapier: boolean;
-    crm: boolean;
-  };
-  support: {
-    community: boolean;
-    email: boolean;
-    priority: boolean;
-    dedicated: boolean;
-  };
-  customization: {
-    basicGreeting: boolean;
-    customScripts: boolean;
-    multiLanguage: boolean;
-    aiTraining: boolean;
-  };
-  // New access controls
+  // Everything else is the same for all users
   dashboard: {
-    analytics: boolean;
-    fullAccess: boolean;
+    fullAccess: boolean; // Always true - everyone gets full access
   };
 }
 
-// Define feature limits for each tier
+// SIMPLIFIED: Only phone number provisioning matters
 export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
   free: {
-    calls: { monthly: 0, unlimited: false },
-    minutes: { perCall: 0, unlimited: false },
-    analytics: { basic: false, advanced: false, customReports: false },
-    integrations: { webhook: false, zapier: false, crm: false },
-    support: {
-      community: true,
-      email: false,
-      priority: false,
-      dedicated: false,
-    },
-    customization: {
-      basicGreeting: true,
-      customScripts: false,
-      multiLanguage: false,
-      aiTraining: false,
-    },
-    dashboard: { analytics: false, fullAccess: true }, // Can see dashboard but no analytics data
+    phoneNumber: { provisioned: false }, // No phone number - widget testing only
+    dashboard: { fullAccess: true }, // Full access to everything else
   },
   starter: {
-    calls: { monthly: 30, unlimited: false },
-    minutes: { perCall: 60, unlimited: false },
-    analytics: { basic: true, advanced: false, customReports: false },
-    integrations: { webhook: false, zapier: false, crm: false },
-    support: {
-      community: true,
-      email: true,
-      priority: false,
-      dedicated: false,
-    },
-    customization: {
-      basicGreeting: true,
-      customScripts: false,
-      multiLanguage: false,
-      aiTraining: false,
-    },
-    dashboard: { analytics: true, fullAccess: true },
+    phoneNumber: { provisioned: true }, // Gets phone number
+    dashboard: { fullAccess: true }, // Full access to everything
   },
   pro: {
-    calls: { monthly: 0, unlimited: true },
-    minutes: { perCall: 0, unlimited: true },
-    analytics: { basic: true, advanced: true, customReports: false },
-    integrations: { webhook: true, zapier: false, crm: true },
-    support: { community: true, email: true, priority: true, dedicated: false },
-    customization: {
-      basicGreeting: true,
-      customScripts: true,
-      multiLanguage: false,
-      aiTraining: false,
-    },
-    dashboard: { analytics: true, fullAccess: true },
+    phoneNumber: { provisioned: true }, // Gets phone number
+    dashboard: { fullAccess: true }, // Full access to everything
   },
   business: {
-    calls: { monthly: 0, unlimited: true },
-    minutes: { perCall: 0, unlimited: true },
-    analytics: { basic: true, advanced: true, customReports: true },
-    integrations: { webhook: true, zapier: true, crm: true },
-    support: { community: true, email: true, priority: true, dedicated: true },
-    customization: {
-      basicGreeting: true,
-      customScripts: true,
-      multiLanguage: true,
-      aiTraining: true,
-    },
-    dashboard: { analytics: true, fullAccess: true },
+    phoneNumber: { provisioned: true }, // Gets phone number
+    dashboard: { fullAccess: true }, // Full access to everything
   },
 };
 
@@ -328,51 +251,30 @@ export const getFeatureLimits = (
   return TIER_LIMITS[tier];
 };
 
-export const hasFeatureAccess = <T extends keyof FeatureLimits>(
-  subscription: PaddleSubscription | null,
-  feature: T,
-  subFeature?: keyof FeatureLimits[T]
+// Check if user has phone number provisioned (the only real restriction)
+export const hasPhoneNumber = (
+  subscription: PaddleSubscription | null
 ): boolean => {
   const limits = getFeatureLimits(subscription);
-  const featureLimits = limits[feature];
-
-  if (
-    subFeature &&
-    typeof featureLimits === 'object' &&
-    featureLimits !== null
-  ) {
-    return (
-      (featureLimits as Record<string, boolean>)[subFeature as string] === true
-    );
-  }
-
-  return false;
+  return limits.phoneNumber.provisioned;
 };
 
+// Simplified: Widget calls are always unlimited, phone calls require subscription
 export const canMakeCalls = (
   subscription: PaddleSubscription | null,
   currentMonthlyUsage: number = 0
 ): boolean => {
-  const limits = getFeatureLimits(subscription);
-
-  if (limits.calls.unlimited) {
-    return true;
-  }
-
-  return currentMonthlyUsage < limits.calls.monthly;
+  // Widget calls are always allowed - this only applies to phone calls
+  return hasPhoneNumber(subscription);
 };
 
 export const getRemainingCalls = (
   subscription: PaddleSubscription | null,
   currentMonthlyUsage: number = 0
 ): number | 'unlimited' => {
-  const limits = getFeatureLimits(subscription);
-
-  if (limits.calls.unlimited) {
-    return 'unlimited';
-  }
-
-  return Math.max(0, limits.calls.monthly - currentMonthlyUsage);
+  // If they have a phone number, calls are unlimited
+  // If not, they can only use the widget (which doesn't count)
+  return hasPhoneNumber(subscription) ? 'unlimited' : 0;
 };
 
 export const shouldShowUpgradePrompt = (
@@ -401,17 +303,17 @@ export const getUpgradeMessage = (
   return `This feature requires a higher subscription tier`;
 };
 
-// Dashboard access helpers
+// Dashboard access helpers - EVERYONE gets full access
 export const hasDashboardAccess = (
   subscription: PaddleSubscription | null
 ): boolean => {
-  const limits = getFeatureLimits(subscription);
-  return limits.dashboard.fullAccess;
+  // Everyone gets full dashboard access - free and paid
+  return true;
 };
 
 export const hasAnalyticsAccess = (
   subscription: PaddleSubscription | null
 ): boolean => {
-  const limits = getFeatureLimits(subscription);
-  return limits.dashboard.analytics;
+  // Everyone gets analytics access - free and paid
+  return true;
 };

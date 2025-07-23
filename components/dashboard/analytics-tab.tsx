@@ -180,14 +180,15 @@ export const AnalyticsTab = memo(
           </div>
         </div>
 
-        {/* Free User Notice */}
+        {/* Free User Upgrade Banner */}
         {isUserFree && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
+          <Alert className="border-primary/30 bg-gradient-to-r from-primary/10 to-accent/10">
+            <AlertCircle className="h-4 w-4 text-primary" />
             <AlertDescription>
-              You're on the free plan with limited analytics.
-              <Button variant="link" className="ml-1 h-auto p-0">
-                Upgrade for advanced insights
+              <strong>Ready to go live?</strong> Get your dedicated phone number
+              and start receiving real customer calls with your AI assistant.
+              <Button variant="link" className="ml-1 h-auto p-0 text-primary">
+                Get Your Phone Number
               </Button>
             </AlertDescription>
           </Alert>
@@ -254,193 +255,190 @@ export const AnalyticsTab = memo(
           )}
         </div>
 
-        {/* Sentiment & Lead Quality Analysis */}
-        {analytics &&
-          derivedMetrics &&
-          (derivedMetrics.totalSentimentCalls > 0 ||
-            derivedMetrics.totalLeadCalls > 0) && (
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              {/* Sentiment Analysis */}
-              {derivedMetrics.totalSentimentCalls > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5" />
-                      Sentiment Analysis
-                      <InfoTooltip content="This is calculated by Spoqen's state of the art AI configuration leveraging Claude Sonnet to analyze calls and generate sentiment insights based on conversation tone, language patterns, and customer responses." />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
+        {/* Sentiment & Lead Quality Analysis - Always visible for ALL users */}
+        {analytics && derivedMetrics && (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Sentiment Analysis - Always show */}
+            {true && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    Sentiment Analysis
+                    <InfoTooltip content="This is calculated by Spoqen's state of the art AI configuration leveraging Claude Sonnet to analyze calls and generate sentiment insights based on conversation tone, language patterns, and customer responses." />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl font-bold">
+                        {derivedMetrics.positiveRate}%
+                      </span>
+                      <Badge variant="secondary">
+                        {derivedMetrics.totalSentimentCalls || 0} calls analyzed
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-2xl font-bold">
-                          {derivedMetrics.positiveRate}%
-                        </span>
-                        <Badge variant="secondary">
-                          {derivedMetrics.totalSentimentCalls} calls analyzed
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full bg-green-500" />
+                          <span className="text-sm">Positive</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">
+                            {derivedMetrics.sentimentDistribution.positive}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            (
+                            {Math.round(
+                              (derivedMetrics.sentimentDistribution.positive /
+                                derivedMetrics.totalSentimentCalls) *
+                                100
+                            )}
+                            %)
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full bg-green-500" />
-                            <span className="text-sm">Positive</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">
-                              {derivedMetrics.sentimentDistribution.positive}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              (
-                              {Math.round(
-                                (derivedMetrics.sentimentDistribution.positive /
-                                  derivedMetrics.totalSentimentCalls) *
-                                  100
-                              )}
-                              %)
-                            </span>
-                          </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full bg-yellow-500" />
+                          <span className="text-sm">Neutral</span>
                         </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full bg-yellow-500" />
-                            <span className="text-sm">Neutral</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">
-                              {derivedMetrics.sentimentDistribution.neutral}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              (
-                              {Math.round(
-                                (derivedMetrics.sentimentDistribution.neutral /
-                                  derivedMetrics.totalSentimentCalls) *
-                                  100
-                              )}
-                              %)
-                            </span>
-                          </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">
+                            {derivedMetrics.sentimentDistribution.neutral}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            (
+                            {Math.round(
+                              (derivedMetrics.sentimentDistribution.neutral /
+                                derivedMetrics.totalSentimentCalls) *
+                                100
+                            )}
+                            %)
+                          </span>
                         </div>
+                      </div>
 
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full bg-red-500" />
-                            <span className="text-sm">Negative</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">
-                              {derivedMetrics.sentimentDistribution.negative}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              (
-                              {Math.round(
-                                (derivedMetrics.sentimentDistribution.negative /
-                                  derivedMetrics.totalSentimentCalls) *
-                                  100
-                              )}
-                              %)
-                            </span>
-                          </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full bg-red-500" />
+                          <span className="text-sm">Negative</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">
+                            {derivedMetrics.sentimentDistribution.negative}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            (
+                            {Math.round(
+                              (derivedMetrics.sentimentDistribution.negative /
+                                derivedMetrics.totalSentimentCalls) *
+                                100
+                            )}
+                            %)
+                          </span>
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-              {/* Lead Quality Analysis */}
-              {derivedMetrics.totalLeadCalls > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5" />
-                      Lead Quality
-                      <InfoTooltip content="This is calculated by Spoqen's state of the art AI configuration leveraging Claude Sonnet to analyze calls and generate lead quality scores based on customer engagement, interest level, buying signals, and conversion potential." />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
+            {/* Lead Quality Analysis - Always show */}
+            {true && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    Lead Quality
+                    <InfoTooltip content="This is calculated by Spoqen's state of the art AI configuration leveraging Claude Sonnet to analyze calls and generate lead quality scores based on customer engagement, interest level, buying signals, and conversion potential." />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl font-bold">
+                        {derivedMetrics.hotLeadRate}%
+                      </span>
+                      <Badge variant="secondary">
+                        {derivedMetrics.totalLeadCalls || 0} leads scored
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-2xl font-bold">
-                          {derivedMetrics.hotLeadRate}%
-                        </span>
-                        <Badge variant="secondary">
-                          {derivedMetrics.totalLeadCalls} leads scored
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full bg-red-500" />
+                          <span className="text-sm">Hot</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">
+                            {derivedMetrics.leadQualityDistribution.hot}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            (
+                            {Math.round(
+                              (derivedMetrics.leadQualityDistribution.hot /
+                                derivedMetrics.totalLeadCalls) *
+                                100
+                            )}
+                            %)
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full bg-red-500" />
-                            <span className="text-sm">Hot</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">
-                              {derivedMetrics.leadQualityDistribution.hot}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              (
-                              {Math.round(
-                                (derivedMetrics.leadQualityDistribution.hot /
-                                  derivedMetrics.totalLeadCalls) *
-                                  100
-                              )}
-                              %)
-                            </span>
-                          </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full bg-orange-500" />
+                          <span className="text-sm">Warm</span>
                         </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full bg-orange-500" />
-                            <span className="text-sm">Warm</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">
-                              {derivedMetrics.leadQualityDistribution.warm}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              (
-                              {Math.round(
-                                (derivedMetrics.leadQualityDistribution.warm /
-                                  derivedMetrics.totalLeadCalls) *
-                                  100
-                              )}
-                              %)
-                            </span>
-                          </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">
+                            {derivedMetrics.leadQualityDistribution.warm}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            (
+                            {Math.round(
+                              (derivedMetrics.leadQualityDistribution.warm /
+                                derivedMetrics.totalLeadCalls) *
+                                100
+                            )}
+                            %)
+                          </span>
                         </div>
+                      </div>
 
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full bg-blue-500" />
-                            <span className="text-sm">Cold</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">
-                              {derivedMetrics.leadQualityDistribution.cold}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              (
-                              {Math.round(
-                                (derivedMetrics.leadQualityDistribution.cold /
-                                  derivedMetrics.totalLeadCalls) *
-                                  100
-                              )}
-                              %)
-                            </span>
-                          </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full bg-blue-500" />
+                          <span className="text-sm">Cold</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">
+                            {derivedMetrics.leadQualityDistribution.cold}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            (
+                            {Math.round(
+                              (derivedMetrics.leadQualityDistribution.cold /
+                                derivedMetrics.totalLeadCalls) *
+                                100
+                            )}
+                            %)
+                          </span>
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
       </div>
     );
   }

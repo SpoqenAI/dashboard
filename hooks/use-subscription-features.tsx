@@ -67,12 +67,10 @@ export function useAnalyticsFeatures() {
     useSubscriptionFeatures();
 
   return {
-    canViewBasic: hasFeature('analytics', 'basic'),
-    canViewAdvanced: hasFeature('analytics', 'advanced'),
-    canViewCustomReports: hasFeature('analytics', 'customReports'),
+    canViewAnalytics: hasFeature('analytics', 'enabled'),
     shouldShowUpgrade: shouldShowUpgrade,
     getUpgradeMessage: (feature: string) =>
-      getUpgradeMessage(`advanced analytics - ${feature}`),
+      getUpgradeMessage(`analytics - ${feature}`),
   };
 }
 
@@ -82,8 +80,6 @@ export function useIntegrationFeatures() {
 
   return {
     canUseWebhook: hasFeature('integrations', 'webhook'),
-    canUseZapier: hasFeature('integrations', 'zapier'),
-    canUseCRM: hasFeature('integrations', 'crm'),
     shouldShowUpgrade: shouldShowUpgrade,
     getUpgradeMessage: (integration: string) =>
       getUpgradeMessage(`${integration} integration`),
@@ -96,9 +92,6 @@ export function useCustomizationFeatures() {
 
   return {
     canUseBasicGreeting: hasFeature('customization', 'basicGreeting'),
-    canUseCustomScripts: hasFeature('customization', 'customScripts'),
-    canUseMultiLanguage: hasFeature('customization', 'multiLanguage'),
-    canUseAITraining: hasFeature('customization', 'aiTraining'),
     shouldShowUpgrade: shouldShowUpgrade,
     getUpgradeMessage: (feature: string) =>
       getUpgradeMessage(`custom ${feature}`),
