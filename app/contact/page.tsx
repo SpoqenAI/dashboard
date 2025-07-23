@@ -1,4 +1,4 @@
-import React from 'react';
+import Link from 'next/link';
 
 export default function ContactPage() {
   return (
@@ -49,12 +49,12 @@ export default function ContactPage() {
           request deletion of this data at any time. By using the AI
           receptionist, you consent to these practices. For full details, see
           our{' '}
-          <a
+          <Link
             href="/privacy"
             className="font-medium text-primary underline hover:text-primary/80"
           >
             Privacy Policy
-          </a>
+          </Link>
           .
         </p>
       </div>
