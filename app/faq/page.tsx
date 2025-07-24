@@ -306,8 +306,6 @@ const categories: FaqCategory[] = [
   },
 ];
 
-
-
 export default function FAQPage() {
   const [search, setSearch] = useState('');
   const allQuestions = useMemo(
@@ -317,16 +315,17 @@ export default function FAQPage() {
       ),
     []
   );
-  
+
   const filteredCategories = useMemo(() => {
     if (!search) return categories;
     const term = search.toLowerCase();
     return categories
       .map(cat => ({
         ...cat,
-        questions: cat.questions.filter(q =>
-          q.question.toLowerCase().includes(term) ||
-          q.answer.toLowerCase().includes(term)
+        questions: cat.questions.filter(
+          q =>
+            q.question.toLowerCase().includes(term) ||
+            q.answer.toLowerCase().includes(term)
         ),
       }))
       .filter(cat => cat.questions.length > 0);
@@ -339,16 +338,16 @@ export default function FAQPage() {
       );
     }
     const term = search.toLowerCase();
-    return categories
-      .flatMap(cat =>
-        cat.questions
-          .filter(q => q.popular)
-          .filter(q =>
+    return categories.flatMap(cat =>
+      cat.questions
+        .filter(q => q.popular)
+        .filter(
+          q =>
             q.question.toLowerCase().includes(term) ||
             q.answer.toLowerCase().includes(term)
-          )
-          .map(q => ({ ...q }))
-      );
+        )
+        .map(q => ({ ...q }))
+    );
   }, [search]);
 
   return (
@@ -391,7 +390,9 @@ export default function FAQPage() {
       {filteredPopularQuestions.length > 0 && (
         <section className="mb-12">
           <h2 className="mb-4 text-center text-2xl font-bold text-foreground">
-            {search ? 'Popular Questions Matching Your Search' : 'Most Popular Questions'}
+            {search
+              ? 'Popular Questions Matching Your Search'
+              : 'Most Popular Questions'}
           </h2>
           <Accordion type="single" collapsible className="space-y-2">
             {filteredPopularQuestions.map((q, idx) => (
@@ -431,16 +432,19 @@ export default function FAQPage() {
         </section>
       ))}
 
-      {search && filteredCategories.length === 0 && filteredPopularQuestions.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-lg text-muted-foreground mb-4">
-            No questions found matching "{search}"
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Try searching with different keywords or browse all questions below.
-          </p>
-        </div>
-      )}
+      {search &&
+        filteredCategories.length === 0 &&
+        filteredPopularQuestions.length === 0 && (
+          <div className="py-12 text-center">
+            <p className="mb-4 text-lg text-muted-foreground">
+              No questions found matching "{search}"
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Try searching with different keywords or browse all questions
+              below.
+            </p>
+          </div>
+        )}
 
       <div className="mt-12 text-center">
         <p className="mb-4 text-lg font-medium">Still have questions?</p>

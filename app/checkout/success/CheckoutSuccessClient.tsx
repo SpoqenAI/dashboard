@@ -31,11 +31,11 @@ export function CheckoutSuccessClient({
 
   const handleContinue = () => {
     setIsNavigating(true);
-    
+
     // router.push doesn't throw errors in Next.js App Router
     // It's designed to be fire-and-forget
     router.push('/recent-calls');
-    
+
     // Reset navigation state after a short delay
     // This allows the UI to show the loading state briefly
     setTimeout(() => {
@@ -44,11 +44,7 @@ export function CheckoutSuccessClient({
   };
 
   return (
-    <Button
-      onClick={handleContinue}
-      className="w-full"
-      disabled={isNavigating}
-    >
+    <Button onClick={handleContinue} className="w-full" disabled={isNavigating}>
       {isNavigating ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
