@@ -12,7 +12,6 @@ export async function GET(req: NextRequest) {
   const ip =
     req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
   const { success, remaining, reset } = await emailCheckLimiter.limit(ip);
-  console.log('RL', { ip, success, remaining, reset });
 
   if (!success) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
