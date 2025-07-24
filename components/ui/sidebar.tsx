@@ -650,7 +650,15 @@ const SidebarMenuSkeleton = React.forwardRef<
 >(({ className, showIcon = false, ...props }, ref) => {
   // Random width between 50 to 90%.
   const width = React.useMemo(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`;
+    // Use crypto.getRandomValues() for consistent randomness, fallback to deterministic value
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const array = new Uint8Array(1);
+      crypto.getRandomValues(array);
+      return `${Math.floor((array[0] / 255) * 40) + 50}%`;
+    }
+    // Deterministic fallback based on component instance
+    const deterministicValue = (Date.now() % 40) + 50;
+    return `${deterministicValue}%`;
   }, []);
 
   return (

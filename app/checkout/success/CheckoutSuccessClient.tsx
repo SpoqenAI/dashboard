@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
 
@@ -36,7 +36,9 @@ export function CheckoutSuccessClient({
     setNavigationError(null);
 
     try {
-      await router.push('/recent-calls');
+      // router.push doesn't throw errors in Next.js App Router
+      // It's designed to be fire-and-forget
+      router.push('/recent-calls');
     } catch (error) {
       logger.error(
         'CHECKOUT_SUCCESS',
@@ -60,18 +62,19 @@ export function CheckoutSuccessClient({
         duration: 5000,
       });
     } finally {
-      setIsNavigating(false);
+      // Reset navigation state after a short delay
+      // This allows the UI to show the loading state briefly
+      setTimeout(() => {
+        setIsNavigating(false);
+      }, 1000);
     }
   };
 
   return (
     <>
       {navigationError && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
-          <div className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <p className="text-sm">{navigationError}</p>
-          </div>
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+          {navigationError}
         </div>
       )}
 
