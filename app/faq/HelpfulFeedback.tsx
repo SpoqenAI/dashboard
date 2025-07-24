@@ -79,22 +79,18 @@ export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
         // Use crypto.randomUUID() with secure fallback
         let uuid: string;
         try {
-          if (
-            typeof crypto !== 'undefined' &&
-            typeof crypto.randomUUID === 'function'
-          ) {
-            uuid = crypto.randomUUID();
-          } else if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+          // Try to use crypto.randomUUID() first
+          uuid = crypto.randomUUID();
+        } catch (error) {
+          // Fallback if crypto.randomUUID() is not available
+          try {
             // Secure fallback using crypto.getRandomValues()
             uuid = generateSecureUUID();
-          } else {
-            // Last resort: use timestamp + counter (not cryptographically secure but better than Math.random)
+          } catch (fallbackError) {
+            // Final fallback if all crypto methods fail
+            console.warn('Crypto API unavailable, using timestamp-based ID');
             uuid = generateTimestampBasedId();
           }
-        } catch (error) {
-          // Fallback if crypto API throws an error
-          console.warn('Crypto API unavailable, using timestamp-based ID');
-          uuid = generateTimestampBasedId();
         }
         sessionId = `session_${Date.now()}_${uuid}`;
         sessionStorage.setItem('faq-session-id', sessionId);
