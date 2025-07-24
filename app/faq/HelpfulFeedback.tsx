@@ -11,9 +11,13 @@ interface HelpfulFeedbackProps {
 export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
   const [feedback, setFeedback] = useState<null | 'yes' | 'no'>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retryAfter, setRetryAfter] = useState<number | null>(null);
 
   const handleFeedback = async (feedbackType: 'yes' | 'no') => {
     setIsSubmitting(true);
+    setError(null);
+    setRetryAfter(null);
 
     try {
       const feedbackData: FeedbackData = {
@@ -36,14 +40,32 @@ export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit feedback');
+        const errorData = await response.json().catch(() => ({}));
+
+        if (response.status === 429) {
+          // Rate limit exceeded
+          const retryAfterSeconds = errorData.retryAfter || 300; // Default to 5 minutes
+          setRetryAfter(retryAfterSeconds);
+          setError(
+            errorData.message ||
+              "You've submitted feedback too quickly. Please wait a moment before trying again."
+          );
+          return;
+        } else {
+          // Other errors
+          setError(
+            errorData.message ||
+              'Unable to submit feedback right now. Please try again later.'
+          );
+          return;
+        }
       }
 
+      // Success
       setFeedback(feedbackType);
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      // Still set feedback state for UX, even if tracking fails
-      setFeedback(feedbackType);
+      setError('Network error. Please check your connection and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -54,8 +76,33 @@ export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
     if (typeof window !== 'undefined') {
       let sessionId = sessionStorage.getItem('faq-session-id');
       if (!sessionId) {
-        // Use crypto.randomUUID() for cryptographically secure randomness
-        const uuid = crypto.randomUUID();
+        // Use crypto.randomUUID() with fallback for browsers that don't support it
+        let uuid: string;
+        try {
+          if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            uuid = crypto.randomUUID();
+          } else {
+            // Fallback: generate a random UUID-like string
+            uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+              /[xy]/g,
+              function (c) {
+                const r = (Math.random() * 16) | 0;
+                const v = c === 'x' ? r : (r & 0x3) | 0x8;
+                return v.toString(16);
+              }
+            );
+          }
+        } catch (error) {
+          // Additional fallback if crypto API throws an error
+          uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+            /[xy]/g,
+            function (c) {
+              const r = (Math.random() * 16) | 0;
+              const v = c === 'x' ? r : (r & 0x3) | 0x8;
+              return v.toString(16);
+            }
+          );
+        }
         sessionId = `session_${Date.now()}_${uuid}`;
         sessionStorage.setItem('faq-session-id', sessionId);
       }
@@ -65,11 +112,47 @@ export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
     return `session_${Date.now()}_server`;
   };
 
+  // Helper function to format retry time
+  const formatRetryTime = (seconds: number): string => {
+    if (seconds < 60) {
+      return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+    }
+    const minutes = Math.ceil(seconds / 60);
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+  };
+
   if (feedback) {
     return (
       <p className="mt-2 text-sm text-muted-foreground">
         Thanks for the feedback!
       </p>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mt-2 space-y-2">
+        <div className="flex items-center gap-2 text-sm text-red-600">
+          <span>{error}</span>
+        </div>
+        {retryAfter && (
+          <p className="text-xs text-muted-foreground">
+            Please wait {formatRetryTime(retryAfter)} before submitting more
+            feedback.
+          </p>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setError(null);
+            setRetryAfter(null);
+          }}
+          className="text-xs"
+        >
+          Try Again
+        </Button>
+      </div>
     );
   }
 
@@ -94,6 +177,9 @@ export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
       >
         <ThumbsDown className="h-4 w-4" />
       </Button>
+      {isSubmitting && (
+        <span className="text-xs text-muted-foreground">Submitting...</span>
+      )}
     </div>
   );
 }

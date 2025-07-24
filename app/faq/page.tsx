@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import {
   Phone,
   Settings,
@@ -455,11 +456,13 @@ export default function FAQPage() {
         Find quick answers to common questions about using Spoqen.
       </p>
 
-      <FAQSearch
-        categories={serializableCategories}
-        allQuestions={allQuestions}
-        popularQuestions={popularQuestions}
-      />
+      <Suspense fallback={<div className="text-center">Loading FAQ...</div>}>
+        <FAQSearch
+          categories={serializableCategories}
+          allQuestions={allQuestions}
+          popularQuestions={popularQuestions}
+        />
+      </Suspense>
 
       <div className="mt-12 text-center">
         <p className="mb-4 text-lg font-medium">Still have questions?</p>
