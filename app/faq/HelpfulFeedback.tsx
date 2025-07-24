@@ -79,7 +79,10 @@ export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
         // Use crypto.randomUUID() with secure fallback
         let uuid: string;
         try {
-          if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+          if (
+            typeof crypto !== 'undefined' &&
+            typeof crypto.randomUUID === 'function'
+          ) {
             uuid = crypto.randomUUID();
           } else if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
             // Secure fallback using crypto.getRandomValues()
