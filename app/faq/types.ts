@@ -14,6 +14,20 @@ export interface StoredFeedbackData extends FeedbackData {
   referrer?: string;
 }
 
+// Database record interface - matches the actual database schema
+export interface DatabaseFeedbackRecord {
+  id: string;
+  question_id: string;
+  feedback: 'helpful' | 'not_helpful';
+  timestamp: string;
+  user_agent: string | null;
+  session_id: string | null;
+  ip_address: string | null;
+  referrer: string | null;
+  created_at: string; // Supabase automatically adds this timestamp
+  updated_at?: string; // Optional update timestamp
+}
+
 // Analytics and aggregation types
 export interface FeedbackAnalytics {
   totalFeedback: number;
@@ -37,5 +51,5 @@ export interface QuestionInsight extends QuestionFeedbackSummary {
 export interface FeedbackAnalyticsResponse {
   analytics: FeedbackAnalytics;
   questionInsights: QuestionInsight[];
-  feedback: any[]; // Database records - could be further typed if needed
+  feedback: DatabaseFeedbackRecord[]; // Properly typed database records
 }

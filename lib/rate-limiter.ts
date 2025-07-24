@@ -24,14 +24,23 @@ class RateLimiter {
   private cache = new Map<string, RateLimitEntry>();
   private lastCleanup = Date.now();
   private readonly CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  // Mutex-like locks for atomic operations per key
+  private locks = new Map<string, Promise<void>>();
 
   constructor(private config: RateLimitConfig) {}
 
-  check(identifier: string): RateLimitResult {
+  async check(identifier: string): Promise<RateLimitResult> {
     // Cleanup expired entries periodically
     this.maybeCleanup();
 
     const key = `${this.config.keyPrefix}:${identifier}`;
+
+    // Ensure atomic operation per key using async lock
+    return this.withLock(key, () => this.checkAtomic(key, identifier));
+  }
+
+  // Atomic check operation - guaranteed no race conditions
+  private checkAtomic(key: string, identifier: string): RateLimitResult {
     const now = Date.now();
     const windowStart = now - this.config.windowMs;
 
@@ -46,7 +55,7 @@ class RateLimiter {
       };
     }
 
-    // Check if limit exceeded
+    // Check if limit exceeded BEFORE incrementing
     if (entry.count >= this.config.maxRequests) {
       const resetTime = entry.windowStart + this.config.windowMs;
       const retryAfter = Math.ceil((resetTime - now) / 1000);
@@ -59,7 +68,7 @@ class RateLimiter {
       };
     }
 
-    // Increment counter and update cache
+    // Atomically increment counter and update cache
     entry.count++;
     entry.lastRequest = now;
     this.cache.set(key, entry);
@@ -72,6 +81,33 @@ class RateLimiter {
       remaining,
       resetTime,
     };
+  }
+
+  // Async lock mechanism to ensure atomic operations per key
+  private async withLock<T>(key: string, operation: () => T): Promise<T> {
+    // Wait for any existing lock on this key
+    const existingLock = this.locks.get(key);
+    if (existingLock) {
+      await existingLock;
+    }
+
+    // Create a new lock for this operation
+    let resolveLock: () => void;
+    const lockPromise = new Promise<void>(resolve => {
+      resolveLock = resolve;
+    });
+
+    this.locks.set(key, lockPromise);
+
+    try {
+      // Execute the operation atomically
+      const result = operation();
+      return result;
+    } finally {
+      // Release the lock
+      this.locks.delete(key);
+      resolveLock!();
+    }
   }
 
   // Get current usage for an identifier (useful for debugging)
@@ -161,18 +197,18 @@ export function createRateLimiter(config: RateLimitConfig): RateLimiter {
 }
 
 // Helper function to check multiple rate limiters
-export function checkMultipleRateLimits(
+export async function checkMultipleRateLimits(
   checks: Array<{ limiter: RateLimiter; identifier: string; name: string }>
-): {
+): Promise<{
   allowed: boolean;
   failedCheck?: string;
   retryAfter?: number;
   results: Record<string, RateLimitResult>;
-} {
+}> {
   const results: Record<string, RateLimitResult> = {};
 
   for (const check of checks) {
-    const result = check.limiter.check(check.identifier);
+    const result = await check.limiter.check(check.identifier);
     results[check.name] = result;
 
     if (!result.allowed) {

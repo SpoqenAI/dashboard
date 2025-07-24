@@ -8,6 +8,7 @@ import type {
   QuestionFeedbackSummary,
   QuestionInsight,
   FeedbackAnalyticsResponse,
+  DatabaseFeedbackRecord,
 } from '@/app/faq/types';
 import {
   faqFeedbackRateLimiter,
@@ -120,7 +121,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const rateLimitResult = checkMultipleRateLimits(rateLimitChecks);
+    const rateLimitResult = await checkMultipleRateLimits(rateLimitChecks);
 
     if (!rateLimitResult.allowed) {
       console.warn('Rate limit exceeded for FAQ feedback:', {
@@ -158,7 +159,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get additional tracking data from request
-    const referrer = headersList.get('referer') || undefined;
+    const referrer = headersList.get('referer') || null;
 
     // Store feedback in Supabase database
     const supabase = await createClient();
@@ -275,7 +276,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let query = supabase
+    // Fetch paginated results for display
+    let paginatedQuery = supabase
       .from('faq_feedback')
       .select('*')
       .order('created_at', { ascending: false })
@@ -283,38 +285,58 @@ export async function GET(request: NextRequest) {
 
     // Filter by question ID if provided and validated
     if (validatedQuestionId) {
-      query = query.eq('question_id', validatedQuestionId);
+      paginatedQuery = paginatedQuery.eq('question_id', validatedQuestionId);
     }
-    const { data: results, error } = await query;
+    const { data: results, error: paginatedError } = await paginatedQuery;
 
-    if (error) {
-      console.error('Database error:', error);
+    if (paginatedError) {
+      console.error('Database error:', paginatedError);
       return NextResponse.json(
         { error: 'Failed to fetch feedback' },
         { status: 500 }
       );
     }
 
-    const feedbackData = results || [];
+    const feedbackData: DatabaseFeedbackRecord[] = results || [];
 
-    // Calculate analytics
+    // Fetch ALL feedback data for accurate analytics calculation
+    let analyticsQuery = supabase.from('faq_feedback').select('*');
+
+    // Apply same question filter for analytics if provided
+    if (validatedQuestionId) {
+      analyticsQuery = analyticsQuery.eq('question_id', validatedQuestionId);
+    }
+    const { data: allFeedbackData, error: analyticsError } =
+      await analyticsQuery;
+
+    if (analyticsError) {
+      console.error('Database error for analytics:', analyticsError);
+      return NextResponse.json(
+        { error: 'Failed to fetch analytics data' },
+        { status: 500 }
+      );
+    }
+
+    const allFeedback: DatabaseFeedbackRecord[] = allFeedbackData || [];
+
+    // Calculate analytics on FULL dataset, not just paginated results
     const analytics: FeedbackAnalytics = {
-      totalFeedback: feedbackData.length,
-      helpful: feedbackData.filter(f => f.feedback === 'helpful').length,
-      notHelpful: feedbackData.filter(f => f.feedback === 'not_helpful').length,
+      totalFeedback: allFeedback.length,
+      helpful: allFeedback.filter(f => f.feedback === 'helpful').length,
+      notHelpful: allFeedback.filter(f => f.feedback === 'not_helpful').length,
       helpfulPercentage:
-        feedbackData.length > 0
+        allFeedback.length > 0
           ? Math.round(
-              (feedbackData.filter(f => f.feedback === 'helpful').length /
-                feedbackData.length) *
+              (allFeedback.filter(f => f.feedback === 'helpful').length /
+                allFeedback.length) *
                 100
             )
           : 0,
     };
 
-    // Group by question for insights
-    const byQuestion = feedbackData.reduce(
-      (acc, feedback) => {
+    // Group by question for insights using FULL dataset
+    const byQuestion = allFeedback.reduce(
+      (acc, feedback: DatabaseFeedbackRecord) => {
         if (!acc[feedback.question_id]) {
           acc[feedback.question_id] = {
             questionId: feedback.question_id,
@@ -353,7 +375,7 @@ export async function GET(request: NextRequest) {
     const response: FeedbackAnalyticsResponse = {
       analytics,
       questionInsights,
-      feedback: validatedQuestionId ? results : results.slice(-50), // Limit recent feedback to 50 items
+      feedback: validatedQuestionId ? feedbackData : feedbackData.slice(-50), // Limit recent feedback to 50 items
     };
 
     return NextResponse.json(response);
@@ -373,11 +395,11 @@ function generateFeedbackId(): string {
 }
 
 // Question ID validation utility for security
-function validateQuestionId(questionId: string): {
-  isValid: boolean;
-  error?: string;
-  sanitizedValue?: string;
-} {
+function validateQuestionId(
+  questionId: string
+):
+  | { isValid: true; sanitizedValue: string }
+  | { isValid: false; error: string } {
   // Check for null/undefined/empty
   if (!questionId || typeof questionId !== 'string') {
     return {

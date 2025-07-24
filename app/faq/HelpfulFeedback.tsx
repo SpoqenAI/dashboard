@@ -76,32 +76,22 @@ export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
     if (typeof window !== 'undefined') {
       let sessionId = sessionStorage.getItem('faq-session-id');
       if (!sessionId) {
-        // Use crypto.randomUUID() with fallback for browsers that don't support it
+        // Use crypto.randomUUID() with secure fallback
         let uuid: string;
         try {
           if (typeof crypto !== 'undefined' && crypto.randomUUID) {
             uuid = crypto.randomUUID();
+          } else if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+            // Secure fallback using crypto.getRandomValues()
+            uuid = generateSecureUUID();
           } else {
-            // Fallback: generate a random UUID-like string
-            uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
-              /[xy]/g,
-              function (c) {
-                const r = (Math.random() * 16) | 0;
-                const v = c === 'x' ? r : (r & 0x3) | 0x8;
-                return v.toString(16);
-              }
-            );
+            // Last resort: use timestamp + counter (not cryptographically secure but better than Math.random)
+            uuid = generateTimestampBasedId();
           }
         } catch (error) {
-          // Additional fallback if crypto API throws an error
-          uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
-            /[xy]/g,
-            function (c) {
-              const r = (Math.random() * 16) | 0;
-              const v = c === 'x' ? r : (r & 0x3) | 0x8;
-              return v.toString(16);
-            }
-          );
+          // Fallback if crypto API throws an error
+          console.warn('Crypto API unavailable, using timestamp-based ID');
+          uuid = generateTimestampBasedId();
         }
         sessionId = `session_${Date.now()}_${uuid}`;
         sessionStorage.setItem('faq-session-id', sessionId);
@@ -110,6 +100,31 @@ export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
     }
     // Fallback for server-side (though this shouldn't happen in practice)
     return `session_${Date.now()}_server`;
+  };
+
+  // Generate cryptographically secure UUID using crypto.getRandomValues()
+  const generateSecureUUID = (): string => {
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+
+    // Set version (4) and variant bits according to RFC 4122
+    array[6] = (array[6] & 0x0f) | 0x40; // Version 4
+    array[8] = (array[8] & 0x3f) | 0x80; // Variant 10
+
+    const hex = Array.from(array, byte =>
+      byte.toString(16).padStart(2, '0')
+    ).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+  };
+
+  // Non-cryptographic but deterministic fallback (better than Math.random)
+  const generateTimestampBasedId = (): string => {
+    const timestamp = Date.now().toString(36);
+    const counter = (performance.now() * 1000).toString(36);
+    const random = Array.from({ length: 8 }, () =>
+      ((Date.now() + performance.now()) % 36).toString(36)
+    ).join('');
+    return `${timestamp}-${counter}-${random}`;
   };
 
   // Helper function to format retry time
