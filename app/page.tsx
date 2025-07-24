@@ -3,7 +3,12 @@ import { SimpleBackground } from '@/components/simple-background';
 import { HeroCTASection } from '@/components/hero-cta-section';
 import { ProblemBanner } from '@/components/ui/problem-banner';
 import { InteractiveDemo } from '@/components/interactive-demo';
-import { PricingCard } from '@/components/pricing-card';
+import { PricingGrid } from '@/app/pricing/components/pricing-grid';
+import {
+  BillingToggle,
+  BillingProvider,
+} from '@/app/pricing/components/billing-toggle';
+import { pricingTiers } from '@/app/pricing/page';
 // Removed testimonials and trust indicators
 import { IntegrationsShowcase } from '@/components/integrations-showcase';
 import { ROICalculator } from '@/components/roi-calculator';
@@ -13,7 +18,7 @@ import ExitIntentModalLoader from '@/components/ui/exit-intent-modal-loader';
 
 export default function HomePage() {
   return (
-    <>
+    <BillingProvider>
       <main id="main-content" className="min-h-screen">
         {/* Hero Section */}
         <SimpleBackground variant="hero" className="relative overflow-hidden">
@@ -85,9 +90,11 @@ export default function HomePage() {
                 Choose the perfect plan for your business. Start free, upgrade
                 when you're ready.
               </p>
+              {/* Billing Toggle */}
+              <BillingToggle />
             </div>
             <Suspense fallback={<div className="h-96" />}>
-              <PricingCard />
+              <PricingGrid pricingTiers={pricingTiers} />
             </Suspense>
           </div>
         </section>
@@ -127,6 +134,6 @@ export default function HomePage() {
       <Suspense fallback={null}>
         <ExitIntentModalLoader />
       </Suspense>
-    </>
+    </BillingProvider>
   );
 }
