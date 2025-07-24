@@ -1,5 +1,6 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
+import { useQueryState } from 'nuqs';
 import {
   Search,
   Settings,
@@ -58,7 +59,11 @@ export default function FAQSearch({
   allQuestions,
   popularQuestions,
 }: FAQSearchProps) {
-  const [search, setSearch] = useState('');
+  // Use nuqs for URL search parameter state management
+  const [search, setSearch] = useQueryState('q', {
+    defaultValue: '',
+    clearOnDefault: true,
+  });
 
   // Enhanced search that includes both question and answer content
   const filteredCategories = useMemo(() => {
@@ -96,8 +101,8 @@ export default function FAQSearch({
           <Input
             type="search"
             placeholder="Search questions and answers"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
+            value={search || ''}
+            onChange={e => setSearch(e.target.value || null)}
             className="pl-9"
             aria-label="Search questions and answers"
           />

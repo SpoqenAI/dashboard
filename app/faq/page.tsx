@@ -345,25 +345,22 @@ const categories: FaqCategory[] = [
   },
 ];
 
+// Icon mapping for FAQ categories
+const iconNameMap: Record<string, string> = {
+  'getting-started': 'Settings',
+  features: 'Phone',
+  analytics: 'BarChart3',
+  pricing: 'CreditCard',
+  technical: 'Cog',
+  support: 'HelpCircle',
+};
+
 // Convert categories to serializable format
 const serializableCategories: SerializableFaqCategory[] = categories.map(
   cat => ({
     id: cat.id,
     name: cat.name,
-    iconName:
-      cat.id === 'getting-started'
-        ? 'Settings'
-        : cat.id === 'features'
-          ? 'Phone'
-          : cat.id === 'analytics'
-            ? 'BarChart3'
-            : cat.id === 'pricing'
-              ? 'CreditCard'
-              : cat.id === 'technical'
-                ? 'Cog'
-                : cat.id === 'support'
-                  ? 'HelpCircle'
-                  : 'HelpCircle',
+    iconName: iconNameMap[cat.id] || 'HelpCircle',
     questions: cat.questions,
   })
 );

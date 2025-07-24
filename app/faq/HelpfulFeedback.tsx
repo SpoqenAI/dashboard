@@ -2,17 +2,10 @@
 import { useState } from 'react';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import type { FeedbackData } from './types';
 
 interface HelpfulFeedbackProps {
   questionId: string;
-}
-
-interface FeedbackData {
-  questionId: string;
-  feedback: 'helpful' | 'not_helpful';
-  timestamp: string;
-  userAgent?: string;
-  sessionId?: string;
 }
 
 export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
