@@ -168,5 +168,7 @@ export async function GET(request: NextRequest) {
 }
 
 function generateFeedbackId(): string {
-  return `feedback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  // Use crypto.randomUUID() for cryptographically secure randomness
+  const uuid = crypto.randomUUID();
+  return `feedback_${Date.now()}_${uuid}`;
 }

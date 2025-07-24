@@ -56,17 +56,20 @@ export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
     }
   };
 
-  // Generate a simple session ID for tracking multiple feedback from same session
+  // Generate a cryptographically secure session ID for tracking multiple feedback from same session
   const generateSessionId = (): string => {
     if (typeof window !== 'undefined') {
       let sessionId = sessionStorage.getItem('faq-session-id');
       if (!sessionId) {
-        sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        // Use crypto.randomUUID() for cryptographically secure randomness
+        const uuid = crypto.randomUUID();
+        sessionId = `session_${Date.now()}_${uuid}`;
         sessionStorage.setItem('faq-session-id', sessionId);
       }
       return sessionId;
     }
-    return `session_${Date.now()}`;
+    // Fallback for server-side (though this shouldn't happen in practice)
+    return `session_${Date.now()}_server`;
   };
 
   if (feedback) {
