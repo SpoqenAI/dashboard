@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import * as Sentry from '@sentry/nextjs';
+import { emailCheckLimiter } from '@/lib/redis/rate-limiter';
 
 const EMAIL_REGEX =
   /^[a-zA-Z0-9]([a-zA-Z0-9._+-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/;
 
 // GET /api/check-email-exists?email=foo%40bar.com
 export async function GET(req: NextRequest) {
+  // Apply rate limiting per IP
+  const ip =
+    req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+  const { success, remaining, reset } = await emailCheckLimiter.limit(ip);
+  console.log('RL', { ip, success, remaining, reset });
+
+  if (!success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const { searchParams } = new URL(req.url);
   const email = searchParams.get('email');
 
