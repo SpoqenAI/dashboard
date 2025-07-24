@@ -30,7 +30,7 @@ const PasswordStrengthBar = dynamic(
 import Logo from '@/components/ui/logo';
 import { CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-// Remote email-uniqueness check is done via an internal API endpoint.
+import { logger } from '@/lib/logger';
 
 // CONVERSION OPTIMIZATION: Reduced form fields for better conversion
 type FormFieldName = 'email' | 'password' | 'confirmPassword' | 'firstName';
@@ -354,7 +354,7 @@ export default function SignupPage() {
 
           emailRemotePendingRef.current = false;
           setIsValidating(prev => ({ ...prev, email: false }));
-          console.error(err);
+          logger.error('SIGNUP', 'Email uniqueness check failed', err as Error);
           // Show generic connectivity error but keep field invalid so user cannot proceed
           setValidationErrors(prev => ({
             ...prev,
@@ -479,7 +479,11 @@ export default function SignupPage() {
         exists = await checkEmailExists(formData.email);
       } catch (err) {
         // Network or server error – log but allow submission to proceed.
-        console.error('Email uniqueness check failed, proceeding anyway', err);
+        logger.error(
+          'SIGNUP',
+          'Email uniqueness check failed during submission, proceeding anyway',
+          err as Error
+        );
       }
 
       // Only mark invalid if check completed and email definitely exists
