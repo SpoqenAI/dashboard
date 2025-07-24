@@ -91,11 +91,10 @@ export const pricingTiers: PricingTier[] = [
     annualPrice: 96, // $96/year (20% discount from $120)
     features: [
       'Up to 30 calls per month',
-      'Basic analytics dashboard',
+      'Analytics dashboard',
       'Call summaries & transcripts',
       'Email notifications',
       'Basic AI settings',
-      'Email support',
     ],
     limits: {
       calls: '30 calls/month',
@@ -113,15 +112,7 @@ export const pricingTiers: PricingTier[] = [
     description: 'For growing businesses',
     monthlyPrice: 30, // Confirmed correct price
     annualPrice: 288, // $288/year ($24/month equivalent, $72/year savings = 20% discount)
-    features: [
-      'Unlimited calls & minutes',
-      'Advanced analytics dashboard',
-      'Advanced lead qualification',
-      'CRM integrations (Webhook API)',
-      'Real-time SMS & email alerts',
-      'Custom call scripts & greetings',
-      'Priority support',
-    ],
+    features: ['Everything in Starter', 'Unlimited calls & minutes'],
     limits: {
       calls: 'Unlimited calls',
       minutes: 'Unlimited minutes',
@@ -137,17 +128,7 @@ export const pricingTiers: PricingTier[] = [
     description: 'For scaling enterprises',
     monthlyPrice: 0, // Contact sales
     annualPrice: 0, // Contact sales
-    features: [
-      'Everything in Professional',
-      'Multi-language support',
-      'Custom AI training & fine-tuning',
-      'Dedicated phone numbers',
-      'Advanced integrations (Zapier, etc.)',
-      'Custom reporting & analytics',
-      'Dedicated account manager',
-      'Phone & video support',
-      'SLA guarantee',
-    ],
+    features: ['Everything in Professional', 'Customized for your needs'],
     limits: {
       calls: 'Unlimited calls',
       minutes: 'Unlimited minutes',
