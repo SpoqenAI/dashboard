@@ -139,7 +139,7 @@ serve(async req => {
         phoneNumber,
         logoUrl: `${bucketUrl}/Spoqen.png`,
         fullLogoUrl: `${bucketUrl}/Spoqen-full.png`,
-        dashboardUrl: `${baseUrl}/dashboard`,
+        dashboardUrl: `${baseUrl}/recent-calls`,
       })
     );
 
