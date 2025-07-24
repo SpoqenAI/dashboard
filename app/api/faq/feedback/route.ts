@@ -103,16 +103,20 @@ export async function GET(request: NextRequest) {
     // Get feedback from Supabase database
     const supabase = await createClient();
 
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '100');
+    const offset = (page - 1) * limit;
+
     let query = supabase
       .from('faq_feedback')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     // Filter by question ID if provided
     if (questionId) {
       query = query.eq('question_id', questionId);
     }
-
     const { data: results, error } = await query;
 
     if (error) {
