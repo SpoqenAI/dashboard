@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { logger } from '@/lib/logger';
 
 interface CheckoutSuccessClientProps {
   transactionId?: string;
@@ -16,7 +15,6 @@ export function CheckoutSuccessClient({
 }: CheckoutSuccessClientProps) {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
-  const [navigationError, setNavigationError] = useState<string | null>(null);
 
   useEffect(() => {
     // Show success toast
@@ -31,67 +29,37 @@ export function CheckoutSuccessClient({
     };
   }, []);
 
-  const handleContinue = async () => {
+  const handleContinue = () => {
     setIsNavigating(true);
-    setNavigationError(null);
-
-    try {
-      await router.push('/dashboard');
-    } catch (error) {
-      logger.error(
-        'CHECKOUT_SUCCESS',
-        'Failed to navigate to dashboard',
-        error instanceof Error ? error : new Error(String(error)),
-        {
-          transactionId,
-          targetRoute: '/dashboard',
-        }
-      );
-
-      setNavigationError(
-        'Unable to navigate to dashboard. Please try again or refresh the page.'
-      );
-
-      // Show error toast to user
-      toast({
-        title: 'Navigation Error',
-        description: 'Unable to navigate to dashboard. Please try again.',
-        variant: 'destructive',
-        duration: 5000,
-      });
-    } finally {
+    
+    // router.push doesn't throw errors in Next.js App Router
+    // It's designed to be fire-and-forget
+    router.push('/recent-calls');
+    
+    // Reset navigation state after a short delay
+    // This allows the UI to show the loading state briefly
+    setTimeout(() => {
       setIsNavigating(false);
-    }
+    }, 1000);
   };
 
   return (
-    <>
-      {navigationError && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
-          <div className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <p className="text-sm">{navigationError}</p>
-          </div>
-        </div>
+    <Button
+      onClick={handleContinue}
+      className="w-full"
+      disabled={isNavigating}
+    >
+      {isNavigating ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Navigating...
+        </>
+      ) : (
+        <>
+          Continue to Recent Calls
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </>
       )}
-
-      <Button
-        onClick={handleContinue}
-        className="w-full"
-        disabled={isNavigating}
-      >
-        {isNavigating ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Navigating...
-          </>
-        ) : (
-          <>
-            Continue to Dashboard
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </>
-        )}
-      </Button>
-    </>
+    </Button>
   );
 }
