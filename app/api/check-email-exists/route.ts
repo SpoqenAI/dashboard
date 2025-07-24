@@ -10,7 +10,9 @@ const EMAIL_REGEX =
 export async function GET(req: NextRequest) {
   // Apply rate limiting per IP
   const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+    req.headers.get('x-real-ip') ||
+    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    'unknown';
   const { success, remaining, reset } = await emailCheckLimiter.limit(ip);
 
   if (!success) {
