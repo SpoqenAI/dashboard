@@ -109,6 +109,152 @@ export default function RecentCallsClient() {
   // Action points
   const { generateActionPoints } = useActionPoints();
 
+  // Fetch recording helper
+  const fetchCallRecording = useCallback(async (callId: string) => {
+    try {
+      const r = await fetch(`/api/vapi/call-recording?callId=${callId}`);
+      if (!r.ok) return null;
+      const d = await r.json();
+      return d.recordingUrl || null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // Call select handler - moved before handleViewNewCall to fix dependency order
+  const handleCallSelect = useCallback(
+    async (call: VapiCall) => {
+      setSelectedCall(call);
+      setIsCallDetailOpen(true);
+      try {
+        const [recordingUrl, actionPoints] = await Promise.all([
+          fetchCallRecording(call.id),
+          generateActionPoints(call.id),
+        ]);
+        setSelectedCall({
+          ...call,
+          recordingUrl: recordingUrl || call.recordingUrl,
+          analysis: {
+            ...call.analysis,
+            sentiment: actionPoints?.sentiment || call.analysis?.sentiment,
+            actionPoints: actionPoints
+              ? [
+                  ...(actionPoints.keyPoints || []),
+                  ...(actionPoints.followUpItems || []),
+                  ...(actionPoints.urgentConcerns || []),
+                ]
+              : call.analysis?.actionPoints || [],
+          },
+          actionPoints: actionPoints || call.actionPoints,
+        });
+      } catch (err) {
+        logger.error(
+          'RECENT_CALLS',
+          'Error fetching call details',
+          err as Error
+        );
+      }
+    },
+    [fetchCallRecording, generateActionPoints]
+  );
+
+  // Handler for viewing new calls with retry logic
+  const handleViewNewCall = useCallback(
+    async (callData: any) => {
+      // Reset filters first
+      dispatchFilters({ type: 'SET_SEARCH', term: '' });
+      dispatchFilters({ type: 'SET_SENTIMENT', value: 'all' });
+      dispatchFilters({ type: 'SET_LEAD', value: 'all' });
+      dispatchFilters({ type: 'SET_STATUS', value: 'all' });
+      dispatchFilters({ type: 'SET_PAGE', page: 1 });
+
+      // Try to refetch data with retry logic
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      while (retryCount < maxRetries) {
+        try {
+          await refetch();
+
+          // Check if the call is now in the analytics data
+          const foundCall = analytics?.recentCalls?.find(
+            call => call.id === callData.id
+          );
+
+          logger.info(
+            'RECENT_CALLS',
+            'Searching for new call in analytics data',
+            {
+              callId: callData.id,
+              totalCalls: analytics?.recentCalls?.length || 0,
+              foundCall: !!foundCall,
+              retryAttempt: retryCount + 1,
+              availableCallIds:
+                analytics?.recentCalls?.map(c => c.id).slice(0, 5) || [],
+            }
+          );
+
+          if (foundCall) {
+            // Open the call detail modal
+            logger.info(
+              'RECENT_CALLS',
+              'Found new call, opening detail modal',
+              {
+                callId: foundCall.id,
+                hasAnalysis: !!foundCall.analysis,
+              }
+            );
+            handleCallSelect(foundCall);
+            return;
+          }
+
+          // If not found, wait and retry
+          if (retryCount < maxRetries - 1) {
+            await new Promise(resolve =>
+              setTimeout(resolve, 1000 * (retryCount + 1))
+            );
+          }
+          retryCount++;
+        } catch (error) {
+          logger.error(
+            'RECENT_CALLS',
+            'Error fetching call data',
+            error as Error
+          );
+          retryCount++;
+        }
+      }
+
+      // If we get here, the call wasn't found after retries - this is a FAILURE
+      logger.error(
+        'RECENT_CALLS',
+        'CRITICAL: New call failed to appear in analytics after retries',
+        new Error('Call sync failure'),
+        {
+          callId: callData.id,
+          maxRetries,
+          finalCallCount: analytics?.recentCalls?.length || 0,
+          finalCallIds: analytics?.recentCalls?.map(c => c.id) || [],
+          webhookCallData: {
+            id: callData.id,
+            phoneNumber: callData.phoneNumber,
+            callerName: callData.callerName,
+            hasAnalysis: !!callData.analysis,
+            createdAt: callData.createdAt,
+          },
+        }
+      );
+
+      toast({
+        title: 'ALERT: Call Sync Failed',
+        description: `Call ${callData.id} was received but failed to appear in the table. This indicates a sync issue between webhook and VAPI API.`,
+        variant: 'destructive',
+        duration: 15000, // Longer duration so it's not missed
+      });
+    },
+    [refetch, analytics?.recentCalls, handleCallSelect]
+  );
+
   // Real-time call updates
   const { isConnected: isRealTimeConnected } = useCallUpdates({
     enabled: !!user, // Free users now get action points
@@ -138,14 +284,7 @@ export default function RecentCallsClient() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                // Reset filters and go to first page to show the new call
-                dispatchFilters({ type: 'SET_SEARCH', term: '' });
-                dispatchFilters({ type: 'SET_SENTIMENT', value: 'all' });
-                dispatchFilters({ type: 'SET_LEAD', value: 'all' });
-                dispatchFilters({ type: 'SET_STATUS', value: 'all' });
-                dispatchFilters({ type: 'SET_PAGE', page: 1 });
-              }}
+              onClick={() => handleViewNewCall(event.callData)}
             >
               View
             </Button>
@@ -156,11 +295,16 @@ export default function RecentCallsClient() {
         // No delay needed since VAPI has already processed and sent us the analysis
         logger.info(
           'RECENT_CALLS',
-          'Refreshing call data after new call detected'
+          'Refreshing call data after new call detected',
+          {
+            callId: event.callId,
+            currentCallsCount: analytics?.recentCalls?.length || 0,
+            hasAnalyticsData: !!analytics,
+          }
         );
         refetch();
       },
-      [refetch]
+      [refetch, handleViewNewCall]
     ),
   });
 
@@ -217,55 +361,6 @@ export default function RecentCallsClient() {
 
   const totalPages = Math.ceil(
     filteredAndPaginatedCalls.totalCalls / ITEMS_PER_PAGE
-  );
-
-  // Fetch recording helper
-  const fetchCallRecording = useCallback(async (callId: string) => {
-    try {
-      const r = await fetch(`/api/vapi/call-recording?callId=${callId}`);
-      if (!r.ok) return null;
-      const d = await r.json();
-      return d.recordingUrl || null;
-    } catch {
-      return null;
-    }
-  }, []);
-
-  // Call select handler
-  const handleCallSelect = useCallback(
-    async (call: VapiCall) => {
-      setSelectedCall(call);
-      setIsCallDetailOpen(true);
-      try {
-        const [recordingUrl, actionPoints] = await Promise.all([
-          fetchCallRecording(call.id),
-          generateActionPoints(call.id),
-        ]);
-        setSelectedCall({
-          ...call,
-          recordingUrl: recordingUrl || call.recordingUrl,
-          analysis: {
-            ...call.analysis,
-            sentiment: actionPoints?.sentiment || call.analysis?.sentiment,
-            actionPoints: actionPoints
-              ? [
-                  ...(actionPoints.keyPoints || []),
-                  ...(actionPoints.followUpItems || []),
-                  ...(actionPoints.urgentConcerns || []),
-                ]
-              : call.analysis?.actionPoints || [],
-          },
-          actionPoints: actionPoints || call.actionPoints,
-        });
-      } catch (err) {
-        logger.error(
-          'RECENT_CALLS',
-          'Error fetching call details',
-          err as Error
-        );
-      }
-    },
-    [fetchCallRecording, generateActionPoints]
   );
 
   // Pagination & filter helpers
