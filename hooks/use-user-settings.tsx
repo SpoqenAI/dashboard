@@ -56,18 +56,6 @@ export interface ProfileFormData {
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
-  businessName: string;
-  bio: string;
-  licenseNumber: string;
-  brokerage: string;
-  website: string;
-  streetAddress: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-  formattedAddress: string;
   assistantName: string;
 }
 
@@ -75,18 +63,6 @@ export interface ProfileUpdateData {
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
-  businessName: string;
-  bio: string;
-  licenseNumber: string;
-  brokerage: string;
-  website: string;
-  streetAddress: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-  formattedAddress: string;
 }
 
 export function useUserSettings() {
@@ -564,19 +540,6 @@ export function useUserSettings() {
           full_name:
             `${profileDataWithoutEmail.firstName.trim()} ${profileDataWithoutEmail.lastName.trim()}`.trim() ||
             null,
-          phone: profileDataWithoutEmail.phone.trim() || null,
-          business_name: profileDataWithoutEmail.businessName.trim() || null,
-          bio: profileDataWithoutEmail.bio.trim() || null,
-          website: profileDataWithoutEmail.website.trim() || null,
-          license_number: profileDataWithoutEmail.licenseNumber.trim() || null,
-          brokerage: profileDataWithoutEmail.brokerage.trim() || null,
-          street_address: profileDataWithoutEmail.streetAddress.trim() || null,
-          city: profileDataWithoutEmail.city.trim() || null,
-          state: profileDataWithoutEmail.state.trim() || null,
-          postal_code: profileDataWithoutEmail.postalCode.trim() || null,
-          country: profileDataWithoutEmail.country.trim() || null,
-          formatted_address:
-            profileDataWithoutEmail.formattedAddress.trim() || null,
         };
 
         // Update or insert profile without email
@@ -612,18 +575,6 @@ export function useUserSettings() {
             `${profileData.firstName.trim()} ${profileData.lastName.trim()}`.trim() ||
             null,
           email: profileData.email.trim(),
-          phone: profileData.phone.trim() || null,
-          business_name: profileData.businessName.trim() || null,
-          bio: profileData.bio.trim() || null,
-          website: profileData.website.trim() || null,
-          license_number: profileData.licenseNumber.trim() || null,
-          brokerage: profileData.brokerage.trim() || null,
-          street_address: profileData.streetAddress.trim() || null,
-          city: profileData.city.trim() || null,
-          state: profileData.state.trim() || null,
-          postal_code: profileData.postalCode.trim() || null,
-          country: profileData.country.trim() || null,
-          formatted_address: profileData.formattedAddress.trim() || null,
         };
 
         // Update or insert profile
@@ -767,18 +718,6 @@ export function useUserSettings() {
         firstName: '',
         lastName: '',
         email: '',
-        phone: '',
-        businessName: '',
-        bio: '',
-        licenseNumber: '',
-        brokerage: '',
-        website: '',
-        streetAddress: '',
-        city: '',
-        state: '',
-        postalCode: '',
-        country: '',
-        formattedAddress: '',
         assistantName: '',
       };
     }
@@ -787,18 +726,6 @@ export function useUserSettings() {
       firstName: profile?.first_name || '',
       lastName: profile?.last_name || '',
       email: profile?.email || '',
-      phone: profile?.phone || '',
-      businessName: profile?.business_name || '',
-      bio: profile?.bio || '',
-      licenseNumber: profile?.license_number || '',
-      brokerage: profile?.brokerage || '',
-      website: profile?.website || '',
-      streetAddress: (profile as any)?.street_address || '',
-      city: profile?.city || '',
-      state: profile?.state || '',
-      postalCode: (profile as any)?.postal_code || '',
-      country: (profile as any)?.country || 'United States',
-      formattedAddress: (profile as any)?.formatted_address || '',
       assistantName: settings?.assistant_name || 'Ava',
     };
   }, [dataLoaded, profile, settings]);
