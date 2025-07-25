@@ -16,10 +16,10 @@ export default function ContactPage() {
         For general support, billing questions, media requests, or strategic
         partnerships, please reach out to our team at
         <a
-          href="mailto:admin@spoqen.com"
+          href="mailto:support@spoqen.com"
           className="mx-1 font-medium text-primary underline hover:text-primary/80"
         >
-          admin@spoqen.com
+          support@spoqen.com
         </a>
         . We strive to respond to every message within{' '}
         <span className="font-semibold">one business day</span> (Monday –
