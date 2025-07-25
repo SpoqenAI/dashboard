@@ -32,7 +32,8 @@ export function ThemeToggle() {
     >
       <Icon className="h-[1.2rem] w-[1.2rem]" />
       <span className="ml-2 text-sm">{label}</span>
-      <span className="sr-only">Toggle theme</span>{/* AT hint */}
+      <span className="sr-only">Toggle theme</span>
+      {/* AT hint */}
     </Button>
   );
 }
