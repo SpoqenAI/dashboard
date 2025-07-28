@@ -220,22 +220,17 @@ export async function POST(req: NextRequest) {
   }
 
   // Kick off async processing but do NOT await it
-  (async () => {
+  try {
+    const envelope = JSON.parse(requestBody);
+    await processVapiWebhook(envelope); // wait until e-mail logic completes
+    return new NextResponse(null, { status: 200 });
+  } catch (err) {
+    logger.error('VAPI_WEBHOOK', 'Processing failed', err as Error);
     try {
-      const envelope = JSON.parse(requestBody);
-      await processVapiWebhook(envelope);
-    } catch (err) {
-      logger.error('VAPI_WEBHOOK', 'Async processing failed', err as Error);
-      // Enhanced: Send critical errors to Sentry for alerting
-      try {
-        const Sentry = await import('@sentry/nextjs');
-        Sentry.captureException(err);
-      } catch (sentryErr) {
-        // Fail silently if Sentry import fails
-      }
-    }
-  })();
+      const Sentry = await import('@sentry/nextjs');
+      Sentry.captureException(err);
+    } catch (_sentryErr) {}
 
-  // Immediate ACK to Vapi
-  return new NextResponse(null, { status: 200 });
+    return new NextResponse('Processing failed', { status: 500 });
+  }
 }
