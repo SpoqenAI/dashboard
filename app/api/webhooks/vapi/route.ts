@@ -155,7 +155,7 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
     const { error: emailErr } = await supabase.functions.invoke(
       'send-email-summary',
       {
-        body: { assistantId, summary, phoneNumber },
+        body: { assistantId, summary, phoneNumber, analysis: message.analysis },
       }
     );
 
