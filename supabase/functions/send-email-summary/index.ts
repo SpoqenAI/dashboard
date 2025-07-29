@@ -15,7 +15,12 @@ import {
 // Initialize Sentry at the top level
 initSentry();
 
-const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+const requiredEnvVars = [
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'BREVO_API_KEY',
+  'FROM_EMAIL',
+];
 for (const envVar of requiredEnvVars) {
   if (!Deno.env.get(envVar)) {
     const error = new Error(`Missing required environment variable: ${envVar}`);
@@ -148,45 +153,43 @@ serve(async req => {
       base_url: baseUrl,
     });
 
-    /* c. Send email via SendGrid REST API --------------------------------- */
-    const apiKey = Deno.env.get('SENDGRID_API_KEY')!;
-    const from = Deno.env.get('SENDGRID_FROM_EMAIL')!;
+    /* c. Send email via Brevo REST API --------------------------------- */
+    const apiKey = Deno.env.get('BREVO_API_KEY')!;
+    const from = Deno.env.get('FROM_EMAIL')!;
 
-    addBreadcrumb('Sending email via SendGrid', 'email', {
+    addBreadcrumb('Sending email via Brevo', 'email', {
       to: profile.email,
       from: from,
     });
 
     try {
-      const sgResp = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      const brevoResp = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
+          'api-key': apiKey,
         },
         body: JSON.stringify({
-          personalizations: [{ to: [{ email: profile.email }] }],
-          from: { email: from },
+          sender: { email: from, name: 'Spoqen' },
+          to: [{ email: profile.email }],
           subject: '[Spoqen] Call Summary',
-          content: [
-            { type: 'text/plain', value: summary },
-            { type: 'text/html', value: html },
-          ],
+          textContent: summary,
+          htmlContent: html,
         }),
       });
 
-      if (!sgResp.ok) {
-        const errText = await sgResp.text();
-        const error = new Error(`SendGrid error: ${sgResp.status} ${errText}`);
+      if (!brevoResp.ok) {
+        const errText = await brevoResp.text();
+        const error = new Error(`Brevo error: ${brevoResp.status} ${errText}`);
         captureException(error, {
           function: 'send-email-summary',
-          operation: 'sendgrid_api',
+          operation: 'brevo_api',
           user_id: userId,
-          sendgrid_status: sgResp.status,
-          sendgrid_response: errText,
+          brevo_status: brevoResp.status,
+          brevo_response: errText,
         });
-        console.error('SendGrid error', {
-          status: sgResp.status,
+        console.error('Brevo error', {
+          status: brevoResp.status,
           body: errText,
         });
         return new Response('Email send failed', { status: 502 });
@@ -194,17 +197,16 @@ serve(async req => {
 
       addBreadcrumb('Email sent successfully', 'email', {
         user_id: userId,
-        sendgrid_status: sgResp.status,
+        brevo_status: brevoResp.status,
       });
     } catch (err) {
-      const error =
-        err instanceof Error ? err : new Error('SendGrid fetch error');
+      const error = err instanceof Error ? err : new Error('Brevo fetch error');
       captureException(error, {
         function: 'send-email-summary',
-        operation: 'sendgrid_fetch',
+        operation: 'brevo_fetch',
         user_id: userId,
       });
-      console.error('SendGrid fetch threw', err);
+      console.error('Brevo fetch threw', err);
       return new Response('Email send encountered an error', { status: 500 });
     }
 
