@@ -28,6 +28,8 @@ import { AlertCircle, ArrowUp } from 'lucide-react';
 import { CallDetailModal } from '@/components/dashboard/call-detail-modal';
 import { CallHistoryTable } from '@/components/dashboard/call-history-table';
 import { useQueryState } from 'nuqs';
+import { mutate as swrMutate } from 'swr';
+import type { DashboardAnalytics } from '@/lib/types';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -106,6 +108,17 @@ export default function RecentCallsClient() {
       enabled: !!user && !isCallDetailOpen, // Free users now get analytics
     });
 
+  // SWR key used by useDashboardAnalytics – needed for optimistic updates
+  const analyticsKey = useMemo(() => {
+    return user
+      ? `/api/vapi/analytics?${new URLSearchParams({
+          days: '30',
+          limit: '100',
+          userId: user.id,
+        }).toString()}`
+      : null;
+  }, [user]);
+
   // Action points
   const { generateActionPoints } = useActionPoints();
 
@@ -174,6 +187,21 @@ export default function RecentCallsClient() {
       dispatchFilters({ type: 'SET_STATUS', value: 'all' });
       dispatchFilters({ type: 'SET_PAGE', page: 1 });
 
+      // Optimistically insert the call into the SWR cache so the table updates immediately
+      if (analyticsKey) {
+        swrMutate(
+          analyticsKey,
+          (prev: DashboardAnalytics | undefined) =>
+            prev
+              ? {
+                  ...prev,
+                  recentCalls: [callData, ...(prev.recentCalls || [])],
+                }
+              : prev,
+          false // don't revalidate yet – we'll do it explicitly below
+        );
+      }
+
       // Open the call detail modal immediately with the webhook payload
       handleCallSelect(callData);
 
@@ -181,7 +209,7 @@ export default function RecentCallsClient() {
       // optimistic one when Vapi’s API finishes persisting it.
       refetch();
     },
-    [dispatchFilters, handleCallSelect, refetch]
+    [dispatchFilters, handleCallSelect, refetch, analyticsKey]
   );
 
   // Real-time call updates
