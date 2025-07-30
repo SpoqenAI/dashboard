@@ -4,7 +4,6 @@ import { Suspense, useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/protected-route';
 import { useQueryState } from 'nuqs';
 import { Filter } from 'bad-words';
-import { useMask } from '@react-input/mask';
 import { isEqual } from 'lodash-es';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,19 +17,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DashboardShell } from '@/components/dashboard-shell';
-import AddressAutocomplete from '@/components/AddressAutocomplete';
-import { Camera, Bell, Shield, User } from 'lucide-react';
+import { Bell, Shield, User } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import {
   AlertDialog,
@@ -44,11 +34,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { useSubscription } from '@/hooks/use-subscription';
-import {
-  getPaddlePriceId,
-  isActiveSubscription,
-  formatSubscriptionDate,
-} from '@/lib/paddle';
+import { isActiveSubscription, formatSubscriptionDate } from '@/lib/paddle';
 import { getSubscriptionTier } from '@/lib/paddle';
 import dynamic from 'next/dynamic';
 const PasswordStrengthBar = dynamic(
@@ -200,10 +186,8 @@ function SettingsContent() {
   const {
     loading,
     saving,
-    error,
     dataLoaded,
     settings,
-    userId,
     updateProfile,
     updateUserSettings,
     getProfileFormData,
@@ -256,18 +240,6 @@ function SettingsContent() {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
-    businessName: '',
-    bio: '',
-    licenseNumber: '',
-    brokerage: '',
-    website: '',
-    businessAddress: '',
-    streetAddress: '',
-    city: '',
-    state: '',
-    zipcode: '',
-    country: 'United States',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -285,27 +257,12 @@ function SettingsContent() {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
-    businessName: '',
-    bio: '',
-    licenseNumber: '',
-    brokerage: '',
-    website: '',
-    businessAddress: '',
-    streetAddress: '',
-    city: '',
-    state: '',
-    zipcode: '',
-    country: 'United States',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
     emailNotifications: true,
     marketingEmails: true,
   });
-
-  // Password strength score state
-  const [newPasswordScore, setNewPasswordScore] = useState(0);
 
   // Load profile data when available
   useEffect(() => {
@@ -315,19 +272,6 @@ function SettingsContent() {
         firstName: profileData.firstName,
         lastName: profileData.lastName,
         email: profileData.email,
-        phone: profileData.phone,
-        businessName: profileData.businessName,
-        bio: profileData.bio,
-        licenseNumber: profileData.licenseNumber,
-        brokerage: profileData.brokerage,
-        website: profileData.website,
-        businessAddress:
-          profileData.formattedAddress || profileData.streetAddress || '',
-        streetAddress: profileData.streetAddress || '',
-        city: profileData.city,
-        state: profileData.state,
-        zipcode: profileData.postalCode || '',
-        country: profileData.country || 'United States',
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
@@ -344,17 +288,6 @@ function SettingsContent() {
     firstName: { maxLength: 50, minLength: 1 },
     lastName: { maxLength: 50, minLength: 1 },
     email: { maxLength: 254, minLength: 5 },
-    phone: { maxLength: 20, minLength: 0 },
-    businessName: { maxLength: 100, minLength: 0 },
-    bio: { maxLength: 500, minLength: 0 },
-    licenseNumber: { maxLength: 50, minLength: 0 },
-    brokerage: { maxLength: 100, minLength: 0 },
-    website: { maxLength: 254, minLength: 0 },
-    businessAddress: { maxLength: 200, minLength: 0 },
-    city: { maxLength: 50, minLength: 0 },
-    state: { maxLength: 50, minLength: 0 },
-    zipcode: { maxLength: 10, minLength: 0 },
-    country: { maxLength: 50, minLength: 0 },
     currentPassword: { maxLength: 128, minLength: 0 },
     newPassword: { maxLength: 128, minLength: 0 },
     confirmPassword: { maxLength: 128, minLength: 0 },
@@ -366,43 +299,11 @@ function SettingsContent() {
     // Updated to support Unicode letters including accented and international characters
     NAME_PATTERN: /^[\p{L}](?:[\p{L}\s\-'.])*[\p{L}]$|^[\p{L}]$/u,
 
-    // Business names: alphanumeric, single spaces, limited punctuation
-    BUSINESS_NAME_PATTERN:
-      /^(?!.* {2})(?!.*--)(?!.*\.{2})(?!.*,{2})(?!.*'')(?!.*&&)(?!.*\(\()(?!.*\)\))[A-Za-z0-9](?:[A-Za-z0-9\s\-'.&,()]*[A-Za-z0-9.)])?$/,
-
     // Email pattern supporting RFC-5322 compliant characters including '+' in local part
     // Allows letters, numbers, dots, underscores, hyphens, and plus signs in local part
     EMAIL_PATTERN:
       /^[a-zA-Z0-9]([a-zA-Z0-9._+-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/,
-
-    // Phone: simple pattern for input - only digits and plus signs allowed
-    PHONE_INPUT_PATTERN: /^[\d+\s\-\(\)]*$/,
-
-    // Website URL pattern - comprehensive validation
-    URL_PATTERN:
-      /^https?:\/\/(?:[-\w.])+(?:\:[0-9]+)?(?:\/(?:[\w\/_.])*(?:\?(?:[\w&=%.])*)?(?:\#(?:[\w.])*)?)?$/,
-
-    // License number pattern - alphanumeric with common prefixes
-    LICENSE_PATTERN: /^[A-Za-z]{0,4}[0-9A-Za-z]{3,}$/,
-
-    // Zipcode patterns for different countries
-    US_ZIPCODE_PATTERN: /^[0-9]{5}(-[0-9]{4})?$/,
-    CANADA_POSTAL_PATTERN: /^[A-Za-z][0-9][A-Za-z]\s?[0-9][A-Za-z][0-9]$/,
-    UK_POSTCODE_PATTERN:
-      /^[A-Za-z]{1,2}[0-9Rr][0-9A-Za-z]?\s?[0-9][ABD-HJLNP-UW-Zabd-hjlnp-uw-z]{2}$/,
-    GENERIC_ZIPCODE_PATTERN: /^[A-Za-z0-9\s\-]{3,10}$/,
   };
-
-  // Email mask ref: allow local-part, @, domain, dot, TLD (simple version)
-  // This mask is not strict RFC, but prevents spaces and most invalid chars
-  const emailMaskRef = useMask({
-    // Accepts up to 64 chars - sufficient for most real-world email addresses
-    // The mask is loose, but blocks spaces and most symbols
-    mask: '****************************************************************', // ~64 chars
-    replacement: { '*': /[a-zA-Z0-9._%+\-@]/ },
-    showMask: false,
-    // Optionally, you can add a validator here for stricter enforcement
-  });
 
   // Helper to remove spaces from email
   const removeSpaces = (value: string): string => value.replace(/\s/g, '');
@@ -441,18 +342,7 @@ function SettingsContent() {
     }
 
     // Check for inappropriate content (only for text fields)
-    if (
-      [
-        'firstName',
-        'lastName',
-        'businessName',
-        'bio',
-        'brokerage',
-        'city',
-        'state',
-        'country',
-      ].includes(field)
-    ) {
+    if (['firstName', 'lastName'].includes(field)) {
       if (contentFilter.isProfane(value)) {
         return 'Please use professional, appropriate language';
       }
@@ -464,21 +354,6 @@ function SettingsContent() {
       case 'lastName':
         if (!VALIDATION_PATTERNS.NAME_PATTERN.test(value)) {
           return 'Names should only contain letters, spaces, and basic punctuation';
-        }
-        break;
-
-      case 'businessName':
-      case 'brokerage':
-        if (value && !VALIDATION_PATTERNS.BUSINESS_NAME_PATTERN.test(value)) {
-          return 'Should only contain letters, numbers, spaces, and basic punctuation';
-        }
-        break;
-
-      case 'city':
-      case 'state':
-      case 'country':
-        if (value && !VALIDATION_PATTERNS.NAME_PATTERN.test(value)) {
-          return 'Should only contain letters, spaces, and basic punctuation';
         }
         break;
 
@@ -512,192 +387,6 @@ function SettingsContent() {
         break;
       }
 
-      case 'phone':
-        if (value) {
-          // Basic input pattern check - allow only valid characters during typing
-          if (!VALIDATION_PATTERNS.PHONE_INPUT_PATTERN.test(value)) {
-            return 'Phone number can only contain digits, spaces, hyphens, parentheses, and plus signs';
-          }
-
-          // Skip validation for very short inputs (user is still typing)
-          const digitsOnly = value.replace(/\D/g, '');
-          if (digitsOnly.length < 3) {
-            return null; // Allow partial input
-          }
-
-          // For very short inputs during backspacing, be more lenient
-          if (digitsOnly.length <= 3 && !value.includes('(')) {
-            return null; // Allow partial input without formatting
-          }
-
-          const isInternational = value.startsWith('+');
-          if (isInternational) {
-            if (digitsOnly.length > 15)
-              return 'International numbers cannot exceed 15 digits';
-            if (digitsOnly.length < 7)
-              return 'Please enter at least 7 digits for international numbers';
-            if (digitsOnly.length >= 10) {
-              const countryCodeLength = digitsOnly.length - 10;
-              if (countryCodeLength > 4)
-                return 'Please check your country code';
-            }
-          } else {
-            if (digitsOnly.length > 0 && digitsOnly.length < 10)
-              return 'Please enter a complete 10-digit phone number';
-            if (digitsOnly.length > 10)
-              return 'US phone numbers should be exactly 10 digits';
-            if (digitsOnly.length === 10) {
-              const areaCode = digitsOnly.substring(0, 3);
-              const exchange = digitsOnly.substring(3, 6);
-              if (areaCode.startsWith('0') || areaCode.startsWith('1'))
-                return 'Please enter a valid area code';
-              if (exchange.startsWith('0') || exchange.startsWith('1'))
-                return 'Please enter a valid exchange code';
-              if (areaCode === '911' || exchange === '911')
-                return 'Please use a different phone number';
-              if (
-                areaCode === '000' ||
-                exchange === '000' ||
-                (areaCode === '555' && exchange === '555')
-              )
-                return 'Please enter a valid phone number';
-            }
-          }
-        }
-        break;
-
-      case 'website':
-        if (value) {
-          // Check basic URL format
-          if (!VALIDATION_PATTERNS.URL_PATTERN.test(value)) {
-            return 'Website must be a valid URL starting with http:// or https://';
-          }
-
-          // Additional URL validation checks
-          try {
-            const url = new URL(value);
-
-            // Check for valid protocol
-            if (!['http:', 'https:'].includes(url.protocol)) {
-              return 'Website must use http:// or https://';
-            }
-
-            // Check for valid hostname
-            if (!url.hostname || url.hostname.length < 3) {
-              return 'Website must have a valid domain name';
-            }
-
-            // Check for valid TLD (at least 2 characters)
-            const hostParts = url.hostname.split('.');
-            if (
-              hostParts.length < 2 ||
-              hostParts[hostParts.length - 1].length < 2
-            ) {
-              return 'Website must have a valid domain extension';
-            }
-
-            // Check for localhost or IP addresses (not allowed for business websites)
-            if (
-              url.hostname === 'localhost' ||
-              url.hostname.startsWith('127.') ||
-              url.hostname.startsWith('192.168.') ||
-              url.hostname.startsWith('10.') ||
-              /^\d+\.\d+\.\d+\.\d+$/.test(url.hostname)
-            ) {
-              return 'Please enter a public website URL';
-            }
-
-            // Check for suspicious or inappropriate domains
-            const suspiciousDomains = [
-              'bit.ly',
-              'tinyurl.com',
-              'goo.gl',
-              't.co',
-            ];
-            if (
-              suspiciousDomains.some(domain => url.hostname.includes(domain))
-            ) {
-              return 'Please enter your direct business website URL';
-            }
-          } catch (error) {
-            return 'Please enter a valid website URL';
-          }
-        }
-        break;
-
-      case 'licenseNumber':
-        if (value) {
-          // Check basic format
-          if (!VALIDATION_PATTERNS.LICENSE_PATTERN.test(value)) {
-            return 'License number should contain letters and numbers (e.g., RE123456789)';
-          }
-
-          // Check minimum length for meaningful license numbers
-          if (value.length < 5) {
-            return 'License number must be at least 5 characters';
-          }
-
-          // Check for obviously invalid patterns
-          if (/^[0-9]+$/.test(value) && value.length < 8) {
-            return 'License number appears too short for a valid license';
-          }
-
-          // Check for repeated characters (likely invalid)
-          if (/(.)\1{4,}/.test(value)) {
-            return 'License number cannot contain 5 or more repeated characters';
-          }
-        }
-        break;
-
-      case 'zipcode':
-        if (value) {
-          // Determine validation pattern based on country
-          const country = formData.country.toLowerCase();
-          let isValid = false;
-
-          if (
-            country.includes('united states') ||
-            country.includes('usa') ||
-            country === 'us'
-          ) {
-            isValid = VALIDATION_PATTERNS.US_ZIPCODE_PATTERN.test(value);
-            if (!isValid) {
-              return 'US ZIP code should be 5 digits or 5+4 format (e.g., 12345 or 12345-6789)';
-            }
-          } else if (country.includes('canada') || country === 'ca') {
-            isValid = VALIDATION_PATTERNS.CANADA_POSTAL_PATTERN.test(value);
-            if (!isValid) {
-              return 'Canadian postal code should be in format A1A 1A1';
-            }
-          } else if (
-            country.includes('united kingdom') ||
-            country.includes('uk') ||
-            country.includes('britain')
-          ) {
-            isValid = VALIDATION_PATTERNS.UK_POSTCODE_PATTERN.test(value);
-            if (!isValid) {
-              return 'UK postcode should be in valid format (e.g., SW1A 1AA)';
-            }
-          } else {
-            // Generic validation for other countries
-            isValid = VALIDATION_PATTERNS.GENERIC_ZIPCODE_PATTERN.test(value);
-            if (!isValid) {
-              return 'Postal code should contain only letters, numbers, spaces, and hyphens';
-            }
-          }
-
-          // Additional checks for all postal codes
-          if (value.length < 3) {
-            return 'Postal code must be at least 3 characters';
-          }
-
-          // Check for obviously invalid patterns
-          if (/^[0\s\-]+$/.test(value)) {
-            return 'Please enter a valid postal code';
-          }
-        }
-        break;
-
       case 'newPassword': {
         if (!value) return null; // Optional field
         if (value.length < 8) return 'Please use at least 8 characters';
@@ -725,97 +414,11 @@ function SettingsContent() {
     return null;
   };
 
-  // Zipcode formatting function based on country
-  const formatZipcode = (value: string, country: string): string => {
-    // Remove all non-alphanumeric characters except spaces and hyphens
-    const cleaned = value.replace(/[^A-Za-z0-9\s\-]/g, '').toUpperCase();
-
-    const countryLower = country.toLowerCase();
-
-    if (
-      countryLower.includes('united states') ||
-      countryLower.includes('usa') ||
-      countryLower === 'us'
-    ) {
-      // US ZIP code formatting
-      const digits = cleaned.replace(/\D/g, '');
-      if (digits.length <= 5) {
-        return digits;
-      } else if (digits.length >= 9) {
-        // Only add hyphen if we have at least 9 digits (5 + 4 suffix)
-        return `${digits.slice(0, 5)}-${digits.slice(5, 9)}`;
-      } else {
-        // For 6-8 digits, return without hyphen to avoid premature formatting
-        return digits;
-      }
-    } else if (countryLower.includes('canada') || countryLower === 'ca') {
-      // Canadian postal code formatting (A1A 1A1)
-      const alphanumeric = cleaned.replace(/\s/g, '');
-      if (alphanumeric.length <= 3) {
-        return alphanumeric;
-      } else if (alphanumeric.length <= 6) {
-        return `${alphanumeric.slice(0, 3)} ${alphanumeric.slice(3)}`;
-      }
-      return `${alphanumeric.slice(0, 3)} ${alphanumeric.slice(3, 6)}`;
-    } else if (
-      countryLower.includes('united kingdom') ||
-      countryLower.includes('uk') ||
-      countryLower.includes('britain')
-    ) {
-      // UK postcode formatting - more complex, keep as entered but clean
-      return cleaned.slice(0, 8);
-    }
-
-    // Generic formatting for other countries
-    return cleaned.slice(0, 10);
-  };
-
-  // Phone formatting function - consistent with signup page
-  const formatPhoneNumber = (value: string): string => {
-    // Remove all non-digit and non-plus characters
-    const cleaned = value.replace(/[^\d+]/g, '');
-    if (cleaned.startsWith('+')) {
-      const digits = cleaned.slice(1);
-      const limitedDigits = digits.slice(0, 15);
-      if (limitedDigits.length === 0) return '+';
-      if (limitedDigits.length <= 4) return `+${limitedDigits}`;
-      if (limitedDigits.length <= 7)
-        return `+${limitedDigits.slice(0, limitedDigits.length - 3)} ${limitedDigits.slice(-3)}`;
-      if (limitedDigits.length <= 10)
-        return `+${limitedDigits.slice(0, limitedDigits.length - 7)} ${limitedDigits.slice(-7, -4)} ${limitedDigits.slice(-4)}`;
-      return `+${limitedDigits.slice(0, limitedDigits.length - 10)} ${limitedDigits.slice(-10, -7)} ${limitedDigits.slice(-7, -4)} ${limitedDigits.slice(-4)}`;
-    }
-    const digits = cleaned;
-    const limitedDigits = digits.slice(0, 10);
-    if (limitedDigits.length === 0) return '';
-    if (limitedDigits.length <= 3) return `(${limitedDigits}`;
-    if (limitedDigits.length <= 6)
-      return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3)}`;
-    return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3, 6)}-${limitedDigits.slice(6)}`;
-  };
-
-  // License number mask configuration - flexible alphanumeric
-  const licenseMaskRef = useMask({
-    mask: '__________________________________________________',
-    replacement: { _: /[A-Za-z0-9]/ },
-    showMask: false,
-  });
-
   const handleInputChange = (field: string, value: string) => {
     let processedValue = value;
 
-    // Apply phone formatting
-    if (field === 'phone') {
-      processedValue = formatPhoneNumber(value);
-    }
-
-    // Apply zipcode formatting
-    if (field === 'zipcode') {
-      processedValue = formatZipcode(value, formData.country);
-    }
-
-    // Remove spaces from email and website fields
-    if (field === 'email' || field === 'website') {
+    // Remove spaces from email field
+    if (field === 'email') {
       processedValue = removeSpaces(value);
     }
 
@@ -832,58 +435,6 @@ function SettingsContent() {
         [field]: error || '',
       }));
     }
-  };
-
-  const handleAddressSelect = (addressData: {
-    street_address?: string;
-    city?: string;
-    state?: string;
-    postal_code?: string;
-    country?: string;
-    formatted_address?: string;
-    address_type?: 'business' | 'home' | 'other';
-    geoapify_data?: any;
-    geoapify_place_id?: string;
-  }) => {
-    // Auto-fill the form fields when an address is selected
-    setFormData(prev => ({
-      ...prev,
-      businessAddress: addressData.formatted_address || prev.businessAddress,
-      streetAddress: addressData.street_address || prev.streetAddress,
-      city: addressData.city || prev.city,
-      state: addressData.state || prev.state,
-      zipcode: addressData.postal_code || prev.zipcode,
-      country: addressData.country || prev.country,
-    }));
-
-    // Clear any existing validation errors for these fields
-    setValidationErrors(prev => ({
-      ...prev,
-      businessAddress: '',
-      city: '',
-      state: '',
-      zipcode: '',
-      country: '',
-    }));
-
-    // Log address selection event with privacy protection
-    logger.debug('SETTINGS', 'Address selected and form populated', {
-      hasStreetAddress: !!addressData.street_address,
-      hasFormattedAddress: !!addressData.formatted_address,
-      hasCity: !!addressData.city,
-      hasState: !!addressData.state,
-      hasPostalCode: !!addressData.postal_code,
-      hasCountry: !!addressData.country,
-      addressType: addressData.address_type,
-    });
-  };
-
-  const handleAddressInputChange = (value: string) => {
-    // Update the business address field as user types
-    setFormData(prev => ({
-      ...prev,
-      businessAddress: value,
-    }));
   };
 
   // Helper to check if form data has changed
@@ -908,9 +459,6 @@ function SettingsContent() {
         return;
       }
 
-      // Prepare phone number for storage - store as formatted (consistent with signup page)
-      const phoneForStorage = formData.phone.trim();
-
       // Prepare update operations
       const updatePromises = [];
 
@@ -920,18 +468,6 @@ function SettingsContent() {
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
-          phone: phoneForStorage,
-          businessName: formData.businessName,
-          bio: formData.bio,
-          licenseNumber: formData.licenseNumber,
-          brokerage: formData.brokerage,
-          website: formData.website,
-          streetAddress: formData.streetAddress || formData.businessAddress, // Use streetAddress if available, otherwise businessAddress
-          city: formData.city,
-          state: formData.state,
-          postalCode: formData.zipcode, // Map zipcode to postalCode
-          country: formData.country,
-          formattedAddress: formData.businessAddress, // Use businessAddress as formatted address for now
         })
       );
 
@@ -969,7 +505,6 @@ function SettingsContent() {
   const handleCancel = () => {
     setFormData({ ...savedData });
     setValidationErrors({});
-    setNewPasswordScore(0);
   };
 
   // Handle subscription upgrade via pricing page
@@ -1083,7 +618,7 @@ function SettingsContent() {
                           variant="outline"
                           className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
                         >
-                          <Camera className="h-4 w-4" />
+                          📷
                         </Button>
                       </div>
                       <div className="space-y-2">
@@ -1169,94 +704,12 @@ function SettingsContent() {
                         maxLength={254}
                         inputMode="email"
                         autoComplete="email"
-                        ref={emailMaskRef}
                       />
                       {validationErrors.email && (
                         <p className="text-sm text-muted-foreground">
                           {validationErrors.email}
                         </p>
                       )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="font-medium">Phone Number</label>
-                      <input
-                        type="tel"
-                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                          validationErrors.phone
-                            ? 'border-red-500 bg-background'
-                            : 'bg-background'
-                        }`}
-                        value={formData.phone}
-                        onChange={e =>
-                          handleInputChange('phone', e.target.value)
-                        }
-                        onBlur={() => handleFieldBlur('phone')}
-                        placeholder="(555) 123-4567 or +1 555 123 4567"
-                        autoComplete="tel"
-                        maxLength={25}
-                      />
-                      {validationErrors.phone && (
-                        <p className="text-sm text-red-500">
-                          {validationErrors.phone}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-500">
-                        Enter your phone number. International numbers should
-                        start with +
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="font-medium">Business Name</label>
-                      <input
-                        type="text"
-                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                          validationErrors.businessName
-                            ? 'border-red-500 bg-background'
-                            : 'bg-background'
-                        }`}
-                        value={formData.businessName}
-                        onChange={e =>
-                          handleInputChange('businessName', e.target.value)
-                        }
-                        onBlur={() => handleFieldBlur('businessName')}
-                        maxLength={100}
-                        placeholder="e.g., ABC Real Estate, Smith & Associates, etc."
-                      />
-                      {validationErrors.businessName && (
-                        <p className="text-sm text-red-500">
-                          {validationErrors.businessName}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-500">
-                        {formData.businessName.length}/100 characters
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="font-medium">Bio</label>
-                      <textarea
-                        className={`w-full resize-none rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                          validationErrors.bio
-                            ? 'border-red-500 bg-background'
-                            : 'bg-background'
-                        }`}
-                        rows={3}
-                        value={formData.bio}
-                        onChange={e => handleInputChange('bio', e.target.value)}
-                        onBlur={() => handleFieldBlur('bio')}
-                        maxLength={500}
-                        placeholder="Tell us about yourself and your real estate business..."
-                      />
-                      {validationErrors.bio && (
-                        <p className="text-sm text-red-500">
-                          {validationErrors.bio}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-500">
-                        {formData.bio.length}/500 characters
-                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -1376,7 +829,6 @@ function SettingsContent() {
                           'Strong',
                           'Very strong',
                         ]}
-                        onChangeScore={setNewPasswordScore}
                       />
                       {validationErrors.newPassword && (
                         <p className="text-sm text-muted-foreground">
@@ -1424,116 +876,6 @@ function SettingsContent() {
                       <Button variant="outline" size="sm">
                         Enable 2FA
                       </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Business Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Business Information</CardTitle>
-                    <CardDescription>
-                      Professional details for your real estate business.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="font-medium">License Number</label>
-                      <input
-                        ref={licenseMaskRef}
-                        type="text"
-                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                          validationErrors.licenseNumber
-                            ? 'border-red-500 bg-background'
-                            : 'bg-background'
-                        }`}
-                        value={formData.licenseNumber}
-                        onChange={e =>
-                          handleInputChange('licenseNumber', e.target.value)
-                        }
-                        onBlur={() => handleFieldBlur('licenseNumber')}
-                        maxLength={50}
-                        placeholder="e.g., RE123456789"
-                        autoComplete="off"
-                      />
-                      {validationErrors.licenseNumber && (
-                        <p className="text-sm text-red-500">
-                          {validationErrors.licenseNumber}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-500">
-                        {formData.licenseNumber.length}/50 characters
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="font-medium">Brokerage</label>
-                      <input
-                        type="text"
-                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                          validationErrors.brokerage
-                            ? 'border-red-500 bg-background'
-                            : 'bg-background'
-                        }`}
-                        value={formData.brokerage}
-                        onChange={e =>
-                          handleInputChange('brokerage', e.target.value)
-                        }
-                        onBlur={() => handleFieldBlur('brokerage')}
-                        maxLength={100}
-                      />
-                      {validationErrors.brokerage && (
-                        <p className="text-sm text-red-500">
-                          {validationErrors.brokerage}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-500">
-                        {formData.brokerage.length}/100 characters
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="font-medium">Website</label>
-                      <input
-                        type="text"
-                        className={`w-full rounded-md border p-2 focus:border-black focus:outline-none focus:ring-1 focus:ring-black ${
-                          validationErrors.website
-                            ? 'border-red-500 bg-background'
-                            : 'bg-background'
-                        }`}
-                        value={formData.website}
-                        onChange={e =>
-                          handleInputChange('website', e.target.value)
-                        }
-                        onBlur={() => handleFieldBlur('website')}
-                        maxLength={254}
-                        placeholder="https://your-website.com"
-                        autoComplete="url"
-                        inputMode="url"
-                      />
-                      {validationErrors.website && (
-                        <p className="text-sm text-red-500">
-                          {validationErrors.website}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-500">
-                        {formData.website.length}/254 characters
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="font-medium">Business Address</label>
-                      <AddressAutocomplete
-                        onPlaceSelect={handleAddressSelect}
-                        onInputChange={handleAddressInputChange}
-                        placeholder="Search for your business address..."
-                        value={formData.businessAddress}
-                        className="w-full"
-                      />
-                      <p className="text-xs text-gray-500">
-                        Search and select your business address from the
-                        suggestions.
-                      </p>
                     </div>
                   </CardContent>
                 </Card>

@@ -30,7 +30,7 @@ const PasswordStrengthBar = dynamic(
 import Logo from '@/components/ui/logo';
 import { CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-// Remote email-uniqueness check is done via an internal API endpoint.
+import { logger } from '@/lib/logger';
 
 // CONVERSION OPTIMIZATION: Reduced form fields for better conversion
 type FormFieldName = 'email' | 'password' | 'confirmPassword' | 'firstName';
@@ -123,9 +123,8 @@ export default function SignupPage() {
 
   const latestPasswordRef = useRef('');
   const confirmPasswordRef = useRef('');
-
-  // Track the latest outgoing email uniqueness request to avoid race conditions
   const emailRequestIdRef = useRef(0);
+  const emailRemotePendingRef = useRef(false);
 
   const [fieldValidStates, setFieldValidStates] = useState<
     Record<FormFieldName, boolean>
@@ -245,8 +244,21 @@ export default function SignupPage() {
     validationTimers.current[field] = setTimeout(async () => {
       const error = await validateField(field, value);
       setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
-      setFieldValidStates(prev => ({ ...prev, [field]: !error }));
-      setIsValidating(prev => ({ ...prev, [field]: false }));
+      if (field === 'email') {
+        setFieldValidStates(prev => ({
+          ...prev,
+          email: !error && !emailRemotePendingRef.current,
+        }));
+      } else {
+        setFieldValidStates(prev => ({ ...prev, [field]: !error }));
+      }
+      if (field === 'email') {
+        if (!emailRemotePendingRef.current) {
+          setIsValidating(prev => ({ ...prev, [field]: false }));
+        }
+      } else {
+        setIsValidating(prev => ({ ...prev, [field]: false }));
+      }
     }, 300);
   };
 
@@ -303,10 +315,16 @@ export default function SignupPage() {
     setTouchedFields(prev => ({ ...prev, [field]: true }));
 
     // Only run remote uniqueness check for email when the basic format is valid
-    if (field === 'email' && fieldValidStates.email) {
+    if (field === 'email') {
       (async () => {
         const requestId = ++emailRequestIdRef.current;
 
+        const regexError = await validateField('email', formData.email);
+        if (regexError) {
+          return;
+        }
+
+        emailRemotePendingRef.current = true;
         setIsValidating(prev => ({ ...prev, email: true }));
 
         try {
@@ -314,6 +332,7 @@ export default function SignupPage() {
 
           if (requestId !== emailRequestIdRef.current) return;
 
+          emailRemotePendingRef.current = false;
           setIsValidating(prev => ({ ...prev, email: false }));
 
           if (exists) {
@@ -333,8 +352,9 @@ export default function SignupPage() {
         } catch (err) {
           if (requestId !== emailRequestIdRef.current) return;
 
+          emailRemotePendingRef.current = false;
           setIsValidating(prev => ({ ...prev, email: false }));
-          console.error(err);
+          logger.error('SIGNUP', 'Email uniqueness check failed', err as Error);
           // Show generic connectivity error but keep field invalid so user cannot proceed
           setValidationErrors(prev => ({
             ...prev,
@@ -370,6 +390,11 @@ export default function SignupPage() {
     setTouchedFields(prev => ({ ...prev, [field]: true }));
 
     setFormData(prev => ({ ...prev, [field]: processedValue }));
+
+    // While the user is actively typing in email, consider it invalid until uniqueness check runs on blur
+    if (field === 'email') {
+      setFieldValidStates(prev => ({ ...prev, email: false }));
+    }
 
     triggerValidation(field, processedValue);
 
@@ -454,7 +479,11 @@ export default function SignupPage() {
         exists = await checkEmailExists(formData.email);
       } catch (err) {
         // Network or server error – log but allow submission to proceed.
-        console.error('Email uniqueness check failed, proceeding anyway', err);
+        logger.error(
+          'SIGNUP',
+          'Email uniqueness check failed during submission, proceeding anyway',
+          err as Error
+        );
       }
 
       // Only mark invalid if check completed and email definitely exists
