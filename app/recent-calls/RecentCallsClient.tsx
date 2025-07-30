@@ -189,17 +189,26 @@ export default function RecentCallsClient() {
 
       // Optimistically insert the call into the SWR cache so the table updates immediately
       if (analyticsKey) {
+        // 1. Optimistic UI update
         swrMutate(
           analyticsKey,
-          (prev: DashboardAnalytics | undefined) =>
-            prev
-              ? {
-                  ...prev,
-                  recentCalls: [callData, ...(prev.recentCalls || [])],
-                }
-              : prev,
-          false // don't revalidate yet – we'll do it explicitly below
+          (prev: DashboardAnalytics | undefined) => {
+            const nextRecent = prev?.recentCalls
+              ? [callData, ...prev.recentCalls]
+              : [callData];
+            return prev
+              ? { ...prev, recentCalls: nextRecent }
+              : ({
+                  metrics: { ...(prev as any)?.metrics },
+                  recentCalls: nextRecent,
+                  trends: (prev as any)?.trends,
+                } as DashboardAnalytics);
+          },
+          false // no revalidate yet
         );
+
+        // 2. Immediately revalidate so we eventually replace with canonical data
+        swrMutate(analyticsKey);
       }
 
       // Open the call detail modal immediately with the webhook payload
