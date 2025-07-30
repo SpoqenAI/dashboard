@@ -208,7 +208,39 @@ export default function RecentCallsClient() {
         );
 
         // 2. Immediately revalidate so we eventually replace with canonical data
-        swrMutate(analyticsKey);
+        // Constants for confirmation retries
+        const MAX_CONFIRM_RETRIES = 3;
+        const CONFIRM_RETRY_DELAY_MS = 5000;
+
+        // Function to confirm the new call with retries
+        const confirmNewCallWithRetries = async (callId: string) => {
+          for (let attempt = 1; attempt <= MAX_CONFIRM_RETRIES; attempt++) {
+            try {
+              const data = await swrMutate(analyticsKey);
+              if (data?.recentCalls?.some(c => c.id === callId)) {
+                logger.info('RECENT_CALLS', 'New call confirmed on attempt', { attempt });
+                return; // Success
+              }
+              logger.warn('RECENT_CALLS', 'New call not found on attempt', { attempt });
+            } catch (err) {
+              logger.error('RECENT_CALLS', 'Error during confirmation attempt', err);
+            }
+            // Wait for next attempt
+            await new Promise(resolve => setTimeout(resolve, CONFIRM_RETRY_DELAY_MS));
+          }
+          // After max retries, final refetch and notify user
+          swrMutate(analyticsKey);
+          toast({
+            title: 'Update Delayed',
+            description: 'The new call is taking longer to appear. Please refresh the page if it doesn't show up soon.',
+            variant: 'destructive',
+          });
+          logger.warn('RECENT_CALLS', 'Max retries reached for call confirmation', { callId });
+        };
+
+        // Start the confirmation process
+        setTimeout(() => confirmNewCallWithRetries(callData.id), CONFIRM_RETRY_DELAY_MS);
+
       }
 
       // Open the call detail modal immediately with the webhook payload
