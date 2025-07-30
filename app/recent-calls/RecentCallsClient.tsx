@@ -31,6 +31,10 @@ import { useQueryState } from 'nuqs';
 
 const ITEMS_PER_PAGE = 20;
 
+// Retry configuration constants
+const MAX_RETRIES = 3;
+const BASE_RETRY_DELAY_MS = 1000;
+
 // Reducer for filters + pagination
 interface FilterState {
   currentPage: number;
@@ -97,6 +101,7 @@ export default function RecentCallsClient() {
   // UI state
   const [selectedCall, setSelectedCall] = useState<VapiCall | null>(null);
   const [isCallDetailOpen, setIsCallDetailOpen] = useState(false);
+  const [isRetryingNewCall, setIsRetryingNewCall] = useState(false);
 
   // Analytics hook for calls data - hybrid mode: initial load + events only
   const { analytics, isLoading, error, refetch, hasCachedData } =
@@ -116,7 +121,13 @@ export default function RecentCallsClient() {
       if (!r.ok) return null;
       const d = await r.json();
       return d.recordingUrl || null;
-    } catch {
+    } catch (error) {
+      logger.error(
+        'RECENT_CALLS',
+        'Error fetching call recording',
+        error as Error,
+        { callId }
+      );
       return null;
     }
   }, []);
@@ -160,69 +171,81 @@ export default function RecentCallsClient() {
 
   // Handler for viewing new calls with retry logic
   const handleViewNewCall = useCallback(
-    async (callData: any) => {
-      // Reset filters first
-      dispatchFilters({ type: 'SET_SEARCH', term: '' });
-      dispatchFilters({ type: 'SET_SENTIMENT', value: 'all' });
-      dispatchFilters({ type: 'SET_LEAD', value: 'all' });
-      dispatchFilters({ type: 'SET_STATUS', value: 'all' });
-      dispatchFilters({ type: 'SET_PAGE', page: 1 });
+    async (callData: VapiCall) => {
+      // Prevent concurrent retry attempts
+      if (isRetryingNewCall) {
+        logger.warn('RECENT_CALLS', 'Retry already in progress, skipping', {
+          callId: callData.id,
+        });
+        return;
+      }
 
-      // Try to refetch data with retry logic
-      let retryCount = 0;
-      const maxRetries = 3;
+      setIsRetryingNewCall(true);
 
-      while (retryCount < maxRetries) {
-        try {
-          await refetch();
+      try {
+        // Reset filters first
+        dispatchFilters({ type: 'SET_SEARCH', term: '' });
+        dispatchFilters({ type: 'SET_SENTIMENT', value: 'all' });
+        dispatchFilters({ type: 'SET_LEAD', value: 'all' });
+        dispatchFilters({ type: 'SET_STATUS', value: 'all' });
+        dispatchFilters({ type: 'SET_PAGE', page: 1 });
 
-          // Check if the call is now in the analytics data
-          const foundCall = analytics?.recentCalls?.find(
-            call => call.id === callData.id
-          );
+        // Try to refetch data with exponential backoff retry logic
+        let retryCount = 0;
 
-          logger.info(
-            'RECENT_CALLS',
-            'Searching for new call in analytics data',
-            {
-              callId: callData.id,
-              totalCalls: analytics?.recentCalls?.length || 0,
-              foundCall: !!foundCall,
-              retryAttempt: retryCount + 1,
-              availableCallIds:
-                analytics?.recentCalls?.map(c => c.id).slice(0, 5) || [],
-            }
-          );
+        while (retryCount < MAX_RETRIES) {
+          try {
+            await refetch();
 
-          if (foundCall) {
-            // Open the call detail modal
+            // Check if the call is now in the analytics data
+            const foundCall = analytics?.recentCalls?.find(
+              call => call.id === callData.id
+            );
+
             logger.info(
               'RECENT_CALLS',
-              'Found new call, opening detail modal',
+              'Searching for new call in analytics data',
               {
-                callId: foundCall.id,
-                hasAnalysis: !!foundCall.analysis,
+                callId: callData.id,
+                totalCalls: analytics?.recentCalls?.length || 0,
+                foundCall: !!foundCall,
+                retryAttempt: retryCount + 1,
+                availableCallIds:
+                  analytics?.recentCalls?.map(c => c.id).slice(0, 5) || [],
               }
             );
-            handleCallSelect(foundCall);
-            return;
-          }
 
-          // If not found, wait and retry
-          if (retryCount < maxRetries - 1) {
-            await new Promise(resolve =>
-              setTimeout(resolve, 1000 * (retryCount + 1))
+            if (foundCall) {
+              // Open the call detail modal
+              logger.info(
+                'RECENT_CALLS',
+                'Found new call, opening detail modal',
+                {
+                  callId: foundCall.id,
+                  hasAnalysis: !!foundCall.analysis,
+                }
+              );
+              handleCallSelect(foundCall);
+              return;
+            }
+
+            // If not found, wait with exponential backoff and retry
+            if (retryCount < MAX_RETRIES - 1) {
+              const delayMs = BASE_RETRY_DELAY_MS * Math.pow(2, retryCount);
+              await new Promise(resolve => setTimeout(resolve, delayMs));
+            }
+            retryCount++;
+          } catch (error) {
+            logger.error(
+              'RECENT_CALLS',
+              'Error fetching call data',
+              error as Error
             );
+            retryCount++;
           }
-          retryCount++;
-        } catch (error) {
-          logger.error(
-            'RECENT_CALLS',
-            'Error fetching call data',
-            error as Error
-          );
-          retryCount++;
         }
+      } finally {
+        setIsRetryingNewCall(false);
       }
 
       // If we get here, the call wasn't found after retries - this is a FAILURE
@@ -232,7 +255,7 @@ export default function RecentCallsClient() {
         new Error('Call sync failure'),
         {
           callId: callData.id,
-          maxRetries,
+          maxRetries: MAX_RETRIES,
           finalCallCount: analytics?.recentCalls?.length || 0,
           finalCallIds: analytics?.recentCalls?.map(c => c.id) || [],
           webhookCallData: {
@@ -252,7 +275,7 @@ export default function RecentCallsClient() {
         duration: 15000, // Longer duration so it's not missed
       });
     },
-    [refetch, analytics?.recentCalls, handleCallSelect]
+    [refetch, analytics?.recentCalls, handleCallSelect, isRetryingNewCall]
   );
 
   // Real-time call updates
@@ -280,15 +303,19 @@ export default function RecentCallsClient() {
           title: 'New Call Received',
           description: `${callerInfo}${leadQuality ? ` - ${leadQuality.toUpperCase()} lead` : ''}${sentiment ? ` - ${sentiment} sentiment` : ''}`,
           duration: 8000,
-          action: (
+          action: event.callData ? (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleViewNewCall(event.callData)}
+              // event.callData is guaranteed when this button is rendered
+              // Cast to VapiCall because the SSE payload omits some optional fields
+              onClick={() =>
+                handleViewNewCall(event.callData! as unknown as VapiCall)
+              }
             >
               View
             </Button>
-          ),
+          ) : undefined,
         });
 
         // Immediately refetch analytics data since we have the call data from webhook
@@ -304,7 +331,7 @@ export default function RecentCallsClient() {
         );
         refetch();
       },
-      [refetch, handleViewNewCall]
+      [refetch]
     ),
   });
 
