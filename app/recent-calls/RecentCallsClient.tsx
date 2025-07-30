@@ -171,111 +171,22 @@ export default function RecentCallsClient() {
 
   // Handler for viewing new calls with retry logic
   const handleViewNewCall = useCallback(
-    async (callData: VapiCall) => {
-      // Prevent concurrent retry attempts
-      if (isRetryingNewCall) {
-        logger.warn('RECENT_CALLS', 'Retry already in progress, skipping', {
-          callId: callData.id,
-        });
-        return;
-      }
+    (callData: VapiCall) => {
+      // Reset filters so the new call is visible once the list refreshes
+      dispatchFilters({ type: 'SET_SEARCH', term: '' });
+      dispatchFilters({ type: 'SET_SENTIMENT', value: 'all' });
+      dispatchFilters({ type: 'SET_LEAD', value: 'all' });
+      dispatchFilters({ type: 'SET_STATUS', value: 'all' });
+      dispatchFilters({ type: 'SET_PAGE', page: 1 });
 
-      setIsRetryingNewCall(true);
+      // Open the call detail modal immediately with the webhook payload
+      handleCallSelect(callData);
 
-      try {
-        // Reset filters first
-        dispatchFilters({ type: 'SET_SEARCH', term: '' });
-        dispatchFilters({ type: 'SET_SENTIMENT', value: 'all' });
-        dispatchFilters({ type: 'SET_LEAD', value: 'all' });
-        dispatchFilters({ type: 'SET_STATUS', value: 'all' });
-        dispatchFilters({ type: 'SET_PAGE', page: 1 });
-
-        // Try to refetch data with exponential backoff retry logic
-        let retryCount = 0;
-
-        while (retryCount < MAX_RETRIES) {
-          try {
-            await refetch();
-
-            // Check if the call is now in the analytics data
-            const foundCall = analytics?.recentCalls?.find(
-              call => call.id === callData.id
-            );
-
-            logger.info(
-              'RECENT_CALLS',
-              'Searching for new call in analytics data',
-              {
-                callId: callData.id,
-                totalCalls: analytics?.recentCalls?.length || 0,
-                foundCall: !!foundCall,
-                retryAttempt: retryCount + 1,
-                availableCallIds:
-                  analytics?.recentCalls?.map(c => c.id).slice(0, 5) || [],
-              }
-            );
-
-            if (foundCall) {
-              // Open the call detail modal
-              logger.info(
-                'RECENT_CALLS',
-                'Found new call, opening detail modal',
-                {
-                  callId: foundCall.id,
-                  hasAnalysis: !!foundCall.analysis,
-                }
-              );
-              handleCallSelect(foundCall);
-              return;
-            }
-
-            // If not found, wait with exponential backoff and retry
-            if (retryCount < MAX_RETRIES - 1) {
-              const delayMs = BASE_RETRY_DELAY_MS * Math.pow(2, retryCount);
-              await new Promise(resolve => setTimeout(resolve, delayMs));
-            }
-            retryCount++;
-          } catch (error) {
-            logger.error(
-              'RECENT_CALLS',
-              'Error fetching call data',
-              error as Error
-            );
-            retryCount++;
-          }
-        }
-      } finally {
-        setIsRetryingNewCall(false);
-      }
-
-      // If we get here, the call wasn't found after retries - this is a FAILURE
-      logger.error(
-        'RECENT_CALLS',
-        'CRITICAL: New call failed to appear in analytics after retries',
-        new Error('Call sync failure'),
-        {
-          callId: callData.id,
-          maxRetries: MAX_RETRIES,
-          finalCallCount: analytics?.recentCalls?.length || 0,
-          finalCallIds: analytics?.recentCalls?.map(c => c.id) || [],
-          webhookCallData: {
-            id: callData.id,
-            phoneNumber: callData.phoneNumber,
-            callerName: callData.callerName,
-            hasAnalysis: !!callData.analysis,
-            createdAt: callData.createdAt,
-          },
-        }
-      );
-
-      toast({
-        title: 'ALERT: Call Sync Failed',
-        description: `Call ${callData.id} was received but failed to appear in the table. This indicates a sync issue between webhook and VAPI API.`,
-        variant: 'destructive',
-        duration: 15000, // Longer duration so it's not missed
-      });
+      // Kick off a background refresh – the canonical record will replace the
+      // optimistic one when Vapi’s API finishes persisting it.
+      refetch();
     },
-    [refetch, analytics?.recentCalls, handleCallSelect, isRetryingNewCall]
+    [dispatchFilters, handleCallSelect, refetch]
   );
 
   // Real-time call updates
