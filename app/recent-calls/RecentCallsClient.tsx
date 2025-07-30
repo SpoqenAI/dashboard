@@ -101,7 +101,6 @@ export default function RecentCallsClient() {
   // UI state
   const [selectedCall, setSelectedCall] = useState<VapiCall | null>(null);
   const [isCallDetailOpen, setIsCallDetailOpen] = useState(false);
-  const [isRetryingNewCall, setIsRetryingNewCall] = useState(false);
 
   // Analytics hook for calls data - hybrid mode: initial load + events only
   const { analytics, isLoading, error, refetch, hasCachedData } =
