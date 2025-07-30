@@ -31,10 +31,6 @@ import { useQueryState } from 'nuqs';
 
 const ITEMS_PER_PAGE = 20;
 
-// Retry configuration constants
-const MAX_RETRIES = 3;
-const BASE_RETRY_DELAY_MS = 1000;
-
 // Reducer for filters + pagination
 interface FilterState {
   currentPage: number;
