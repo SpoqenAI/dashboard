@@ -177,48 +177,20 @@ export default function RecentCallsClient() {
     [fetchCallRecording, generateActionPoints]
   );
 
-  // Handler for viewing new calls with retry logic
+  // Handler for viewing new calls - now just resets filters and opens modal
   const handleViewNewCall = useCallback(
     (callData: VapiCall) => {
-      // Reset filters so the new call is visible once the list refreshes
+      // Reset filters so the new call is visible
       dispatchFilters({ type: 'SET_SEARCH', term: '' });
       dispatchFilters({ type: 'SET_SENTIMENT', value: 'all' });
       dispatchFilters({ type: 'SET_LEAD', value: 'all' });
       dispatchFilters({ type: 'SET_STATUS', value: 'all' });
       dispatchFilters({ type: 'SET_PAGE', page: 1 });
 
-      // Optimistically insert the call into the SWR cache so the table updates immediately
-      if (analyticsKey) {
-        // 1. Optimistic UI update
-        swrMutate(
-          analyticsKey,
-          (prev: DashboardAnalytics | undefined) => {
-            const nextRecent = prev?.recentCalls
-              ? [callData, ...prev.recentCalls]
-              : [callData];
-            return prev
-              ? { ...prev, recentCalls: nextRecent }
-              : ({
-                  metrics: { ...(prev as any)?.metrics },
-                  recentCalls: nextRecent,
-                  trends: (prev as any)?.trends,
-                } as DashboardAnalytics);
-          },
-          false // no revalidate yet
-        );
-
-        // 2. Immediately revalidate so we eventually replace with canonical data
-        swrMutate(analyticsKey);
-      }
-
-      // Open the call detail modal immediately with the webhook payload
+      // Open the call detail modal with the SSE payload
       handleCallSelect(callData);
-
-      // Kick off a background refresh – the canonical record will replace the
-      // optimistic one when Vapi’s API finishes persisting it.
-      refetch();
     },
-    [dispatchFilters, handleCallSelect, refetch, analyticsKey]
+    [dispatchFilters, handleCallSelect]
   );
 
   // Real-time call updates
@@ -232,6 +204,26 @@ export default function RecentCallsClient() {
           hasCallData: !!event.callData,
           hasAnalysis: !!event.callData?.analysis,
         });
+
+        // Add the new call to the table immediately using SSE data
+        if (event.callData && analyticsKey) {
+          swrMutate(
+            analyticsKey,
+            (prev: DashboardAnalytics | undefined) => {
+              const nextRecent = prev?.recentCalls
+                ? [event.callData, ...prev.recentCalls.filter(c => c.id !== event.callId)]
+                : [event.callData];
+              return prev
+                ? { ...prev, recentCalls: nextRecent }
+                : ({
+                    metrics: { ...(prev as any)?.metrics || {} },
+                    recentCalls: nextRecent,
+                    trends: (prev as any)?.trends || [],
+                  } as DashboardAnalytics);
+            },
+            false // No revalidate - trust SSE data
+          );
+        }
 
         // Show enhanced toast notification with call details
         const callerInfo =
@@ -250,8 +242,6 @@ export default function RecentCallsClient() {
             <Button
               variant="outline"
               size="sm"
-              // event.callData is guaranteed when this button is rendered
-              // Cast to VapiCall because the SSE payload omits some optional fields
               onClick={() =>
                 handleViewNewCall(event.callData! as unknown as VapiCall)
               }
@@ -260,21 +250,8 @@ export default function RecentCallsClient() {
             </Button>
           ) : undefined,
         });
-
-        // Immediately refetch analytics data since we have the call data from webhook
-        // No delay needed since VAPI has already processed and sent us the analysis
-        logger.info(
-          'RECENT_CALLS',
-          'Refreshing call data after new call detected',
-          {
-            callId: event.callId,
-            currentCallsCount: analytics?.recentCalls?.length || 0,
-            hasAnalyticsData: !!analytics,
-          }
-        );
-        refetch();
       },
-      [refetch]
+      [analyticsKey, handleViewNewCall]
     ),
   });
 
