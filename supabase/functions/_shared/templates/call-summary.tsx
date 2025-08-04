@@ -149,7 +149,13 @@ export default function CallSummaryEmail({
                       Caller Information
                     </div>
                     {callerName && (
-                      <div style={{ fontSize: '14px', color: '#000', marginBottom: '4px' }}>
+                      <div
+                        style={{
+                          fontSize: '14px',
+                          color: '#000',
+                          marginBottom: '4px',
+                        }}
+                      >
                         <strong>Name:</strong> {callerName}
                       </div>
                     )}
@@ -187,10 +193,18 @@ export default function CallSummaryEmail({
                         {callAnalysis.sentiment && (
                           <div
                             style={{
-                              backgroundColor: callAnalysis.sentiment === 'positive' ? '#ECFDF5' : 
-                                             callAnalysis.sentiment === 'negative' ? '#FEF2F2' : '#F3F4F6',
-                              color: callAnalysis.sentiment === 'positive' ? '#047857' : 
-                                     callAnalysis.sentiment === 'negative' ? '#DC2626' : '#374151',
+                              backgroundColor:
+                                callAnalysis.sentiment === 'positive'
+                                  ? '#ECFDF5'
+                                  : callAnalysis.sentiment === 'negative'
+                                    ? '#FEF2F2'
+                                    : '#F3F4F6',
+                              color:
+                                callAnalysis.sentiment === 'positive'
+                                  ? '#047857'
+                                  : callAnalysis.sentiment === 'negative'
+                                    ? '#DC2626'
+                                    : '#374151',
                               padding: '4px 8px',
                               borderRadius: '4px',
                               fontSize: '12px',
@@ -204,10 +218,18 @@ export default function CallSummaryEmail({
                         {callAnalysis.leadQuality && (
                           <div
                             style={{
-                              backgroundColor: callAnalysis.leadQuality === 'hot' ? '#FEF2F2' : 
-                                             callAnalysis.leadQuality === 'warm' ? '#FEF3C7' : '#F3F4F6',
-                              color: callAnalysis.leadQuality === 'hot' ? '#DC2626' : 
-                                     callAnalysis.leadQuality === 'warm' ? '#D97706' : '#6B7280',
+                              backgroundColor:
+                                callAnalysis.leadQuality === 'hot'
+                                  ? '#FEF2F2'
+                                  : callAnalysis.leadQuality === 'warm'
+                                    ? '#FEF3C7'
+                                    : '#F3F4F6',
+                              color:
+                                callAnalysis.leadQuality === 'hot'
+                                  ? '#DC2626'
+                                  : callAnalysis.leadQuality === 'warm'
+                                    ? '#D97706'
+                                    : '#6B7280',
                               padding: '4px 8px',
                               borderRadius: '4px',
                               fontSize: '12px',
@@ -220,135 +242,163 @@ export default function CallSummaryEmail({
                         )}
                       </div>
                       {callAnalysis.callPurpose && (
-                        <div style={{ fontSize: '14px', color: '#000', marginBottom: '4px' }}>
-                          <strong>Call Purpose:</strong> {callAnalysis.callPurpose}
+                        <div
+                          style={{
+                            fontSize: '14px',
+                            color: '#000',
+                            marginBottom: '4px',
+                          }}
+                        >
+                          <strong>Call Purpose:</strong>{' '}
+                          {callAnalysis.callPurpose}
                         </div>
                       )}
                       {callAnalysis.businessInterest && (
-                        <div style={{ fontSize: '14px', color: '#000', marginBottom: '4px' }}>
-                          <strong>Business Interest:</strong> {callAnalysis.businessInterest}
+                        <div
+                          style={{
+                            fontSize: '14px',
+                            color: '#000',
+                            marginBottom: '4px',
+                          }}
+                        >
+                          <strong>Business Interest:</strong>{' '}
+                          {callAnalysis.businessInterest}
                         </div>
                       )}
                       {callAnalysis.timeline && (
-                        <div style={{ fontSize: '14px', color: '#000', marginBottom: '4px' }}>
+                        <div
+                          style={{
+                            fontSize: '14px',
+                            color: '#000',
+                            marginBottom: '4px',
+                          }}
+                        >
                           <strong>Timeline:</strong> {callAnalysis.timeline}
                         </div>
                       )}
                       {callAnalysis.contactPreference && (
                         <div style={{ fontSize: '14px', color: '#000' }}>
-                          <strong>Contact Preference:</strong> {callAnalysis.contactPreference}
+                          <strong>Contact Preference:</strong>{' '}
+                          {callAnalysis.contactPreference}
                         </div>
                       )}
                     </div>
 
                     {/* Key Discussion Points */}
-                    {callAnalysis.keyPoints && callAnalysis.keyPoints.length > 0 && (
-                      <div style={{ marginBottom: '24px' }}>
-                        <div
-                          style={{
-                            fontSize: '16px',
-                            fontWeight: 600,
-                            color: '#333',
-                            marginBottom: '8px',
-                          }}
-                        >
-                          Key Discussion Points
+                    {callAnalysis.keyPoints &&
+                      callAnalysis.keyPoints.length > 0 && (
+                        <div style={{ marginBottom: '24px' }}>
+                          <div
+                            style={{
+                              fontSize: '16px',
+                              fontWeight: 600,
+                              color: '#333',
+                              marginBottom: '8px',
+                            }}
+                          >
+                            Key Discussion Points
+                          </div>
+                          <ul style={{ margin: '0', paddingLeft: '20px' }}>
+                            {callAnalysis.keyPoints.map((point, index) => (
+                              <li
+                                key={index}
+                                style={{
+                                  fontSize: '14px',
+                                  color: '#000',
+                                  marginBottom: '6px',
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                {point}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                        <ul style={{ margin: '0', paddingLeft: '20px' }}>
-                          {callAnalysis.keyPoints.map((point, index) => (
-                            <li
-                              key={index}
-                              style={{
-                                fontSize: '14px',
-                                color: '#000',
-                                marginBottom: '6px',
-                                lineHeight: 1.4,
-                              }}
-                            >
-                              {point}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                      )}
 
                     {/* Follow-up Actions */}
-                    {callAnalysis.followUpItems && callAnalysis.followUpItems.length > 0 && (
-                      <div style={{ marginBottom: '24px' }}>
-                        <div
-                          style={{
-                            fontSize: '16px',
-                            fontWeight: 600,
-                            color: '#333',
-                            marginBottom: '8px',
-                          }}
-                        >
-                          Follow-up Actions
+                    {callAnalysis.followUpItems &&
+                      callAnalysis.followUpItems.length > 0 && (
+                        <div style={{ marginBottom: '24px' }}>
+                          <div
+                            style={{
+                              fontSize: '16px',
+                              fontWeight: 600,
+                              color: '#333',
+                              marginBottom: '8px',
+                            }}
+                          >
+                            Follow-up Actions
+                          </div>
+                          <ul style={{ margin: '0', paddingLeft: '20px' }}>
+                            {callAnalysis.followUpItems.map((item, index) => (
+                              <li
+                                key={index}
+                                style={{
+                                  fontSize: '14px',
+                                  color: '#000',
+                                  marginBottom: '6px',
+                                  lineHeight: 1.4,
+                                  backgroundColor: '#FEF3C7',
+                                  padding: '8px',
+                                  borderRadius: '4px',
+                                  listStyle: 'none',
+                                  marginLeft: '-20px',
+                                  paddingLeft: '20px',
+                                }}
+                              >
+                                🔄 {item}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                        <ul style={{ margin: '0', paddingLeft: '20px' }}>
-                          {callAnalysis.followUpItems.map((item, index) => (
-                            <li
-                              key={index}
-                              style={{
-                                fontSize: '14px',
-                                color: '#000',
-                                marginBottom: '6px',
-                                lineHeight: 1.4,
-                                backgroundColor: '#FEF3C7',
-                                padding: '8px',
-                                borderRadius: '4px',
-                                listStyle: 'none',
-                                marginLeft: '-20px',
-                                paddingLeft: '20px',
-                              }}
-                            >
-                              🔄 {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                      )}
 
                     {/* Urgent Concerns */}
-                    {callAnalysis.urgentConcerns && callAnalysis.urgentConcerns.length > 0 && (
-                      <div style={{ marginBottom: '24px' }}>
-                        <div
-                          style={{
-                            fontSize: '16px',
-                            fontWeight: 600,
-                            color: '#DC2626',
-                            marginBottom: '8px',
-                          }}
-                        >
-                          ⚠️ Urgent Concerns
+                    {callAnalysis.urgentConcerns &&
+                      callAnalysis.urgentConcerns.length > 0 && (
+                        <div style={{ marginBottom: '24px' }}>
+                          <div
+                            style={{
+                              fontSize: '16px',
+                              fontWeight: 600,
+                              color: '#DC2626',
+                              marginBottom: '8px',
+                            }}
+                          >
+                            ⚠️ Urgent Concerns
+                          </div>
+                          <ul style={{ margin: '0', paddingLeft: '20px' }}>
+                            {callAnalysis.urgentConcerns.map(
+                              (concern, index) => (
+                                <li
+                                  key={index}
+                                  style={{
+                                    fontSize: '14px',
+                                    color: '#000',
+                                    marginBottom: '6px',
+                                    lineHeight: 1.4,
+                                    backgroundColor: '#FEF2F2',
+                                    padding: '8px',
+                                    borderRadius: '4px',
+                                    listStyle: 'none',
+                                    marginLeft: '-20px',
+                                    paddingLeft: '20px',
+                                    border: '1px solid #FECACA',
+                                  }}
+                                >
+                                  🚨 {concern}
+                                </li>
+                              )
+                            )}
+                          </ul>
                         </div>
-                        <ul style={{ margin: '0', paddingLeft: '20px' }}>
-                          {callAnalysis.urgentConcerns.map((concern, index) => (
-                            <li
-                              key={index}
-                              style={{
-                                fontSize: '14px',
-                                color: '#000',
-                                marginBottom: '6px',
-                                lineHeight: 1.4,
-                                backgroundColor: '#FEF2F2',
-                                padding: '8px',
-                                borderRadius: '4px',
-                                listStyle: 'none',
-                                marginLeft: '-20px',
-                                paddingLeft: '20px',
-                                border: '1px solid #FECACA',
-                              }}
-                            >
-                              🚨 {concern}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                      )}
 
                     {/* Additional Insights */}
-                    {(callAnalysis.appointmentRequested || callAnalysis.budgetMentioned || callAnalysis.decisionMaker) && (
+                    {(callAnalysis.appointmentRequested ||
+                      callAnalysis.budgetMentioned ||
+                      callAnalysis.decisionMaker) && (
                       <div style={{ marginBottom: '24px' }}>
                         <div
                           style={{
@@ -360,7 +410,13 @@ export default function CallSummaryEmail({
                         >
                           Additional Insights
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '8px',
+                          }}
+                        >
                           {callAnalysis.appointmentRequested && (
                             <span
                               style={{
@@ -409,7 +465,13 @@ export default function CallSummaryEmail({
                   </>
                 )}
 
-                <div style={{ marginTop: '32px', paddingTop: '20px', borderTop: '1px solid #E5E7EB' }}>
+                <div
+                  style={{
+                    marginTop: '32px',
+                    paddingTop: '20px',
+                    borderTop: '1px solid #E5E7EB',
+                  }}
+                >
                   <a
                     href={dashboardUrl}
                     style={{

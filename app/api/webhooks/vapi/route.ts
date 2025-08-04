@@ -151,7 +151,7 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
     const summary: string = message.summary ?? message.analysis?.summary ?? '';
     const phoneNumber: string | undefined = message.customer?.number;
     const callerName: string | undefined = message.customer?.name;
-    
+
     // Include complete call analysis data for comprehensive email
     const callAnalysis = message.analysis || {};
     const structuredData = callAnalysis.structuredData || {};
@@ -160,9 +160,9 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
     const { error: emailErr } = await supabase.functions.invoke(
       'send-email-summary',
       {
-        body: { 
-          assistantId, 
-          summary, 
+        body: {
+          assistantId,
+          summary,
           phoneNumber,
           callerName,
           callAnalysis: {
@@ -178,7 +178,7 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
             businessInterest: structuredData.businessInterest,
             budgetMentioned: structuredData.budget_mentioned,
             decisionMaker: structuredData.decision_maker,
-          }
+          },
         },
       }
     );
