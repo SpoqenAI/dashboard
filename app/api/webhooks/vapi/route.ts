@@ -150,12 +150,36 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
     const supabase = createSupabaseAdmin();
     const summary: string = message.summary ?? message.analysis?.summary ?? '';
     const phoneNumber: string | undefined = message.customer?.number;
+    const callerName: string | undefined = message.customer?.name;
+    
+    // Include complete call analysis data for comprehensive email
+    const callAnalysis = message.analysis || {};
+    const structuredData = callAnalysis.structuredData || {};
 
-    // Call the Supabase email function
+    // Call the Supabase email function with complete call details
     const { error: emailErr } = await supabase.functions.invoke(
       'send-email-summary',
       {
-        body: { assistantId, summary, phoneNumber },
+        body: { 
+          assistantId, 
+          summary, 
+          phoneNumber,
+          callerName,
+          callAnalysis: {
+            sentiment: structuredData.sentiment || callAnalysis.sentiment,
+            leadQuality: structuredData.leadQuality || callAnalysis.leadQuality,
+            callPurpose: structuredData.callPurpose,
+            keyPoints: structuredData.keyPoints || [],
+            followUpItems: structuredData.followUpItems || [],
+            urgentConcerns: structuredData.urgentConcerns || [],
+            appointmentRequested: structuredData.appointmentRequested,
+            timeline: structuredData.timeline,
+            contactPreference: structuredData.contactPreference,
+            businessInterest: structuredData.businessInterest,
+            budgetMentioned: structuredData.budget_mentioned,
+            decisionMaker: structuredData.decision_maker,
+          }
+        },
       }
     );
 
