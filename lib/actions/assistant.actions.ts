@@ -365,11 +365,11 @@ export async function syncVapiAssistant(
                 description:
                   'Specific business interest or service inquired about',
               },
-              budget_mentioned: {
+              budgetMentioned: {
                 type: 'boolean',
                 description: 'Whether budget or pricing was discussed',
               },
-              decision_maker: {
+              decisionMaker: {
                 type: 'boolean',
                 description:
                   'Whether the caller appears to be a decision maker',

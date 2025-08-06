@@ -1,18 +1,27 @@
 import React from 'https://esm.sh/react@18';
 
 interface CallAnalysis {
+  // Core indicators (highest priority)
   sentiment?: 'positive' | 'negative' | 'neutral';
   leadQuality?: 'hot' | 'warm' | 'cold';
+  leadQualityReasoning?: string;
+  sentimentAnalysisReasoning?: string;
+
+  // Call content
   callPurpose?: string;
   keyPoints?: string[];
-  followUpItems?: string[];
   urgentConcerns?: string[];
-  appointmentRequested?: boolean;
-  timeline?: string;
-  contactPreference?: string;
+  followUpItems?: string[];
+
+  // Business qualifiers
   businessInterest?: string;
+  timeline?: string;
   budgetMentioned?: boolean;
   decisionMaker?: boolean;
+
+  // Contact and next steps
+  appointmentRequested?: boolean;
+  contactPreference?: string;
 }
 
 interface CallSummaryEmailProps {
@@ -170,7 +179,7 @@ export default function CallSummaryEmail({
                 {/* AI-Generated Analysis */}
                 {callAnalysis && (
                   <>
-                    {/* Call Purpose & Lead Quality */}
+                    {/* Lead Quality & Sentiment (Highest Priority) */}
                     <div style={{ marginBottom: '24px' }}>
                       <div
                         style={{
@@ -190,31 +199,6 @@ export default function CallSummaryEmail({
                           marginBottom: '12px',
                         }}
                       >
-                        {callAnalysis.sentiment && (
-                          <div
-                            style={{
-                              backgroundColor:
-                                callAnalysis.sentiment === 'positive'
-                                  ? '#ECFDF5'
-                                  : callAnalysis.sentiment === 'negative'
-                                    ? '#FEF2F2'
-                                    : '#F3F4F6',
-                              color:
-                                callAnalysis.sentiment === 'positive'
-                                  ? '#047857'
-                                  : callAnalysis.sentiment === 'negative'
-                                    ? '#DC2626'
-                                    : '#374151',
-                              padding: '4px 8px',
-                              borderRadius: '4px',
-                              fontSize: '12px',
-                              fontWeight: 600,
-                              textTransform: 'uppercase',
-                            }}
-                          >
-                            {callAnalysis.sentiment} Sentiment
-                          </div>
-                        )}
                         {callAnalysis.leadQuality && (
                           <div
                             style={{
@@ -240,7 +224,70 @@ export default function CallSummaryEmail({
                             {callAnalysis.leadQuality} Lead
                           </div>
                         )}
+                        {callAnalysis.sentiment && (
+                          <div
+                            style={{
+                              backgroundColor:
+                                callAnalysis.sentiment === 'positive'
+                                  ? '#ECFDF5'
+                                  : callAnalysis.sentiment === 'negative'
+                                    ? '#FEF2F2'
+                                    : '#F3F4F6',
+                              color:
+                                callAnalysis.sentiment === 'positive'
+                                  ? '#047857'
+                                  : callAnalysis.sentiment === 'negative'
+                                    ? '#DC2626'
+                                    : '#374151',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            {callAnalysis.sentiment} Sentiment
+                          </div>
+                        )}
                       </div>
+
+                      {/* Lead Quality Reasoning */}
+                      {callAnalysis.leadQualityReasoning && (
+                        <div
+                          style={{
+                            fontSize: '14px',
+                            color: '#000',
+                            marginBottom: '8px',
+                            backgroundColor: '#F9FAFB',
+                            padding: '8px',
+                            borderRadius: '4px',
+                            border: '1px solid #E5E7EB',
+                          }}
+                        >
+                          <strong>Lead Quality Analysis:</strong>{' '}
+                          {callAnalysis.leadQualityReasoning}
+                        </div>
+                      )}
+
+                      {/* Sentiment Reasoning */}
+                      {callAnalysis.sentimentAnalysisReasoning && (
+                        <div
+                          style={{
+                            fontSize: '14px',
+                            color: '#000',
+                            marginBottom: '8px',
+                            backgroundColor: '#F9FAFB',
+                            padding: '8px',
+                            borderRadius: '4px',
+                            border: '1px solid #E5E7EB',
+                          }}
+                        >
+                          <strong>Sentiment Analysis:</strong>{' '}
+                          {callAnalysis.sentimentAnalysisReasoning}
+                        </div>
+                      )}
+
+                      {/* Call Purpose */}
                       {callAnalysis.callPurpose && (
                         <div
                           style={{
@@ -251,35 +298,6 @@ export default function CallSummaryEmail({
                         >
                           <strong>Call Purpose:</strong>{' '}
                           {callAnalysis.callPurpose}
-                        </div>
-                      )}
-                      {callAnalysis.businessInterest && (
-                        <div
-                          style={{
-                            fontSize: '14px',
-                            color: '#000',
-                            marginBottom: '4px',
-                          }}
-                        >
-                          <strong>Business Interest:</strong>{' '}
-                          {callAnalysis.businessInterest}
-                        </div>
-                      )}
-                      {callAnalysis.timeline && (
-                        <div
-                          style={{
-                            fontSize: '14px',
-                            color: '#000',
-                            marginBottom: '4px',
-                          }}
-                        >
-                          <strong>Timeline:</strong> {callAnalysis.timeline}
-                        </div>
-                      )}
-                      {callAnalysis.contactPreference && (
-                        <div style={{ fontSize: '14px', color: '#000' }}>
-                          <strong>Contact Preference:</strong>{' '}
-                          {callAnalysis.contactPreference}
                         </div>
                       )}
                     </div>
@@ -395,8 +413,9 @@ export default function CallSummaryEmail({
                         </div>
                       )}
 
-                    {/* Additional Insights */}
-                    {(callAnalysis.appointmentRequested ||
+                    {/* Business Qualifiers (Priority Order) */}
+                    {(callAnalysis.businessInterest ||
+                      callAnalysis.timeline ||
                       callAnalysis.budgetMentioned ||
                       callAnalysis.decisionMaker) && (
                       <div style={{ marginBottom: '24px' }}>
@@ -408,8 +427,37 @@ export default function CallSummaryEmail({
                             marginBottom: '8px',
                           }}
                         >
-                          Additional Insights
+                          Business Qualifiers
                         </div>
+
+                        {/* Business Interest (High Priority) */}
+                        {callAnalysis.businessInterest && (
+                          <div
+                            style={{
+                              fontSize: '14px',
+                              color: '#000',
+                              marginBottom: '4px',
+                            }}
+                          >
+                            <strong>Business Interest:</strong>{' '}
+                            {callAnalysis.businessInterest}
+                          </div>
+                        )}
+
+                        {/* Timeline */}
+                        {callAnalysis.timeline && (
+                          <div
+                            style={{
+                              fontSize: '14px',
+                              color: '#000',
+                              marginBottom: '8px',
+                            }}
+                          >
+                            <strong>Timeline:</strong> {callAnalysis.timeline}
+                          </div>
+                        )}
+
+                        {/* Budget & Decision Maker Indicators */}
                         <div
                           style={{
                             display: 'flex',
@@ -417,20 +465,6 @@ export default function CallSummaryEmail({
                             gap: '8px',
                           }}
                         >
-                          {callAnalysis.appointmentRequested && (
-                            <span
-                              style={{
-                                backgroundColor: '#ECFDF5',
-                                color: '#047857',
-                                padding: '4px 8px',
-                                borderRadius: '4px',
-                                fontSize: '12px',
-                                fontWeight: 600,
-                              }}
-                            >
-                              📅 Appointment Requested
-                            </span>
-                          )}
                           {callAnalysis.budgetMentioned && (
                             <span
                               style={{
@@ -460,6 +494,52 @@ export default function CallSummaryEmail({
                             </span>
                           )}
                         </div>
+                      </div>
+                    )}
+
+                    {/* Contact & Next Steps */}
+                    {(callAnalysis.appointmentRequested ||
+                      callAnalysis.contactPreference) && (
+                      <div style={{ marginBottom: '24px' }}>
+                        <div
+                          style={{
+                            fontSize: '16px',
+                            fontWeight: 600,
+                            color: '#333',
+                            marginBottom: '8px',
+                          }}
+                        >
+                          Contact & Next Steps
+                        </div>
+
+                        {callAnalysis.appointmentRequested && (
+                          <div style={{ marginBottom: '8px' }}>
+                            <span
+                              style={{
+                                backgroundColor: '#ECFDF5',
+                                color: '#047857',
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                              }}
+                            >
+                              📅 Appointment Requested
+                            </span>
+                          </div>
+                        )}
+
+                        {callAnalysis.contactPreference && (
+                          <div
+                            style={{
+                              fontSize: '14px',
+                              color: '#000',
+                            }}
+                          >
+                            <strong>Contact Preference:</strong>{' '}
+                            {callAnalysis.contactPreference}
+                          </div>
+                        )}
                       </div>
                     )}
                   </>
