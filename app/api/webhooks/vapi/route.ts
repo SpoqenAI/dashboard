@@ -203,8 +203,8 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
       // Business qualifiers
       businessInterest: filterNAValue(structuredData.businessInterest),
       timeline: filterNAValue(structuredData.timeline),
-      budgetMentioned: filterNAValue(structuredData.budget_mentioned),
-      decisionMaker: filterNAValue(structuredData.decision_maker),
+      budgetMentioned: filterNAValue(structuredData.budgetMentioned),
+      decisionMaker: filterNAValue(structuredData.decisionMaker),
 
       // Contact and next steps
       appointmentRequested: filterNAValue(structuredData.appointmentRequested),
