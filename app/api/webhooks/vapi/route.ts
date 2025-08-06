@@ -157,7 +157,7 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
     const structuredData = callAnalysis.structuredData || {};
 
     // Helper function to filter out N/A, empty, null, undefined values
-    const filterNAValue = (value: any): any => {
+    const filterNAValue = (value: unknown): unknown => {
       if (value === null || value === undefined) return undefined;
       if (typeof value === 'string') {
         const trimmed = value.trim().toLowerCase();
