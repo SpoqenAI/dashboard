@@ -150,12 +150,85 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
     const supabase = createSupabaseAdmin();
     const summary: string = message.summary ?? message.analysis?.summary ?? '';
     const phoneNumber: string | undefined = message.customer?.number;
+    const callerName: string | undefined = message.customer?.name;
 
-    // Call the Supabase email function
+    // Include complete call analysis data for comprehensive email
+    const callAnalysis = message.analysis || {};
+    const structuredData = callAnalysis.structuredData || {};
+
+    // Helper function to filter out N/A, empty, null, undefined values
+    const filterNAValue = (value: unknown): unknown => {
+      if (value === null || value === undefined) return undefined;
+      if (typeof value === 'string') {
+        const trimmed = value.trim().toLowerCase();
+        if (
+          trimmed === 'n/a' ||
+          trimmed === 'na' ||
+          trimmed === 'none' ||
+          trimmed === ''
+        ) {
+          return undefined;
+        }
+        return value.trim();
+      }
+      if (Array.isArray(value)) {
+        const filtered = value
+          .map(item => filterNAValue(item))
+          .filter(item => item !== undefined && item !== '');
+        return filtered.length > 0 ? filtered : undefined;
+      }
+      return value;
+    };
+
+    // Process and filter all structured data fields from VAPI
+    const processedCallAnalysis = {
+      // Core sentiment and lead quality (highest priority)
+      sentiment:
+        filterNAValue(structuredData.sentiment) ||
+        filterNAValue(callAnalysis.sentiment),
+      leadQuality:
+        filterNAValue(structuredData.leadQuality) ||
+        filterNAValue(callAnalysis.leadQuality),
+      leadQualityReasoning: filterNAValue(structuredData.leadQualityReasoning),
+      sentimentAnalysisReasoning: filterNAValue(
+        structuredData.sentimentAnalysisReasoning
+      ),
+
+      // Call details
+      callPurpose: filterNAValue(structuredData.callPurpose),
+      keyPoints: filterNAValue(structuredData.keyPoints),
+      followUpItems: filterNAValue(structuredData.followUpItems),
+      urgentConcerns: filterNAValue(structuredData.urgentConcerns),
+
+      // Business qualifiers
+      businessInterest: filterNAValue(structuredData.businessInterest),
+      timeline: filterNAValue(structuredData.timeline),
+      budgetMentioned: filterNAValue(structuredData.budgetMentioned),
+      decisionMaker: filterNAValue(structuredData.decisionMaker),
+
+      // Contact and next steps
+      appointmentRequested: filterNAValue(structuredData.appointmentRequested),
+      contactPreference: filterNAValue(structuredData.contactPreference),
+    };
+
+    // Remove undefined values to keep payload clean
+    const cleanCallAnalysis = Object.fromEntries(
+      Object.entries(processedCallAnalysis).filter(
+        ([_, value]) => value !== undefined
+      )
+    );
+
+    // Call the Supabase email function with filtered call details
     const { error: emailErr } = await supabase.functions.invoke(
       'send-email-summary',
       {
-        body: { assistantId, summary, phoneNumber },
+        body: {
+          assistantId,
+          summary,
+          phoneNumber,
+          callerName,
+          callAnalysis: cleanCallAnalysis,
+        },
       }
     );
 
