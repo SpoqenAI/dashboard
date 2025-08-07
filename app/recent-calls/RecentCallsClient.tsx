@@ -107,7 +107,7 @@ export default function RecentCallsClient() {
     useDashboardAnalytics({
       days: 30,
       refetchInterval: 0, // No polling - pure event-driven after initial load
-      enabled: !!user && !isCallDetailOpen, // Free users now get analytics
+      enabled: !!user, // Keep enabled even when modal is open to avoid cache reset
     });
 
   // SWR key used by useDashboardAnalytics – needed for optimistic updates
@@ -199,7 +199,7 @@ export default function RecentCallsClient() {
   const { isConnected: isRealTimeConnected } = useCallUpdates({
     enabled: !!user, // Free users now get action points
     onNewCall: useCallback(
-      (event: import('@/lib/events').CallUpdateEvent) => {
+      (event: CallUpdateEvent) => {
         logger.info('RECENT_CALLS', 'New call detected via SSE', {
           callId: event.callId,
           timestamp: event.timestamp,
@@ -224,17 +224,35 @@ export default function RecentCallsClient() {
           durationSeconds: z.number(),
         });
 
-        // Normalize SSE call payload into a full VapiCall shape
+        // Normalize SSE call payload into a full VapiCall shape without assuming structuredData keys
         const normalizeSSECallToVapiCall = (
           raw: NonNullable<CallUpdateEvent['callData']>
         ): VapiCall => {
+          const structured = (raw.analysis as any)?.structuredData || {};
+          const sentimentValue =
+            raw.analysis?.sentiment ?? structured?.sentiment;
+          const leadQualityValue =
+            raw.analysis?.leadQuality ??
+            structured?.leadQuality ??
+            structured?.lead_quality;
+
+          const mergedAnalysis: NonNullable<VapiCall['analysis']> = {
+            ...(raw.analysis || {}),
+          } as NonNullable<VapiCall['analysis']>;
+          if (sentimentValue !== undefined) {
+            mergedAnalysis.sentiment = sentimentValue as any;
+          }
+          if (leadQualityValue !== undefined) {
+            mergedAnalysis.leadQuality = leadQualityValue as any;
+          }
+
           return {
             id: raw.id,
             status: raw.endedAt ? 'completed' : 'in-progress',
-            endedReason: raw.endedReason || 'unknown',
+            endedReason: raw.endedReason ?? 'unknown',
             durationSeconds: raw.durationSeconds ?? 0,
             createdAt: raw.createdAt,
-            startedAt: raw.startedAt,
+            startedAt: raw.startedAt || raw.createdAt,
             endedAt: raw.endedAt,
             cost: raw.cost,
             transcript: raw.transcript,
@@ -244,7 +262,7 @@ export default function RecentCallsClient() {
             phoneNumber: raw.phoneNumber
               ? { number: raw.phoneNumber }
               : undefined,
-            analysis: raw.analysis,
+            analysis: mergedAnalysis,
           };
         };
 
