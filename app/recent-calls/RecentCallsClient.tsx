@@ -30,6 +30,8 @@ import { CallHistoryTable } from '@/components/dashboard/call-history-table';
 import { useQueryState } from 'nuqs';
 import { mutate as swrMutate } from 'swr';
 import type { DashboardAnalytics } from '@/lib/types';
+import type { CallUpdateEvent } from '@/lib/events';
+import { z } from 'zod';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -205,21 +207,107 @@ export default function RecentCallsClient() {
           hasAnalysis: !!event.callData?.analysis,
         });
 
+        // Runtime validation for SSE payload
+        const sseCallDataSchema = z.object({
+          id: z.string(),
+          summary: z.string().optional(),
+          analysis: z.any().optional(),
+          endedReason: z.string().optional(),
+          transcript: z.string().optional(),
+          recordingUrl: z.string().optional(),
+          phoneNumber: z.string().optional(),
+          callerName: z.string().optional(),
+          createdAt: z.string(),
+          startedAt: z.string().optional(),
+          endedAt: z.string().optional(),
+          cost: z.number().optional(),
+          durationSeconds: z.number(),
+        });
+
+        // Normalize SSE call payload into a full VapiCall shape
+        const normalizeSSECallToVapiCall = (
+          raw: NonNullable<CallUpdateEvent['callData']>
+        ): VapiCall => {
+          return {
+            id: raw.id,
+            status: raw.endedAt ? 'completed' : 'in-progress',
+            endedReason: raw.endedReason || 'unknown',
+            durationSeconds: raw.durationSeconds ?? 0,
+            createdAt: raw.createdAt,
+            startedAt: raw.startedAt,
+            endedAt: raw.endedAt,
+            cost: raw.cost,
+            transcript: raw.transcript,
+            summary: raw.summary,
+            recordingUrl: raw.recordingUrl,
+            callerName: raw.callerName,
+            phoneNumber: raw.phoneNumber
+              ? { number: raw.phoneNumber }
+              : undefined,
+            analysis: raw.analysis,
+          };
+        };
+
+        // Prepare a normalized call for UI and cache update
+        let normalizedCallForView: VapiCall | null = null;
+        if (event.callData) {
+          const parsed = sseCallDataSchema.safeParse(event.callData);
+          if (parsed.success) {
+            normalizedCallForView = normalizeSSECallToVapiCall(parsed.data);
+          } else {
+            logger.warn('RECENT_CALLS', 'Invalid SSE callData payload', {
+              callId: event.callId,
+              issues: parsed.error.flatten(),
+            });
+          }
+        }
+
         // Add the new call to the table immediately using SSE data
-        if (event.callData && analyticsKey) {
-          swrMutate(
+        if (normalizedCallForView && analyticsKey) {
+          const normalizedCall = normalizedCallForView;
+          swrMutate<DashboardAnalytics>(
             analyticsKey,
-            (prev: DashboardAnalytics | undefined) => {
-              const nextRecent = prev?.recentCalls
-                ? [event.callData, ...prev.recentCalls.filter(c => c.id !== event.callId)]
-                : [event.callData];
-              return prev
-                ? { ...prev, recentCalls: nextRecent }
-                : ({
-                    metrics: { ...(prev as any)?.metrics || {} },
-                    recentCalls: nextRecent,
-                    trends: (prev as any)?.trends || [],
-                  } as DashboardAnalytics);
+            (prev?: DashboardAnalytics): DashboardAnalytics => {
+              const newCallId = normalizedCall.id;
+              const nextRecent: VapiCall[] = prev?.recentCalls
+                ? [
+                    normalizedCall,
+                    ...prev.recentCalls.filter(c => c.id !== newCallId),
+                  ]
+                : [normalizedCall];
+
+              if (prev) {
+                return { ...prev, recentCalls: nextRecent };
+              }
+
+              const defaultMetrics: DashboardAnalytics['metrics'] = {
+                totalCalls: 0,
+                answeredCalls: 0,
+                missedCalls: 0,
+                avgDuration: 0,
+                totalCost: 0,
+                avgCost: 0,
+                callsByHour: [],
+                callsByDay: [],
+                sentimentDistribution: {
+                  positive: 0,
+                  negative: 0,
+                  neutral: 0,
+                },
+                leadQualityDistribution: { hot: 0, warm: 0, cold: 0 },
+              };
+
+              const defaultTrends: DashboardAnalytics['trends'] = {
+                callVolumeTrend: 'stable',
+                avgDurationTrend: 'stable',
+                costTrend: 'stable',
+              };
+
+              return {
+                metrics: defaultMetrics,
+                recentCalls: nextRecent,
+                trends: defaultTrends,
+              };
             },
             false // No revalidate - trust SSE data
           );
@@ -238,13 +326,11 @@ export default function RecentCallsClient() {
           title: 'New Call Received',
           description: `${callerInfo}${leadQuality ? ` - ${leadQuality.toUpperCase()} lead` : ''}${sentiment ? ` - ${sentiment} sentiment` : ''}`,
           duration: 8000,
-          action: event.callData ? (
+          action: normalizedCallForView ? (
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                handleViewNewCall(event.callData! as unknown as VapiCall)
-              }
+              onClick={() => handleViewNewCall(normalizedCallForView!)}
             >
               View
             </Button>
