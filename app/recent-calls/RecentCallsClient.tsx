@@ -249,7 +249,7 @@ export default function RecentCallsClient() {
           return {
             id: raw.id,
             status: raw.endedAt ? 'completed' : 'in-progress',
-            endedReason: raw.endedReason as any,
+            endedReason: raw.endedReason ?? 'unknown',
             durationSeconds: raw.durationSeconds ?? 0,
             createdAt: raw.createdAt,
             startedAt: raw.startedAt || raw.createdAt,
