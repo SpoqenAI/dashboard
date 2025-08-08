@@ -340,10 +340,29 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
             signal: controller.signal,
           }
         );
-        if (!res.ok) return;
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          const errorMessage =
+            text || `Failed to load knowledge (status ${res.status})`;
+          throw new Error(errorMessage);
+        }
         const json = await res.json();
         setKnowledgeToolId(json.toolId || null);
         setKnowledgeFiles(Array.isArray(json.files) ? json.files : []);
+      } catch (error) {
+        // Ignore user-initiated aborts
+        if ((error as any)?.name === 'AbortError') return;
+        logger.fmt`level=${'error'} event=${'AI_KNOWLEDGE_LOAD'} message=${'Failed to load assistant knowledge'} errorMessage=${
+          error instanceof Error ? error.message : String(error)
+        } stack=${error instanceof Error ? error.stack || '' : ''}`;
+        toast({
+          title: 'Error loading knowledge',
+          description:
+            error instanceof Error
+              ? error.message
+              : 'Unable to load knowledge files. Please try again.',
+          variant: 'destructive',
+        });
       } finally {
         setKnowledgeLoading(false);
       }
@@ -1256,6 +1275,24 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                         setSelectedFilesToUpload([]);
                         if (fileInputRef.current)
                           fileInputRef.current.value = '';
+                      } catch (error) {
+                        // Revert optimistic update on network error
+                        setKnowledgeFiles(prev =>
+                          [removed, ...prev].sort((a, b) =>
+                            a.id > b.id ? 1 : -1
+                          )
+                        );
+                        logger.fmt`level=${'error'} event=${'AI_KNOWLEDGE_DETACH'} message=${'Network error detaching file'} errorMessage=${
+                          error instanceof Error ? error.message : String(error)
+                        } stack=${error instanceof Error ? error.stack || '' : ''}`;
+                        toast({
+                          title: 'Remove failed',
+                          description:
+                            error instanceof Error
+                              ? error.message
+                              : 'A network error occurred while removing the file.',
+                          variant: 'destructive',
+                        });
                       } finally {
                         setRemovingFileIds(prev => {
                           const next = new Set(prev);
