@@ -1,4 +1,4 @@
-"use client"
+'use client';
 import { memo, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -1031,7 +1031,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                                     0,
                                     Math.min(
                                       100,
-                                      Math.round((uploadedBytes / totalBytes) * 100)
+                                      Math.round(
+                                        (uploadedBytes / totalBytes) * 100
+                                      )
                                     )
                                   );
                                   pendingProgressRef.current[f.name] = percent;
