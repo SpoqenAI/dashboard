@@ -1,3 +1,4 @@
+"use client"
 import { memo, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,13 +40,15 @@ import {
 } from 'lucide-react';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { toast } from '@/components/ui/use-toast';
-import { logger } from '@/lib/logger';
+import * as Sentry from '@sentry/nextjs';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { inferMimeFromFilename, isAllowedMime } from '@/lib/file-validation';
 import dynamic from 'next/dynamic';
 const VapiWidget = dynamic(() => import('@/components/vapi-widget'), {
   ssr: false,
 });
+
+const { logger } = Sentry;
 
 interface AISettingsTabProps {
   isUserFree: boolean;
@@ -438,11 +441,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         duration: 3000,
       });
     } catch (error) {
-      logger.error(
-        'AI_SETTINGS',
-        'Failed to save assistant settings',
-        error as Error
-      );
+      logger.fmt`level=${'error'} event=${'AI_SETTINGS_SAVE'} message=${'Failed to save assistant settings'} errorMessage=${
+        error instanceof Error ? error.message : String(error)
+      } stack=${error instanceof Error ? error.stack || '' : ''}`;
       toast({
         title: 'Error saving settings',
         description:
@@ -526,11 +527,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       // Refresh assistant data to reflect changes
       await refreshAssistantData();
     } catch (error) {
-      logger.error(
-        'AI_SETTINGS',
-        'Failed to pull system updates',
-        error as Error
-      );
+      logger.fmt`level=${'error'} event=${'AI_SETTINGS_PULL_UPDATES'} message=${'Failed to pull system updates'} errorMessage=${
+        error instanceof Error ? error.message : String(error)
+      } stack=${error instanceof Error ? error.stack || '' : ''}`;
       toast({
         title: 'Error applying system updates',
         description:
@@ -994,50 +993,98 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                         return resolve(null);
                       }
 
-                      const fd = new FormData();
-                      fd.append('file', f, f.name);
-                      const xhr = new XMLHttpRequest();
-                      xhr.open('POST', '/api/vapi/files/upload');
-                      xhr.upload.onprogress = event => {
-                        if (event.lengthComputable && event.total > 0) {
-                          const percent = Math.round(
-                            (event.loaded / event.total) * 100
-                          );
-                          pendingProgressRef.current[f.name] = percent;
-                          scheduleProgressFlush();
-                        }
-                      };
-                      xhr.onerror = () => {
-                        toast({
-                          title: 'Upload failed',
-                          description: 'Network error during upload',
-                          variant: 'destructive',
-                        });
-                        resolve(null);
-                      };
-                      xhr.onload = () => {
-                        try {
-                          if (xhr.status >= 200 && xhr.status < 300) {
-                            const json = JSON.parse(xhr.responseText || '{}');
-                            resolve(json?.id || null);
-                          } else {
+                      // Streamed multipart/form-data upload with fetch to enable progress updates
+                      const boundary = `----spoqenFormBoundary-${
+                        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                          ? crypto.randomUUID()
+                          : Math.random().toString(36).slice(2)
+                      }`;
+                      const encoder = new TextEncoder();
+                      const contentType = f.type || 'application/octet-stream';
+                      const escapedFilename = f.name.replace(/"/g, '%22');
+                      const prefix = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${escapedFilename}"\r\nContent-Type: ${contentType}\r\n\r\n`;
+                      const suffix = `\r\n--${boundary}--\r\n`;
+
+                      const fileStream = f.stream();
+                      let uploadedBytes = 0;
+                      const totalBytes = f.size;
+
+                      const bodyStream = new ReadableStream<Uint8Array>({
+                        start(controller) {
+                          controller.enqueue(encoder.encode(prefix));
+                          const reader = fileStream.getReader();
+                          const pump = (): any => {
+                            return reader
+                              .read()
+                              .then(({ done, value }) => {
+                                if (done) {
+                                  controller.enqueue(encoder.encode(suffix));
+                                  controller.close();
+                                  // Ensure 100% on completion
+                                  pendingProgressRef.current[f.name] = 100;
+                                  scheduleProgressFlush();
+                                  return;
+                                }
+                                if (value) {
+                                  uploadedBytes += value.byteLength;
+                                  const percent = Math.max(
+                                    0,
+                                    Math.min(
+                                      100,
+                                      Math.round((uploadedBytes / totalBytes) * 100)
+                                    )
+                                  );
+                                  pendingProgressRef.current[f.name] = percent;
+                                  scheduleProgressFlush();
+                                  controller.enqueue(value);
+                                }
+                                return pump();
+                              })
+                              .catch(err => {
+                                controller.error(err);
+                              });
+                          };
+                          pump();
+                        },
+                      });
+
+                      fetch('/api/vapi/files/upload', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': `multipart/form-data; boundary=${boundary}`,
+                        },
+                        body: bodyStream as any,
+                      })
+                        .then(async res => {
+                          const text = await res.text();
+                          if (!res.ok) {
                             toast({
                               title: 'Upload failed',
-                              description: xhr.responseText || 'Upload failed',
+                              description: text || 'Upload failed',
                               variant: 'destructive',
                             });
-                            resolve(null);
+                            return resolve(null);
                           }
-                        } catch (e) {
+                          try {
+                            const json = JSON.parse(text || '{}');
+                            return resolve(json?.id || null);
+                          } catch {
+                            toast({
+                              title: 'Upload failed',
+                              description: 'Invalid server response',
+                              variant: 'destructive',
+                            });
+                            return resolve(null);
+                          }
+                        })
+                        .catch(() => {
                           toast({
                             title: 'Upload failed',
-                            description: 'Invalid server response',
+                            description: 'Network error during upload',
                             variant: 'destructive',
                           });
-                          resolve(null);
-                        }
-                      };
-                      xhr.send(fd);
+                          return resolve(null);
+                        });
                     });
                   });
 
@@ -1159,7 +1206,23 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                           `/api/vapi/files/${file.id}`,
                           { method: 'DELETE' }
                         );
-                        // Proceed to detach regardless to keep metadata consistent
+                        // If deletion fails, revert optimistic removal and stop to prevent divergence
+                        if (!deleteRes.ok) {
+                          const text = await deleteRes.text();
+                          setKnowledgeFiles(prev =>
+                            [removed, ...prev].sort((a, b) =>
+                              a.id > b.id ? 1 : -1
+                            )
+                          );
+                          toast({
+                            title: 'Delete failed',
+                            description:
+                              text || 'Unable to delete file from storage.',
+                            variant: 'destructive',
+                          });
+                          return;
+                        }
+                        // Only detach after successful delete
                         const detachRes = await fetch(
                           '/api/vapi/assistant/knowledge/detach',
                           {
@@ -1180,7 +1243,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                             )
                           );
                           toast({
-                            title: 'Remove failed',
+                            title: 'Detach failed',
                             description: text,
                             variant: 'destructive',
                           });
