@@ -31,7 +31,19 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const assistantId: string = body?.assistantId;
-    const fileIds: string[] = Array.isArray(body?.fileIds) ? body.fileIds : [];
+    const rawFileIds = body?.fileIds;
+    if (
+      !Array.isArray(rawFileIds) ||
+      !rawFileIds.every(
+        (id: any) => typeof id === 'string' && id.trim().length > 0
+      )
+    ) {
+      return NextResponse.json(
+        { error: 'Invalid fileIds: must be an array of non-empty strings' },
+        { status: 400 }
+      );
+    }
+    const fileIds: string[] = rawFileIds as string[];
 
     if (!assistantId || !validateAssistantId(assistantId)) {
       return NextResponse.json(
@@ -41,7 +53,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch assistant and verify ownership through user-scoped helper
-    const assistantResult = await getUserAssistantInfo(supabase as any);
+    const assistantResult = await getUserAssistantInfo(supabase);
     if (assistantResult.error || !assistantResult.data) {
       return NextResponse.json(
         { error: assistantResult.error || 'Assistant not found' },
@@ -67,35 +79,84 @@ export async function POST(req: NextRequest) {
     };
 
     if (!toolId) {
-      const createRes = await fetch('https://api.vapi.ai/tool', {
-        method: 'POST',
+      // Try to find an existing knowledge_query tool by name first to avoid duplicates
+      const existingToolsRes = await fetch('https://api.vapi.ai/tool', {
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
         },
-        body: JSON.stringify({
-          type: 'query',
-          function: { name: 'knowledge_query' },
-          knowledgeBases: [knowledgeBase],
-        }),
       });
-      const text = await createRes.text();
-      if (!createRes.ok) {
-        logger.error(
-          'VAPI_KNOWLEDGE',
-          'Failed to create query tool',
-          new Error(text),
-          {
-            status: createRes.status,
+      if (existingToolsRes.ok) {
+        try {
+          const list = await existingToolsRes.json();
+          const match = Array.isArray(list)
+            ? list.find(
+                (t: any) =>
+                  t?.function?.name === 'knowledge_query' &&
+                  t?.name === `kb-${assistantId}`
+              )
+            : null;
+          if (match?.id) {
+            toolId = match.id as string;
           }
-        );
-        return NextResponse.json(
-          { error: text || 'Failed to create query tool' },
-          { status: 400 }
-        );
+        } catch {
+          // ignore and fall back to creation
+        }
       }
-      const json = JSON.parse(text);
-      toolId = json.id;
+
+      if (!toolId) {
+        const createRes = await fetch('https://api.vapi.ai/tool', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            type: 'query',
+            function: { name: 'knowledge_query' },
+            knowledgeBases: [knowledgeBase],
+          }),
+        });
+
+        let createJson: any = null;
+        try {
+          createJson = await createRes.json();
+        } catch (_) {
+          // Fallback to text for non-JSON errors
+          const text = await createRes.text();
+          if (!createRes.ok) {
+            logger.error(
+              'VAPI_KNOWLEDGE',
+              'Failed to create query tool',
+              new Error(text),
+              { status: createRes.status }
+            );
+            return NextResponse.json(
+              { error: text || 'Failed to create query tool' },
+              { status: 400 }
+            );
+          }
+          // If OK but not JSON, treat as error
+          return NextResponse.json(
+            { error: 'Unexpected response creating query tool' },
+            { status: 400 }
+          );
+        }
+
+        if (!createRes.ok) {
+          logger.error(
+            'VAPI_KNOWLEDGE',
+            'Failed to create query tool',
+            new Error(String(createJson?.error || 'Unknown error')),
+            { status: createRes.status }
+          );
+          return NextResponse.json(
+            { error: createJson?.error || 'Failed to create query tool' },
+            { status: 400 }
+          );
+        }
+
+        toolId = createJson?.id;
+      }
     } else {
       const patchRes = await fetch(`https://api.vapi.ai/tool/${toolId}`, {
         method: 'PATCH',
@@ -108,18 +169,30 @@ export async function POST(req: NextRequest) {
         }),
       });
       if (!patchRes.ok) {
-        const text = await patchRes.text();
+        let patchJson: any = null;
+        try {
+          patchJson = await patchRes.json();
+        } catch (_) {
+          const text = await patchRes.text();
+          logger.error(
+            'VAPI_KNOWLEDGE',
+            'Failed to update query tool',
+            new Error(text),
+            { status: patchRes.status, toolId }
+          );
+          return NextResponse.json(
+            { error: text || 'Failed to update query tool' },
+            { status: 400 }
+          );
+        }
         logger.error(
           'VAPI_KNOWLEDGE',
           'Failed to update query tool',
-          new Error(text),
-          {
-            status: patchRes.status,
-            toolId,
-          }
+          new Error(String(patchJson?.error || 'Unknown error')),
+          { status: patchRes.status, toolId }
         );
         return NextResponse.json(
-          { error: text || 'Failed to update query tool' },
+          { error: patchJson?.error || 'Failed to update query tool' },
           { status: 400 }
         );
       }
@@ -137,7 +210,7 @@ export async function POST(req: NextRequest) {
       toolIds: mergedToolIds,
     };
 
-    const result = await updateUserAssistant(supabase as any, assistantId, {
+    const result = await updateUserAssistant(supabase, assistantId, {
       model: modelPatch,
       metadata: {
         ...(assistant.metadata || {}),

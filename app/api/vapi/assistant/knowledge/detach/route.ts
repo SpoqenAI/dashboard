@@ -57,6 +57,14 @@ export async function POST(req: NextRequest) {
     const currentFileIds: string[] = Array.isArray(metadata.fileIds)
       ? metadata.fileIds
       : [];
+
+    // Validate that the requested fileId is actually linked to this assistant
+    if (!currentFileIds.includes(fileId)) {
+      return NextResponse.json(
+        { error: 'File is not attached to this assistant' },
+        { status: 400 }
+      );
+    }
     const nextFileIds = currentFileIds.filter((id: string) => id !== fileId);
 
     // Update the Query Tool using the documented schema
@@ -84,8 +92,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Update assistant metadata; if none remain, remove the tool from model.toolIds
-    let updates: Record<string, any> = {
+    // Update assistant metadata; keep the knowledge tool even if no files remain
+    const updates: Record<string, any> = {
       metadata: {
         ...(assistant.metadata || {}),
         knowledgeToolId,
@@ -93,26 +101,8 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    if (knowledgeToolId && nextFileIds.length === 0) {
-      const existingModel = assistant.model || {};
-      const existingToolIds: string[] = Array.isArray(existingModel.toolIds)
-        ? existingModel.toolIds
-        : [];
-      const remainingToolIds = existingToolIds.filter(
-        (t: string) => t !== knowledgeToolId
-      );
-      updates = {
-        model: { ...existingModel, toolIds: remainingToolIds },
-        metadata: {
-          ...(assistant.metadata || {}),
-          knowledgeToolId: null,
-          fileIds: [],
-        },
-      };
-    }
-
     const updateResult = await updateUserAssistant(
-      supabase as any,
+      supabase,
       assistantId,
       updates
     );

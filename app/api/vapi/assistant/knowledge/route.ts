@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Use user-scoped helper which verifies ownership and fetches assistant
-    const assistantResult = await getUserAssistantInfo(supabase as any);
+    const assistantResult = await getUserAssistantInfo(supabase);
     if (assistantResult.error) {
       return NextResponse.json(
         { error: assistantResult.error },
@@ -58,23 +58,24 @@ export async function GET(req: NextRequest) {
       ? metadata.fileIds
       : [];
 
-    // Fetch file metadata for display
-    const files: Array<{ id: string; name?: string; size?: number }> = [];
-    for (const id of fileIds) {
-      try {
-        const res = await fetch(`https://api.vapi.ai/file/${id}`, {
-          headers: { Authorization: `Bearer ${apiKey}` },
-        });
-        if (res.ok) {
-          const json = await res.json();
-          files.push({ id, name: json.name, size: json.size });
-        } else {
-          files.push({ id });
-        }
-      } catch {
-        files.push({ id });
-      }
-    }
+    // Fetch file metadata for display – in parallel for performance
+    const files: Array<{ id: string; name?: string; size?: number }> =
+      await Promise.all(
+        fileIds.map(async id => {
+          try {
+            const res = await fetch(`https://api.vapi.ai/file/${id}`, {
+              headers: { Authorization: `Bearer ${apiKey}` },
+            });
+            if (res.ok) {
+              const json = await res.json();
+              return { id, name: json.name, size: json.size } as const;
+            }
+            return { id } as const;
+          } catch {
+            return { id } as const;
+          }
+        })
+      );
 
     const knowledgeToolId: string | null = metadata.knowledgeToolId || null;
     return NextResponse.json({ toolId: knowledgeToolId, fileIds, files });

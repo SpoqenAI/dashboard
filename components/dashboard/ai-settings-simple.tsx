@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useCallback, useMemo } from 'react';
+import { memo, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +35,7 @@ import {
   Wand2,
   CheckCircle,
   Info,
+  Upload,
 } from 'lucide-react';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { toast } from '@/components/ui/use-toast';
@@ -93,6 +95,15 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     []
   );
   const [knowledgeToolId, setKnowledgeToolId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>(
+    {}
+  );
+  const [isUploading, setIsUploading] = useState(false);
+  const [removingFileIds, setRemovingFileIds] = useState<Set<string>>(
+    new Set()
+  );
 
   // Character limits (memoized constants)
   const MAX_FIRST_MESSAGE_LENGTH = useMemo(() => 1000, []);
@@ -795,48 +806,226 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
           <div className="text-sm text-muted-foreground">
             Upload files to provide context (e.g., schedules, resumes). Your
             assistant will use these documents when answering related questions.
+            Max 300KB per file. Supported: .txt, .pdf, .docx, .doc, .csv, .md,
+            .tsv, .yaml, .yml, .json, .xml, .log.
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-3">
+            {/* Drag & Drop Area */}
+            <div
+              className={`flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed p-6 text-center transition-colors ${
+                isDragging
+                  ? 'border-primary bg-muted/50'
+                  : 'border-muted-foreground/30'
+              }`}
+              onDragEnter={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(true);
+              }}
+              onDragOver={e => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onDragLeave={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+              }}
+              onDrop={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+                const files = Array.from(e.dataTransfer.files || []);
+                if (files.length > 0) {
+                  setSelectedFilesToUpload(files);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }
+              }}
+              onClick={() => fileInputRef.current?.click()}
+              role="button"
+              aria-label="Drag and drop files here or click to choose"
+            >
+              <Upload className="h-5 w-5 text-muted-foreground" />
+              <div className="text-sm font-medium">Drag & drop files here</div>
+              <div className="text-xs text-muted-foreground">
+                or click to choose files (max 300KB each)
+              </div>
+            </div>
+
+            {/* Hidden native file input; triggered by the button for clearer UX */}
             <Input
+              ref={fileInputRef}
+              className="hidden"
               type="file"
               multiple
+              accept=".txt,.pdf,.doc,.docx,.csv,.md,.tsv,.yaml,.yml,.json,.xml,.log"
               onChange={e => {
                 const files = Array.from(e.target.files || []);
                 setSelectedFilesToUpload(files);
+                // Clear input value so re-selecting the same files fires change
+                if (e.target) (e.target as HTMLInputElement).value = '';
               }}
               disabled={knowledgeLoading || saving || isSavingLocal}
             />
+            <div className="flex items-center gap-3 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={knowledgeLoading || saving || isSavingLocal}
+                className="flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" /> Choose Files
+              </Button>
+              <div className="truncate text-sm text-muted-foreground">
+                {selectedFilesToUpload.length > 0
+                  ? selectedFilesToUpload.map(f => f.name).join(', ')
+                  : 'No files selected'}
+              </div>
+            </div>
             <Button
               variant="default"
               size="sm"
               disabled={
                 selectedFilesToUpload.length === 0 ||
                 !assistantId ||
-                knowledgeLoading
+                knowledgeLoading ||
+                isUploading
               }
               onClick={async () => {
                 if (!assistantId || selectedFilesToUpload.length === 0) return;
                 try {
                   setKnowledgeLoading(true);
+                  setIsUploading(true);
+                  setUploadProgress(
+                    Object.fromEntries(
+                      selectedFilesToUpload.map(f => [f.name, 0])
+                    )
+                  );
                   const uploadedIds: string[] = [];
-                  for (const f of selectedFilesToUpload) {
-                    const fd = new FormData();
-                    fd.append('file', f, f.name);
-                    const res = await fetch('/api/vapi/files/upload', {
-                      method: 'POST',
-                      body: fd,
+                  const MAX_BYTES = 300 * 1024;
+                  const allowedMimeTypes = new Set<string>([
+                    'application/pdf',
+                    'text/plain',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'application/msword',
+                    'text/csv',
+                    'text/markdown',
+                    'text/tab-separated-values',
+                    'application/x-yaml',
+                    'text/yaml',
+                    'application/yaml',
+                    'application/json',
+                    'application/xml',
+                    'text/xml',
+                  ]);
+                  const inferMimeFromFilename = (
+                    filename: string
+                  ): string | null => {
+                    const lower = filename.toLowerCase();
+                    if (lower.endsWith('.pdf')) return 'application/pdf';
+                    if (lower.endsWith('.txt') || lower.endsWith('.log'))
+                      return 'text/plain';
+                    if (lower.endsWith('.docx'))
+                      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                    if (lower.endsWith('.doc')) return 'application/msword';
+                    if (lower.endsWith('.csv')) return 'text/csv';
+                    if (lower.endsWith('.md')) return 'text/markdown';
+                    if (lower.endsWith('.tsv'))
+                      return 'text/tab-separated-values';
+                    if (lower.endsWith('.yaml') || lower.endsWith('.yml'))
+                      return 'application/x-yaml';
+                    if (lower.endsWith('.json')) return 'application/json';
+                    if (lower.endsWith('.xml')) return 'application/xml';
+                    return null;
+                  };
+
+                  const uploadPromises = selectedFilesToUpload.map(f => {
+                    return new Promise<string | null>(resolve => {
+                      // Per-file validation
+                      if (f.size === 0) {
+                        toast({
+                          title: 'Upload skipped',
+                          description: `${f.name} is empty and cannot be uploaded`,
+                          variant: 'destructive',
+                        });
+                        return resolve(null);
+                      }
+                      if (f.size > MAX_BYTES) {
+                        toast({
+                          title: 'File too large',
+                          description: `${f.name} exceeds 300KB limit`,
+                          variant: 'destructive',
+                        });
+                        return resolve(null);
+                      }
+                      const providedMime = f.type;
+                      const inferredMime = inferMimeFromFilename(f.name);
+                      const allowed =
+                        (providedMime && allowedMimeTypes.has(providedMime)) ||
+                        (inferredMime && allowedMimeTypes.has(inferredMime));
+                      if (!allowed) {
+                        toast({
+                          title: 'Unsupported file type',
+                          description: `${f.name} is not a supported type. Allowed: .txt, .pdf, .docx, .doc, .csv, .md, .tsv, .yaml, .yml, .json, .xml, .log`,
+                          variant: 'destructive',
+                        });
+                        return resolve(null);
+                      }
+
+                      const fd = new FormData();
+                      fd.append('file', f, f.name);
+                      const xhr = new XMLHttpRequest();
+                      xhr.open('POST', '/api/vapi/files/upload');
+                      xhr.upload.onprogress = event => {
+                        if (event.lengthComputable) {
+                          const percent = Math.round(
+                            (event.loaded / event.total) * 100
+                          );
+                          setUploadProgress(prev => ({
+                            ...prev,
+                            [f.name]: percent,
+                          }));
+                        }
+                      };
+                      xhr.onerror = () => {
+                        toast({
+                          title: 'Upload failed',
+                          description: 'Network error during upload',
+                          variant: 'destructive',
+                        });
+                        resolve(null);
+                      };
+                      xhr.onload = () => {
+                        try {
+                          if (xhr.status >= 200 && xhr.status < 300) {
+                            const json = JSON.parse(xhr.responseText || '{}');
+                            resolve(json?.id || null);
+                          } else {
+                            toast({
+                              title: 'Upload failed',
+                              description: xhr.responseText || 'Upload failed',
+                              variant: 'destructive',
+                            });
+                            resolve(null);
+                          }
+                        } catch (e) {
+                          toast({
+                            title: 'Upload failed',
+                            description: 'Invalid server response',
+                            variant: 'destructive',
+                          });
+                          resolve(null);
+                        }
+                      };
+                      xhr.send(fd);
                     });
-                    if (!res.ok) {
-                      const text = await res.text();
-                      toast({
-                        title: 'Upload failed',
-                        description: text,
-                        variant: 'destructive',
-                      });
-                      continue;
-                    }
-                    const json = await res.json();
-                    if (json?.id) uploadedIds.push(json.id);
+                  });
+
+                  const results = await Promise.all(uploadPromises);
+                  for (const id of results) {
+                    if (id) uploadedIds.push(id);
                   }
 
                   const finalIds = Array.from(
@@ -877,14 +1066,36 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                       description: 'Assistant knowledge updated.',
                     });
                     setSelectedFilesToUpload([]);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                    setUploadProgress({});
                   }
                 } finally {
                   setKnowledgeLoading(false);
+                  setIsUploading(false);
                 }
               }}
             >
               Upload & Attach
             </Button>
+
+            {/* Upload progress list */}
+            {isUploading && selectedFilesToUpload.length > 0 && (
+              <div className="space-y-2">
+                {selectedFilesToUpload.map(f => (
+                  <div key={f.name} className="flex items-center gap-3">
+                    <div className="w-40 truncate text-sm text-muted-foreground">
+                      {f.name}
+                    </div>
+                    <div className="flex-1">
+                      <Progress value={uploadProgress[f.name] || 0} />
+                    </div>
+                    <div className="w-12 text-right text-xs text-muted-foreground">
+                      {(uploadProgress[f.name] || 0).toString()}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -914,11 +1125,23 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                   <Button
                     variant="outline"
                     size="sm"
+                    disabled={removingFileIds.has(file.id)}
                     onClick={async () => {
                       if (!assistantId) return;
+                      const removed = file;
+                      // Per-item loading state
+                      setRemovingFileIds(prev => new Set(prev).add(file.id));
+                      // Optimistic UI removal
+                      setKnowledgeFiles(prev =>
+                        prev.filter(f => f.id !== file.id)
+                      );
                       try {
-                        setKnowledgeLoading(true);
-                        // Detach from assistant
+                        // Delete from Vapi storage first (ownership check relies on metadata)
+                        const deleteRes = await fetch(
+                          `/api/vapi/files/${file.id}`,
+                          { method: 'DELETE' }
+                        );
+                        // Proceed to detach regardless to keep metadata consistent
                         const detachRes = await fetch(
                           '/api/vapi/assistant/knowledge/detach',
                           {
@@ -932,6 +1155,12 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                         );
                         if (!detachRes.ok) {
                           const text = await detachRes.text();
+                          // Revert optimistic removal on failure
+                          setKnowledgeFiles(prev =>
+                            [removed, ...prev].sort((a, b) =>
+                              a.id > b.id ? 1 : -1
+                            )
+                          );
                           toast({
                             title: 'Remove failed',
                             description: text,
@@ -939,31 +1168,25 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                           });
                           return;
                         }
-
-                        // Also delete the file from Vapi storage so it doesn't remain in org
-                        const deleteRes = await fetch(
-                          `/api/vapi/files/${file.id}`,
-                          { method: 'DELETE' }
-                        );
-                        if (!deleteRes.ok) {
-                          // Non-fatal; log silently in UI
-                        }
-
-                        // Refresh listing
-                        const listRes = await fetch(
-                          `/api/vapi/assistant/knowledge?assistantId=${assistantId}`
-                        );
-                        if (listRes.ok) {
-                          const data = await listRes.json();
-                          setKnowledgeFiles(data.files || []);
-                        }
                         toast({ title: 'File removed' });
+                        // Keep file chooser UI in sync
+                        setSelectedFilesToUpload([]);
+                        if (fileInputRef.current)
+                          fileInputRef.current.value = '';
                       } finally {
-                        setKnowledgeLoading(false);
+                        setRemovingFileIds(prev => {
+                          const next = new Set(prev);
+                          next.delete(file.id);
+                          return next;
+                        });
                       }
                     }}
                   >
-                    Remove
+                    {removingFileIds.has(file.id) ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Remove'
+                    )}
                   </Button>
                 </div>
               ))}
