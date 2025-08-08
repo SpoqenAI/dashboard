@@ -11,31 +11,40 @@ export const ALLOWED_MIME_TYPES: ReadonlySet<string> = new Set<string>([
   'text/csv', // .csv
   'text/markdown', // .md
   'text/tab-separated-values', // .tsv
-  'application/x-yaml', // .yaml/.yml (common)
-  'text/yaml', // alternative yaml
-  'application/yaml', // alternative yaml
+  // YAML: different clients/browsers/backends emit different YAML MIME variants.
+  // Keep support for all three to avoid accidental breakage in uploads coming from
+  // various sources (e.g., browser drag-and-drop, server-side parsers, CLI tools).
+  'application/x-yaml', // common/non-standard variant seen in many libs
+  'text/yaml', // some browsers/HTTP libs label YAML as text/yaml
+  'application/yaml', // alternative emitted by certain backends
   'application/json', // .json
-  'application/xml', // .xml
-  'text/xml', // alternative xml
+  // XML: both application/xml and text/xml appear in the wild, with text/xml used
+  // by older/legacy UAs and some libraries. Support both for compatibility.
+  'application/xml', // preferred modern XML type
+  'text/xml', // legacy/alternative XML type
 ]);
+
+/** Lookup table from file extension to MIME type. Extensions must be lowercase. */
+const EXT_TO_MIME: Readonly<Record<string, string>> = {
+  '.pdf': 'application/pdf',
+  '.txt': 'text/plain',
+  '.docx':
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.doc': 'application/msword',
+  '.csv': 'text/csv',
+  '.md': 'text/markdown',
+  '.tsv': 'text/tab-separated-values',
+  '.yaml': 'application/x-yaml',
+  '.yml': 'application/x-yaml',
+  '.json': 'application/json',
+  '.xml': 'application/xml',
+  '.log': 'text/plain',
+} as const;
 
 /** Infer a MIME type from a filename's extension */
 export function inferMimeFromFilename(filename: string): string | null {
-  const lower = filename.toLowerCase();
-  if (lower.endsWith('.pdf')) return 'application/pdf';
-  if (lower.endsWith('.txt')) return 'text/plain';
-  if (lower.endsWith('.docx'))
-    return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-  if (lower.endsWith('.doc')) return 'application/msword';
-  if (lower.endsWith('.csv')) return 'text/csv';
-  if (lower.endsWith('.md')) return 'text/markdown';
-  if (lower.endsWith('.tsv')) return 'text/tab-separated-values';
-  if (lower.endsWith('.yaml') || lower.endsWith('.yml'))
-    return 'application/x-yaml';
-  if (lower.endsWith('.json')) return 'application/json';
-  if (lower.endsWith('.xml')) return 'application/xml';
-  if (lower.endsWith('.log')) return 'text/plain';
-  return null;
+  const ext = filename.toLowerCase().match(/\.[^.]+$/)?.[0] ?? '';
+  return EXT_TO_MIME[ext] ?? null;
 }
 
 /** Check if a MIME type is explicitly allowed */

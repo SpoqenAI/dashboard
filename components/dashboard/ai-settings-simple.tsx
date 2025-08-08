@@ -41,10 +41,7 @@ import { useUserSettings } from '@/hooks/use-user-settings';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
-import {
-  ALLOWED_MIME_TYPES,
-  inferMimeFromFilename,
-} from '@/lib/file-validation';
+import { inferMimeFromFilename, isAllowedMime } from '@/lib/file-validation';
 import dynamic from 'next/dynamic';
 const VapiWidget = dynamic(() => import('@/components/vapi-widget'), {
   ssr: false,
@@ -326,6 +323,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
 
   // Load knowledge files for assistant
   useEffect(() => {
+    const controller = new AbortController();
     const loadKnowledge = async () => {
       if (!assistantData?.id && !settings?.vapi_assistant_id) return;
       const aId = assistantData?.id || settings?.vapi_assistant_id;
@@ -336,6 +334,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
           `/api/vapi/assistant/knowledge?assistantId=${aId}`,
           {
             method: 'GET',
+            signal: controller.signal,
           }
         );
         if (!res.ok) return;
@@ -347,6 +346,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       }
     };
     loadKnowledge();
+    return () => {
+      controller.abort();
+    };
   }, [assistantData?.id, settings?.vapi_assistant_id]);
 
   // Don't reset initialization state on unmount - let cached data persist
@@ -981,9 +983,8 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                       const providedMime = f.type;
                       const inferredMime = inferMimeFromFilename(f.name);
                       const allowed =
-                        (providedMime &&
-                          ALLOWED_MIME_TYPES.has(providedMime)) ||
-                        (inferredMime && ALLOWED_MIME_TYPES.has(inferredMime));
+                        isAllowedMime(providedMime) ||
+                        isAllowedMime(inferredMime);
                       if (!allowed) {
                         toast({
                           title: 'Unsupported file type',
@@ -998,7 +999,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                       const xhr = new XMLHttpRequest();
                       xhr.open('POST', '/api/vapi/files/upload');
                       xhr.upload.onprogress = event => {
-                        if (event.lengthComputable) {
+                        if (event.lengthComputable && event.total > 0) {
                           const percent = Math.round(
                             (event.loaded / event.total) * 100
                           );
