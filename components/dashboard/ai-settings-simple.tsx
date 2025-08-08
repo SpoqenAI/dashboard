@@ -41,6 +41,10 @@ import { useUserSettings } from '@/hooks/use-user-settings';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import {
+  ALLOWED_MIME_TYPES,
+  inferMimeFromFilename,
+} from '@/lib/file-validation';
 import dynamic from 'next/dynamic';
 const VapiWidget = dynamic(() => import('@/components/vapi-widget'), {
   ssr: false,
@@ -104,6 +108,41 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   const [removingFileIds, setRemovingFileIds] = useState<Set<string>>(
     new Set()
   );
+
+  // Merge helper to accumulate selected files across multiple picks/drops
+  const mergeUniqueFiles = useCallback((prev: File[], next: File[]) => {
+    const seen = new Set(
+      prev.map(f => `${f.name}|${f.lastModified}|${f.size}`)
+    );
+    const merged = [...prev];
+    for (const f of next) {
+      const key = `${f.name}|${f.lastModified}|${f.size}`;
+      if (!seen.has(key)) {
+        merged.push(f);
+        seen.add(key);
+      }
+    }
+    return merged;
+  }, []);
+
+  // rAF-batched progress updates to avoid excessive re-renders
+  const pendingProgressRef = useRef<Record<string, number>>({});
+  const rafIdRef = useRef<number | null>(null);
+  const flushProgressUpdates = useCallback(() => {
+    setUploadProgress(prev => ({ ...prev, ...pendingProgressRef.current }));
+    pendingProgressRef.current = {};
+    rafIdRef.current = null;
+  }, []);
+  const scheduleProgressFlush = useCallback(() => {
+    if (rafIdRef.current == null) {
+      rafIdRef.current = requestAnimationFrame(flushProgressUpdates);
+    }
+  }, [flushProgressUpdates]);
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current != null) cancelAnimationFrame(rafIdRef.current);
+    };
+  }, []);
 
   // Character limits (memoized constants)
   const MAX_FIRST_MESSAGE_LENGTH = useMemo(() => 1000, []);
@@ -837,7 +876,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                 setIsDragging(false);
                 const files = Array.from(e.dataTransfer.files || []);
                 if (files.length > 0) {
-                  setSelectedFilesToUpload(files);
+                  setSelectedFilesToUpload(prev =>
+                    mergeUniqueFiles(prev, files)
+                  );
                   if (fileInputRef.current) fileInputRef.current.value = '';
                 }
               }}
@@ -861,7 +902,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
               accept=".txt,.pdf,.doc,.docx,.csv,.md,.tsv,.yaml,.yml,.json,.xml,.log"
               onChange={e => {
                 const files = Array.from(e.target.files || []);
-                setSelectedFilesToUpload(files);
+                setSelectedFilesToUpload(prev => mergeUniqueFiles(prev, files));
                 // Clear input value so re-selecting the same files fires change
                 if (e.target) (e.target as HTMLInputElement).value = '';
               }}
@@ -878,11 +919,23 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
               >
                 <Upload className="h-4 w-4" /> Choose Files
               </Button>
-              <div className="truncate text-sm text-muted-foreground">
-                {selectedFilesToUpload.length > 0
-                  ? selectedFilesToUpload.map(f => f.name).join(', ')
-                  : 'No files selected'}
-              </div>
+              {selectedFilesToUpload.length > 0 ? (
+                <div className="flex flex-wrap gap-2" aria-live="polite">
+                  {selectedFilesToUpload.map(f => (
+                    <Badge
+                      key={f.name}
+                      variant="secondary"
+                      className="border-emerald-200 bg-emerald-100 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300"
+                    >
+                      {f.name}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  No files selected
+                </div>
+              )}
             </div>
             <Button
               variant="default"
@@ -905,41 +958,6 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                   );
                   const uploadedIds: string[] = [];
                   const MAX_BYTES = 300 * 1024;
-                  const allowedMimeTypes = new Set<string>([
-                    'application/pdf',
-                    'text/plain',
-                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                    'application/msword',
-                    'text/csv',
-                    'text/markdown',
-                    'text/tab-separated-values',
-                    'application/x-yaml',
-                    'text/yaml',
-                    'application/yaml',
-                    'application/json',
-                    'application/xml',
-                    'text/xml',
-                  ]);
-                  const inferMimeFromFilename = (
-                    filename: string
-                  ): string | null => {
-                    const lower = filename.toLowerCase();
-                    if (lower.endsWith('.pdf')) return 'application/pdf';
-                    if (lower.endsWith('.txt') || lower.endsWith('.log'))
-                      return 'text/plain';
-                    if (lower.endsWith('.docx'))
-                      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-                    if (lower.endsWith('.doc')) return 'application/msword';
-                    if (lower.endsWith('.csv')) return 'text/csv';
-                    if (lower.endsWith('.md')) return 'text/markdown';
-                    if (lower.endsWith('.tsv'))
-                      return 'text/tab-separated-values';
-                    if (lower.endsWith('.yaml') || lower.endsWith('.yml'))
-                      return 'application/x-yaml';
-                    if (lower.endsWith('.json')) return 'application/json';
-                    if (lower.endsWith('.xml')) return 'application/xml';
-                    return null;
-                  };
 
                   const uploadPromises = selectedFilesToUpload.map(f => {
                     return new Promise<string | null>(resolve => {
@@ -963,8 +981,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                       const providedMime = f.type;
                       const inferredMime = inferMimeFromFilename(f.name);
                       const allowed =
-                        (providedMime && allowedMimeTypes.has(providedMime)) ||
-                        (inferredMime && allowedMimeTypes.has(inferredMime));
+                        (providedMime &&
+                          ALLOWED_MIME_TYPES.has(providedMime)) ||
+                        (inferredMime && ALLOWED_MIME_TYPES.has(inferredMime));
                       if (!allowed) {
                         toast({
                           title: 'Unsupported file type',
@@ -983,10 +1002,8 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                           const percent = Math.round(
                             (event.loaded / event.total) * 100
                           );
-                          setUploadProgress(prev => ({
-                            ...prev,
-                            [f.name]: percent,
-                          }));
+                          pendingProgressRef.current[f.name] = percent;
+                          scheduleProgressFlush();
                         }
                       };
                       xhr.onerror = () => {
