@@ -81,6 +81,18 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingSystem, setIsUpdatingSystem] = useState(false);
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
+  const [knowledgeFiles, setKnowledgeFiles] = useState<
+    Array<{
+      id: string;
+      name?: string;
+      size?: number;
+    }>
+  >([]);
+  const [selectedFilesToUpload, setSelectedFilesToUpload] = useState<File[]>(
+    []
+  );
+  const [knowledgeToolId, setKnowledgeToolId] = useState<string | null>(null);
 
   // Character limits (memoized constants)
   const MAX_FIRST_MESSAGE_LENGTH = useMemo(() => 1000, []);
@@ -261,6 +273,31 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     DEFAULT_FIRST_MESSAGE,
     DEFAULT_SYSTEM_PROMPT,
   ]);
+
+  // Load knowledge files for assistant
+  useEffect(() => {
+    const loadKnowledge = async () => {
+      if (!assistantData?.id && !settings?.vapi_assistant_id) return;
+      const aId = assistantData?.id || settings?.vapi_assistant_id;
+      if (!aId) return;
+      try {
+        setKnowledgeLoading(true);
+        const res = await fetch(
+          `/api/vapi/assistant/knowledge?assistantId=${aId}`,
+          {
+            method: 'GET',
+          }
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        setKnowledgeToolId(json.toolId || null);
+        setKnowledgeFiles(Array.isArray(json.files) ? json.files : []);
+      } finally {
+        setKnowledgeLoading(false);
+      }
+    };
+    loadKnowledge();
+  }, [assistantData?.id, settings?.vapi_assistant_id]);
 
   // Don't reset initialization state on unmount - let cached data persist
 
@@ -743,6 +780,194 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                 </>
               )}
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Knowledge (Files) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            Knowledge (Files)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="text-sm text-muted-foreground">
+            Upload files to provide context (e.g., schedules, resumes). Your
+            assistant will use these documents when answering related questions.
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Input
+              type="file"
+              multiple
+              onChange={e => {
+                const files = Array.from(e.target.files || []);
+                setSelectedFilesToUpload(files);
+              }}
+              disabled={knowledgeLoading || saving || isSavingLocal}
+            />
+            <Button
+              variant="default"
+              size="sm"
+              disabled={
+                selectedFilesToUpload.length === 0 ||
+                !assistantId ||
+                knowledgeLoading
+              }
+              onClick={async () => {
+                if (!assistantId || selectedFilesToUpload.length === 0) return;
+                try {
+                  setKnowledgeLoading(true);
+                  const uploadedIds: string[] = [];
+                  for (const f of selectedFilesToUpload) {
+                    const fd = new FormData();
+                    fd.append('file', f, f.name);
+                    const res = await fetch('/api/vapi/files/upload', {
+                      method: 'POST',
+                      body: fd,
+                    });
+                    if (!res.ok) {
+                      const text = await res.text();
+                      toast({
+                        title: 'Upload failed',
+                        description: text,
+                        variant: 'destructive',
+                      });
+                      continue;
+                    }
+                    const json = await res.json();
+                    if (json?.id) uploadedIds.push(json.id);
+                  }
+
+                  const finalIds = Array.from(
+                    new Set([
+                      ...(knowledgeFiles?.map(f => f.id) || []),
+                      ...uploadedIds,
+                    ])
+                  );
+
+                  const syncRes = await fetch(
+                    '/api/vapi/assistant/knowledge/sync',
+                    {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ assistantId, fileIds: finalIds }),
+                    }
+                  );
+                  if (!syncRes.ok) {
+                    const text = await syncRes.text();
+                    toast({
+                      title: 'Sync failed',
+                      description: text,
+                      variant: 'destructive',
+                    });
+                  } else {
+                    const json = await syncRes.json();
+                    setKnowledgeToolId(json.toolId || null);
+                    // Refresh listing
+                    const listRes = await fetch(
+                      `/api/vapi/assistant/knowledge?assistantId=${assistantId}`
+                    );
+                    if (listRes.ok) {
+                      const data = await listRes.json();
+                      setKnowledgeFiles(data.files || []);
+                    }
+                    toast({
+                      title: 'Files attached',
+                      description: 'Assistant knowledge updated.',
+                    });
+                    setSelectedFilesToUpload([]);
+                  }
+                } finally {
+                  setKnowledgeLoading(false);
+                }
+              }}
+            >
+              Upload & Attach
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Attached files</div>
+            <div className="space-y-2">
+              {knowledgeLoading && (
+                <div className="text-sm text-muted-foreground">Loading...</div>
+              )}
+              {!knowledgeLoading && knowledgeFiles.length === 0 && (
+                <div className="text-sm text-muted-foreground">
+                  No files attached yet.
+                </div>
+              )}
+              {knowledgeFiles.map(file => (
+                <div
+                  key={file.id}
+                  className="flex items-center justify-between rounded-md border p-2 text-sm"
+                >
+                  <div className="truncate">
+                    <span className="font-medium">{file.name || file.id}</span>
+                    {typeof file.size === 'number' && (
+                      <span className="ml-2 text-muted-foreground">
+                        {Math.ceil(file.size / 1024)} KB
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (!assistantId) return;
+                      try {
+                        setKnowledgeLoading(true);
+                        // Detach from assistant
+                        const detachRes = await fetch(
+                          '/api/vapi/assistant/knowledge/detach',
+                          {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              assistantId,
+                              fileId: file.id,
+                            }),
+                          }
+                        );
+                        if (!detachRes.ok) {
+                          const text = await detachRes.text();
+                          toast({
+                            title: 'Remove failed',
+                            description: text,
+                            variant: 'destructive',
+                          });
+                          return;
+                        }
+
+                        // Also delete the file from Vapi storage so it doesn't remain in org
+                        const deleteRes = await fetch(
+                          `/api/vapi/files/${file.id}`,
+                          { method: 'DELETE' }
+                        );
+                        if (!deleteRes.ok) {
+                          // Non-fatal; log silently in UI
+                        }
+
+                        // Refresh listing
+                        const listRes = await fetch(
+                          `/api/vapi/assistant/knowledge?assistantId=${assistantId}`
+                        );
+                        if (listRes.ok) {
+                          const data = await listRes.json();
+                          setKnowledgeFiles(data.files || []);
+                        }
+                        toast({ title: 'File removed' });
+                      } finally {
+                        setKnowledgeLoading(false);
+                      }
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
