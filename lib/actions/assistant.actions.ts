@@ -9,7 +9,10 @@ import {
   deletePhoneNumber,
 } from '../twilio/provision-number';
 import { isActiveSubscription } from '../paddle';
-import { validateAssistantId } from '@/lib/vapi-assistant';
+import {
+  validateAssistantId,
+  getStandardAnalysisPlan,
+} from '@/lib/vapi-assistant';
 
 /**
  * Safely constructs a VAPI assistant URL with validated assistantId
@@ -277,6 +280,21 @@ export async function syncVapiAssistant(
 
     // Call Vapi API using safe URL construction
     const safeUrl = constructSafeVapiUrl(assistantId);
+
+    // Fetch existing assistant to preserve current model config (provider/model/temperature/maxTokens/toolIds)
+    let existingModel: any = {};
+    try {
+      const getRes = await fetch(safeUrl, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      if (getRes.ok) {
+        const assistantJson = await getRes.json();
+        existingModel = assistantJson?.model || {};
+      }
+    } catch (_) {
+      // Best-effort; proceed without blocking if GET fails
+    }
+
     const res = await fetch(safeUrl, {
       method: 'PATCH',
       headers: {
@@ -285,9 +303,9 @@ export async function syncVapiAssistant(
       },
       body: JSON.stringify({
         name: assistantName,
+        // Preserve existing model and only update the system message
         model: {
-          provider: 'openai',
-          model: 'gpt-4.1-nano',
+          ...existingModel,
           messages: [
             {
               role: 'system',
@@ -304,85 +322,8 @@ export async function syncVapiAssistant(
               },
             }
           : {}),
-        // Custom analysis plan for better call analysis
-        analysisPlan: {
-          summaryPrompt:
-            "You are an expert call analyst. Summarize this call in 2-3 sentences, focusing on the caller's main purpose, key discussion points, and any outcomes or next steps.",
-
-          structuredDataPrompt:
-            'You are an expert data extractor for business calls. Extract structured data from this call transcript focusing on lead qualification, customer intent, and business opportunities.',
-
-          structuredDataSchema: {
-            type: 'object',
-            properties: {
-              sentiment: {
-                type: 'string',
-                enum: ['positive', 'neutral', 'negative'],
-                description: 'Overall sentiment of the caller',
-              },
-              leadQuality: {
-                type: 'string',
-                enum: ['hot', 'warm', 'cold'],
-                description:
-                  'Quality of the lead based on interest and urgency',
-              },
-              callPurpose: {
-                type: 'string',
-                description: 'Main reason for the call',
-              },
-              keyPoints: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Important points discussed during the call',
-              },
-              followUpItems: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Action items or follow-up tasks identified',
-              },
-              urgentConcerns: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Any urgent issues or time-sensitive matters',
-              },
-              appointmentRequested: {
-                type: 'boolean',
-                description:
-                  'Whether the caller requested an appointment or meeting',
-              },
-              timeline: {
-                type: 'string',
-                description:
-                  'Timeframe mentioned by caller (immediate, within a week, month, etc.)',
-              },
-              contactPreference: {
-                type: 'string',
-                description:
-                  'Preferred method of contact (phone, email, text, etc.)',
-              },
-              businessInterest: {
-                type: 'string',
-                description:
-                  'Specific business interest or service inquired about',
-              },
-              budgetMentioned: {
-                type: 'boolean',
-                description: 'Whether budget or pricing was discussed',
-              },
-              decisionMaker: {
-                type: 'boolean',
-                description:
-                  'Whether the caller appears to be a decision maker',
-              },
-            },
-            required: ['sentiment', 'leadQuality', 'callPurpose'],
-          },
-
-          successEvaluationPrompt:
-            'Evaluate if this call was successful based on: 1) Did the caller get their questions answered? 2) Was relevant information exchanged? 3) Were next steps established? 4) Did the conversation flow naturally without technical issues?',
-
-          successEvaluationRubric: 'PassFail',
-        },
+        // Standardized analysis plan
+        analysisPlan: getStandardAnalysisPlan(),
       }),
     });
 
