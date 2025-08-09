@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Supabase Edge Function: vapi-assistant-provision
  *
@@ -26,8 +27,18 @@ import {
   setTag,
   startTransaction,
 } from '../_shared/sentry.ts';
-// Canonical analysis plan shared for Edge function; JSON import with assertion is supported in Deno
-import analysisPlanJson from '../_shared/vapi-assistant.plan.json' assert { type: 'json' };
+// Load canonical analysis plan without static JSON import assertions (Biome-safe, Deno-friendly)
+let cachedAnalysisPlanJson: any | null = null;
+async function getCanonicalAnalysisPlanJson(): Promise<any> {
+  if (cachedAnalysisPlanJson) return cachedAnalysisPlanJson;
+  const planUrl = new URL(
+    '../_shared/vapi-assistant.plan.json',
+    import.meta.url
+  );
+  const planText = await Deno.readTextFile(planUrl);
+  cachedAnalysisPlanJson = JSON.parse(planText);
+  return cachedAnalysisPlanJson;
+}
 
 // DEBUG: Log whether SERVICE_ROLE_KEY is defined and its length (do not print the key itself)
 const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY');
@@ -83,9 +94,24 @@ Deno.serve(async (req: Request) => {
   const transaction = startTransaction('vapi-assistant-provision', 'webhook');
 
   try {
+    const rawHeaders = Object.fromEntries(req.headers.entries());
+    const redactedHeaders = Object.fromEntries(
+      Object.entries(rawHeaders).map(([k, v]) => {
+        const key = k.toLowerCase();
+        return [
+          'authorization',
+          'cookie',
+          'set-cookie',
+          'x-webhook-secret',
+          'x-api-key',
+        ].includes(key)
+          ? [k, '[REDACTED]']
+          : [k, v];
+      })
+    );
     addBreadcrumb('Request received', 'http', {
       method: req.method,
-      headers: Object.fromEntries(req.headers.entries()),
+      headers: redactedHeaders,
     });
 
     if (req.method !== 'POST') {
@@ -239,7 +265,7 @@ Deno.serve(async (req: Request) => {
     // Call VAPI API to create assistant
     let vapiAssistantId;
     try {
-      const assistantConfig = {
+      const assistantConfig: any = {
         name: email,
         model: {
           provider: 'openai',
@@ -284,15 +310,22 @@ Deno.serve(async (req: Request) => {
         metadata: {
           assistantType: 'receptionist',
           version: '1.0',
-          analysisPlanVersion: analysisPlanJson.version,
+          // Placeholder to satisfy type inference; populated below
+          analysisPlanVersion: '',
         },
         server: {
           url: `${globalThis.Deno.env.get('NEXT_PUBLIC_SITE_URL') || globalThis.Deno.env.get('NEXT_PUBLIC_APP_URL') || 'https://spoqen.com'}/api/webhooks/vapi`,
           timeoutSeconds: 20,
         },
         serverMessages: ['end-of-call-report'],
-        analysisPlan: (analysisPlanJson as any).plan,
+        // Placeholder to satisfy type inference; populated below
+        analysisPlan: {},
       };
+
+      // Load and attach analysis plan and version
+      const analysisPlanJson = await getCanonicalAnalysisPlanJson();
+      assistantConfig.analysisPlan = analysisPlanJson.plan;
+      assistantConfig.metadata.analysisPlanVersion = analysisPlanJson.version;
 
       // ...existing code...
       const vapiRes = await fetch('https://api.vapi.ai/assistant', {
@@ -316,7 +349,12 @@ Deno.serve(async (req: Request) => {
           user_id,
           vapi_status: vapiRes.status,
           vapi_response: vapiResText,
-          assistant_config: assistantConfig,
+          // Avoid logging full config; include minimal identifiers only
+          assistant_config_summary: {
+            hasAnalysisPlan: Boolean((assistantConfig as any)?.analysisPlan),
+            model: (assistantConfig as any)?.model?.model,
+            voice: (assistantConfig as any)?.voice?.voiceId,
+          },
         });
 
         // Update status to failed

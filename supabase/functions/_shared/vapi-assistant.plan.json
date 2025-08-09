@@ -1,10 +1,11 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "plan": {
     "summaryPrompt": "You are an expert call analyst. Summarize this call in 2-3 sentences, focusing on the caller's main purpose, key discussion points, and any outcomes or next steps.",
     "structuredDataPrompt": "You are an expert data extractor for business calls. Extract structured data from this call transcript focusing on lead qualification, customer intent, and business opportunities. Provide reasoning for your sentiment and lead quality assessments when possible.",
     "structuredDataSchema": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
         "sentiment": {
           "type": "string",

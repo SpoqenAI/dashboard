@@ -5,16 +5,24 @@ import { getUserVapiAssistantId } from '@/lib/user-settings';
 import { SupabaseClient } from '@supabase/supabase-js';
 import planJson from '@/supabase/functions/_shared/vapi-assistant.plan.json';
 
+// Minimal typing for the shared analysis plan JSON
+export type AnalysisPlan = Record<string, unknown>;
+interface VapiAssistantPlanJson {
+  version: string;
+  plan: AnalysisPlan;
+}
+const planData = planJson as VapiAssistantPlanJson;
+
 /**
  * Get the standard analysis plan configuration for VAPI assistants
  * This ensures consistency between assistant creation and updates
  */
-export function getStandardAnalysisPlan() {
-  return (planJson as any).plan;
+export function getStandardAnalysisPlan(): AnalysisPlan {
+  return planData.plan;
 }
 
 export function getAnalysisPlanVersion(): string {
-  return (planJson as any).version as string;
+  return planData.version;
 }
 
 /**
