@@ -144,6 +144,23 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     };
   }, []);
 
+  // Feature detection for streaming request bodies in fetch
+  const isStreamingUploadSupported = () => {
+    try {
+      if (typeof ReadableStream !== 'function' || typeof Request !== 'function') {
+        return false;
+      }
+      // Some browsers (Safari, Firefox) don't support Request with a ReadableStream body
+      // This construction will throw if unsupported
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rs: any = new ReadableStream();
+      new Request('/api/_probe', { method: 'POST', body: rs });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   // Character limits (memoized constants)
   const MAX_FIRST_MESSAGE_LENGTH = useMemo(() => 1000, []);
   const MAX_PROMPT_LENGTH = useMemo(() => 10000, []);
@@ -979,6 +996,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                   const uploadedIds: string[] = [];
                   const MAX_BYTES = 300 * 1024;
 
+                  const streamingSupported = isStreamingUploadSupported();
                   const uploadPromises = selectedFilesToUpload.map(f => {
                     return new Promise<string | null>(resolve => {
                       // Per-file validation
@@ -1012,100 +1030,143 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                         return resolve(null);
                       }
 
-                      // Streamed multipart/form-data upload with fetch to enable progress updates
-                      const boundary = `----spoqenFormBoundary-${
-                        typeof crypto !== 'undefined' && 'randomUUID' in crypto
-                          ? crypto.randomUUID()
-                          : Math.random().toString(36).slice(2)
-                      }`;
-                      const encoder = new TextEncoder();
-                      const contentType = f.type || 'application/octet-stream';
-                      const escapedFilename = f.name.replace(/"/g, '%22');
-                      const prefix = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${escapedFilename}"\r\nContent-Type: ${contentType}\r\n\r\n`;
-                      const suffix = `\r\n--${boundary}--\r\n`;
+                      if (streamingSupported) {
+                        // Streamed multipart/form-data upload with fetch to enable progress updates
+                        const boundary = `----spoqenFormBoundary-${
+                          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                            ? crypto.randomUUID()
+                            : Math.random().toString(36).slice(2)
+                        }`;
+                        const encoder = new TextEncoder();
+                        const contentType = f.type || 'application/octet-stream';
+                        const escapedFilename = f.name.replace(/"/g, '%22');
+                        const prefix = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${escapedFilename}"\r\nContent-Type: ${contentType}\r\n\r\n`;
+                        const suffix = `\r\n--${boundary}--\r\n`;
 
-                      const fileStream = f.stream();
-                      let uploadedBytes = 0;
-                      const totalBytes = f.size;
+                        const fileStream = f.stream();
+                        let uploadedBytes = 0;
+                        const totalBytes = f.size;
 
-                      const bodyStream = new ReadableStream<Uint8Array>({
-                        start(controller) {
-                          controller.enqueue(encoder.encode(prefix));
-                          const reader = fileStream.getReader();
-                          const pump = (): any => {
-                            return reader
-                              .read()
-                              .then(({ done, value }) => {
-                                if (done) {
-                                  controller.enqueue(encoder.encode(suffix));
-                                  controller.close();
-                                  // Ensure 100% on completion
-                                  pendingProgressRef.current[f.name] = 100;
-                                  scheduleProgressFlush();
-                                  return;
-                                }
-                                if (value) {
-                                  uploadedBytes += value.byteLength;
-                                  const percent = Math.max(
-                                    0,
-                                    Math.min(
-                                      100,
-                                      Math.round(
-                                        (uploadedBytes / totalBytes) * 100
+                        const bodyStream = new ReadableStream<Uint8Array>({
+                          start(controller) {
+                            controller.enqueue(encoder.encode(prefix));
+                            const reader = fileStream.getReader();
+                            const pump = (): any => {
+                              return reader
+                                .read()
+                                .then(({ done, value }) => {
+                                  if (done) {
+                                    controller.enqueue(encoder.encode(suffix));
+                                    controller.close();
+                                    // Ensure 100% on completion
+                                    pendingProgressRef.current[f.name] = 100;
+                                    scheduleProgressFlush();
+                                    return;
+                                  }
+                                  if (value) {
+                                    uploadedBytes += value.byteLength;
+                                    const percent = Math.max(
+                                      0,
+                                      Math.min(
+                                        100,
+                                        Math.round(
+                                          (uploadedBytes / totalBytes) * 100
+                                        )
                                       )
-                                    )
-                                  );
-                                  pendingProgressRef.current[f.name] = percent;
-                                  scheduleProgressFlush();
-                                  controller.enqueue(value);
-                                }
-                                return pump();
-                              })
-                              .catch(err => {
-                                controller.error(err);
-                              });
-                          };
-                          pump();
-                        },
-                      });
-
-                      fetch('/api/vapi/files/upload', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': `multipart/form-data; boundary=${boundary}`,
-                        },
-                        body: bodyStream as any,
-                      })
-                        .then(async res => {
-                          const text = await res.text();
-                          if (!res.ok) {
-                            toast({
-                              title: 'Upload failed',
-                              description: text || 'Upload failed',
-                              variant: 'destructive',
-                            });
-                            return resolve(null);
-                          }
-                          try {
-                            const json = JSON.parse(text || '{}');
-                            return resolve(json?.id || null);
-                          } catch {
-                            toast({
-                              title: 'Upload failed',
-                              description: 'Invalid server response',
-                              variant: 'destructive',
-                            });
-                            return resolve(null);
-                          }
-                        })
-                        .catch(() => {
-                          toast({
-                            title: 'Upload failed',
-                            description: 'Network error during upload',
-                            variant: 'destructive',
-                          });
-                          return resolve(null);
+                                    );
+                                    pendingProgressRef.current[f.name] = percent;
+                                    scheduleProgressFlush();
+                                    controller.enqueue(value);
+                                  }
+                                  return pump();
+                                })
+                                .catch(err => {
+                                  controller.error(err);
+                                });
+                            };
+                            pump();
+                          },
                         });
+
+                        fetch('/api/vapi/files/upload', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': `multipart/form-data; boundary=${boundary}`,
+                          },
+                          body: bodyStream as any,
+                        })
+                          .then(async res => {
+                            const text = await res.text();
+                            if (!res.ok) {
+                              toast({
+                                title: 'Upload failed',
+                                description: text || 'Upload failed',
+                                variant: 'destructive',
+                              });
+                              return resolve(null);
+                            }
+                            try {
+                              const json = JSON.parse(text || '{}');
+                              return resolve(json?.id || null);
+                            } catch {
+                              toast({
+                                title: 'Upload failed',
+                                description: 'Invalid server response',
+                                variant: 'destructive',
+                              });
+                              return resolve(null);
+                            }
+                          })
+                          .catch(() => {
+                            toast({
+                              title: 'Upload failed',
+                              description: 'Network error during upload',
+                              variant: 'destructive',
+                            });
+                            return resolve(null);
+                          });
+                      } else {
+                        // Fallback: standard FormData (no streaming/progress but widely supported)
+                        const formData = new FormData();
+                        formData.append('file', f, f.name);
+                        fetch('/api/vapi/files/upload', {
+                          method: 'POST',
+                          body: formData,
+                        })
+                          .then(async res => {
+                            const text = await res.text();
+                            if (!res.ok) {
+                              toast({
+                                title: 'Upload failed',
+                                description: text || 'Upload failed',
+                                variant: 'destructive',
+                              });
+                              return resolve(null);
+                            }
+                            try {
+                              const json = JSON.parse(text || '{}');
+                              // Set to 100% since we don't have progress
+                              pendingProgressRef.current[f.name] = 100;
+                              scheduleProgressFlush();
+                              return resolve(json?.id || null);
+                            } catch {
+                              toast({
+                                title: 'Upload failed',
+                                description: 'Invalid server response',
+                                variant: 'destructive',
+                              });
+                              return resolve(null);
+                            }
+                          })
+                          .catch(() => {
+                            toast({
+                              title: 'Upload failed',
+                              description: 'Network error during upload',
+                              variant: 'destructive',
+                            });
+                            return resolve(null);
+                          });
+                      }
                     });
                   });
 
