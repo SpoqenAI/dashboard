@@ -29,15 +29,22 @@ import {
 } from '../_shared/sentry.ts';
 // Load canonical analysis plan without static JSON import assertions (Biome-safe, Deno-friendly)
 let cachedAnalysisPlanJson: any | null = null;
-async function getCanonicalAnalysisPlanJson(): Promise<any> {
+async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
   if (cachedAnalysisPlanJson) return cachedAnalysisPlanJson;
-  const planUrl = new URL(
-    '../_shared/vapi-assistant.plan.json',
-    import.meta.url
-  );
-  const planText = await Deno.readTextFile(planUrl);
-  cachedAnalysisPlanJson = JSON.parse(planText);
-  return cachedAnalysisPlanJson;
+  try {
+    const planUrl = new URL(
+      '../_shared/vapi-assistant.plan.json',
+      import.meta.url
+    );
+    const planText = await Deno.readTextFile(planUrl);
+    cachedAnalysisPlanJson = JSON.parse(planText);
+    return cachedAnalysisPlanJson;
+  } catch (err) {
+    addBreadcrumb('Analysis plan load failed, proceeding without plan', 'config', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
 }
 
 // DEBUG: Log whether SERVICE_ROLE_KEY is defined and its length (do not print the key itself)
@@ -310,25 +317,23 @@ Deno.serve(async (req: Request) => {
         metadata: {
           assistantType: 'receptionist',
           version: '1.0',
-          // Placeholder to satisfy type inference; populated below
-          analysisPlanVersion: '',
         },
         server: {
           url: `${globalThis.Deno.env.get('NEXT_PUBLIC_SITE_URL') || globalThis.Deno.env.get('NEXT_PUBLIC_APP_URL') || 'https://spoqen.com'}/api/webhooks/vapi`,
           timeoutSeconds: 20,
         },
         serverMessages: ['end-of-call-report'],
-        // Placeholder to satisfy type inference; populated below
-        analysisPlan: {},
       };
 
       // Load and attach analysis plan and version
       const analysisPlanJson = await getCanonicalAnalysisPlanJson();
-      assistantConfig.analysisPlan = analysisPlanJson.plan;
-      assistantConfig.metadata.analysisPlanVersion = analysisPlanJson.version;
+      if (analysisPlanJson && analysisPlanJson.plan) {
+        assistantConfig.analysisPlan = analysisPlanJson.plan;
+        assistantConfig.metadata.analysisPlanVersion = analysisPlanJson.version;
+      }
 
-      // ...existing code...
-      const vapiRes = await fetch('https://api.vapi.ai/assistant', {
+      // First attempt
+      let vapiRes = await fetch('https://api.vapi.ai/assistant', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${VAPI_API_KEY}`,
@@ -336,9 +341,70 @@ Deno.serve(async (req: Request) => {
         },
         body: JSON.stringify(assistantConfig),
       });
-      // ...existing code...
-      const vapiResText = await vapiRes.text();
-      // ...existing code...
+      let vapiResText = await vapiRes.text();
+
+      // Fallback strategy on validation errors (e.g., unsupported model or token limits)
+      if (!vapiRes.ok && vapiRes.status >= 400 && vapiRes.status < 500) {
+        addBreadcrumb('Primary provision failed, applying fallback #1', 'vapi', {
+          status: vapiRes.status,
+          body: vapiResText?.slice(0, 500),
+        });
+
+        // Fallback #1: reduce maxTokens to a safer value
+        try {
+          const fallbackConfig1 = JSON.parse(JSON.stringify(assistantConfig));
+          if (fallbackConfig1?.model) {
+            fallbackConfig1.model.maxTokens = Math.min(
+              Number(fallbackConfig1.model.maxTokens) || 10000,
+              4000
+            );
+          }
+
+          vapiRes = await fetch('https://api.vapi.ai/assistant', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${VAPI_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(fallbackConfig1),
+          });
+          vapiResText = await vapiRes.text();
+        } catch (_) {
+          // ignore
+        }
+
+        // Fallback #2: switch to known-good model if still failing
+        if (!vapiRes.ok) {
+          addBreadcrumb('Fallback #1 failed, applying fallback #2', 'vapi', {
+            status: vapiRes.status,
+            body: vapiResText?.slice(0, 500),
+          });
+          try {
+            const fallbackConfig2 = JSON.parse(JSON.stringify(assistantConfig));
+            if (fallbackConfig2?.model) {
+              fallbackConfig2.model.model = 'gpt-4.1-nano';
+              fallbackConfig2.model.maxTokens = 250;
+              // Some providers may not accept this flag
+              if ('emotionRecognitionEnabled' in fallbackConfig2.model) {
+                delete fallbackConfig2.model.emotionRecognitionEnabled;
+              }
+            }
+
+            vapiRes = await fetch('https://api.vapi.ai/assistant', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${VAPI_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(fallbackConfig2),
+            });
+            vapiResText = await vapiRes.text();
+          } catch (_) {
+            // ignore
+          }
+        }
+      }
+
       if (!vapiRes.ok) {
         const error = new Error(
           `VAPI API error: ${vapiRes.status} ${vapiResText}`
@@ -349,12 +415,6 @@ Deno.serve(async (req: Request) => {
           user_id,
           vapi_status: vapiRes.status,
           vapi_response: vapiResText,
-          // Avoid logging full config; include minimal identifiers only
-          assistant_config_summary: {
-            hasAnalysisPlan: Boolean((assistantConfig as any)?.analysisPlan),
-            model: (assistantConfig as any)?.model?.model,
-            voice: (assistantConfig as any)?.voice?.voiceId,
-          },
         });
 
         // Update status to failed
