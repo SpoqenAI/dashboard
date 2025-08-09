@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { logger } from '@/lib/logger';
 import { validateAssistantId } from '@/lib/vapi-assistant';
 import { constructSafeVapiUrl } from '@/lib/vapi-assistant';
+import { getStandardAnalysisPlan } from '@/lib/vapi-assistant';
 
 // Validate critical environment variables at module load time
 const PADDLE_PRICE_ID = (() => {
@@ -234,6 +235,8 @@ export async function createAssistantAction(
               },
             ],
           },
+          // Keep analysis behavior consistent with admin sync
+          analysisPlan: getStandardAnalysisPlan(),
         }),
       });
 

@@ -3,6 +3,8 @@ import { getUserVapiAssistantId } from '@/lib/user-settings';
 import {
   updateUserAssistant,
   getStandardAnalysisPlan,
+  getAnalysisPlanVersion,
+  getUserAssistantInfo,
 } from '@/lib/vapi-assistant';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
@@ -36,8 +38,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Prepare the analysis plan update using the standard configuration
+    // Preserve existing metadata and set analysisPlanVersion for traceability
+    const assistantInfo = await getUserAssistantInfo(supabase);
+    const existingMetadata = assistantInfo.data?.metadata || {};
     const analysisUpdates = {
       analysisPlan: getStandardAnalysisPlan(),
+      metadata: {
+        ...existingMetadata,
+        analysisPlanVersion: getAnalysisPlanVersion(),
+      },
     };
 
     // Use user-scoped function to update the assistant

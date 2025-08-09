@@ -12,6 +12,7 @@ import { isActiveSubscription } from '../paddle';
 import {
   validateAssistantId,
   getStandardAnalysisPlan,
+  getAnalysisPlanVersion,
 } from '@/lib/vapi-assistant';
 
 /**
@@ -283,6 +284,7 @@ export async function syncVapiAssistant(
 
     // Fetch existing assistant to preserve current model config (provider/model/temperature/maxTokens/toolIds)
     let existingModel: any = {};
+    let existingMetadata: any = {};
     try {
       const getRes = await fetch(safeUrl, {
         headers: { Authorization: `Bearer ${apiKey}` },
@@ -290,6 +292,7 @@ export async function syncVapiAssistant(
       if (getRes.ok) {
         const assistantJson = await getRes.json();
         existingModel = assistantJson?.model || {};
+        existingMetadata = assistantJson?.metadata || {};
       }
     } catch (_) {
       // Best-effort; proceed without blocking if GET fails
@@ -324,6 +327,10 @@ export async function syncVapiAssistant(
           : {}),
         // Standardized analysis plan
         analysisPlan: getStandardAnalysisPlan(),
+        metadata: {
+          ...existingMetadata,
+          analysisPlanVersion: getAnalysisPlanVersion(),
+        },
       }),
     });
 

@@ -18,4 +18,8 @@ export default [
       '@next/next/no-img-element': 'warn',
     },
   }),
+  // Ignore Deno Edge Functions from Next/TS linting (handled separately by Deno tooling)
+  {
+    ignores: ['supabase/functions/**'],
+  },
 ];
