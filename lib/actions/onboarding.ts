@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { logger } from '@/lib/logger';
 import { validateAssistantId } from '@/lib/vapi-assistant';
 import { constructSafeVapiUrl } from '@/lib/vapi-assistant';
+import { getStandardAnalysisPlan } from '@/lib/vapi-assistant';
 
 // Validate critical environment variables at module load time
 const PADDLE_PRICE_ID = (() => {
@@ -202,6 +203,21 @@ export async function createAssistantAction(
 
       // Assistant already exists – patch its name & greeting to match latest form
       const safeUrl = constructSafeVapiUrl(vapiAssistantId);
+
+      // Fetch existing assistant to preserve current model configuration
+      let existingModel: any = {};
+      try {
+        const getRes = await fetch(safeUrl, {
+          headers: { Authorization: `Bearer ${vapiApiKey}` },
+        });
+        if (getRes.ok) {
+          const assistantJson = await getRes.json();
+          existingModel = assistantJson?.model || {};
+        }
+      } catch (_) {
+        // Non-fatal; continue with minimal patch
+      }
+
       const patchRes = await fetch(safeUrl, {
         method: 'PATCH',
         headers: {
@@ -211,6 +227,7 @@ export async function createAssistantAction(
         body: JSON.stringify({
           name: assistantName,
           model: {
+            ...existingModel,
             messages: [
               {
                 role: 'system',
@@ -218,6 +235,8 @@ export async function createAssistantAction(
               },
             ],
           },
+          // Keep analysis behavior consistent with admin sync
+          analysisPlan: getStandardAnalysisPlan(),
         }),
       });
 

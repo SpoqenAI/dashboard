@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Supabase Edge Function: vapi-assistant-provision
  *
@@ -26,6 +27,29 @@ import {
   setTag,
   startTransaction,
 } from '../_shared/sentry.ts';
+// Load canonical analysis plan without static JSON import assertions (Biome-safe, Deno-friendly)
+let cachedAnalysisPlanJson: any | null = null;
+async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
+  if (cachedAnalysisPlanJson) return cachedAnalysisPlanJson;
+  try {
+    const planUrl = new URL(
+      '../_shared/vapi-assistant.plan.json',
+      import.meta.url
+    );
+    const planText = await Deno.readTextFile(planUrl);
+    cachedAnalysisPlanJson = JSON.parse(planText);
+    return cachedAnalysisPlanJson;
+  } catch (err) {
+    addBreadcrumb(
+      'Analysis plan load failed, proceeding without plan',
+      'config',
+      {
+        error: err instanceof Error ? err.message : String(err),
+      }
+    );
+    return null;
+  }
+}
 
 // DEBUG: Log whether SERVICE_ROLE_KEY is defined and its length (do not print the key itself)
 const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY');
@@ -81,9 +105,24 @@ Deno.serve(async (req: Request) => {
   const transaction = startTransaction('vapi-assistant-provision', 'webhook');
 
   try {
+    const rawHeaders = Object.fromEntries(req.headers.entries());
+    const redactedHeaders = Object.fromEntries(
+      Object.entries(rawHeaders).map(([k, v]) => {
+        const key = k.toLowerCase();
+        return [
+          'authorization',
+          'cookie',
+          'set-cookie',
+          'x-webhook-secret',
+          'x-api-key',
+        ].includes(key)
+          ? [k, '[REDACTED]']
+          : [k, v];
+      })
+    );
     addBreadcrumb('Request received', 'http', {
       method: req.method,
-      headers: Object.fromEntries(req.headers.entries()),
+      headers: redactedHeaders,
     });
 
     if (req.method !== 'POST') {
@@ -237,13 +276,13 @@ Deno.serve(async (req: Request) => {
     // Call VAPI API to create assistant
     let vapiAssistantId;
     try {
-      const assistantConfig = {
+      const assistantConfig: any = {
         name: email,
         model: {
           provider: 'openai',
-          model: 'gpt-4.1-nano',
+          model: 'gpt-5-nano',
           temperature: 1.1,
-          maxTokens: 250,
+          maxTokens: 10000,
           emotionRecognitionEnabled: true,
           messages: [
             {
@@ -290,8 +329,15 @@ Deno.serve(async (req: Request) => {
         serverMessages: ['end-of-call-report'],
       };
 
-      // ...existing code...
-      const vapiRes = await fetch('https://api.vapi.ai/assistant', {
+      // Load and attach analysis plan and version
+      const analysisPlanJson = await getCanonicalAnalysisPlanJson();
+      if (analysisPlanJson && analysisPlanJson.plan) {
+        assistantConfig.analysisPlan = analysisPlanJson.plan;
+        assistantConfig.metadata.analysisPlanVersion = analysisPlanJson.version;
+      }
+
+      // First attempt
+      let vapiRes = await fetch('https://api.vapi.ai/assistant', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${VAPI_API_KEY}`,
@@ -299,9 +345,74 @@ Deno.serve(async (req: Request) => {
         },
         body: JSON.stringify(assistantConfig),
       });
-      // ...existing code...
-      const vapiResText = await vapiRes.text();
-      // ...existing code...
+      let vapiResText = await vapiRes.text();
+
+      // Fallback strategy on validation errors (e.g., unsupported model or token limits)
+      if (!vapiRes.ok && vapiRes.status >= 400 && vapiRes.status < 500) {
+        addBreadcrumb(
+          'Primary provision failed, applying fallback #1',
+          'vapi',
+          {
+            status: vapiRes.status,
+            body: vapiResText?.slice(0, 500),
+          }
+        );
+
+        // Fallback #1: reduce maxTokens to a safer value
+        try {
+          const fallbackConfig1 = JSON.parse(JSON.stringify(assistantConfig));
+          if (fallbackConfig1?.model) {
+            fallbackConfig1.model.maxTokens = Math.min(
+              Number(fallbackConfig1.model.maxTokens) || 10000,
+              4000
+            );
+          }
+
+          vapiRes = await fetch('https://api.vapi.ai/assistant', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${VAPI_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(fallbackConfig1),
+          });
+          vapiResText = await vapiRes.text();
+        } catch (_) {
+          // ignore
+        }
+
+        // Fallback #2: switch to known-good model if still failing
+        if (!vapiRes.ok) {
+          addBreadcrumb('Fallback #1 failed, applying fallback #2', 'vapi', {
+            status: vapiRes.status,
+            body: vapiResText?.slice(0, 500),
+          });
+          try {
+            const fallbackConfig2 = JSON.parse(JSON.stringify(assistantConfig));
+            if (fallbackConfig2?.model) {
+              fallbackConfig2.model.model = 'gpt-4.1-nano';
+              fallbackConfig2.model.maxTokens = 250;
+              // Some providers may not accept this flag
+              if ('emotionRecognitionEnabled' in fallbackConfig2.model) {
+                delete fallbackConfig2.model.emotionRecognitionEnabled;
+              }
+            }
+
+            vapiRes = await fetch('https://api.vapi.ai/assistant', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${VAPI_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(fallbackConfig2),
+            });
+            vapiResText = await vapiRes.text();
+          } catch (_) {
+            // ignore
+          }
+        }
+      }
+
       if (!vapiRes.ok) {
         const error = new Error(
           `VAPI API error: ${vapiRes.status} ${vapiResText}`
@@ -312,7 +423,6 @@ Deno.serve(async (req: Request) => {
           user_id,
           vapi_status: vapiRes.status,
           vapi_response: vapiResText,
-          assistant_config: assistantConfig,
         });
 
         // Update status to failed
