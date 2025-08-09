@@ -147,7 +147,10 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   // Feature detection for streaming request bodies in fetch
   const isStreamingUploadSupported = () => {
     try {
-      if (typeof ReadableStream !== 'function' || typeof Request !== 'function') {
+      if (
+        typeof ReadableStream !== 'function' ||
+        typeof Request !== 'function'
+      ) {
         return false;
       }
       // Some browsers (Safari, Firefox) don't support Request with a ReadableStream body
@@ -1033,12 +1036,14 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                       if (streamingSupported) {
                         // Streamed multipart/form-data upload with fetch to enable progress updates
                         const boundary = `----spoqenFormBoundary-${
-                          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                          typeof crypto !== 'undefined' &&
+                          'randomUUID' in crypto
                             ? crypto.randomUUID()
                             : Math.random().toString(36).slice(2)
                         }`;
                         const encoder = new TextEncoder();
-                        const contentType = f.type || 'application/octet-stream';
+                        const contentType =
+                          f.type || 'application/octet-stream';
                         const escapedFilename = f.name.replace(/"/g, '%22');
                         const prefix = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${escapedFilename}"\r\nContent-Type: ${contentType}\r\n\r\n`;
                         const suffix = `\r\n--${boundary}--\r\n`;
@@ -1074,7 +1079,8 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                                         )
                                       )
                                     );
-                                    pendingProgressRef.current[f.name] = percent;
+                                    pendingProgressRef.current[f.name] =
+                                      percent;
                                     scheduleProgressFlush();
                                     controller.enqueue(value);
                                   }
