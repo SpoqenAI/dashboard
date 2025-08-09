@@ -40,9 +40,13 @@ async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
     cachedAnalysisPlanJson = JSON.parse(planText);
     return cachedAnalysisPlanJson;
   } catch (err) {
-    addBreadcrumb('Analysis plan load failed, proceeding without plan', 'config', {
-      error: err instanceof Error ? err.message : String(err),
-    });
+    addBreadcrumb(
+      'Analysis plan load failed, proceeding without plan',
+      'config',
+      {
+        error: err instanceof Error ? err.message : String(err),
+      }
+    );
     return null;
   }
 }
@@ -345,10 +349,14 @@ Deno.serve(async (req: Request) => {
 
       // Fallback strategy on validation errors (e.g., unsupported model or token limits)
       if (!vapiRes.ok && vapiRes.status >= 400 && vapiRes.status < 500) {
-        addBreadcrumb('Primary provision failed, applying fallback #1', 'vapi', {
-          status: vapiRes.status,
-          body: vapiResText?.slice(0, 500),
-        });
+        addBreadcrumb(
+          'Primary provision failed, applying fallback #1',
+          'vapi',
+          {
+            status: vapiRes.status,
+            body: vapiResText?.slice(0, 500),
+          }
+        );
 
         // Fallback #1: reduce maxTokens to a safer value
         try {
