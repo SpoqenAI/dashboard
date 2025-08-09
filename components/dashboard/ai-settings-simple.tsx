@@ -87,7 +87,8 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingSystem, setIsUpdatingSystem] = useState(false);
-  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
+  const [isFetchingKnowledge, setIsFetchingKnowledge] = useState(false);
+  const [isMutatingKnowledge, setIsMutatingKnowledge] = useState(false);
   const [knowledgeFiles, setKnowledgeFiles] = useState<
     Array<{
       id: string;
@@ -356,7 +357,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       const aId = assistantData?.id || settings?.vapi_assistant_id;
       if (!aId) return;
       try {
-        setKnowledgeLoading(true);
+        setIsFetchingKnowledge(true);
         const res = await fetch(
           `/api/vapi/assistant/knowledge?assistantId=${aId}`,
           {
@@ -388,7 +389,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
           variant: 'destructive',
         });
       } finally {
-        setKnowledgeLoading(false);
+        setIsFetchingKnowledge(false);
       }
     };
     loadKnowledge();
@@ -594,7 +595,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   const handleUploadAndAttach = useCallback(async () => {
     if (!assistantId || selectedFilesToUpload.length === 0) return;
     try {
-      setKnowledgeLoading(true);
+      setIsMutatingKnowledge(true);
       setIsUploading(true);
       setUploadProgress(
         Object.fromEntries(selectedFilesToUpload.map(f => [getFileKey(f), 0]))
@@ -793,7 +794,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         });
       }
     } finally {
-      setKnowledgeLoading(false);
+      setIsMutatingKnowledge(false);
       setIsUploading(false);
       // Always reset progress and selected files after an upload attempt
       setUploadProgress({});
@@ -1168,7 +1169,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                 // Clear input value so re-selecting the same files fires change
                 if (e.target) (e.target as HTMLInputElement).value = '';
               }}
-              disabled={knowledgeLoading || saving || isSavingLocal}
+              disabled={isFetchingKnowledge || saving || isSavingLocal}
             />
             <div className="flex items-center gap-3 sm:flex-row">
               <Button
@@ -1176,7 +1177,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                 variant="outline"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={knowledgeLoading || saving || isSavingLocal}
+              disabled={isFetchingKnowledge || saving || isSavingLocal}
                 className="flex items-center gap-2"
               >
                 <Upload className="h-4 w-4" /> Choose Files
@@ -1205,7 +1206,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
               disabled={
                 selectedFilesToUpload.length === 0 ||
                 !assistantId ||
-                knowledgeLoading ||
+                isMutatingKnowledge ||
                 isUploading
               }
               onClick={handleUploadAndAttach}
@@ -1239,10 +1240,10 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
           <div className="space-y-2">
             <div className="text-sm font-medium">Attached files</div>
             <div className="space-y-2">
-              {knowledgeLoading && (
+              {isFetchingKnowledge && (
                 <div className="text-sm text-muted-foreground">Loading...</div>
               )}
-              {!knowledgeLoading && knowledgeFiles.length === 0 && (
+              {!isFetchingKnowledge && knowledgeFiles.length === 0 && (
                 <div className="text-sm text-muted-foreground">
                   No files attached yet.
                 </div>
@@ -1269,6 +1270,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                       const removed = file;
                       // Per-item loading state
                       setRemovingFileIds(prev => new Set(prev).add(file.id));
+                      setIsMutatingKnowledge(true);
                       // Optimistic UI removal
                       setKnowledgeFiles(prev =>
                         prev.filter(f => f.id !== file.id)
@@ -1351,6 +1353,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                           next.delete(file.id);
                           return next;
                         });
+                        setIsMutatingKnowledge(false);
                       }
                     }}
                   >
