@@ -1177,7 +1177,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                 variant="outline"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-              disabled={isFetchingKnowledge || saving || isSavingLocal}
+                disabled={isFetchingKnowledge || saving || isSavingLocal}
                 className="flex items-center gap-2"
               >
                 <Upload className="h-4 w-4" /> Choose Files
