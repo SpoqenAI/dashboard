@@ -582,6 +582,226 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     }
   }, [refreshAssistantData]);
 
+  // Compute assistant and public key before any early returns to keep Hooks order stable
+  const assistantId = assistantData?.id ?? settings?.vapi_assistant_id ?? null;
+  const vapiPublicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY ?? '';
+
+  // Extracted upload handler (declared before any conditional return)
+  const handleUploadAndAttach = useCallback(async () => {
+    if (!assistantId || selectedFilesToUpload.length === 0) return;
+    try {
+      setKnowledgeLoading(true);
+      setIsUploading(true);
+      setUploadProgress(
+        Object.fromEntries(selectedFilesToUpload.map(f => [f.name, 0]))
+      );
+      const uploadedIds: string[] = [];
+      const MAX_BYTES = 300 * 1024;
+
+      const streamingSupported = isStreamingUploadSupported();
+      const uploadPromises = selectedFilesToUpload.map(f => {
+        return new Promise<string | null>(resolve => {
+          // Per-file validation
+          if (f.size === 0) {
+            toast({
+              title: 'Upload skipped',
+              description: `${f.name} is empty and cannot be uploaded`,
+              variant: 'destructive',
+            });
+            return resolve(null);
+          }
+          if (f.size > MAX_BYTES) {
+            toast({
+              title: 'File too large',
+              description: `${f.name} exceeds 300KB limit`,
+              variant: 'destructive',
+            });
+            return resolve(null);
+          }
+          const providedMime = f.type;
+          const inferredMime = inferMimeFromFilename(f.name);
+          const allowed =
+            isAllowedMime(providedMime) || isAllowedMime(inferredMime);
+          if (!allowed) {
+            toast({
+              title: 'Unsupported file type',
+              description: `${f.name} is not a supported type. Allowed: .txt, .pdf, .docx, .doc, .csv, .md, .tsv, .yaml, .yml, .json, .xml, .log`,
+              variant: 'destructive',
+            });
+            return resolve(null);
+          }
+
+          if (streamingSupported) {
+            // Streamed multipart/form-data upload with fetch to enable progress updates
+            const boundary = `----spoqenFormBoundary-${
+              typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                ? crypto.randomUUID()
+                : Math.random().toString(36).slice(2)
+            }`;
+            const encoder = new TextEncoder();
+            const contentType = f.type || 'application/octet-stream';
+            const escapedFilename = f.name.replace(/"/g, '%22');
+            const prefix = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${escapedFilename}"\r\nContent-Type: ${contentType}\r\n\r\n`;
+            const suffix = `\r\n--${boundary}--\r\n`;
+
+            const fileStream = f.stream();
+            let uploadedBytes = 0;
+            const totalBytes = f.size;
+
+            const bodyStream = new ReadableStream<Uint8Array>({
+              start(controller) {
+                controller.enqueue(encoder.encode(prefix));
+                const reader = fileStream.getReader();
+                const pump = (): any => {
+                  return reader
+                    .read()
+                    .then(({ done, value }) => {
+                      if (done) {
+                        controller.enqueue(encoder.encode(suffix));
+                        controller.close();
+                        // Ensure 100% on completion
+                        pendingProgressRef.current[f.name] = 100;
+                        scheduleProgressFlush();
+                        return;
+                      }
+                      if (value) {
+                        uploadedBytes += value.byteLength;
+                        const percent = Math.max(
+                          0,
+                          Math.min(
+                            100,
+                            Math.round((uploadedBytes / totalBytes) * 100)
+                          )
+                        );
+                        pendingProgressRef.current[f.name] = percent;
+                        scheduleProgressFlush();
+                        controller.enqueue(value);
+                      }
+                      return pump();
+                    })
+                    .catch(err => {
+                      controller.error(err);
+                    });
+                };
+                pump();
+              },
+            });
+
+            fetch('/api/vapi/files/upload', {
+              method: 'POST',
+              headers: {
+                'Content-Type': `multipart/form-data; boundary=${boundary}`,
+              },
+              body: bodyStream as any,
+            })
+              .then(async res => {
+                if (!res.ok) {
+                  const text = await res.text().catch(() => '');
+                  toast({
+                    title: 'Upload failed',
+                    description: text || 'Upload failed',
+                    variant: 'destructive',
+                  });
+                  return resolve(null);
+                }
+                const json = (await res.json().catch(() => ({}))) as any;
+                return resolve(json?.id || null);
+              })
+              .catch(() => {
+                toast({
+                  title: 'Upload failed',
+                  description: 'Network error during upload',
+                  variant: 'destructive',
+                });
+                return resolve(null);
+              });
+          } else {
+            // Fallback: standard FormData (no streaming/progress but widely supported)
+            const formData = new FormData();
+            formData.append('file', f, f.name);
+            fetch('/api/vapi/files/upload', {
+              method: 'POST',
+              body: formData,
+            })
+              .then(async res => {
+                if (!res.ok) {
+                  const text = await res.text().catch(() => '');
+                  toast({
+                    title: 'Upload failed',
+                    description: text || 'Upload failed',
+                    variant: 'destructive',
+                  });
+                  return resolve(null);
+                }
+                const json = (await res.json().catch(() => ({}))) as any;
+                // Set to 100% since we don't have progress
+                pendingProgressRef.current[f.name] = 100;
+                scheduleProgressFlush();
+                return resolve(json?.id || null);
+              })
+              .catch(() => {
+                toast({
+                  title: 'Upload failed',
+                  description: 'Network error during upload',
+                  variant: 'destructive',
+                });
+                return resolve(null);
+              });
+          }
+        });
+      });
+
+      const results = await Promise.all(uploadPromises);
+      for (const id of results) {
+        if (id) uploadedIds.push(id);
+      }
+
+      const finalIds = Array.from(
+        new Set([...(knowledgeFiles?.map(f => f.id) || []), ...uploadedIds])
+      );
+
+      const syncRes = await fetch('/api/vapi/assistant/knowledge/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assistantId, fileIds: finalIds }),
+      });
+      if (!syncRes.ok) {
+        const text = await syncRes.text();
+        toast({
+          title: 'Sync failed',
+          description: text,
+          variant: 'destructive',
+        });
+      } else {
+        const json = await syncRes.json();
+        setKnowledgeToolId(json.toolId || null);
+        // Refresh listing
+        const listRes = await fetch(
+          `/api/vapi/assistant/knowledge?assistantId=${assistantId}`
+        );
+        if (listRes.ok) {
+          const data = await listRes.json();
+          setKnowledgeFiles(data.files || []);
+        }
+        toast({
+          title: 'Files attached',
+          description: 'Assistant knowledge updated.',
+        });
+        setSelectedFilesToUpload([]);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        setUploadProgress({});
+      }
+    } finally {
+      setKnowledgeLoading(false);
+      setIsUploading(false);
+    }
+  }, [
+    assistantId,
+    selectedFilesToUpload,
+    knowledgeFiles,
+    scheduleProgressFlush,
+  ]);
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -609,9 +829,6 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       </div>
     );
   }
-
-  const assistantId = assistantData?.id ?? settings?.vapi_assistant_id ?? null;
-  const vapiPublicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY ?? '';
 
   return (
     <div className="space-y-6">
@@ -963,7 +1180,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                 <div className="flex flex-wrap gap-2" aria-live="polite">
                   {selectedFilesToUpload.map(f => (
                     <Badge
-                      key={f.name}
+                      key={`${f.name}-${f.lastModified}-${f.size}`}
                       variant="secondary"
                       className="border-emerald-200 bg-emerald-100 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300"
                     >
@@ -986,247 +1203,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                 knowledgeLoading ||
                 isUploading
               }
-              onClick={async () => {
-                if (!assistantId || selectedFilesToUpload.length === 0) return;
-                try {
-                  setKnowledgeLoading(true);
-                  setIsUploading(true);
-                  setUploadProgress(
-                    Object.fromEntries(
-                      selectedFilesToUpload.map(f => [f.name, 0])
-                    )
-                  );
-                  const uploadedIds: string[] = [];
-                  const MAX_BYTES = 300 * 1024;
-
-                  const streamingSupported = isStreamingUploadSupported();
-                  const uploadPromises = selectedFilesToUpload.map(f => {
-                    return new Promise<string | null>(resolve => {
-                      // Per-file validation
-                      if (f.size === 0) {
-                        toast({
-                          title: 'Upload skipped',
-                          description: `${f.name} is empty and cannot be uploaded`,
-                          variant: 'destructive',
-                        });
-                        return resolve(null);
-                      }
-                      if (f.size > MAX_BYTES) {
-                        toast({
-                          title: 'File too large',
-                          description: `${f.name} exceeds 300KB limit`,
-                          variant: 'destructive',
-                        });
-                        return resolve(null);
-                      }
-                      const providedMime = f.type;
-                      const inferredMime = inferMimeFromFilename(f.name);
-                      const allowed =
-                        isAllowedMime(providedMime) ||
-                        isAllowedMime(inferredMime);
-                      if (!allowed) {
-                        toast({
-                          title: 'Unsupported file type',
-                          description: `${f.name} is not a supported type. Allowed: .txt, .pdf, .docx, .doc, .csv, .md, .tsv, .yaml, .yml, .json, .xml, .log`,
-                          variant: 'destructive',
-                        });
-                        return resolve(null);
-                      }
-
-                      if (streamingSupported) {
-                        // Streamed multipart/form-data upload with fetch to enable progress updates
-                        const boundary = `----spoqenFormBoundary-${
-                          typeof crypto !== 'undefined' &&
-                          'randomUUID' in crypto
-                            ? crypto.randomUUID()
-                            : Math.random().toString(36).slice(2)
-                        }`;
-                        const encoder = new TextEncoder();
-                        const contentType =
-                          f.type || 'application/octet-stream';
-                        const escapedFilename = f.name.replace(/"/g, '%22');
-                        const prefix = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${escapedFilename}"\r\nContent-Type: ${contentType}\r\n\r\n`;
-                        const suffix = `\r\n--${boundary}--\r\n`;
-
-                        const fileStream = f.stream();
-                        let uploadedBytes = 0;
-                        const totalBytes = f.size;
-
-                        const bodyStream = new ReadableStream<Uint8Array>({
-                          start(controller) {
-                            controller.enqueue(encoder.encode(prefix));
-                            const reader = fileStream.getReader();
-                            const pump = (): any => {
-                              return reader
-                                .read()
-                                .then(({ done, value }) => {
-                                  if (done) {
-                                    controller.enqueue(encoder.encode(suffix));
-                                    controller.close();
-                                    // Ensure 100% on completion
-                                    pendingProgressRef.current[f.name] = 100;
-                                    scheduleProgressFlush();
-                                    return;
-                                  }
-                                  if (value) {
-                                    uploadedBytes += value.byteLength;
-                                    const percent = Math.max(
-                                      0,
-                                      Math.min(
-                                        100,
-                                        Math.round(
-                                          (uploadedBytes / totalBytes) * 100
-                                        )
-                                      )
-                                    );
-                                    pendingProgressRef.current[f.name] =
-                                      percent;
-                                    scheduleProgressFlush();
-                                    controller.enqueue(value);
-                                  }
-                                  return pump();
-                                })
-                                .catch(err => {
-                                  controller.error(err);
-                                });
-                            };
-                            pump();
-                          },
-                        });
-
-                        fetch('/api/vapi/files/upload', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': `multipart/form-data; boundary=${boundary}`,
-                          },
-                          body: bodyStream as any,
-                        })
-                          .then(async res => {
-                            const text = await res.text();
-                            if (!res.ok) {
-                              toast({
-                                title: 'Upload failed',
-                                description: text || 'Upload failed',
-                                variant: 'destructive',
-                              });
-                              return resolve(null);
-                            }
-                            try {
-                              const json = JSON.parse(text || '{}');
-                              return resolve(json?.id || null);
-                            } catch {
-                              toast({
-                                title: 'Upload failed',
-                                description: 'Invalid server response',
-                                variant: 'destructive',
-                              });
-                              return resolve(null);
-                            }
-                          })
-                          .catch(() => {
-                            toast({
-                              title: 'Upload failed',
-                              description: 'Network error during upload',
-                              variant: 'destructive',
-                            });
-                            return resolve(null);
-                          });
-                      } else {
-                        // Fallback: standard FormData (no streaming/progress but widely supported)
-                        const formData = new FormData();
-                        formData.append('file', f, f.name);
-                        fetch('/api/vapi/files/upload', {
-                          method: 'POST',
-                          body: formData,
-                        })
-                          .then(async res => {
-                            const text = await res.text();
-                            if (!res.ok) {
-                              toast({
-                                title: 'Upload failed',
-                                description: text || 'Upload failed',
-                                variant: 'destructive',
-                              });
-                              return resolve(null);
-                            }
-                            try {
-                              const json = JSON.parse(text || '{}');
-                              // Set to 100% since we don't have progress
-                              pendingProgressRef.current[f.name] = 100;
-                              scheduleProgressFlush();
-                              return resolve(json?.id || null);
-                            } catch {
-                              toast({
-                                title: 'Upload failed',
-                                description: 'Invalid server response',
-                                variant: 'destructive',
-                              });
-                              return resolve(null);
-                            }
-                          })
-                          .catch(() => {
-                            toast({
-                              title: 'Upload failed',
-                              description: 'Network error during upload',
-                              variant: 'destructive',
-                            });
-                            return resolve(null);
-                          });
-                      }
-                    });
-                  });
-
-                  const results = await Promise.all(uploadPromises);
-                  for (const id of results) {
-                    if (id) uploadedIds.push(id);
-                  }
-
-                  const finalIds = Array.from(
-                    new Set([
-                      ...(knowledgeFiles?.map(f => f.id) || []),
-                      ...uploadedIds,
-                    ])
-                  );
-
-                  const syncRes = await fetch(
-                    '/api/vapi/assistant/knowledge/sync',
-                    {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ assistantId, fileIds: finalIds }),
-                    }
-                  );
-                  if (!syncRes.ok) {
-                    const text = await syncRes.text();
-                    toast({
-                      title: 'Sync failed',
-                      description: text,
-                      variant: 'destructive',
-                    });
-                  } else {
-                    const json = await syncRes.json();
-                    setKnowledgeToolId(json.toolId || null);
-                    // Refresh listing
-                    const listRes = await fetch(
-                      `/api/vapi/assistant/knowledge?assistantId=${assistantId}`
-                    );
-                    if (listRes.ok) {
-                      const data = await listRes.json();
-                      setKnowledgeFiles(data.files || []);
-                    }
-                    toast({
-                      title: 'Files attached',
-                      description: 'Assistant knowledge updated.',
-                    });
-                    setSelectedFilesToUpload([]);
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                    setUploadProgress({});
-                  }
-                } finally {
-                  setKnowledgeLoading(false);
-                  setIsUploading(false);
-                }
-              }}
+              onClick={handleUploadAndAttach}
             >
               Upload & Attach
             </Button>
@@ -1235,7 +1212,10 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
             {isUploading && selectedFilesToUpload.length > 0 && (
               <div className="space-y-2">
                 {selectedFilesToUpload.map(f => (
-                  <div key={f.name} className="flex items-center gap-3">
+                  <div
+                    key={`${f.name}-${f.lastModified}-${f.size}`}
+                    className="flex items-center gap-3"
+                  >
                     <div className="w-40 truncate text-sm text-muted-foreground">
                       {f.name}
                     </div>
