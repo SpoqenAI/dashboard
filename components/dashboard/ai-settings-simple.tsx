@@ -144,8 +144,12 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     };
   }, []);
 
-  // Feature detection for streaming request bodies in fetch
-  const isStreamingUploadSupported = () => {
+  // Unique key for tracking per-file progress and UI items
+  const getFileKey = (file: File) =>
+    `${file.name}-${file.lastModified}-${file.size}`;
+
+  // Feature detection for streaming request bodies in fetch (memoized once per session)
+  const streamingUploadSupported = useMemo(() => {
     try {
       if (
         typeof ReadableStream !== 'function' ||
@@ -162,7 +166,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     } catch {
       return false;
     }
-  };
+  }, []);
 
   // Character limits (memoized constants)
   const MAX_FIRST_MESSAGE_LENGTH = useMemo(() => 1000, []);
@@ -593,12 +597,12 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       setKnowledgeLoading(true);
       setIsUploading(true);
       setUploadProgress(
-        Object.fromEntries(selectedFilesToUpload.map(f => [f.name, 0]))
+        Object.fromEntries(selectedFilesToUpload.map(f => [getFileKey(f), 0]))
       );
       const uploadedIds: string[] = [];
       const MAX_BYTES = 300 * 1024;
 
-      const streamingSupported = isStreamingUploadSupported();
+      const streamingSupported = streamingUploadSupported;
       const uploadPromises = selectedFilesToUpload.map(f => {
         return new Promise<string | null>(resolve => {
           // Per-file validation
@@ -660,7 +664,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                         controller.enqueue(encoder.encode(suffix));
                         controller.close();
                         // Ensure 100% on completion
-                        pendingProgressRef.current[f.name] = 100;
+                        pendingProgressRef.current[getFileKey(f)] = 100;
                         scheduleProgressFlush();
                         return;
                       }
@@ -673,7 +677,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                             Math.round((uploadedBytes / totalBytes) * 100)
                           )
                         );
-                        pendingProgressRef.current[f.name] = percent;
+                        pendingProgressRef.current[getFileKey(f)] = percent;
                         scheduleProgressFlush();
                         controller.enqueue(value);
                       }
@@ -735,7 +739,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                 }
                 const json = (await res.json().catch(() => ({}))) as any;
                 // Set to 100% since we don't have progress
-                pendingProgressRef.current[f.name] = 100;
+                pendingProgressRef.current[getFileKey(f)] = 100;
                 scheduleProgressFlush();
                 return resolve(json?.id || null);
               })
@@ -787,13 +791,14 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
           title: 'Files attached',
           description: 'Assistant knowledge updated.',
         });
-        setSelectedFilesToUpload([]);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        setUploadProgress({});
       }
     } finally {
       setKnowledgeLoading(false);
       setIsUploading(false);
+      // Always reset progress and selected files after an upload attempt
+      setUploadProgress({});
+      setSelectedFilesToUpload([]);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   }, [
     assistantId,
@@ -1220,10 +1225,10 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                       {f.name}
                     </div>
                     <div className="flex-1">
-                      <Progress value={uploadProgress[f.name] || 0} />
+                      <Progress value={uploadProgress[getFileKey(f)] || 0} />
                     </div>
                     <div className="w-12 text-right text-xs text-muted-foreground">
-                      {(uploadProgress[f.name] || 0).toString()}%
+                      {(uploadProgress[getFileKey(f)] || 0).toString()}%
                     </div>
                   </div>
                 ))}
