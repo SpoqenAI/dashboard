@@ -55,6 +55,15 @@ interface DurationQuickFilterProps extends BaseFilterProps {
   onChange: (min: number | null, max: number | null) => void;
 }
 
+// Slider filter for cost (minimum threshold)
+interface CostSliderFilterProps extends BaseFilterProps {
+  min: number | null;
+  onChange: (min: number | null, max: number | null) => void;
+  minValue?: number; // default 0
+  maxValue?: number; // default 5
+  step?: number; // default 0.01
+}
+
 // Select filter for status, sentiment, lead quality
 interface SelectFilterProps extends BaseFilterProps {
   value: string;
@@ -112,11 +121,11 @@ const FilterWrapper: React.FC<BaseFilterProps> = ({
       </Button>
     </PopoverTrigger>
     <PopoverContent
-      className="w-64 p-3"
+      className="p-3 sm:w-72 w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] max-h-[min(80vh,24rem)] overflow-auto"
       align="start"
       side="bottom"
       sideOffset={8}
-      avoidCollisions={false}
+      collisionPadding={8}
     >
       {children}
     </PopoverContent>
@@ -240,6 +249,59 @@ export const DurationQuickFilter: React.FC<DurationQuickFilterProps> = ({
         <div className="flex items-center justify-between text-[11px] text-muted-foreground">
           <span>1s</span>
           <span>2m</span>
+        </div>
+        <div className="flex gap-2 pt-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 flex-1 text-xs"
+            onClick={() => onClear()}
+          >
+            Clear
+          </Button>
+        </div>
+      </div>
+    </FilterWrapper>
+  );
+};
+
+// Cost slider filter component
+export const CostSliderFilter: React.FC<CostSliderFilterProps> = ({
+  min,
+  onChange,
+  isActive,
+  onClear,
+  minValue = 0,
+  maxValue = 1,
+  step = 0.01,
+}) => {
+  const current =
+    typeof min === 'number'
+      ? Math.min(Math.max(min, minValue), maxValue)
+      : minValue;
+
+  return (
+    <FilterWrapper isActive={isActive} onClear={onClear}>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-medium">Minimum cost</Label>
+          <span className="text-[11px] text-muted-foreground">${current.toFixed(2)}</span>
+        </div>
+        <div className="px-1 py-1">
+          <Slider
+            min={minValue}
+            max={maxValue}
+            step={step}
+            value={[current]}
+            onValueChange={(val) => {
+              const next = Array.isArray(val) ? (val[0] as number) : current;
+              onChange(Number(next.toFixed(4)), null);
+            }}
+          />
+        </div>
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <span>${minValue.toFixed(2)}</span>
+          <span>${maxValue.toFixed(2)}</span>
         </div>
         <div className="flex gap-2 pt-1">
           <Button

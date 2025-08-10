@@ -45,6 +45,7 @@ import {
   SelectFilter,
   DateRangeFilter,
   DurationQuickFilter,
+  CostSliderFilter,
 } from '@/components/ui/column-filter';
 
 // Enhanced interfaces for column filtering and sorting
@@ -412,16 +413,14 @@ export const CallHistoryTable = memo(
                             Cost
                             {getSortIcon('cost')}
                           </Button>
-                          <RangeFilter
+                          <CostSliderFilter
                             min={costRange.min}
-                            max={costRange.max}
                             onChange={onCostRangeChange}
-                            step={0.0001}
-                            unit="$"
-                            minPlaceholder="Min $"
-                            maxPlaceholder="Max $"
                             isActive={isCostRangeActive}
                             onClear={() => onCostRangeChange(null, null)}
+                            minValue={0}
+                            maxValue={1}
+                            step={0.01}
                           />
                         </div>
                       </TableHead>
