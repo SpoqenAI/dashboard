@@ -356,10 +356,16 @@ export const CallHistoryTable = memo(
                             onChange={onStatusFilterChange}
                             options={[
                               { value: 'all', label: 'All Status' },
-                              { value: 'customer-ended-call', label: 'Completed' },
+                              {
+                                value: 'customer-ended-call',
+                                label: 'Completed',
+                              },
                               { value: 'assistant-error', label: 'Error' },
                               { value: 'no-answer', label: 'No Answer' },
-                              { value: 'assistant-ended-call', label: 'Assistant Ended' },
+                              {
+                                value: 'assistant-ended-call',
+                                label: 'Assistant Ended',
+                              },
                             ]}
                             isActive={isStatusFilterActive}
                             onClear={() => onStatusFilterChange('all')}

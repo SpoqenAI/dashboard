@@ -468,10 +468,13 @@ export default function RecentCallsClient() {
   const debouncedPhoneNumberFilter = useDebouncedValue(phoneNumberFilter, 300);
 
   // Normalize phone numbers to digits-only for safe and consistent matching
-  const normalizePhoneDigits = useCallback((value: string | undefined | null): string => {
-    if (!value) return '';
-    return String(value).replace(/\D+/g, '');
-  }, []);
+  const normalizePhoneDigits = useCallback(
+    (value: string | undefined | null): string => {
+      if (!value) return '';
+      return String(value).replace(/\D+/g, '');
+    },
+    []
+  );
 
   // Helper function to calculate call duration in seconds
   const getCallDurationInSeconds = useCallback((call: VapiCall): number => {

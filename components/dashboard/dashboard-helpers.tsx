@@ -163,14 +163,20 @@ export const getStatusBadge = (endedReason: string) => {
     case 'customer-did-not-give-microphone-permission':
     case 'no-answer':
       return (
-        <Badge variant="secondary" className="bg-gray-100 text-gray-800 hover:bg-gray-100">
+        <Badge
+          variant="secondary"
+          className="bg-gray-100 text-gray-800 hover:bg-gray-100"
+        >
           <Phone className="mr-1 h-3 w-3" />
           No Answer
         </Badge>
       );
     case 'assistant-ended-call':
       return (
-        <Badge variant="secondary" className="bg-sky-100 text-sky-800 hover:bg-sky-100">
+        <Badge
+          variant="secondary"
+          className="bg-sky-100 text-sky-800 hover:bg-sky-100"
+        >
           <Phone className="mr-1 h-3 w-3" />
           Assistant Ended
         </Badge>

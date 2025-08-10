@@ -122,7 +122,7 @@ const FilterWrapper: React.FC<BaseFilterProps> = ({
       </Button>
     </PopoverTrigger>
     <PopoverContent
-      className="p-3 sm:w-72 w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] max-h-[min(80vh,24rem)] overflow-auto"
+      className="max-h-[min(80vh,24rem)] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] overflow-auto p-3 sm:w-72"
       align="start"
       side="bottom"
       sideOffset={8}
@@ -241,7 +241,7 @@ export const DurationQuickFilter: React.FC<DurationQuickFilterProps> = ({
             max={120}
             step={1}
             value={[current]}
-            onValueChange={(val) => {
+            onValueChange={val => {
               const next = Array.isArray(val) ? val[0] : current;
               onChange(next, null);
             }}
@@ -286,7 +286,9 @@ export const CostSliderFilter: React.FC<CostSliderFilterProps> = ({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label className="text-xs font-medium">Minimum cost</Label>
-          <span className="text-[11px] text-muted-foreground">${current.toFixed(2)}</span>
+          <span className="text-[11px] text-muted-foreground">
+            ${current.toFixed(2)}
+          </span>
         </div>
         <div className="px-1 py-1">
           <Slider
@@ -294,7 +296,7 @@ export const CostSliderFilter: React.FC<CostSliderFilterProps> = ({
             max={maxValue}
             step={step}
             value={[current]}
-            onValueChange={(val) => {
+            onValueChange={val => {
               const next = Array.isArray(val) ? (val[0] as number) : current;
               onChange(Number(next.toFixed(4)), null);
             }}
@@ -407,11 +409,16 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
     if (!startDate) return false;
     const today = toStartOfDay(new Date());
     const expectedStart = toStartOfDay(
-      new Date(today.getFullYear(), today.getMonth(), today.getDate() - (days - 1))
+      new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() - (days - 1)
+      )
     );
     const currentStart = toStartOfDay(new Date(startDate));
     // End date should be roughly today
-    const endIsToday = !endDate || toStartOfDay(new Date(endDate)).getTime() === today.getTime();
+    const endIsToday =
+      !endDate || toStartOfDay(new Date(endDate)).getTime() === today.getTime();
     return currentStart.getTime() === expectedStart.getTime() && endIsToday;
   };
 
