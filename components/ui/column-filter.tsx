@@ -1,4 +1,6 @@
-import React, { useState, useRef } from 'react';
+'use client';
+
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,14 +10,8 @@ import {
   PopoverTrigger,
   PopoverClose,
 } from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Filter, X } from 'lucide-react';
+import { Select } from '@/components/ui/select';
+import { Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
@@ -92,33 +88,13 @@ const FilterWrapper: React.FC<BaseFilterProps> = ({
       <Button
         variant="ghost"
         size="sm"
+        aria-pressed={isActive}
         className={cn(
           'h-6 px-2 text-xs',
           isActive && 'bg-blue-100 text-blue-700 hover:bg-blue-200'
         )}
       >
         <Filter className="h-3 w-3" />
-        {isActive && (
-          <span
-            role="button"
-            aria-label="Clear filter"
-            tabIndex={0}
-            onClick={e => {
-              e.stopPropagation();
-              onClear();
-            }}
-            onKeyDown={e => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                e.stopPropagation();
-                onClear();
-              }
-            }}
-            className="ml-1 rounded-full p-0.5 hover:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          >
-            <X className="h-2 w-2" />
-          </span>
-        )}
       </Button>
     </PopoverTrigger>
     <PopoverContent

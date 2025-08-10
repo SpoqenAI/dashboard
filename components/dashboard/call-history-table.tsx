@@ -1,3 +1,5 @@
+'use client';
+
 import { memo, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -281,7 +283,16 @@ export const CallHistoryTable = memo(
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b-2">
-                      <TableHead className="w-48 py-2">
+                      <TableHead
+                        className="w-48 py-2"
+                        aria-sort={
+                          sort.column === 'phoneNumber'
+                            ? sort.direction === 'asc'
+                              ? 'ascending'
+                              : 'descending'
+                            : 'none'
+                        }
+                      >
                         <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
@@ -301,7 +312,16 @@ export const CallHistoryTable = memo(
                           />
                         </div>
                       </TableHead>
-                      <TableHead className="w-40 py-2">
+                      <TableHead
+                        className="w-40 py-2"
+                        aria-sort={
+                          sort.column === 'startedAt'
+                            ? sort.direction === 'asc'
+                              ? 'ascending'
+                              : 'descending'
+                            : 'none'
+                        }
+                      >
                         <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
@@ -321,7 +341,16 @@ export const CallHistoryTable = memo(
                           />
                         </div>
                       </TableHead>
-                      <TableHead className="w-32 py-2">
+                      <TableHead
+                        className="w-32 py-2"
+                        aria-sort={
+                          sort.column === 'duration'
+                            ? sort.direction === 'asc'
+                              ? 'ascending'
+                              : 'descending'
+                            : 'none'
+                        }
+                      >
                         <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
@@ -340,7 +369,16 @@ export const CallHistoryTable = memo(
                           />
                         </div>
                       </TableHead>
-                      <TableHead className="w-32 py-2">
+                      <TableHead
+                        className="w-32 py-2"
+                        aria-sort={
+                          sort.column === 'endedReason'
+                            ? sort.direction === 'asc'
+                              ? 'ascending'
+                              : 'descending'
+                            : 'none'
+                        }
+                      >
                         <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
@@ -409,7 +447,16 @@ export const CallHistoryTable = memo(
                           />
                         </div>
                       </TableHead>
-                      <TableHead className="w-24 py-2">
+                      <TableHead
+                        className="w-24 py-2"
+                        aria-sort={
+                          sort.column === 'cost'
+                            ? sort.direction === 'asc'
+                              ? 'ascending'
+                              : 'descending'
+                            : 'none'
+                        }
+                      >
                         <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"

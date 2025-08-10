@@ -22,7 +22,7 @@ import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useActionPoints } from '@/hooks/use-action-points';
 import { useCallUpdates } from '@/hooks/use-call-updates';
 import { toast } from '@/components/ui/use-toast';
-import { logger } from '@/lib/logger';
+import * as Sentry from '@sentry/nextjs';
 import { VapiCall } from '@/lib/types';
 import { AlertCircle, ArrowUp } from 'lucide-react';
 import { CallDetailModal } from '@/components/dashboard/call-detail-modal';
@@ -32,6 +32,8 @@ import { mutate as swrMutate } from 'swr';
 import type { DashboardAnalytics } from '@/lib/types';
 import type { CallUpdateEvent } from '@/lib/events';
 import { z } from 'zod';
+
+const { logger } = Sentry;
 
 const ITEMS_PER_PAGE = 20;
 
@@ -242,10 +244,8 @@ export default function RecentCallsClient() {
       return d.recordingUrl || null;
     } catch (error) {
       logger.error(
-        'RECENT_CALLS',
-        'Error fetching call recording',
-        error as Error,
-        { callId }
+        logger.fmt`RECENT_CALLS error fetching call recording callId=${callId}`,
+        { error: error as Error }
       );
       return null;
     }
@@ -279,9 +279,8 @@ export default function RecentCallsClient() {
         });
       } catch (err) {
         logger.error(
-          'RECENT_CALLS',
-          'Error fetching call details',
-          err as Error
+          logger.fmt`RECENT_CALLS error fetching call details callId=${call.id}`,
+          { error: err as Error }
         );
       }
     },
@@ -305,12 +304,9 @@ export default function RecentCallsClient() {
     enabled: !!user, // Free users now get action points
     onNewCall: useCallback(
       (event: CallUpdateEvent) => {
-        logger.info('RECENT_CALLS', 'New call detected via SSE', {
-          callId: event.callId,
-          timestamp: event.timestamp,
-          hasCallData: !!event.callData,
-          hasAnalysis: !!event.callData?.analysis,
-        });
+        logger.info(
+          logger.fmt`RECENT_CALLS SSE new call id=${event.callId} ts=${event.timestamp} hasCallData=${!!event.callData} hasAnalysis=${!!event.callData?.analysis}`
+        );
 
         // Runtime validation for SSE payload
         const sseCallDataSchema = z.object({
@@ -378,10 +374,9 @@ export default function RecentCallsClient() {
           if (parsed.success) {
             normalizedCallForView = normalizeSSECallToVapiCall(parsed.data);
           } else {
-            logger.warn('RECENT_CALLS', 'Invalid SSE callData payload', {
-              callId: event.callId,
-              issues: parsed.error.flatten(),
-            });
+            logger.warn(
+              logger.fmt`RECENT_CALLS invalid SSE payload id=${event.callId} issues=${JSON.stringify(parsed.error.flatten())}`
+            );
           }
         }
 
