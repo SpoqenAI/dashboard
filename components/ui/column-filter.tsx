@@ -6,6 +6,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  PopoverClose,
 } from '@/components/ui/popover';
 import {
   Select,
@@ -16,6 +17,12 @@ import {
 } from '@/components/ui/select';
 import { Filter, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Slider } from '@/components/ui/slider';
+import {
+  getSentimentBadge as GetSentimentBadge,
+  getLeadQualityBadge as GetLeadQualityBadge,
+  getStatusBadge,
+} from '@/components/dashboard/dashboard-helpers';
 
 // Base filter component props
 interface BaseFilterProps {
@@ -42,12 +49,19 @@ interface RangeFilterProps extends BaseFilterProps {
   maxPlaceholder?: string;
 }
 
+// Quick-select filter for duration (seconds)
+interface DurationQuickFilterProps extends BaseFilterProps {
+  min: number | null;
+  onChange: (min: number | null, max: number | null) => void;
+}
+
 // Select filter for status, sentiment, lead quality
 interface SelectFilterProps extends BaseFilterProps {
   value: string;
   onChange: (value: string) => void;
   options: { value: string; label: string }[];
   placeholder?: string;
+  visualType?: 'sentiment' | 'leadQuality' | 'status';
 }
 
 // Date range filter for date/time
@@ -195,6 +209,53 @@ export const RangeFilter: React.FC<RangeFilterProps> = ({
   </FilterWrapper>
 );
 
+// Duration quick filter component
+export const DurationQuickFilter: React.FC<DurationQuickFilterProps> = ({
+  min,
+  onChange,
+  isActive,
+  onClear,
+}) => {
+  const current = typeof min === 'number' ? Math.min(Math.max(min, 1), 120) : 1;
+
+  return (
+    <FilterWrapper isActive={isActive} onClear={onClear}>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-medium">Minimum duration</Label>
+          <span className="text-[11px] text-muted-foreground">{current}s</span>
+        </div>
+        <div className="px-1 py-1">
+          <Slider
+            min={1}
+            max={120}
+            step={1}
+            value={[current]}
+            onValueChange={(val) => {
+              const next = Array.isArray(val) ? val[0] : current;
+              onChange(next, null);
+            }}
+          />
+        </div>
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <span>1s</span>
+          <span>2m</span>
+        </div>
+        <div className="flex gap-2 pt-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 flex-1 text-xs"
+            onClick={() => onClear()}
+          >
+            Clear
+          </Button>
+        </div>
+      </div>
+    </FilterWrapper>
+  );
+};
+
 // Select filter component
 export const SelectFilter: React.FC<SelectFilterProps> = ({
   value,
@@ -203,22 +264,35 @@ export const SelectFilter: React.FC<SelectFilterProps> = ({
   placeholder = 'Select...',
   isActive,
   onClear,
+  visualType,
 }) => (
   <FilterWrapper isActive={isActive} onClear={onClear}>
     <div className="space-y-2">
       <Label className="text-xs font-medium">Filter by value</Label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-8 text-xs">
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map(option => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="flex flex-col gap-1">
+        {options.map(option => {
+          let content: React.ReactNode = option.label;
+          if (visualType === 'sentiment' && option.value !== 'all') {
+            content = <GetSentimentBadge sentiment={option.value} />;
+          } else if (visualType === 'leadQuality' && option.value !== 'all') {
+            content = <GetLeadQualityBadge leadQuality={option.value} />;
+          } else if (visualType === 'status' && option.value !== 'all') {
+            content = getStatusBadge(option.value);
+          }
+          return (
+            <PopoverClose asChild key={option.value}>
+              <Button
+                variant={value === option.value ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 justify-start text-xs"
+                onClick={() => onChange(option.value)}
+              >
+                {content}
+              </Button>
+            </PopoverClose>
+          );
+        })}
+      </div>
       {value !== 'all' && (
         <Button
           variant="outline"

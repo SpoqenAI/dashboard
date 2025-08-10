@@ -44,6 +44,7 @@ import {
   RangeFilter,
   SelectFilter,
   DateRangeFilter,
+  DurationQuickFilter,
 } from '@/components/ui/column-filter';
 
 // Enhanced interfaces for column filtering and sorting
@@ -278,160 +279,151 @@ export const CallHistoryTable = memo(
               <div className="hidden overflow-x-auto md:block">
                 <Table>
                   <TableHeader>
-                    {/* Column Headers with Sorting */}
-                    <TableRow>
-                      <TableHead className="w-48">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleColumnSort('phoneNumber')}
-                          className="h-auto p-0 font-medium hover:bg-transparent"
-                        >
-                          Phone Number
-                          {getSortIcon('phoneNumber')}
-                        </Button>
-                      </TableHead>
-                      <TableHead className="w-40">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleColumnSort('startedAt')}
-                          className="h-auto p-0 font-medium hover:bg-transparent"
-                        >
-                          Date/Time
-                          {getSortIcon('startedAt')}
-                        </Button>
-                      </TableHead>
-                      <TableHead className="w-32">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleColumnSort('duration')}
-                          className="h-auto p-0 font-medium hover:bg-transparent"
-                        >
-                          Duration
-                          {getSortIcon('duration')}
-                        </Button>
-                      </TableHead>
-                      <TableHead className="w-32">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleColumnSort('endedReason')}
-                          className="h-auto p-0 font-medium hover:bg-transparent"
-                        >
-                          Status
-                          {getSortIcon('endedReason')}
-                        </Button>
-                      </TableHead>
-                      <TableHead className="w-32">Sentiment</TableHead>
-                      <TableHead className="w-32">Lead Quality</TableHead>
-                      <TableHead className="w-24">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleColumnSort('cost')}
-                          className="h-auto p-0 font-medium hover:bg-transparent"
-                        >
-                          Cost
-                          {getSortIcon('cost')}
-                        </Button>
-                      </TableHead>
-                    </TableRow>
-
-                    {/* Column Filters Row */}
                     <TableRow className="border-b-2">
-                      <TableHead className="py-2">
-                        <TextFilter
-                          value={phoneNumberFilter}
-                          onChange={onPhoneNumberFilterChange}
-                          placeholder="Filter phone..."
-                          isActive={isPhoneFilterActive}
-                          onClear={() => onPhoneNumberFilterChange('')}
-                        />
+                      <TableHead className="w-48 py-2">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleColumnSort('phoneNumber')}
+                            className="h-auto p-0 font-medium hover:bg-transparent"
+                          >
+                            Phone Number
+                            {getSortIcon('phoneNumber')}
+                          </Button>
+                          <TextFilter
+                            value={phoneNumberFilter}
+                            onChange={onPhoneNumberFilterChange}
+                            placeholder="Filter phone..."
+                            isActive={isPhoneFilterActive}
+                            onClear={() => onPhoneNumberFilterChange('')}
+                          />
+                        </div>
                       </TableHead>
-                      <TableHead className="py-2">
-                        <DateRangeFilter
-                          startDate={dateRange.startDate}
-                          endDate={dateRange.endDate}
-                          onChange={onDateRangeChange}
-                          isActive={isDateRangeActive}
-                          onClear={() => onDateRangeChange(null, null)}
-                        />
+                      <TableHead className="w-40 py-2">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleColumnSort('startedAt')}
+                            className="h-auto p-0 font-medium hover:bg-transparent"
+                          >
+                            Date/Time
+                            {getSortIcon('startedAt')}
+                          </Button>
+                          <DateRangeFilter
+                            startDate={dateRange.startDate}
+                            endDate={dateRange.endDate}
+                            onChange={onDateRangeChange}
+                            isActive={isDateRangeActive}
+                            onClear={() => onDateRangeChange(null, null)}
+                          />
+                        </div>
                       </TableHead>
-                      <TableHead className="py-2">
-                        <RangeFilter
-                          min={durationRange.min}
-                          max={durationRange.max}
-                          onChange={onDurationRangeChange}
-                          unit="seconds"
-                          minPlaceholder="Min sec"
-                          maxPlaceholder="Max sec"
-                          isActive={isDurationRangeActive}
-                          onClear={() => onDurationRangeChange(null, null)}
-                        />
+                      <TableHead className="w-32 py-2">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleColumnSort('duration')}
+                            className="h-auto p-0 font-medium hover:bg-transparent"
+                          >
+                            Duration
+                            {getSortIcon('duration')}
+                          </Button>
+                          <DurationQuickFilter
+                            min={durationRange.min}
+                            onChange={onDurationRangeChange}
+                            isActive={isDurationRangeActive}
+                            onClear={() => onDurationRangeChange(null, null)}
+                          />
+                        </div>
                       </TableHead>
-                      <TableHead className="py-2">
-                        <SelectFilter
-                          value={statusFilter}
-                          onChange={onStatusFilterChange}
-                          options={[
-                            { value: 'all', label: 'All Status' },
-                            {
-                              value: 'customer-ended-call',
-                              label: 'Completed',
-                            },
-                            { value: 'assistant-error', label: 'Error' },
-                            { value: 'no-answer', label: 'No Answer' },
-                            {
-                              value: 'assistant-ended-call',
-                              label: 'Assistant Ended',
-                            },
-                          ]}
-                          isActive={isStatusFilterActive}
-                          onClear={() => onStatusFilterChange('all')}
-                        />
+                      <TableHead className="w-32 py-2">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleColumnSort('endedReason')}
+                            className="h-auto p-0 font-medium hover:bg-transparent"
+                          >
+                            Status
+                            {getSortIcon('endedReason')}
+                          </Button>
+                          <SelectFilter
+                            value={statusFilter}
+                            onChange={onStatusFilterChange}
+                            options={[
+                              { value: 'all', label: 'All Status' },
+                              { value: 'customer-ended-call', label: 'Completed' },
+                              { value: 'assistant-error', label: 'Error' },
+                              { value: 'no-answer', label: 'No Answer' },
+                              { value: 'assistant-ended-call', label: 'Assistant Ended' },
+                            ]}
+                            isActive={isStatusFilterActive}
+                            onClear={() => onStatusFilterChange('all')}
+                          />
+                        </div>
                       </TableHead>
-                      <TableHead className="py-2">
-                        <SelectFilter
-                          value={sentimentFilter}
-                          onChange={onSentimentFilterChange}
-                          options={[
-                            { value: 'all', label: 'All Sentiment' },
-                            { value: 'positive', label: 'Positive' },
-                            { value: 'neutral', label: 'Neutral' },
-                            { value: 'negative', label: 'Negative' },
-                          ]}
-                          isActive={isSentimentFilterActive}
-                          onClear={() => onSentimentFilterChange('all')}
-                        />
+                      <TableHead className="w-32 py-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Sentiment</span>
+                          <SelectFilter
+                            value={sentimentFilter}
+                            onChange={onSentimentFilterChange}
+                            options={[
+                              { value: 'all', label: 'All Sentiment' },
+                              { value: 'positive', label: 'Positive' },
+                              { value: 'neutral', label: 'Neutral' },
+                              { value: 'negative', label: 'Negative' },
+                            ]}
+                            isActive={isSentimentFilterActive}
+                            onClear={() => onSentimentFilterChange('all')}
+                            visualType="sentiment"
+                          />
+                        </div>
                       </TableHead>
-                      <TableHead className="py-2">
-                        <SelectFilter
-                          value={leadQualityFilter}
-                          onChange={onLeadQualityFilterChange}
-                          options={[
-                            { value: 'all', label: 'All Quality' },
-                            { value: 'hot', label: 'Hot' },
-                            { value: 'warm', label: 'Warm' },
-                            { value: 'cold', label: 'Cold' },
-                          ]}
-                          isActive={isLeadQualityFilterActive}
-                          onClear={() => onLeadQualityFilterChange('all')}
-                        />
+                      <TableHead className="w-32 py-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Lead Quality</span>
+                          <SelectFilter
+                            value={leadQualityFilter}
+                            onChange={onLeadQualityFilterChange}
+                            options={[
+                              { value: 'all', label: 'All Quality' },
+                              { value: 'hot', label: 'Hot' },
+                              { value: 'warm', label: 'Warm' },
+                              { value: 'cold', label: 'Cold' },
+                            ]}
+                            isActive={isLeadQualityFilterActive}
+                            onClear={() => onLeadQualityFilterChange('all')}
+                            visualType="leadQuality"
+                          />
+                        </div>
                       </TableHead>
-                      <TableHead className="py-2">
-                        <RangeFilter
-                          min={costRange.min}
-                          max={costRange.max}
-                          onChange={onCostRangeChange}
-                          step={0.0001}
-                          unit="$"
-                          minPlaceholder="Min $"
-                          maxPlaceholder="Max $"
-                          isActive={isCostRangeActive}
-                          onClear={() => onCostRangeChange(null, null)}
-                        />
+                      <TableHead className="w-24 py-2">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleColumnSort('cost')}
+                            className="h-auto p-0 font-medium hover:bg-transparent"
+                          >
+                            Cost
+                            {getSortIcon('cost')}
+                          </Button>
+                          <RangeFilter
+                            min={costRange.min}
+                            max={costRange.max}
+                            onChange={onCostRangeChange}
+                            step={0.0001}
+                            unit="$"
+                            minPlaceholder="Min $"
+                            maxPlaceholder="Max $"
+                            isActive={isCostRangeActive}
+                            onClear={() => onCostRangeChange(null, null)}
+                          />
+                        </div>
                       </TableHead>
                     </TableRow>
                   </TableHeader>
