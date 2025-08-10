@@ -35,42 +35,145 @@ import { z } from 'zod';
 
 const ITEMS_PER_PAGE = 20;
 
-// Reducer for filters + pagination
-interface FilterState {
-  currentPage: number;
-  searchTerm: string;
+// Enhanced filter state for individual column filtering
+interface ColumnFilters {
+  phoneNumber: string;
+  dateRange: {
+    startDate: Date | null;
+    endDate: Date | null;
+  };
+  duration: {
+    min: number | null;
+    max: number | null;
+  };
+  status: string;
   sentiment: string;
   leadQuality: string;
-  status: string;
+  cost: {
+    min: number | null;
+    max: number | null;
+  };
+}
+
+interface SortState {
+  column: keyof VapiCall | 'duration' | null;
+  direction: 'asc' | 'desc';
+}
+
+interface FilterState {
+  currentPage: number;
+  columns: ColumnFilters;
+  sort: SortState;
 }
 
 type FilterAction =
   | { type: 'SET_PAGE'; page: number }
-  | { type: 'SET_SEARCH'; term: string }
-  | { type: 'SET_SENTIMENT'; value: string }
-  | { type: 'SET_LEAD'; value: string }
-  | { type: 'SET_STATUS'; value: string };
+  | { type: 'SET_PHONE_FILTER'; value: string }
+  | { type: 'SET_DATE_RANGE'; startDate: Date | null; endDate: Date | null }
+  | { type: 'SET_DURATION_RANGE'; min: number | null; max: number | null }
+  | { type: 'SET_STATUS_FILTER'; value: string }
+  | { type: 'SET_SENTIMENT_FILTER'; value: string }
+  | { type: 'SET_LEAD_QUALITY_FILTER'; value: string }
+  | { type: 'SET_COST_RANGE'; min: number | null; max: number | null }
+  | {
+      type: 'SET_SORT';
+      column: keyof VapiCall | 'duration' | null;
+      direction: 'asc' | 'desc';
+    }
+  | { type: 'CLEAR_ALL_FILTERS' };
 
 const initialFilters: FilterState = {
   currentPage: 1,
-  searchTerm: '',
-  sentiment: 'all',
-  leadQuality: 'all',
-  status: 'all',
+  columns: {
+    phoneNumber: '',
+    dateRange: {
+      startDate: null,
+      endDate: null,
+    },
+    duration: {
+      min: null,
+      max: null,
+    },
+    status: 'all',
+    sentiment: 'all',
+    leadQuality: 'all',
+    cost: {
+      min: null,
+      max: null,
+    },
+  },
+  sort: {
+    column: 'startedAt',
+    direction: 'desc',
+  },
 };
 
 function filterReducer(state: FilterState, action: FilterAction): FilterState {
   switch (action.type) {
     case 'SET_PAGE':
       return { ...state, currentPage: action.page };
-    case 'SET_SEARCH':
-      return { ...state, searchTerm: action.term, currentPage: 1 };
-    case 'SET_SENTIMENT':
-      return { ...state, sentiment: action.value, currentPage: 1 };
-    case 'SET_LEAD':
-      return { ...state, leadQuality: action.value, currentPage: 1 };
-    case 'SET_STATUS':
-      return { ...state, status: action.value, currentPage: 1 };
+    case 'SET_PHONE_FILTER':
+      return {
+        ...state,
+        columns: { ...state.columns, phoneNumber: action.value },
+        currentPage: 1,
+      };
+    case 'SET_DATE_RANGE':
+      return {
+        ...state,
+        columns: {
+          ...state.columns,
+          dateRange: { startDate: action.startDate, endDate: action.endDate },
+        },
+        currentPage: 1,
+      };
+    case 'SET_DURATION_RANGE':
+      return {
+        ...state,
+        columns: {
+          ...state.columns,
+          duration: { min: action.min, max: action.max },
+        },
+        currentPage: 1,
+      };
+    case 'SET_STATUS_FILTER':
+      return {
+        ...state,
+        columns: { ...state.columns, status: action.value },
+        currentPage: 1,
+      };
+    case 'SET_SENTIMENT_FILTER':
+      return {
+        ...state,
+        columns: { ...state.columns, sentiment: action.value },
+        currentPage: 1,
+      };
+    case 'SET_LEAD_QUALITY_FILTER':
+      return {
+        ...state,
+        columns: { ...state.columns, leadQuality: action.value },
+        currentPage: 1,
+      };
+    case 'SET_COST_RANGE':
+      return {
+        ...state,
+        columns: {
+          ...state.columns,
+          cost: { min: action.min, max: action.max },
+        },
+        currentPage: 1,
+      };
+    case 'SET_SORT':
+      return {
+        ...state,
+        sort: { column: action.column, direction: action.direction },
+      };
+    case 'CLEAR_ALL_FILTERS':
+      return {
+        ...initialFilters,
+        currentPage: 1,
+        sort: state.sort, // Keep current sort when clearing filters
+      };
     default:
       return state;
   }
@@ -86,10 +189,16 @@ export default function RecentCallsClient() {
 
   const {
     currentPage,
-    searchTerm,
-    sentiment: sentimentFilter,
-    leadQuality: leadQualityFilter,
-    status: statusFilter,
+    columns: {
+      phoneNumber: phoneNumberFilter,
+      dateRange,
+      duration: durationRange,
+      status: statusFilter,
+      sentiment: sentimentFilter,
+      leadQuality: leadQualityFilter,
+      cost: costRange,
+    },
+    sort,
   } = filters;
 
   // Determine if user is free tier
@@ -183,11 +292,7 @@ export default function RecentCallsClient() {
   const handleViewNewCall = useCallback(
     (callData: VapiCall) => {
       // Reset filters so the new call is visible
-      dispatchFilters({ type: 'SET_SEARCH', term: '' });
-      dispatchFilters({ type: 'SET_SENTIMENT', value: 'all' });
-      dispatchFilters({ type: 'SET_LEAD', value: 'all' });
-      dispatchFilters({ type: 'SET_STATUS', value: 'all' });
-      dispatchFilters({ type: 'SET_PAGE', page: 1 });
+      dispatchFilters({ type: 'CLEAR_ALL_FILTERS' });
 
       // Open the call detail modal with the SSE payload
       handleCallSelect(callData);
@@ -360,16 +465,26 @@ export default function RecentCallsClient() {
   });
 
   // Debounced search
-  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
+  const debouncedPhoneNumberFilter = useDebouncedValue(phoneNumberFilter, 300);
 
-  // Filtering & pagination
+  // Helper function to calculate call duration in seconds
+  const getCallDurationInSeconds = useCallback((call: VapiCall): number => {
+    if (!call.startedAt || !call.endedAt) return 0;
+    return Math.round(
+      (new Date(call.endedAt).getTime() - new Date(call.startedAt).getTime()) /
+        1000
+    );
+  }, []);
+
+  // Filtering, sorting & pagination
   const filteredAndPaginatedCalls = useMemo(() => {
     if (!analytics?.recentCalls) return { calls: [], totalCalls: 0 };
 
-    let filtered = analytics.recentCalls;
+    let filtered = [...analytics.recentCalls];
 
-    if (debouncedSearchTerm) {
-      const searchLower = debouncedSearchTerm.toLowerCase();
+    // Phone number filter
+    if (debouncedPhoneNumberFilter) {
+      const searchLower = debouncedPhoneNumberFilter.toLowerCase();
       filtered = filtered.filter(
         call =>
           call.phoneNumber?.number?.toLowerCase().includes(searchLower) ||
@@ -377,20 +492,117 @@ export default function RecentCallsClient() {
       );
     }
 
+    // Date range filter
+    if (dateRange.startDate || dateRange.endDate) {
+      filtered = filtered.filter(call => {
+        if (!call.startedAt) return false;
+        const callDate = new Date(call.startedAt);
+
+        if (dateRange.startDate && callDate < dateRange.startDate) return false;
+        if (dateRange.endDate) {
+          // Set end date to end of day for inclusive filtering
+          const endOfDay = new Date(dateRange.endDate);
+          endOfDay.setHours(23, 59, 59, 999);
+          if (callDate > endOfDay) return false;
+        }
+        return true;
+      });
+    }
+
+    // Duration range filter
+    if (durationRange.min !== null || durationRange.max !== null) {
+      filtered = filtered.filter(call => {
+        const duration = getCallDurationInSeconds(call);
+        if (durationRange.min !== null && duration < durationRange.min)
+          return false;
+        if (durationRange.max !== null && duration > durationRange.max)
+          return false;
+        return true;
+      });
+    }
+
+    // Cost range filter
+    if (costRange.min !== null || costRange.max !== null) {
+      filtered = filtered.filter(call => {
+        const cost = call.cost || 0;
+        if (costRange.min !== null && cost < costRange.min) return false;
+        if (costRange.max !== null && cost > costRange.max) return false;
+        return true;
+      });
+    }
+
+    // Sentiment filter
     if (sentimentFilter !== 'all') {
       filtered = filtered.filter(
         call => call.analysis?.sentiment === sentimentFilter
       );
     }
 
+    // Lead quality filter
     if (leadQualityFilter !== 'all') {
       filtered = filtered.filter(
         call => call.analysis?.leadQuality === leadQualityFilter
       );
     }
 
+    // Status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(call => call.endedReason === statusFilter);
+    }
+
+    // Sorting
+    if (sort.column) {
+      filtered.sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+
+        switch (sort.column) {
+          case 'phoneNumber':
+            aValue = a.phoneNumber?.number || '';
+            bValue = b.phoneNumber?.number || '';
+            break;
+          case 'startedAt':
+          case 'createdAt':
+          case 'endedAt':
+            aValue = a[sort.column] ? new Date(a[sort.column]!).getTime() : 0;
+            bValue = b[sort.column] ? new Date(b[sort.column]!).getTime() : 0;
+            break;
+          case 'duration':
+            aValue = getCallDurationInSeconds(a);
+            bValue = getCallDurationInSeconds(b);
+            break;
+          case 'cost':
+            aValue = a.cost || 0;
+            bValue = b.cost || 0;
+            break;
+          case 'endedReason':
+            aValue = a.endedReason || '';
+            bValue = b.endedReason || '';
+            break;
+          default:
+            if (sort.column && sort.column in a) {
+              aValue = (a as any)[sort.column] || '';
+              bValue = (b as any)[sort.column] || '';
+            } else {
+              aValue = '';
+              bValue = '';
+            }
+        }
+
+        // Handle string comparison
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sort.direction === 'asc'
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue);
+        }
+
+        // Handle numeric comparison
+        if (sort.direction === 'asc') {
+          return aValue - bValue;
+        } else {
+          return bValue - aValue;
+        }
+      });
     }
 
     const totalCalls = filtered.length;
@@ -403,11 +615,16 @@ export default function RecentCallsClient() {
     return { calls: paginatedCalls, totalCalls };
   }, [
     analytics?.recentCalls,
-    debouncedSearchTerm,
+    debouncedPhoneNumberFilter,
+    dateRange,
+    durationRange,
+    costRange,
     sentimentFilter,
     leadQualityFilter,
     statusFilter,
+    sort,
     currentPage,
+    getCallDurationInSeconds,
   ]);
 
   const totalPages = Math.ceil(
@@ -417,14 +634,42 @@ export default function RecentCallsClient() {
   // Pagination & filter helpers
   const handlePageChange = (p: number) =>
     dispatchFilters({ type: 'SET_PAGE', page: p });
-  const handleSearchChange = (v: string) =>
-    startTransition(() => dispatchFilters({ type: 'SET_SEARCH', term: v }));
-  const handleSentimentChange = (v: string) =>
-    dispatchFilters({ type: 'SET_SENTIMENT', value: v });
-  const handleLeadChange = (v: string) =>
-    dispatchFilters({ type: 'SET_LEAD', value: v });
-  const handleStatusChange = (v: string) =>
-    dispatchFilters({ type: 'SET_STATUS', value: v });
+
+  // Individual column filter handlers
+  const handlePhoneNumberFilterChange = (v: string) =>
+    startTransition(() =>
+      dispatchFilters({ type: 'SET_PHONE_FILTER', value: v })
+    );
+
+  const handleDateRangeChange = (
+    startDate: Date | null,
+    endDate: Date | null
+  ) => dispatchFilters({ type: 'SET_DATE_RANGE', startDate, endDate });
+
+  const handleDurationRangeChange = (min: number | null, max: number | null) =>
+    dispatchFilters({ type: 'SET_DURATION_RANGE', min, max });
+
+  const handleCostRangeChange = (min: number | null, max: number | null) =>
+    dispatchFilters({ type: 'SET_COST_RANGE', min, max });
+
+  const handleSentimentFilterChange = (v: string) =>
+    dispatchFilters({ type: 'SET_SENTIMENT_FILTER', value: v });
+
+  const handleLeadQualityFilterChange = (v: string) =>
+    dispatchFilters({ type: 'SET_LEAD_QUALITY_FILTER', value: v });
+
+  const handleStatusFilterChange = (v: string) =>
+    dispatchFilters({ type: 'SET_STATUS_FILTER', value: v });
+
+  // Sorting handler
+  const handleSortChange = (
+    column: keyof VapiCall | 'duration' | null,
+    direction: 'asc' | 'desc'
+  ) => dispatchFilters({ type: 'SET_SORT', column, direction });
+
+  // Clear all filters
+  const handleClearAllFilters = () =>
+    dispatchFilters({ type: 'CLEAR_ALL_FILTERS' });
 
   // Handle payment success from Paddle redirect
   useEffect(() => {
@@ -499,14 +744,27 @@ export default function RecentCallsClient() {
                 isLoading={isLoading}
                 error={error ? (error as Error).message : null}
                 onRetry={refetch}
-                searchTerm={searchTerm}
-                onSearchChange={handleSearchChange}
+                // Column filters
+                phoneNumberFilter={phoneNumberFilter}
+                onPhoneNumberFilterChange={handlePhoneNumberFilterChange}
+                dateRange={dateRange}
+                onDateRangeChange={handleDateRangeChange}
+                durationRange={durationRange}
+                onDurationRangeChange={handleDurationRangeChange}
+                costRange={costRange}
+                onCostRangeChange={handleCostRangeChange}
                 sentimentFilter={sentimentFilter}
-                onSentimentFilterChange={handleSentimentChange}
+                onSentimentFilterChange={handleSentimentFilterChange}
                 leadQualityFilter={leadQualityFilter}
-                onLeadQualityFilterChange={handleLeadChange}
+                onLeadQualityFilterChange={handleLeadQualityFilterChange}
                 statusFilter={statusFilter}
-                onStatusFilterChange={handleStatusChange}
+                onStatusFilterChange={handleStatusFilterChange}
+                // Sorting
+                sort={sort}
+                onSortChange={handleSortChange}
+                // Clear filters
+                onClearAllFilters={handleClearAllFilters}
+                // Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={handlePageChange}

@@ -32,25 +32,74 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Phone,
   Clock,
   DollarSign,
+  RotateCcw,
 } from 'lucide-react';
+import {
+  TextFilter,
+  RangeFilter,
+  SelectFilter,
+  DateRangeFilter,
+} from '@/components/ui/column-filter';
 
-// Define interfaces
+// Enhanced interfaces for column filtering and sorting
+interface ColumnFilters {
+  phoneNumber: string;
+  dateRange: {
+    startDate: Date | null;
+    endDate: Date | null;
+  };
+  duration: {
+    min: number | null;
+    max: number | null;
+  };
+  status: string;
+  sentiment: string;
+  leadQuality: string;
+  cost: {
+    min: number | null;
+    max: number | null;
+  };
+}
+
+interface SortState {
+  column: keyof VapiCall | 'duration' | null;
+  direction: 'asc' | 'desc';
+}
+
 interface CallHistoryTableProps {
   calls: VapiCall[];
   isLoading: boolean;
   error: string | null;
   onRetry: () => void;
-  searchTerm: string;
-  onSearchChange: (value: string) => void;
+  // Column filters
+  phoneNumberFilter: string;
+  onPhoneNumberFilterChange: (value: string) => void;
+  dateRange: ColumnFilters['dateRange'];
+  onDateRangeChange: (startDate: Date | null, endDate: Date | null) => void;
+  durationRange: ColumnFilters['duration'];
+  onDurationRangeChange: (min: number | null, max: number | null) => void;
+  costRange: ColumnFilters['cost'];
+  onCostRangeChange: (min: number | null, max: number | null) => void;
   sentimentFilter: string;
   onSentimentFilterChange: (value: string) => void;
   leadQualityFilter: string;
   onLeadQualityFilterChange: (value: string) => void;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
+  // Sorting
+  sort: SortState;
+  onSortChange: (
+    column: keyof VapiCall | 'duration' | null,
+    direction: 'asc' | 'desc'
+  ) => void;
+  // Clear filters
+  onClearAllFilters: () => void;
+  // Pagination
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -66,14 +115,27 @@ export const CallHistoryTable = memo(
     isLoading,
     error,
     onRetry,
-    searchTerm,
-    onSearchChange,
+    // Column filters
+    phoneNumberFilter,
+    onPhoneNumberFilterChange,
+    dateRange,
+    onDateRangeChange,
+    durationRange,
+    onDurationRangeChange,
+    costRange,
+    onCostRangeChange,
     sentimentFilter,
     onSentimentFilterChange,
     leadQualityFilter,
     onLeadQualityFilterChange,
     statusFilter,
     onStatusFilterChange,
+    // Sorting
+    sort,
+    onSortChange,
+    // Clear filters
+    onClearAllFilters,
+    // Pagination
     currentPage,
     totalPages,
     onPageChange,
@@ -92,6 +154,58 @@ export const CallHistoryTable = memo(
         onPageChange(currentPage + 1);
       }
     };
+
+    // Helper function to toggle sort direction
+    const handleColumnSort = (column: keyof VapiCall | 'duration') => {
+      const newDirection =
+        sort.column === column && sort.direction === 'asc' ? 'desc' : 'asc';
+      onSortChange(column, newDirection);
+    };
+
+    // Helper function to get sort icon
+    const getSortIcon = (column: keyof VapiCall | 'duration') => {
+      if (sort.column !== column) return null;
+      return sort.direction === 'asc' ? (
+        <ChevronUp className="ml-1 h-3 w-3" />
+      ) : (
+        <ChevronDown className="ml-1 h-3 w-3" />
+      );
+    };
+
+    // Check if any filters are active
+    const hasActiveFilters = useMemo(() => {
+      return (
+        phoneNumberFilter !== '' ||
+        dateRange.startDate !== null ||
+        dateRange.endDate !== null ||
+        durationRange.min !== null ||
+        durationRange.max !== null ||
+        costRange.min !== null ||
+        costRange.max !== null ||
+        sentimentFilter !== 'all' ||
+        leadQualityFilter !== 'all' ||
+        statusFilter !== 'all'
+      );
+    }, [
+      phoneNumberFilter,
+      dateRange,
+      durationRange,
+      costRange,
+      sentimentFilter,
+      leadQualityFilter,
+      statusFilter,
+    ]);
+
+    // Helper to check if individual filters are active
+    const isPhoneFilterActive = phoneNumberFilter !== '';
+    const isDateRangeActive =
+      dateRange.startDate !== null || dateRange.endDate !== null;
+    const isDurationRangeActive =
+      durationRange.min !== null || durationRange.max !== null;
+    const isCostRangeActive = costRange.min !== null || costRange.max !== null;
+    const isSentimentFilterActive = sentimentFilter !== 'all';
+    const isLeadQualityFilterActive = leadQualityFilter !== 'all';
+    const isStatusFilterActive = statusFilter !== 'all';
 
     // Memoize loading skeleton
     const loadingSkeleton = useMemo(
@@ -135,212 +249,331 @@ export const CallHistoryTable = memo(
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Phone className="h-5 w-5" />
-            Recent Calls
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Phone className="h-5 w-5" />
+              Recent Calls
+            </CardTitle>
 
-          {/* Filters */}
-          <div className="mt-4 flex flex-col gap-4 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by phone number..."
-                value={searchTerm}
-                onChange={e => onSearchChange(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Select
-                value={sentimentFilter}
-                onValueChange={onSentimentFilterChange}
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onClearAllFilters}
+                className="h-8 px-3 text-xs"
               >
-                <SelectTrigger className="w-32">
-                  <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Sentiment" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Sentiment</SelectItem>
-                  <SelectItem value="positive">Positive</SelectItem>
-                  <SelectItem value="neutral">Neutral</SelectItem>
-                  <SelectItem value="negative">Negative</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={leadQualityFilter}
-                onValueChange={onLeadQualityFilterChange}
-              >
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="Lead Quality" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Quality</SelectItem>
-                  <SelectItem value="hot">Hot</SelectItem>
-                  <SelectItem value="warm">Warm</SelectItem>
-                  <SelectItem value="cold">Cold</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="customer-ended-call">Completed</SelectItem>
-                  <SelectItem value="assistant-error">Error</SelectItem>
-                  <SelectItem value="no-answer">No Answer</SelectItem>
-                  <SelectItem value="assistant-ended-call">
-                    Assistant Ended
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <RotateCcw className="mr-1 h-3 w-3" />
+                Clear All Filters
+              </Button>
+            )}
           </div>
         </CardHeader>
 
         <CardContent>
           {isLoading ? (
             loadingSkeleton
-          ) : calls.length === 0 ? (
-            <div className="py-8 text-center">
-              <Phone className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-              <h3 className="mb-2 text-lg font-semibold">No calls found</h3>
-              <p className="text-muted-foreground">
-                {searchTerm ||
-                sentimentFilter !== 'all' ||
-                leadQualityFilter !== 'all' ||
-                statusFilter !== 'all'
-                  ? 'Try adjusting your filters or search terms.'
-                  : 'Your calls will appear here once you start receiving them.'}
-              </p>
-            </div>
           ) : (
             <>
               {/* Desktop Table */}
               <div className="hidden overflow-x-auto md:block">
                 <Table>
                   <TableHeader>
+                    {/* Column Headers with Sorting */}
                     <TableRow>
-                      <TableHead>Phone Number</TableHead>
-                      <TableHead>Date/Time</TableHead>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Sentiment</TableHead>
-                      <TableHead>Lead Quality</TableHead>
-                      <TableHead>Cost</TableHead>
+                      <TableHead className="w-48">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleColumnSort('phoneNumber')}
+                          className="h-auto p-0 font-medium hover:bg-transparent"
+                        >
+                          Phone Number
+                          {getSortIcon('phoneNumber')}
+                        </Button>
+                      </TableHead>
+                      <TableHead className="w-40">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleColumnSort('startedAt')}
+                          className="h-auto p-0 font-medium hover:bg-transparent"
+                        >
+                          Date/Time
+                          {getSortIcon('startedAt')}
+                        </Button>
+                      </TableHead>
+                      <TableHead className="w-32">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleColumnSort('duration')}
+                          className="h-auto p-0 font-medium hover:bg-transparent"
+                        >
+                          Duration
+                          {getSortIcon('duration')}
+                        </Button>
+                      </TableHead>
+                      <TableHead className="w-32">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleColumnSort('endedReason')}
+                          className="h-auto p-0 font-medium hover:bg-transparent"
+                        >
+                          Status
+                          {getSortIcon('endedReason')}
+                        </Button>
+                      </TableHead>
+                      <TableHead className="w-32">Sentiment</TableHead>
+                      <TableHead className="w-32">Lead Quality</TableHead>
+                      <TableHead className="w-24">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleColumnSort('cost')}
+                          className="h-auto p-0 font-medium hover:bg-transparent"
+                        >
+                          Cost
+                          {getSortIcon('cost')}
+                        </Button>
+                      </TableHead>
+                    </TableRow>
+
+                    {/* Column Filters Row */}
+                    <TableRow className="border-b-2">
+                      <TableHead className="py-2">
+                        <TextFilter
+                          value={phoneNumberFilter}
+                          onChange={onPhoneNumberFilterChange}
+                          placeholder="Filter phone..."
+                          isActive={isPhoneFilterActive}
+                          onClear={() => onPhoneNumberFilterChange('')}
+                        />
+                      </TableHead>
+                      <TableHead className="py-2">
+                        <DateRangeFilter
+                          startDate={dateRange.startDate}
+                          endDate={dateRange.endDate}
+                          onChange={onDateRangeChange}
+                          isActive={isDateRangeActive}
+                          onClear={() => onDateRangeChange(null, null)}
+                        />
+                      </TableHead>
+                      <TableHead className="py-2">
+                        <RangeFilter
+                          min={durationRange.min}
+                          max={durationRange.max}
+                          onChange={onDurationRangeChange}
+                          unit="seconds"
+                          minPlaceholder="Min sec"
+                          maxPlaceholder="Max sec"
+                          isActive={isDurationRangeActive}
+                          onClear={() => onDurationRangeChange(null, null)}
+                        />
+                      </TableHead>
+                      <TableHead className="py-2">
+                        <SelectFilter
+                          value={statusFilter}
+                          onChange={onStatusFilterChange}
+                          options={[
+                            { value: 'all', label: 'All Status' },
+                            {
+                              value: 'customer-ended-call',
+                              label: 'Completed',
+                            },
+                            { value: 'assistant-error', label: 'Error' },
+                            { value: 'no-answer', label: 'No Answer' },
+                            {
+                              value: 'assistant-ended-call',
+                              label: 'Assistant Ended',
+                            },
+                          ]}
+                          isActive={isStatusFilterActive}
+                          onClear={() => onStatusFilterChange('all')}
+                        />
+                      </TableHead>
+                      <TableHead className="py-2">
+                        <SelectFilter
+                          value={sentimentFilter}
+                          onChange={onSentimentFilterChange}
+                          options={[
+                            { value: 'all', label: 'All Sentiment' },
+                            { value: 'positive', label: 'Positive' },
+                            { value: 'neutral', label: 'Neutral' },
+                            { value: 'negative', label: 'Negative' },
+                          ]}
+                          isActive={isSentimentFilterActive}
+                          onClear={() => onSentimentFilterChange('all')}
+                        />
+                      </TableHead>
+                      <TableHead className="py-2">
+                        <SelectFilter
+                          value={leadQualityFilter}
+                          onChange={onLeadQualityFilterChange}
+                          options={[
+                            { value: 'all', label: 'All Quality' },
+                            { value: 'hot', label: 'Hot' },
+                            { value: 'warm', label: 'Warm' },
+                            { value: 'cold', label: 'Cold' },
+                          ]}
+                          isActive={isLeadQualityFilterActive}
+                          onClear={() => onLeadQualityFilterChange('all')}
+                        />
+                      </TableHead>
+                      <TableHead className="py-2">
+                        <RangeFilter
+                          min={costRange.min}
+                          max={costRange.max}
+                          onChange={onCostRangeChange}
+                          step={0.0001}
+                          unit="$"
+                          minPlaceholder="Min $"
+                          maxPlaceholder="Max $"
+                          isActive={isCostRangeActive}
+                          onClear={() => onCostRangeChange(null, null)}
+                        />
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {calls.map(call => (
-                      <TableRow
-                        key={call.id}
-                        className={`cursor-pointer transition-colors ${
-                          selectedCallId === call.id
-                            ? 'bg-blue-50 hover:bg-blue-100'
-                            : 'hover:bg-muted/50'
-                        }`}
-                        onClick={() => onCallSelect(call)}
-                      >
-                        <TableCell className="font-medium">
-                          {call.phoneNumber?.number || 'Unknown'}
-                        </TableCell>
-                        <TableCell>
-                          {call.startedAt
-                            ? formatDateDetailed(call.startedAt)
-                            : 'Unknown'}
-                        </TableCell>
-                        <TableCell>
-                          {call.startedAt
-                            ? calculateAndFormatCallDuration(
-                                call.startedAt,
-                                call.endedAt
-                              )
-                            : 'Unknown'}
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(call.endedReason)}
-                        </TableCell>
-                        <TableCell>
-                          <GetSentimentBadge
-                            sentiment={call.analysis?.sentiment}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <GetLeadQualityBadge
-                            leadQuality={call.analysis?.leadQuality}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          ${call.cost?.toFixed(4) || '0.0000'}
+                    {calls.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7}>
+                          <div className="py-8 text-center">
+                            <Phone className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                            <h3 className="mb-2 text-lg font-semibold">
+                              No calls found
+                            </h3>
+                            <p className="text-muted-foreground">
+                              {hasActiveFilters
+                                ? 'Try adjusting your filters or search terms.'
+                                : 'Your calls will appear here once you start receiving them.'}
+                            </p>
+                          </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      calls.map(call => (
+                        <TableRow
+                          key={call.id}
+                          className={`cursor-pointer transition-colors ${
+                            selectedCallId === call.id
+                              ? 'bg-blue-50 hover:bg-blue-100'
+                              : 'hover:bg-muted/50'
+                          }`}
+                          onClick={() => onCallSelect(call)}
+                        >
+                          <TableCell className="font-medium">
+                            {call.phoneNumber?.number || 'Unknown'}
+                          </TableCell>
+                          <TableCell>
+                            {call.startedAt
+                              ? formatDateDetailed(call.startedAt)
+                              : 'Unknown'}
+                          </TableCell>
+                          <TableCell>
+                            {call.startedAt
+                              ? calculateAndFormatCallDuration(
+                                  call.startedAt,
+                                  call.endedAt
+                                )
+                              : 'Unknown'}
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(call.endedReason)}
+                          </TableCell>
+                          <TableCell>
+                            <GetSentimentBadge
+                              sentiment={call.analysis?.sentiment}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <GetLeadQualityBadge
+                              leadQuality={call.analysis?.leadQuality}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            ${call.cost?.toFixed(4) || '0.0000'}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
 
               {/* Mobile Cards */}
               <div className="space-y-4 md:hidden">
-                {calls.map(call => (
-                  <Card
-                    key={call.id}
-                    className={`cursor-pointer transition-colors ${
-                      selectedCallId === call.id
-                        ? 'border-blue-200 bg-blue-50'
-                        : 'hover:bg-muted/50'
-                    }`}
-                    onClick={() => onCallSelect(call)}
-                  >
-                    <CardContent className="pt-6">
-                      <div className="space-y-3">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="font-medium">
-                              {call.phoneNumber?.number || 'Unknown'}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {call.startedAt
-                                ? formatDateDetailed(call.startedAt)
-                                : 'Unknown'}
-                            </p>
+                {calls.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <Phone className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                    <h3 className="mb-2 text-lg font-semibold">
+                      No calls found
+                    </h3>
+                    <p className="text-muted-foreground">
+                      {hasActiveFilters
+                        ? 'Try adjusting your filters or search terms.'
+                        : 'Your calls will appear here once you start receiving them.'}
+                    </p>
+                  </div>
+                ) : (
+                  calls.map(call => (
+                    <Card
+                      key={call.id}
+                      className={`cursor-pointer transition-colors ${
+                        selectedCallId === call.id
+                          ? 'border-blue-200 bg-blue-50'
+                          : 'hover:bg-muted/50'
+                      }`}
+                      onClick={() => onCallSelect(call)}
+                    >
+                      <CardContent className="pt-6">
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-medium">
+                                {call.phoneNumber?.number || 'Unknown'}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {call.startedAt
+                                  ? formatDateDetailed(call.startedAt)
+                                  : 'Unknown'}
+                              </p>
+                            </div>
+                            {getStatusBadge(call.endedReason)}
                           </div>
-                          {getStatusBadge(call.endedReason)}
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>
-                              {call.startedAt
-                                ? calculateAndFormatCallDuration(
-                                    call.startedAt,
-                                    call.endedAt
-                                  )
-                                : 'Unknown'}
-                            </span>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <span>
+                                {call.startedAt
+                                  ? calculateAndFormatCallDuration(
+                                      call.startedAt,
+                                      call.endedAt
+                                    )
+                                  : 'Unknown'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="h-4 w-4 text-muted-foreground" />
+                              <span>${call.cost?.toFixed(4) || '0.0000'}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            <span>${call.cost?.toFixed(4) || '0.0000'}</span>
-                          </div>
-                        </div>
 
-                        <div className="flex gap-2">
-                          <GetSentimentBadge
-                            sentiment={call.analysis?.sentiment}
-                          />
-                          <GetLeadQualityBadge
-                            leadQuality={call.analysis?.leadQuality}
-                          />
+                          <div className="flex gap-2">
+                            <GetSentimentBadge
+                              sentiment={call.analysis?.sentiment}
+                            />
+                            <GetLeadQualityBadge
+                              leadQuality={call.analysis?.leadQuality}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
 
               {/* Pagination */}
