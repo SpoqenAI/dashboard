@@ -44,6 +44,8 @@ import * as Sentry from '@sentry/nextjs';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { inferMimeFromFilename, isAllowedMime } from '@/lib/file-validation';
 import dynamic from 'next/dynamic';
+import rawPlan from '@/supabase/functions/_shared/vapi-assistant.plan.json';
+import type { Plan } from '@/types/plan';
 const VapiWidget = dynamic(() => import('@/components/vapi-widget'), {
   ssr: false,
 });
@@ -109,6 +111,11 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   const [removingFileIds, setRemovingFileIds] = useState<Set<string>>(
     new Set()
   );
+  // Refresh confirmation state
+  const [isRefreshDialogOpen, setIsRefreshDialogOpen] = useState(false);
+  const [refreshConfirmStep, setRefreshConfirmStep] = useState<1 | 2>(1);
+  const [isRefreshingFromDialog, setIsRefreshingFromDialog] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Merge helper to accumulate selected files across multiple picks/drops
   const mergeUniqueFiles = useCallback((prev: File[], next: File[]) => {
@@ -182,6 +189,65 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     () => 'Hello! Thank you for calling. How can I assist you today?',
     []
   );
+
+  // Canonical analysis plan and version
+  const {
+    version: STANDARD_ANALYSIS_PLAN_VERSION,
+    plan: STANDARD_ANALYSIS_PLAN,
+  } = rawPlan as Plan;
+
+  // Utility: deep sort object keys for stable JSON comparison
+  const deepSort = useCallback((value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      return value.map(v => deepSort(v));
+    }
+    if (value && typeof value === 'object') {
+      const sortedKeys = Object.keys(value).sort();
+      const result: Record<string, unknown> = {};
+      for (const key of sortedKeys) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        result[key] = deepSort((value as any)[key]);
+      }
+      return result;
+    }
+    return value;
+  }, []);
+
+  // Determine if assistant needs system updates (analysis plan out of date/missing)
+  const shouldShowPullSystemUpdates = useMemo(() => {
+    if (!assistantData?.id) return false;
+    const assistantPlan = (assistantData as { analysisPlan?: unknown } | null)
+      ?.analysisPlan;
+    const assistantVersion = (
+      assistantData as { metadata?: { analysisPlanVersion?: string } } | null
+    )?.metadata?.analysisPlanVersion;
+
+    // If no plan or version mismatch, updates are needed
+    if (!assistantPlan) return true;
+    if (
+      !assistantVersion ||
+      assistantVersion !== STANDARD_ANALYSIS_PLAN_VERSION
+    )
+      return true;
+
+    // Compare plans structurally
+    try {
+      const a = JSON.stringify(deepSort(assistantPlan));
+      const b = JSON.stringify(deepSort(STANDARD_ANALYSIS_PLAN));
+      return a !== b;
+    } catch {
+      // If comparison fails for any reason, be conservative and show the button
+      return true;
+    }
+  }, [
+    assistantData?.id,
+    (assistantData as { analysisPlan?: unknown } | null)?.analysisPlan,
+    (assistantData as { metadata?: { analysisPlanVersion?: string } } | null)
+      ?.metadata?.analysisPlanVersion,
+    STANDARD_ANALYSIS_PLAN_VERSION,
+    STANDARD_ANALYSIS_PLAN,
+    deepSort,
+  ]);
 
   // Debounced values for performance optimization
   const debouncedFirstMessage = useDebouncedValue(firstMessage, 300);
@@ -518,10 +584,41 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   // Handle refresh (memoized for performance)
   const handleRefresh = useCallback(async () => {
     try {
-      setIsSavingLocal(true);
-      const refreshedData = await refreshAssistantData();
+      setIsRefreshing(true);
+      let updatedFromDirectFetch = false;
 
-      // Update local state with fresh data
+      // Try a direct, uncached fetch to ensure we have the latest assistant
+      try {
+        const res = await fetch(`/api/vapi/assistant/info?t=${Date.now()}`, {
+          method: 'GET',
+          cache: 'no-store',
+        });
+        if (res.ok) {
+          const json = await res.json();
+          const assistant = json?.assistant;
+          if (assistant) {
+            const newFirstMessage =
+              assistant.firstMessage || DEFAULT_FIRST_MESSAGE;
+            const systemMessage = assistant.model?.messages?.find(
+              (msg: any) => msg.role === 'system'
+            );
+            const newSystemPrompt =
+              systemMessage?.content || DEFAULT_SYSTEM_PROMPT;
+            const newVoice = assistant.voice?.voiceId || '';
+
+            setFirstMessage(newFirstMessage);
+            setSystemPrompt(newSystemPrompt);
+            setVoiceId(newVoice);
+            updatedFromDirectFetch = true;
+          }
+        }
+      } catch {
+        // ignore direct fetch errors; fallback to hook refresh below
+      }
+
+      // Always reconcile local UI with canonical store data to avoid drift
+      const refreshedData = await refreshAssistantData();
+      let updatedFromHook = false;
       if (refreshedData) {
         const newFirstMessage =
           refreshedData.firstMessage || DEFAULT_FIRST_MESSAGE;
@@ -534,16 +631,37 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         setFirstMessage(newFirstMessage);
         setSystemPrompt(newSystemPrompt);
         setVoiceId(newVoice);
+        updatedFromHook = true;
       }
 
-      toast({
-        title: 'Settings refreshed',
-        description: 'Loaded latest settings from your AI assistant.',
-      });
+      if (updatedFromDirectFetch || updatedFromHook) {
+        toast({
+          title: 'Settings refreshed',
+          description: 'Loaded latest settings from your AI assistant.',
+        });
+      } else {
+        toast({
+          title: 'Refresh failed',
+          description:
+            'Could not load the latest assistant settings. Please try again.',
+          variant: 'destructive',
+        });
+      }
     } finally {
-      setIsSavingLocal(false);
+      setIsRefreshing(false);
     }
   }, [refreshAssistantData, DEFAULT_FIRST_MESSAGE, DEFAULT_SYSTEM_PROMPT]);
+
+  // Click handler that adds a two-step confirmation when there are unsaved changes
+  const handleClickRefresh = useCallback(() => {
+    if (hasUnsavedChanges) {
+      setRefreshConfirmStep(1);
+      setIsRefreshDialogOpen(true);
+      return;
+    }
+    // No unsaved changes – refresh immediately
+    void handleRefresh();
+  }, [hasUnsavedChanges, handleRefresh]);
 
   // Handle system updates
   const handlePullSystemUpdates = useCallback(async () => {
@@ -863,89 +981,192 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={
-                    assistantLoading ||
-                    saving ||
-                    isSavingLocal ||
-                    isUpdatingSystem ||
-                    !assistantData?.id
-                  }
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  Pull System Updates
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Pull System Updates</AlertDialogTitle>
-                  <AlertDialogDescription asChild>
-                    <div className="space-y-3">
-                      <div>
-                        This will update your AI assistant with the latest
-                        Spoqen system improvements including:
-                      </div>
-                      <ul className="list-disc space-y-1 pl-6 text-sm">
-                        <li>
-                          <strong>Enhanced Call Analysis:</strong> Improved
-                          sentiment detection and lead quality scoring
-                        </li>
-                        <li>
-                          <strong>Reasoning Insights:</strong> AI will now
-                          provide detailed explanations for its analysis
-                          decisions
-                        </li>
-                        <li>
-                          <strong>Better Data Extraction:</strong> More accurate
-                          structured data from call transcripts
-                        </li>
-                        <li>
-                          <strong>Optimized Prompts:</strong> Latest analysis
-                          prompts for better performance
-                        </li>
-                      </ul>
-                      <div className="text-sm text-muted-foreground">
-                        <strong>Note:</strong> This will only update the
-                        analysis capabilities. Your assistant's personality,
-                        voice, and conversation settings will remain unchanged.
-                      </div>
-                    </div>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handlePullSystemUpdates}
-                    disabled={isUpdatingSystem}
+            {shouldShowPullSystemUpdates && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={
+                      assistantLoading ||
+                      saving ||
+                      isSavingLocal ||
+                      isUpdatingSystem ||
+                      !assistantData?.id
+                    }
                   >
-                    {isUpdatingSystem ? (
-                      <>
-                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        Updating...
-                      </>
-                    ) : (
-                      'Apply Updates'
-                    )}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Pull System Updates
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Pull System Updates</AlertDialogTitle>
+                    <AlertDialogDescription asChild>
+                      <div className="space-y-3">
+                        <div>
+                          This will update your AI assistant with the latest
+                          Spoqen system improvements including:
+                        </div>
+                        <ul className="list-disc space-y-1 pl-6 text-sm">
+                          <li>
+                            <strong>Enhanced Call Analysis:</strong> Improved
+                            sentiment detection and lead quality scoring
+                          </li>
+                          <li>
+                            <strong>Reasoning Insights:</strong> AI will now
+                            provide detailed explanations for its analysis
+                            decisions
+                          </li>
+                          <li>
+                            <strong>Better Data Extraction:</strong> More
+                            accurate structured data from call transcripts
+                          </li>
+                          <li>
+                            <strong>Optimized Prompts:</strong> Latest analysis
+                            prompts for better performance
+                          </li>
+                        </ul>
+                        <div className="text-sm text-muted-foreground">
+                          <strong>Note:</strong> This will only update the
+                          analysis capabilities. Your assistant's personality,
+                          voice, and conversation settings will remain
+                          unchanged.
+                        </div>
+                      </div>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handlePullSystemUpdates}
+                      disabled={isUpdatingSystem}
+                    >
+                      {isUpdatingSystem ? (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        'Apply Updates'
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
 
             <Button
               variant="outline"
               size="sm"
-              onClick={handleRefresh}
-              disabled={assistantLoading || saving || isSavingLocal}
+              onClick={handleClickRefresh}
+              disabled={assistantLoading || saving || isRefreshing}
             >
               <RefreshCw
-                className={`mr-2 h-4 w-4 ${assistantLoading ? 'animate-spin' : ''}`}
+                className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
               />
               Refresh
             </Button>
+
+            {/* Two-step confirmation dialog for refresh (only used when there are unsaved changes) */}
+            <AlertDialog
+              open={isRefreshDialogOpen}
+              onOpenChange={open => {
+                setIsRefreshDialogOpen(open);
+                if (!open) setRefreshConfirmStep(1);
+              }}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {refreshConfirmStep === 1
+                      ? 'Unsaved changes detected'
+                      : 'Confirm refresh and override'}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                    <div className="space-y-2 text-sm">
+                      {refreshConfirmStep === 1 ? (
+                        <>
+                          <p>
+                            You have unsaved changes to your assistant
+                            configuration.
+                          </p>
+                          <p>
+                            Refreshing will reload settings from the assistant
+                            and override your pending edits.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p>
+                            This will discard any unsaved changes and reload the
+                            latest configuration from your assistant.
+                          </p>
+                          <p className="font-medium">
+                            Are you sure you want to continue?
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  {refreshConfirmStep === 1 ? (
+                    <>
+                      <AlertDialogCancel
+                        onClick={() => setIsRefreshDialogOpen(false)}
+                      >
+                        Cancel
+                      </AlertDialogCancel>
+                      <Button
+                        onClick={() => setRefreshConfirmStep(2)}
+                        disabled={assistantLoading || saving || isRefreshing}
+                      >
+                        Continue
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={() => setRefreshConfirmStep(1)}
+                        disabled={assistantLoading || saving || isRefreshing}
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          try {
+                            setIsRefreshingFromDialog(true);
+                            await handleRefresh();
+                            setIsRefreshDialogOpen(false);
+                            setRefreshConfirmStep(1);
+                          } finally {
+                            setIsRefreshingFromDialog(false);
+                          }
+                        }}
+                        disabled={
+                          assistantLoading ||
+                          saving ||
+                          isRefreshing ||
+                          isRefreshingFromDialog
+                        }
+                        aria-busy={isRefreshingFromDialog ? true : undefined}
+                      >
+                        {isRefreshingFromDialog ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            Refreshing...
+                          </>
+                        ) : (
+                          'Refresh now'
+                        )}
+                      </Button>
+                    </>
+                  )}
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
