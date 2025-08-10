@@ -29,7 +29,7 @@ import {
 interface BaseFilterProps {
   isActive: boolean;
   onClear: () => void;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 // Text filter for phone numbers

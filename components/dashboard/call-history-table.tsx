@@ -363,6 +363,7 @@ export const CallHistoryTable = memo(
                             ]}
                             isActive={isStatusFilterActive}
                             onClear={() => onStatusFilterChange('all')}
+                            visualType="status"
                           />
                         </div>
                       </TableHead>
