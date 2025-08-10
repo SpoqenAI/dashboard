@@ -44,7 +44,8 @@ import * as Sentry from '@sentry/nextjs';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { inferMimeFromFilename, isAllowedMime } from '@/lib/file-validation';
 import dynamic from 'next/dynamic';
-import planJson from '@/supabase/functions/_shared/vapi-assistant.plan.json';
+import rawPlan from '@/supabase/functions/_shared/vapi-assistant.plan.json';
+import type { Plan } from '@/types/plan';
 const VapiWidget = dynamic(() => import('@/components/vapi-widget'), {
   ssr: false,
 });
@@ -114,6 +115,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   const [isRefreshDialogOpen, setIsRefreshDialogOpen] = useState(false);
   const [refreshConfirmStep, setRefreshConfirmStep] = useState<1 | 2>(1);
   const [isRefreshingFromDialog, setIsRefreshingFromDialog] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Merge helper to accumulate selected files across multiple picks/drops
   const mergeUniqueFiles = useCallback((prev: File[], next: File[]) => {
@@ -189,19 +191,21 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   );
 
   // Canonical analysis plan and version
-  const STANDARD_ANALYSIS_PLAN_VERSION: string = (planJson as any).version;
-  const STANDARD_ANALYSIS_PLAN: Record<string, unknown> = (planJson as any)
-    .plan;
+  const {
+    version: STANDARD_ANALYSIS_PLAN_VERSION,
+    plan: STANDARD_ANALYSIS_PLAN,
+  } = rawPlan as Plan;
 
   // Utility: deep sort object keys for stable JSON comparison
-  const deepSort = useCallback((value: any): any => {
+  const deepSort = useCallback((value: unknown): unknown => {
     if (Array.isArray(value)) {
       return value.map(v => deepSort(v));
     }
     if (value && typeof value === 'object') {
       const sortedKeys = Object.keys(value).sort();
-      const result: Record<string, any> = {};
+      const result: Record<string, unknown> = {};
       for (const key of sortedKeys) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         result[key] = deepSort((value as any)[key]);
       }
       return result;
@@ -212,9 +216,11 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   // Determine if assistant needs system updates (analysis plan out of date/missing)
   const shouldShowPullSystemUpdates = useMemo(() => {
     if (!assistantData?.id) return false;
-    const assistantPlan = (assistantData as any)?.analysisPlan;
-    const assistantVersion = (assistantData as any)?.metadata
-      ?.analysisPlanVersion as string | undefined;
+    const assistantPlan = (assistantData as { analysisPlan?: unknown } | null)
+      ?.analysisPlan;
+    const assistantVersion = (
+      assistantData as { metadata?: { analysisPlanVersion?: string } } | null
+    )?.metadata?.analysisPlanVersion;
 
     // If no plan or version mismatch, updates are needed
     if (!assistantPlan) return true;
@@ -235,8 +241,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     }
   }, [
     assistantData?.id,
-    (assistantData as any)?.analysisPlan,
-    (assistantData as any)?.metadata?.analysisPlanVersion,
+    (assistantData as { analysisPlan?: unknown } | null)?.analysisPlan,
+    (assistantData as { metadata?: { analysisPlanVersion?: string } } | null)
+      ?.metadata?.analysisPlanVersion,
     STANDARD_ANALYSIS_PLAN_VERSION,
     STANDARD_ANALYSIS_PLAN,
     deepSort,
@@ -577,14 +584,14 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   // Handle refresh (memoized for performance)
   const handleRefresh = useCallback(async () => {
     try {
-      setIsSavingLocal(true);
+      setIsRefreshing(true);
       let updatedFromDirectFetch = false;
 
       // Try a direct, uncached fetch to ensure we have the latest assistant
       try {
-        const res = await fetch('/api/vapi/assistant/info', {
+        const res = await fetch(`/api/vapi/assistant/info?t=${Date.now()}`, {
           method: 'GET',
-          headers: { 'Cache-Control': 'no-cache' },
+          cache: 'no-store',
         });
         if (res.ok) {
           const json = await res.json();
@@ -609,9 +616,10 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         // ignore direct fetch errors; fallback to hook refresh below
       }
 
-      // Sync hook cache and optionally use its response if direct fetch didn't update
+      // Always reconcile local UI with canonical store data to avoid drift
       const refreshedData = await refreshAssistantData();
-      if (!updatedFromDirectFetch && refreshedData) {
+      let updatedFromHook = false;
+      if (refreshedData) {
         const newFirstMessage =
           refreshedData.firstMessage || DEFAULT_FIRST_MESSAGE;
         const systemMessage = refreshedData.model?.messages?.find(
@@ -623,14 +631,24 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         setFirstMessage(newFirstMessage);
         setSystemPrompt(newSystemPrompt);
         setVoiceId(newVoice);
+        updatedFromHook = true;
       }
 
-      toast({
-        title: 'Settings refreshed',
-        description: 'Loaded latest settings from your AI assistant.',
-      });
+      if (updatedFromDirectFetch || updatedFromHook) {
+        toast({
+          title: 'Settings refreshed',
+          description: 'Loaded latest settings from your AI assistant.',
+        });
+      } else {
+        toast({
+          title: 'Refresh failed',
+          description:
+            'Could not load the latest assistant settings. Please try again.',
+          variant: 'destructive',
+        });
+      }
     } finally {
-      setIsSavingLocal(false);
+      setIsRefreshing(false);
     }
   }, [refreshAssistantData, DEFAULT_FIRST_MESSAGE, DEFAULT_SYSTEM_PROMPT]);
 
@@ -1042,10 +1060,10 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
               variant="outline"
               size="sm"
               onClick={handleClickRefresh}
-              disabled={assistantLoading || saving || isSavingLocal}
+              disabled={assistantLoading || saving || isRefreshing}
             >
               <RefreshCw
-                className={`mr-2 h-4 w-4 ${assistantLoading ? 'animate-spin' : ''}`}
+                className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
               />
               Refresh
             </Button>
@@ -1102,7 +1120,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                       </AlertDialogCancel>
                       <Button
                         onClick={() => setRefreshConfirmStep(2)}
-                        disabled={assistantLoading || saving || isSavingLocal}
+                        disabled={assistantLoading || saving || isRefreshing}
                       >
                         Continue
                       </Button>
@@ -1112,7 +1130,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                       <Button
                         variant="outline"
                         onClick={() => setRefreshConfirmStep(1)}
-                        disabled={assistantLoading || saving || isSavingLocal}
+                        disabled={assistantLoading || saving || isRefreshing}
                       >
                         Back
                       </Button>
@@ -1130,9 +1148,10 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                         disabled={
                           assistantLoading ||
                           saving ||
-                          isSavingLocal ||
+                          isRefreshing ||
                           isRefreshingFromDialog
                         }
+                        aria-busy={isRefreshingFromDialog ? true : undefined}
                       >
                         {isRefreshingFromDialog ? (
                           <>
