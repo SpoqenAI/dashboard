@@ -14,9 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, Filter, X } from 'lucide-react';
-import { format } from 'date-fns';
+import { Filter, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Base filter component props
@@ -243,123 +241,62 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   isActive,
   onClear,
 }) => {
-  const [tempStartDate, setTempStartDate] = useState<Date | undefined>(
-    startDate || undefined
-  );
-  const [tempEndDate, setTempEndDate] = useState<Date | undefined>(
-    endDate || undefined
-  );
+  const quickOptions = [
+    { key: 'all', label: 'All time', days: 0 },
+    { key: '7', label: 'Last 7 days', days: 7 },
+    { key: '14', label: 'Last 14 days', days: 14 },
+    { key: '30', label: 'Last 30 days', days: 30 },
+    { key: '60', label: 'Last 60 days', days: 60 },
+    { key: '90', label: 'Last 90 days', days: 90 },
+  ];
 
-  const applyDateRange = () => {
-    onChange(tempStartDate || null, tempEndDate || null);
+  const toStartOfDay = (d: Date) => {
+    const x = new Date(d);
+    x.setHours(0, 0, 0, 0);
+    return x;
   };
 
-  const clearDates = () => {
-    setTempStartDate(undefined);
-    setTempEndDate(undefined);
-    onClear();
+  const isOptionSelected = (days: number) => {
+    if (days === 0) return !startDate && !endDate;
+    if (!startDate) return false;
+    const today = toStartOfDay(new Date());
+    const expectedStart = toStartOfDay(
+      new Date(today.getFullYear(), today.getMonth(), today.getDate() - (days - 1))
+    );
+    const currentStart = toStartOfDay(new Date(startDate));
+    // End date should be roughly today
+    const endIsToday = !endDate || toStartOfDay(new Date(endDate)).getTime() === today.getTime();
+    return currentStart.getTime() === expectedStart.getTime() && endIsToday;
+  };
+
+  const applyDays = (days: number) => {
+    if (days === 0) {
+      onChange(null, null);
+      return;
+    }
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const start = new Date(today);
+    start.setDate(today.getDate() - (days - 1));
+    onChange(start, now);
   };
 
   return (
     <FilterWrapper isActive={isActive} onClear={onClear}>
-      <div className="space-y-3">
+      <div className="space-y-2">
         <Label className="text-xs font-medium">Filter by date range</Label>
-
-        <div className="space-y-2">
-          <div>
-            <Label className="text-xs text-muted-foreground">From</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'h-8 w-full justify-start text-left text-xs font-normal',
-                    !tempStartDate && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-3 w-3" />
-                  {tempStartDate
-                    ? format(tempStartDate, 'MMM dd, yyyy')
-                    : 'Pick start date'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-auto p-0"
-                align="start"
-                side="bottom"
-                sideOffset={8}
-                avoidCollisions={false}
-              >
-                <Calendar
-                  mode="single"
-                  selected={tempStartDate}
-                  onSelect={setTempStartDate}
-                  disabled={date =>
-                    date > new Date() || (tempEndDate && date > tempEndDate)
-                  }
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div>
-            <Label className="text-xs text-muted-foreground">To</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'h-8 w-full justify-start text-left text-xs font-normal',
-                    !tempEndDate && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-3 w-3" />
-                  {tempEndDate
-                    ? format(tempEndDate, 'MMM dd, yyyy')
-                    : 'Pick end date'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-auto p-0"
-                align="start"
-                side="bottom"
-                sideOffset={8}
-                avoidCollisions={false}
-              >
-                <Calendar
-                  mode="single"
-                  selected={tempEndDate}
-                  onSelect={setTempEndDate}
-                  disabled={date =>
-                    date > new Date() || (tempStartDate && date < tempStartDate)
-                  }
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={applyDateRange}
-            className="h-7 flex-1 text-xs"
-          >
-            Apply
-          </Button>
-          {(tempStartDate || tempEndDate) && (
+        <div className="grid grid-cols-1 gap-1">
+          {quickOptions.map(opt => (
             <Button
-              variant="outline"
+              key={opt.key}
+              variant={isOptionSelected(opt.days) ? 'default' : 'ghost'}
               size="sm"
-              onClick={clearDates}
-              className="h-7 flex-1 text-xs"
+              className="h-7 justify-start text-xs"
+              onClick={() => applyDays(opt.days)}
             >
-              Clear
+              {opt.label}
             </Button>
-          )}
+          ))}
         </div>
       </div>
     </FilterWrapper>

@@ -467,6 +467,12 @@ export default function RecentCallsClient() {
   // Debounced search
   const debouncedPhoneNumberFilter = useDebouncedValue(phoneNumberFilter, 300);
 
+  // Normalize phone numbers to digits-only for safe and consistent matching
+  const normalizePhoneDigits = useCallback((value: string | undefined | null): string => {
+    if (!value) return '';
+    return String(value).replace(/\D+/g, '');
+  }, []);
+
   // Helper function to calculate call duration in seconds
   const getCallDurationInSeconds = useCallback((call: VapiCall): number => {
     if (!call.startedAt || !call.endedAt) return 0;
@@ -482,14 +488,15 @@ export default function RecentCallsClient() {
 
     let filtered = [...analytics.recentCalls];
 
-    // Phone number filter
+    // Phone number filter (digits-only normalization)
     if (debouncedPhoneNumberFilter) {
-      const searchLower = debouncedPhoneNumberFilter.toLowerCase();
-      filtered = filtered.filter(
-        call =>
-          call.phoneNumber?.number?.toLowerCase().includes(searchLower) ||
-          call.callerName?.toLowerCase().includes(searchLower)
-      );
+      const searchDigits = normalizePhoneDigits(debouncedPhoneNumberFilter);
+      if (searchDigits.length > 0) {
+        filtered = filtered.filter(call => {
+          const callDigits = normalizePhoneDigits(call.phoneNumber?.number);
+          return callDigits.includes(searchDigits);
+        });
+      }
     }
 
     // Date range filter
@@ -636,10 +643,12 @@ export default function RecentCallsClient() {
     dispatchFilters({ type: 'SET_PAGE', page: p });
 
   // Individual column filter handlers
-  const handlePhoneNumberFilterChange = (v: string) =>
+  const handlePhoneNumberFilterChange = (v: string) => {
+    const sanitized = v.replace(/[^0-9+()\-\s.]/g, '');
     startTransition(() =>
-      dispatchFilters({ type: 'SET_PHONE_FILTER', value: v })
+      dispatchFilters({ type: 'SET_PHONE_FILTER', value: sanitized })
     );
+  };
 
   const handleDateRangeChange = (
     startDate: Date | null,
