@@ -18,6 +18,7 @@ import {
 import { Filter, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
+import { Badge } from '@/components/ui/badge';
 import {
   getSentimentBadge as GetSentimentBadge,
   getLeadQualityBadge as GetLeadQualityBadge,
@@ -340,13 +341,22 @@ export const SelectFilter: React.FC<SelectFilterProps> = ({
             content = <GetLeadQualityBadge leadQuality={option.value} />;
           } else if (visualType === 'status' && option.value !== 'all') {
             content = getStatusBadge(option.value);
+          } else if (option.value === 'all') {
+            content = (
+              <Badge variant="secondary" className="text-xs">
+                {option.label}
+              </Badge>
+            );
           }
           return (
             <PopoverClose asChild key={option.value}>
               <Button
-                variant={value === option.value ? 'default' : 'ghost'}
+                variant="ghost"
                 size="sm"
-                className="h-7 justify-start text-xs"
+                className={cn(
+                  'h-8 w-full justify-start text-xs hover:bg-accent/20',
+                  value === option.value && 'bg-accent/30'
+                )}
                 onClick={() => onChange(option.value)}
               >
                 {content}
