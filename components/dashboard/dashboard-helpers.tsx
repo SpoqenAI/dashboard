@@ -61,6 +61,46 @@ export const formatDateDetailed = (dateString: string): string => {
   });
 };
 
+// Canonical set of normalized ended reasons used across the app
+export type EndedReasonNormalized =
+  | 'customer-ended-call'
+  | 'assistant-error'
+  | 'no-answer'
+  | 'assistant-ended-call'
+  | 'unknown';
+
+// Normalize endedReason synonyms and verbose messages to canonical values
+export function normalizeEndedReason(
+  value?: string | null
+): EndedReasonNormalized {
+  const v = (value || '').toLowerCase().trim();
+
+  // Map explicit known values quickly
+  if (v === 'customer-ended-call') return 'customer-ended-call';
+  if (v === 'assistant-ended-call') return 'assistant-ended-call';
+  if (v === 'assistant-error' || v === 'error') return 'assistant-error';
+  if (v === 'no-answer' || v === 'customer-did-not-give-microphone-permission')
+    return 'no-answer';
+
+  // Pattern matches for verbose or provider-specific messages
+  // Prefer classifying as 'assistant-error' if 'error' appears anywhere
+  if (v.includes('error')) {
+    return 'assistant-error';
+  }
+  if (v.includes('did not give microphone') || v.includes('no answer')) {
+    return 'no-answer';
+  }
+  if (
+    v.includes('did not receive customer audio') ||
+    v.includes('no customer audio') ||
+    v.includes('microphone')
+  ) {
+    return 'no-answer';
+  }
+
+  return 'unknown';
+}
+
 // Memoized helper function to get sentiment badge
 export const getSentimentBadge = memo(
   ({ sentiment }: { sentiment?: string }) => {
@@ -144,7 +184,8 @@ export const getLeadQualityBadge = memo(
 getLeadQualityBadge.displayName = 'GetLeadQualityBadge';
 
 export const getStatusBadge = (endedReason: string) => {
-  switch (endedReason.toLowerCase()) {
+  const normalized = normalizeEndedReason(endedReason);
+  switch (normalized) {
     case 'customer-ended-call':
       return (
         <Badge variant="default" className="bg-green-100 text-green-800">
@@ -153,32 +194,34 @@ export const getStatusBadge = (endedReason: string) => {
         </Badge>
       );
     case 'assistant-error':
-    case 'error':
       return (
         <Badge variant="destructive">
           <XCircle className="mr-1 h-3 w-3" />
           Error
         </Badge>
       );
-    case 'customer-did-not-give-microphone-permission':
     case 'no-answer':
       return (
-        <Badge variant="secondary">
+        <Badge
+          variant="secondary"
+          className="bg-gray-100 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-700"
+        >
           <Phone className="mr-1 h-3 w-3" />
           No Answer
         </Badge>
       );
     case 'assistant-ended-call':
       return (
-        <Badge variant="outline">
+        <Badge
+          variant="secondary"
+          className="bg-sky-100 text-sky-800 hover:bg-sky-100 dark:bg-sky-800 dark:text-sky-100 dark:hover:bg-sky-800"
+        >
           <Phone className="mr-1 h-3 w-3" />
           Assistant Ended
         </Badge>
       );
     default:
-      return (
-        <Badge variant="secondary">{endedReason.replace(/-/g, ' ')}</Badge>
-      );
+      return <Badge variant="secondary">Unknown</Badge>;
   }
 };
 
