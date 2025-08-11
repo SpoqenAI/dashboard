@@ -8,6 +8,7 @@ import {
 } from '@/lib/vapi-assistant';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import defaults from '@/supabase/functions/_shared/vapi-assistant.defaults.json';
 
 // POST /api/vapi/assistant/fix-analysis-plan
 // Updates existing assistant with a simplified analysis plan that works
@@ -65,6 +66,8 @@ export async function POST(req: NextRequest) {
       // best-effort
     }
 
+    const modelDefaults = (defaults as any)?.model || {};
+
     const analysisUpdates = {
       analysisPlan: getStandardAnalysisPlan(),
       metadata: {
@@ -82,9 +85,17 @@ export async function POST(req: NextRequest) {
                   return hasEndCall ? tools : [{ type: 'endCall' }, ...tools];
                 })()
               : [{ type: 'endCall' }],
+            provider: modelDefaults.provider,
+            model: modelDefaults.model,
+            temperature: modelDefaults.temperature,
+            maxTokens: modelDefaults.maxTokens,
           }
         : {
             tools: [{ type: 'endCall' }],
+            provider: modelDefaults.provider,
+            model: modelDefaults.model,
+            temperature: modelDefaults.temperature,
+            maxTokens: modelDefaults.maxTokens,
           },
     } as any;
 

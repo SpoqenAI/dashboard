@@ -45,6 +45,7 @@ import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { inferMimeFromFilename, isAllowedMime } from '@/lib/file-validation';
 import dynamic from 'next/dynamic';
 import rawPlan from '@/supabase/functions/_shared/vapi-assistant.plan.json';
+import rawDefaults from '@/supabase/functions/_shared/vapi-assistant.defaults.json';
 import type { Plan } from '@/types/plan';
 const VapiWidget = dynamic(() => import('@/components/vapi-widget'), {
   ssr: false,
@@ -209,6 +210,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     plan: STANDARD_ANALYSIS_PLAN,
   } = rawPlan as Plan;
 
+  // Canonical model defaults (kept in sync with provisioning)
+  const DEFAULTS = (rawDefaults as any)?.model || {};
+
   // Utility: deep sort object keys for stable JSON comparison
   const deepSort = useCallback((value: unknown): unknown => {
     if (Array.isArray(value)) {
@@ -276,7 +280,24 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       typeof sysMsg === 'string' && sysMsg.includes(SENTINEL);
     const needsTerminationPolicy = !hasTerminationPolicy;
 
-    return needsPlanUpdate || needsEndCallTool || needsTerminationPolicy;
+    // Model drift checks: provider/model, temperature, maxTokens
+    const model = (assistantData as any)?.model || {};
+    const needsModelProvider = model?.provider !== DEFAULTS.provider;
+    const needsModelName = model?.model !== DEFAULTS.model;
+    const needsTemperature =
+      typeof model?.temperature !== 'number' || model.temperature !== DEFAULTS.temperature;
+    const needsMaxTokens =
+      typeof model?.maxTokens !== 'number' || model.maxTokens !== DEFAULTS.maxTokens;
+
+    return (
+      needsPlanUpdate ||
+      needsEndCallTool ||
+      needsTerminationPolicy ||
+      needsModelProvider ||
+      needsModelName ||
+      needsTemperature ||
+      needsMaxTokens
+    );
   }, [
     assistantData?.id,
     (assistantData as { analysisPlan?: unknown } | null)?.analysisPlan,
@@ -284,6 +305,10 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       ?.metadata?.analysisPlanVersion,
     (assistantData as any)?.model?.tools,
     (assistantData as any)?.model?.messages,
+    (assistantData as any)?.model?.provider,
+    (assistantData as any)?.model?.model,
+    (assistantData as any)?.model?.temperature,
+    (assistantData as any)?.model?.maxTokens,
     STANDARD_ANALYSIS_PLAN_VERSION,
     STANDARD_ANALYSIS_PLAN,
     deepSort,

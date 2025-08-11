@@ -51,6 +51,26 @@ async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
   }
 }
 
+// Load canonical model defaults (provider/model/temperature/maxTokens)
+let cachedDefaultsJson: any | null = null;
+async function getCanonicalDefaultsJson(): Promise<any | null> {
+  if (cachedDefaultsJson) return cachedDefaultsJson;
+  try {
+    const defaultsUrl = new URL(
+      '../_shared/vapi-assistant.defaults.json',
+      import.meta.url
+    );
+    const defaultsText = await Deno.readTextFile(defaultsUrl);
+    cachedDefaultsJson = JSON.parse(defaultsText);
+    return cachedDefaultsJson;
+  } catch (err) {
+    addBreadcrumb('Defaults load failed, proceeding with inline fallbacks', 'config', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
+}
+
 // DEBUG: Log whether SERVICE_ROLE_KEY is defined and its length (do not print the key itself)
 const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY');
 console.log(
@@ -286,14 +306,25 @@ Deno.serve(async (req: Request) => {
     // Call VAPI API to create assistant
     let vapiAssistantId;
     try {
+      const defaultsJson = await getCanonicalDefaultsJson();
+      const modelDefaults = (defaultsJson && defaultsJson.model) || {
+        provider: 'openai',
+        model: 'gpt-5-nano',
+        temperature: 1.1,
+        maxTokens: 10000,
+        emotionRecognitionEnabled: true,
+      };
+
       const assistantConfig: any = {
         name: email,
         model: {
-          provider: 'openai',
-          model: 'gpt-5-nano',
-          temperature: 1.1,
-          maxTokens: 10000,
-          emotionRecognitionEnabled: true,
+          provider: modelDefaults.provider,
+          model: modelDefaults.model,
+          temperature: modelDefaults.temperature,
+          maxTokens: modelDefaults.maxTokens,
+          ...(typeof modelDefaults.emotionRecognitionEnabled === 'boolean'
+            ? { emotionRecognitionEnabled: modelDefaults.emotionRecognitionEnabled }
+            : {}),
           // Ensure default tools include endCall so the assistant can hang up
           tools: [{ type: 'endCall' }],
           messages: [
