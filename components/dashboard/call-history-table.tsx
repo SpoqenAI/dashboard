@@ -506,7 +506,16 @@ export const CallHistoryTable = memo(
                               ? 'bg-blue-50 hover:bg-blue-100'
                               : 'hover:bg-muted/50'
                           }`}
+                          role="button"
+                          tabIndex={0}
+                          aria-selected={selectedCallId === call.id}
                           onClick={() => onCallSelect(call)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onCallSelect(call);
+                            }
+                          }}
                         >
                           <TableCell className="font-medium">
                             {call.phoneNumber?.number || 'Unknown'}

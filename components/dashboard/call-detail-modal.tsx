@@ -7,8 +7,8 @@ import { InfoTooltip } from '@/components/ui/info-tooltip';
 import {
   formatDateDetailed,
   formatDuration,
-  getSentimentBadge,
-  getLeadQualityBadge,
+  getSentimentBadge as GetSentimentBadge,
+  getLeadQualityBadge as GetLeadQualityBadge,
 } from './dashboard-helpers';
 import { VapiCall } from '@/lib/types';
 import {
@@ -63,9 +63,7 @@ export const CallDetailModal = memo(
     // Fallback flattened list for backward compatibility
     const keyPoints = ap?.keyPoints || call.analysis?.actionPoints || [];
 
-    // Assign memoized component to capitalized variable for JSX usage
-    const GetSentimentBadge = getSentimentBadge;
-    const GetLeadQualityBadge = getLeadQualityBadge;
+    // Use memoized helpers as components
 
     const DEFAULT_SENTIMENT_EXPLANATION =
       "This is calculated by Spoqen's state of the art AI configuration leveraging Claude Sonnet to analyze calls and generate sentiment insights based on conversation tone, language patterns, and customer responses.";

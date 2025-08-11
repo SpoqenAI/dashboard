@@ -10,7 +10,6 @@ import {
   PopoverTrigger,
   PopoverClose,
 } from '@/components/ui/popover';
-import { Select } from '@/components/ui/select';
 import { Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
@@ -77,10 +76,14 @@ interface DateRangeFilterProps extends BaseFilterProps {
   onChange: (startDate: Date | null, endDate: Date | null) => void;
 }
 
-// Base filter wrapper
-const FilterWrapper: React.FC<BaseFilterProps> = ({
+// Base filter wrapper (onClear is not used here, so not part of props)
+interface FilterWrapperProps {
+  isActive: boolean;
+  children?: React.ReactNode;
+}
+
+const FilterWrapper: React.FC<FilterWrapperProps> = ({
   isActive,
-  onClear,
   children,
 }) => (
   <Popover>
@@ -89,6 +92,12 @@ const FilterWrapper: React.FC<BaseFilterProps> = ({
         variant="ghost"
         size="sm"
         aria-pressed={isActive}
+        aria-label={
+          isActive ? 'Filter active — open to edit or clear' : 'Open filter'
+        }
+        title={
+          isActive ? 'Filter active — open to edit or clear' : 'Open filter'
+        }
         className={cn(
           'h-6 px-2 text-xs',
           isActive && 'bg-blue-100 text-blue-700 hover:bg-blue-200'
@@ -117,7 +126,7 @@ export const TextFilter: React.FC<TextFilterProps> = ({
   isActive,
   onClear,
 }) => (
-  <FilterWrapper isActive={isActive} onClear={onClear}>
+  <FilterWrapper isActive={isActive}>
     <div className="space-y-2">
       <Label className="text-xs font-medium">Filter by text</Label>
       <Input
@@ -152,7 +161,7 @@ export const RangeFilter: React.FC<RangeFilterProps> = ({
   isActive,
   onClear,
 }) => (
-  <FilterWrapper isActive={isActive} onClear={onClear}>
+  <FilterWrapper isActive={isActive}>
     <div className="space-y-2">
       <Label className="text-xs font-medium">
         Filter by range {unit && `(${unit})`}
@@ -205,7 +214,7 @@ export const DurationQuickFilter: React.FC<DurationQuickFilterProps> = ({
   const current = typeof min === 'number' ? Math.min(Math.max(min, 1), 120) : 1;
 
   return (
-    <FilterWrapper isActive={isActive} onClear={onClear}>
+    <FilterWrapper isActive={isActive}>
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label className="text-xs font-medium">Minimum duration</Label>
@@ -258,7 +267,7 @@ export const CostSliderFilter: React.FC<CostSliderFilterProps> = ({
       : minValue;
 
   return (
-    <FilterWrapper isActive={isActive} onClear={onClear}>
+    <FilterWrapper isActive={isActive}>
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label className="text-xs font-medium">Minimum cost</Label>
@@ -307,7 +316,7 @@ export const SelectFilter: React.FC<SelectFilterProps> = ({
   onClear,
   visualType,
 }) => (
-  <FilterWrapper isActive={isActive} onClear={onClear}>
+  <FilterWrapper isActive={isActive}>
     <div className="space-y-2">
       <Label className="text-xs font-medium">Filter by value</Label>
       <div className="flex flex-col gap-1">
@@ -411,16 +420,22 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   };
 
   return (
-    <FilterWrapper isActive={isActive} onClear={onClear}>
+    <FilterWrapper isActive={isActive}>
       <div className="space-y-2">
         <Label className="text-xs font-medium">Filter by date range</Label>
-        <div className="grid grid-cols-1 gap-1">
+        <div
+          className="grid grid-cols-1 gap-1"
+          role="radiogroup"
+          aria-label="Quick date range"
+        >
           {quickOptions.map(opt => (
             <Button
               key={opt.key}
               variant={isOptionSelected(opt.days) ? 'default' : 'ghost'}
               size="sm"
               className="h-7 justify-start text-xs"
+              role="radio"
+              aria-checked={isOptionSelected(opt.days)}
               onClick={() => applyDays(opt.days)}
             >
               {opt.label}

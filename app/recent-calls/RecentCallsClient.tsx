@@ -24,6 +24,7 @@ import { useCallUpdates } from '@/hooks/use-call-updates';
 import { toast } from '@/components/ui/use-toast';
 import * as Sentry from '@sentry/nextjs';
 import { VapiCall } from '@/lib/types';
+import { normalizeEndedReason } from '@/components/dashboard/dashboard-helpers';
 import { AlertCircle, ArrowUp } from 'lucide-react';
 import { CallDetailModal } from '@/components/dashboard/call-detail-modal';
 import { CallHistoryTable } from '@/components/dashboard/call-history-table';
@@ -109,6 +110,8 @@ const initialFilters: FilterState = {
     direction: 'desc',
   },
 };
+
+// Using shared normalizeEndedReason from dashboard-helpers for robust mapping
 
 function filterReducer(state: FilterState, action: FilterAction): FilterState {
   switch (action.type) {
@@ -550,9 +553,12 @@ export default function RecentCallsClient() {
       );
     }
 
-    // Status filter
+    // Status filter with synonym normalization
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(call => call.endedReason === statusFilter);
+      const target = normalizeEndedReason(statusFilter);
+      filtered = filtered.filter(
+        call => normalizeEndedReason(call.endedReason) === target
+      );
     }
 
     // Sorting

@@ -61,6 +61,43 @@ export const formatDateDetailed = (dateString: string): string => {
   });
 };
 
+// Normalize endedReason synonyms and verbose messages to canonical values
+export function normalizeEndedReason(
+  value?: string | null
+):
+  | 'customer-ended-call'
+  | 'assistant-error'
+  | 'no-answer'
+  | 'assistant-ended-call'
+  | 'unknown' {
+  const v = (value || '').toLowerCase().trim();
+
+  // Map explicit known values quickly
+  if (v === 'customer-ended-call') return 'customer-ended-call';
+  if (v === 'assistant-ended-call') return 'assistant-ended-call';
+  if (v === 'assistant-error' || v === 'error') return 'assistant-error';
+  if (v === 'no-answer' || v === 'customer-did-not-give-microphone-permission')
+    return 'no-answer';
+
+  // Pattern matches for verbose or provider-specific messages
+  // Prefer classifying as 'assistant-error' if 'error' appears anywhere
+  if (v.includes('error')) {
+    return 'assistant-error';
+  }
+  if (v.includes('did not give microphone') || v.includes('no answer')) {
+    return 'no-answer';
+  }
+  if (
+    v.includes('did not receive customer audio') ||
+    v.includes('no customer audio') ||
+    v.includes('microphone')
+  ) {
+    return 'no-answer';
+  }
+
+  return 'unknown';
+}
+
 // Memoized helper function to get sentiment badge
 export const getSentimentBadge = memo(
   ({ sentiment }: { sentiment?: string }) => {
@@ -144,7 +181,8 @@ export const getLeadQualityBadge = memo(
 getLeadQualityBadge.displayName = 'GetLeadQualityBadge';
 
 export const getStatusBadge = (endedReason: string) => {
-  switch (endedReason.toLowerCase()) {
+  const normalized = normalizeEndedReason(endedReason);
+  switch (normalized) {
     case 'customer-ended-call':
       return (
         <Badge variant="default" className="bg-green-100 text-green-800">
@@ -153,14 +191,12 @@ export const getStatusBadge = (endedReason: string) => {
         </Badge>
       );
     case 'assistant-error':
-    case 'error':
       return (
         <Badge variant="destructive">
           <XCircle className="mr-1 h-3 w-3" />
           Error
         </Badge>
       );
-    case 'customer-did-not-give-microphone-permission':
     case 'no-answer':
       return (
         <Badge
@@ -182,9 +218,7 @@ export const getStatusBadge = (endedReason: string) => {
         </Badge>
       );
     default:
-      return (
-        <Badge variant="secondary">{endedReason.replace(/-/g, ' ')}</Badge>
-      );
+      return <Badge variant="secondary">Unknown</Badge>;
   }
 };
 
