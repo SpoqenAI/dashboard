@@ -61,15 +61,18 @@ export const formatDateDetailed = (dateString: string): string => {
   });
 };
 
-// Normalize endedReason synonyms and verbose messages to canonical values
-export function normalizeEndedReason(
-  value?: string | null
-):
+// Canonical set of normalized ended reasons used across the app
+export type EndedReasonNormalized =
   | 'customer-ended-call'
   | 'assistant-error'
   | 'no-answer'
   | 'assistant-ended-call'
-  | 'unknown' {
+  | 'unknown';
+
+// Normalize endedReason synonyms and verbose messages to canonical values
+export function normalizeEndedReason(
+  value?: string | null
+): EndedReasonNormalized {
   const v = (value || '').toLowerCase().trim();
 
   // Map explicit known values quickly
@@ -201,7 +204,7 @@ export const getStatusBadge = (endedReason: string) => {
       return (
         <Badge
           variant="secondary"
-          className="bg-gray-100 text-gray-800 hover:bg-gray-100"
+          className="bg-gray-100 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-700"
         >
           <Phone className="mr-1 h-3 w-3" />
           No Answer
@@ -211,7 +214,7 @@ export const getStatusBadge = (endedReason: string) => {
       return (
         <Badge
           variant="secondary"
-          className="bg-sky-100 text-sky-800 hover:bg-sky-100"
+          className="bg-sky-100 text-sky-800 hover:bg-sky-100 dark:bg-sky-800 dark:text-sky-100 dark:hover:bg-sky-800"
         >
           <Phone className="mr-1 h-3 w-3" />
           Assistant Ended

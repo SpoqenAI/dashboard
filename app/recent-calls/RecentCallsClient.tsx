@@ -24,7 +24,10 @@ import { useCallUpdates } from '@/hooks/use-call-updates';
 import { toast } from '@/components/ui/use-toast';
 import * as Sentry from '@sentry/nextjs';
 import { VapiCall } from '@/lib/types';
-import { normalizeEndedReason } from '@/components/dashboard/dashboard-helpers';
+import {
+  normalizeEndedReason,
+  type EndedReasonNormalized,
+} from '@/components/dashboard/dashboard-helpers';
 import { AlertCircle, ArrowUp } from 'lucide-react';
 import { CallDetailModal } from '@/components/dashboard/call-detail-modal';
 import { CallHistoryTable } from '@/components/dashboard/call-history-table';
@@ -39,6 +42,8 @@ const { logger } = Sentry;
 const ITEMS_PER_PAGE = 20;
 
 // Enhanced filter state for individual column filtering
+type EndedReasonFilter = 'all' | EndedReasonNormalized;
+
 interface ColumnFilters {
   phoneNumber: string;
   dateRange: {
@@ -49,7 +54,7 @@ interface ColumnFilters {
     min: number | null;
     max: number | null;
   };
-  status: string;
+  status: EndedReasonFilter;
   sentiment: string;
   leadQuality: string;
   cost: {
@@ -74,7 +79,7 @@ type FilterAction =
   | { type: 'SET_PHONE_FILTER'; value: string }
   | { type: 'SET_DATE_RANGE'; startDate: Date | null; endDate: Date | null }
   | { type: 'SET_DURATION_RANGE'; min: number | null; max: number | null }
-  | { type: 'SET_STATUS_FILTER'; value: string }
+  | { type: 'SET_STATUS_FILTER'; value: EndedReasonFilter }
   | { type: 'SET_SENTIMENT_FILTER'; value: string }
   | { type: 'SET_LEAD_QUALITY_FILTER'; value: string }
   | { type: 'SET_COST_RANGE'; min: number | null; max: number | null }
@@ -476,11 +481,17 @@ export default function RecentCallsClient() {
 
   // Helper function to calculate call duration in seconds
   const getCallDurationInSeconds = useCallback((call: VapiCall): number => {
-    if (!call.startedAt || !call.endedAt) return 0;
-    return Math.round(
-      (new Date(call.endedAt).getTime() - new Date(call.startedAt).getTime()) /
-        1000
-    );
+    if (typeof call.durationSeconds === 'number') {
+      return Math.round(call.durationSeconds);
+    }
+    if (call.startedAt && call.endedAt) {
+      return Math.round(
+        (new Date(call.endedAt).getTime() -
+          new Date(call.startedAt).getTime()) /
+          1000
+      );
+    }
+    return 0;
   }, []);
 
   // Filtering, sorting & pagination
@@ -500,19 +511,22 @@ export default function RecentCallsClient() {
       }
     }
 
-    // Date range filter
+    // Date range filter (normalize start to start-of-day, end to end-of-day)
     if (dateRange.startDate || dateRange.endDate) {
+      const startOfDay = dateRange.startDate
+        ? new Date(dateRange.startDate)
+        : null;
+      if (startOfDay) startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = dateRange.endDate ? new Date(dateRange.endDate) : null;
+      if (endOfDay) endOfDay.setHours(23, 59, 59, 999);
+
       filtered = filtered.filter(call => {
         if (!call.startedAt) return false;
         const callDate = new Date(call.startedAt);
 
-        if (dateRange.startDate && callDate < dateRange.startDate) return false;
-        if (dateRange.endDate) {
-          // Set end date to end of day for inclusive filtering
-          const endOfDay = new Date(dateRange.endDate);
-          endOfDay.setHours(23, 59, 59, 999);
-          if (callDate > endOfDay) return false;
-        }
+        if (startOfDay && callDate < startOfDay) return false;
+        if (endOfDay && callDate > endOfDay) return false;
         return true;
       });
     }
@@ -569,8 +583,8 @@ export default function RecentCallsClient() {
 
         switch (sort.column) {
           case 'phoneNumber':
-            aValue = a.phoneNumber?.number || '';
-            bValue = b.phoneNumber?.number || '';
+            aValue = normalizePhoneDigits(a.phoneNumber?.number || '');
+            bValue = normalizePhoneDigits(b.phoneNumber?.number || '');
             break;
           case 'startedAt':
           case 'createdAt':
@@ -587,8 +601,8 @@ export default function RecentCallsClient() {
             bValue = b.cost || 0;
             break;
           case 'endedReason':
-            aValue = a.endedReason || '';
-            bValue = b.endedReason || '';
+            aValue = normalizeEndedReason(a.endedReason || '');
+            bValue = normalizeEndedReason(b.endedReason || '');
             break;
           default:
             if (sort.column && sort.column in a) {
@@ -672,7 +686,14 @@ export default function RecentCallsClient() {
     dispatchFilters({ type: 'SET_LEAD_QUALITY_FILTER', value: v });
 
   const handleStatusFilterChange = (v: string) =>
-    dispatchFilters({ type: 'SET_STATUS_FILTER', value: v });
+    dispatchFilters({
+      type: 'SET_STATUS_FILTER',
+      value: (v === 'all'
+        ? 'all'
+        : (normalizeEndedReason(
+            v
+          ) as EndedReasonNormalized)) as EndedReasonFilter,
+    });
 
   // Sorting handler
   const handleSortChange = (
