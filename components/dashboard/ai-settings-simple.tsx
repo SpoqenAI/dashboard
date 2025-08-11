@@ -190,6 +190,19 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     []
   );
 
+  // Hide developer-only termination policy from UI by stripping sentinel content
+  const stripTerminationPolicy = useCallback(
+    (content: string | undefined | null) => {
+      if (typeof content !== 'string') return content || '';
+      const SENTINEL = 'BEGIN_TERMINATION_POLICY v1';
+      const idx = content.indexOf(SENTINEL);
+      if (idx === -1) return content;
+      // Trim trailing whitespace/newlines before sentinel so UI only shows user-editable portion
+      return content.slice(0, idx).trimEnd();
+    },
+    []
+  );
+
   // Canonical analysis plan and version
   const {
     version: STANDARD_ANALYSIS_PLAN_VERSION,
@@ -213,37 +226,64 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     return value;
   }, []);
 
-  // Determine if assistant needs system updates (analysis plan out of date/missing)
+  // Determine if assistant needs system updates
+  // Criteria:
+  // 1) Analysis plan missing/out-of-date or structurally different
+  // 2) Default endCall tool missing
+  // 3) Termination policy sentinel missing in system prompt
   const shouldShowPullSystemUpdates = useMemo(() => {
     if (!assistantData?.id) return false;
+
     const assistantPlan = (assistantData as { analysisPlan?: unknown } | null)
       ?.analysisPlan;
     const assistantVersion = (
       assistantData as { metadata?: { analysisPlanVersion?: string } } | null
     )?.metadata?.analysisPlanVersion;
 
-    // If no plan or version mismatch, updates are needed
-    if (!assistantPlan) return true;
+    // Plan/version checks
+    let needsPlanUpdate = false;
+    if (!assistantPlan) needsPlanUpdate = true;
     if (
       !assistantVersion ||
       assistantVersion !== STANDARD_ANALYSIS_PLAN_VERSION
-    )
-      return true;
-
-    // Compare plans structurally
-    try {
-      const a = JSON.stringify(deepSort(assistantPlan));
-      const b = JSON.stringify(deepSort(STANDARD_ANALYSIS_PLAN));
-      return a !== b;
-    } catch {
-      // If comparison fails for any reason, be conservative and show the button
-      return true;
+    ) {
+      needsPlanUpdate = true;
     }
+    if (!needsPlanUpdate) {
+      try {
+        const a = JSON.stringify(deepSort(assistantPlan));
+        const b = JSON.stringify(deepSort(STANDARD_ANALYSIS_PLAN));
+        if (a !== b) needsPlanUpdate = true;
+      } catch {
+        // If comparison fails for any reason, be conservative
+        needsPlanUpdate = true;
+      }
+    }
+
+    // Tool check: require default endCall tool
+    const tools = (assistantData as any)?.model?.tools;
+    const hasEndCallTool = Array.isArray(tools)
+      ? tools.some((t: any) => t?.type === 'endCall')
+      : false;
+    const needsEndCallTool = !hasEndCallTool;
+
+    // Termination policy sentinel check in system prompt
+    const SENTINEL = 'BEGIN_TERMINATION_POLICY v1';
+    const sysMsg = (assistantData as any)?.model?.messages?.find(
+      (m: any) => m?.role === 'system'
+    )?.content;
+    const hasTerminationPolicy =
+      typeof sysMsg === 'string' && sysMsg.includes(SENTINEL);
+    const needsTerminationPolicy = !hasTerminationPolicy;
+
+    return needsPlanUpdate || needsEndCallTool || needsTerminationPolicy;
   }, [
     assistantData?.id,
     (assistantData as { analysisPlan?: unknown } | null)?.analysisPlan,
     (assistantData as { metadata?: { analysisPlanVersion?: string } } | null)
       ?.metadata?.analysisPlanVersion,
+    (assistantData as any)?.model?.tools,
+    (assistantData as any)?.model?.messages,
     STANDARD_ANALYSIS_PLAN_VERSION,
     STANDARD_ANALYSIS_PLAN,
     deepSort,
@@ -353,7 +393,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       const systemMessage = assistantData.model?.messages?.find(
         (msg: any) => msg.role === 'system'
       );
-      const newSystemPrompt = systemMessage?.content || DEFAULT_SYSTEM_PROMPT;
+      const newSystemPrompt = stripTerminationPolicy(
+        systemMessage?.content || DEFAULT_SYSTEM_PROMPT
+      );
       const newVoice = assistantData.voice?.voiceId || '';
 
       setFirstMessage(newFirstMessage);
@@ -602,8 +644,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
             const systemMessage = assistant.model?.messages?.find(
               (msg: any) => msg.role === 'system'
             );
-            const newSystemPrompt =
-              systemMessage?.content || DEFAULT_SYSTEM_PROMPT;
+            const newSystemPrompt = stripTerminationPolicy(
+              systemMessage?.content || DEFAULT_SYSTEM_PROMPT
+            );
             const newVoice = assistant.voice?.voiceId || '';
 
             setFirstMessage(newFirstMessage);
@@ -625,7 +668,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         const systemMessage = refreshedData.model?.messages?.find(
           (msg: any) => msg.role === 'system'
         );
-        const newSystemPrompt = systemMessage?.content || DEFAULT_SYSTEM_PROMPT;
+        const newSystemPrompt = stripTerminationPolicy(
+          systemMessage?.content || DEFAULT_SYSTEM_PROMPT
+        );
         const newVoice = refreshedData.voice?.voiceId || '';
 
         setFirstMessage(newFirstMessage);

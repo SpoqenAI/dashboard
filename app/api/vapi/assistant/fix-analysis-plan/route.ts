@@ -41,13 +41,52 @@ export async function POST(req: NextRequest) {
     // Preserve existing metadata and set analysisPlanVersion for traceability
     const assistantInfo = await getUserAssistantInfo(supabase);
     const existingMetadata = assistantInfo.data?.metadata || {};
+
+    // Merge a conservative termination policy into existing system message if missing
+    const SENTINEL = 'BEGIN_TERMINATION_POLICY v1';
+    let updatedMessages = assistantInfo.data?.model?.messages || [];
+    try {
+      const sys = updatedMessages.find((m: any) => m?.role === 'system');
+      if (
+        sys &&
+        typeof sys.content === 'string' &&
+        !sys.content.includes(SENTINEL)
+      ) {
+        const policy = `\n\n${SENTINEL}\n\nTermination policy (be extremely conservative):\n- Only end the call if absolutely necessary. Prefer redirecting or taking a message.\n- Acceptable reasons to end the call:\n  1) Persistent off-topic conversation after two clarifying attempts\n  2) Harassment, abusive language, or clear spam/robocall indicators\n  3) Repeated refusal to provide a purpose for the call\n- Before ending:\n  - Give one brief, polite warning: "I can help when it’s about our work. Should I take a message instead?"\n  - If still off the rails, say a short closing line and end the call.\n- Closing line guideline (keep it short):\n  "Thanks for calling. I’ll let the team know you reached out. Goodbye."\n\nWhen you choose to end the call, do it decisively after the closing line.`;
+        const newSys = {
+          ...sys,
+          content: `${sys.content.trim()}\n\n${policy}`,
+        };
+        updatedMessages = updatedMessages.map((m: any) =>
+          m === sys ? newSys : m
+        );
+      }
+    } catch (_) {
+      // best-effort
+    }
+
     const analysisUpdates = {
       analysisPlan: getStandardAnalysisPlan(),
       metadata: {
         ...existingMetadata,
         analysisPlanVersion: getAnalysisPlanVersion(),
       },
-    };
+      model: assistantInfo.data?.model
+        ? {
+            ...assistantInfo.data.model,
+            messages: updatedMessages,
+            tools: Array.isArray(assistantInfo.data?.model?.tools)
+              ? (() => {
+                  const tools = [...(assistantInfo.data.model.tools as any[])];
+                  const hasEndCall = tools.some(t => t?.type === 'endCall');
+                  return hasEndCall ? tools : [{ type: 'endCall' }, ...tools];
+                })()
+              : [{ type: 'endCall' }],
+          }
+        : {
+            tools: [{ type: 'endCall' }],
+          },
+    } as any;
 
     // Use user-scoped function to update the assistant
     const result = await updateUserAssistant(

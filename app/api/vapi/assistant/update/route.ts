@@ -32,6 +32,8 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Use user-scoped function that handles authentication and ownership verification internally
+    // Do not accept system prompt edits here; system prompt is managed via settings sync
+    // and the developer-only termination policy is appended server-side.
     const result = await updateUserAssistant(supabase, assistantId, payload);
 
     if (result.error) {
