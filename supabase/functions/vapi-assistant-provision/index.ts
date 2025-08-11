@@ -40,14 +40,25 @@ async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
     cachedAnalysisPlanJson = JSON.parse(planText);
     return cachedAnalysisPlanJson;
   } catch (err) {
-    addBreadcrumb(
-      'Analysis plan load failed, proceeding without plan',
-      'config',
-      {
-        error: err instanceof Error ? err.message : String(err),
-      }
-    );
-    return null;
+    // Fallback: try local file inside function directory
+    try {
+      const planUrlLocal = new URL(
+        './vapi-assistant.plan.json',
+        import.meta.url
+      );
+      const planTextLocal = await Deno.readTextFile(planUrlLocal);
+      cachedAnalysisPlanJson = JSON.parse(planTextLocal);
+      return cachedAnalysisPlanJson;
+    } catch (err2) {
+      addBreadcrumb(
+        'Analysis plan load failed, proceeding without plan',
+        'config',
+        {
+          error: err2 instanceof Error ? err2.message : String(err2),
+        }
+      );
+      return null;
+    }
   }
 }
 
@@ -64,10 +75,21 @@ async function getCanonicalDefaultsJson(): Promise<any | null> {
     cachedDefaultsJson = JSON.parse(defaultsText);
     return cachedDefaultsJson;
   } catch (err) {
-    addBreadcrumb('Defaults load failed, proceeding with inline fallbacks', 'config', {
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return null;
+    // Fallback: try local file inside function directory
+    try {
+      const defaultsUrlLocal = new URL(
+        './vapi-assistant.defaults.json',
+        import.meta.url
+      );
+      const defaultsTextLocal = await Deno.readTextFile(defaultsUrlLocal);
+      cachedDefaultsJson = JSON.parse(defaultsTextLocal);
+      return cachedDefaultsJson;
+    } catch (err2) {
+      addBreadcrumb('Defaults load failed, proceeding with inline fallbacks', 'config', {
+        error: err2 instanceof Error ? err2.message : String(err2),
+      });
+      return null;
+    }
   }
 }
 
