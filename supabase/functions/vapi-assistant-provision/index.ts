@@ -85,9 +85,13 @@ async function getCanonicalDefaultsJson(): Promise<any | null> {
       cachedDefaultsJson = JSON.parse(defaultsTextLocal);
       return cachedDefaultsJson;
     } catch (err2) {
-      addBreadcrumb('Defaults load failed, proceeding with inline fallbacks', 'config', {
-        error: err2 instanceof Error ? err2.message : String(err2),
-      });
+      addBreadcrumb(
+        'Defaults load failed, proceeding with inline fallbacks',
+        'config',
+        {
+          error: err2 instanceof Error ? err2.message : String(err2),
+        }
+      );
       return null;
     }
   }
@@ -345,7 +349,10 @@ Deno.serve(async (req: Request) => {
           temperature: modelDefaults.temperature,
           maxTokens: modelDefaults.maxTokens,
           ...(typeof modelDefaults.emotionRecognitionEnabled === 'boolean'
-            ? { emotionRecognitionEnabled: modelDefaults.emotionRecognitionEnabled }
+            ? {
+                emotionRecognitionEnabled:
+                  modelDefaults.emotionRecognitionEnabled,
+              }
             : {}),
           // Ensure default tools include endCall so the assistant can hang up
           tools: [{ type: 'endCall' }],

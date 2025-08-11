@@ -285,9 +285,11 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     const needsModelProvider = model?.provider !== DEFAULTS.provider;
     const needsModelName = model?.model !== DEFAULTS.model;
     const needsTemperature =
-      typeof model?.temperature !== 'number' || model.temperature !== DEFAULTS.temperature;
+      typeof model?.temperature !== 'number' ||
+      model.temperature !== DEFAULTS.temperature;
     const needsMaxTokens =
-      typeof model?.maxTokens !== 'number' || model.maxTokens !== DEFAULTS.maxTokens;
+      typeof model?.maxTokens !== 'number' ||
+      model.maxTokens !== DEFAULTS.maxTokens;
 
     return (
       needsPlanUpdate ||
