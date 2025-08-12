@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     const existingMetadata = assistantInfo.data?.metadata || {};
 
     // Merge a conservative termination policy into existing system message if missing
-    let updatedMessages = assistantInfo.data?.model?.messages || [];
+    const updatedMessages = assistantInfo.data?.model?.messages || [];
     try {
       const { ensureTerminationPolicyAppended } = await import(
         '@/lib/vapi/termination-policy'
