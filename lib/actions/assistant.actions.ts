@@ -302,7 +302,10 @@ export async function syncVapiAssistant(
     // Merge a conservative termination policy into the existing system message
     let mergedSystemMessage = greeting;
     try {
-      mergedSystemMessage = ensureTerminationPolicyAppended(greeting, 'the team');
+      mergedSystemMessage = ensureTerminationPolicyAppended(
+        greeting,
+        'the team'
+      );
     } catch (_) {
       // Non-fatal; proceed with original greeting
     }

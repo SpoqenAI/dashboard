@@ -307,7 +307,8 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       (m: any) => m?.role === 'system'
     )?.content;
     const hasTerminationPolicy =
-      typeof sysMsg === 'string' && sysMsg.includes(TERMINATION_POLICY_SENTINEL);
+      typeof sysMsg === 'string' &&
+      sysMsg.includes(TERMINATION_POLICY_SENTINEL);
     const needsTerminationPolicy = !hasTerminationPolicy;
 
     // Model drift checks: provider/model, temperature, maxTokens
@@ -368,16 +369,23 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       ),
       voiceId: assistantData.voice?.voiceId || '',
     };
-  }, [assistantData, DEFAULT_FIRST_MESSAGE, DEFAULT_SYSTEM_PROMPT, stripTerminationPolicy]);
+  }, [
+    assistantData,
+    DEFAULT_FIRST_MESSAGE,
+    DEFAULT_SYSTEM_PROMPT,
+    stripTerminationPolicy,
+  ]);
 
   // Memoized unsaved changes detection
   const hasUnsavedChanges = useMemo(() => {
     if (isLoading || !hasInitialized) return false;
     const normalize = (v: string) => v.replace(/\r\n/g, '\n').trim();
     const firstMessageChanged =
-      normalize(debouncedFirstMessage) !== normalize(originalValues.firstMessage);
+      normalize(debouncedFirstMessage) !==
+      normalize(originalValues.firstMessage);
     const systemPromptChanged =
-      normalize(debouncedSystemPrompt) !== normalize(originalValues.systemPrompt);
+      normalize(debouncedSystemPrompt) !==
+      normalize(originalValues.systemPrompt);
     const voiceChanged = voiceId !== originalValues.voiceId;
     return firstMessageChanged || systemPromptChanged || voiceChanged;
   }, [

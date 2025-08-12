@@ -23,7 +23,7 @@ When you choose to end the call, do it decisively after the closing line.`;
 /**
  * Renders the termination policy with the provided display name substituted.
  * This helper centralizes the substitution logic and makes unit testing easier.
- * 
+ *
  * @param displayName - The name to substitute in the policy text
  * @returns The rendered termination policy text with substitutions applied
  */
