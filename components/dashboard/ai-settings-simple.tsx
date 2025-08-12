@@ -312,15 +312,25 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     const needsTerminationPolicy = !hasTerminationPolicy;
 
     // Model drift checks: provider/model, temperature, maxTokens
+    // Guard against empty DEFAULTS (when rawDefaults is missing) to avoid false positives
     const model = (assistantData as any)?.model || {};
-    const needsModelProvider = model?.provider !== DEFAULTS.provider;
-    const needsModelName = model?.model !== DEFAULTS.model;
+    const hasDefaults = Object.keys(DEFAULTS).length > 0;
+    const needsModelProvider =
+      hasDefaults && DEFAULTS.provider !== undefined
+        ? model?.provider !== DEFAULTS.provider
+        : false;
+    const needsModelName =
+      hasDefaults && DEFAULTS.model !== undefined
+        ? model?.model !== DEFAULTS.model
+        : false;
     const needsTemperature =
-      typeof model?.temperature !== 'number' ||
-      model.temperature !== DEFAULTS.temperature;
+      hasDefaults && typeof DEFAULTS.temperature === 'number'
+        ? model?.temperature !== DEFAULTS.temperature
+        : false;
     const needsMaxTokens =
-      typeof model?.maxTokens !== 'number' ||
-      model.maxTokens !== DEFAULTS.maxTokens;
+      hasDefaults && typeof DEFAULTS.maxTokens === 'number'
+        ? model?.maxTokens !== DEFAULTS.maxTokens
+        : false;
 
     return (
       needsPlanUpdate ||
@@ -344,6 +354,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     (assistantData as any)?.model?.maxTokens,
     STANDARD_ANALYSIS_PLAN_VERSION,
     STANDARD_ANALYSIS_PLAN,
+    DEFAULTS,
     deepSort,
   ]);
 
@@ -629,7 +640,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         aiAssistantName: assistantData?.name || 'AI Assistant', // Preserve the actual assistant name
         yourName: profile?.full_name || '',
         businessName: profile?.business_name || '',
-        greetingScript: systemPrompt.trim(),
+        greetingScript: stripTerminationPolicy(systemPrompt).trim(),
       };
       if (voiceId !== originalValues.voiceId) {
         aiSettingsPayload.voiceId = voiceId;
@@ -648,7 +659,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         const systemMessage = refreshedData.model?.messages?.find(
           (msg: any) => msg.role === 'system'
         );
-        const newSystemPrompt = systemMessage?.content || systemPrompt.trim();
+        const newSystemPrompt = stripTerminationPolicy(
+          systemMessage?.content || systemPrompt.trim()
+        );
 
         setFirstMessage(newFirstMessage);
         setSystemPrompt(newSystemPrompt);

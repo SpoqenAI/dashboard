@@ -56,7 +56,7 @@ export function validateAssistantId(assistantId: string): boolean {
     return false;
   }
 
-  // Check for common SSRF attack patterns
+  // Check for common SSRF attack patterns and unsafe characters
   const ssrfPatterns = [
     /:\/\//, // Protocol separators (http://, https://, etc.)
     /localhost/i, // Localhost references
@@ -67,6 +67,7 @@ export function validateAssistantId(assistantId: string): boolean {
     /[<>"']/, // HTML/XML injection attempts
     /\s/, // Whitespace characters
     /[^\x20-\x7E]/, // Non-printable ASCII characters
+    /[\/#\?]/, // URL path/query/fragment separators
   ];
 
   for (const pattern of ssrfPatterns) {
@@ -81,26 +82,22 @@ export function validateAssistantId(assistantId: string): boolean {
     }
   }
 
-  // VAPI assistant IDs are typically alphanumeric with dashes/underscores
-  // This regex is more restrictive and explicit about allowed characters
-  // Only allows lowercase letters, numbers, dashes, and underscores
-  // Length between 8 and 64 characters
-  const isValidAssistantId = /^[a-z0-9\-_]{8,64}$/.test(trimmedId);
+  // Use a conservative length check without assuming naming convention
+  const minLength = 8;
+  const maxLength = 64;
+  const lengthOk =
+    trimmedId.length >= minLength && trimmedId.length <= maxLength;
 
-  if (!isValidAssistantId) {
+  if (!lengthOk) {
     logger.error(
       'VAPI_ASSISTANT_SECURITY',
-      'Invalid assistantId format detected - potential SSRF attempt',
-      new Error(`Rejected assistantId: ${trimmedId}`),
-      {
-        assistantId: trimmedId,
-        length: trimmedId.length,
-        allowedPattern: 'a-z, 0-9, -, _ (8-64 chars)',
-      }
+      'assistantId failed length constraints',
+      new Error(`Rejected assistantId length: ${trimmedId.length}`),
+      { assistantId: trimmedId, minLength, maxLength }
     );
   }
 
-  return isValidAssistantId;
+  return lengthOk;
 }
 
 /**
@@ -129,7 +126,7 @@ export function constructSafeVapiUrl(
 
   // Construct the URL with explicit validation
   const baseUrl = 'https://api.vapi.ai/assistant';
-  const safeUrl = `${baseUrl}/${assistantId}${safeEndpoint}`;
+  const safeUrl = `${baseUrl}/${encodeURIComponent(assistantId)}${safeEndpoint}`;
 
   // Additional safety check: ensure the URL doesn't contain any suspicious patterns
   if (safeUrl.includes('://') && !safeUrl.startsWith('https://api.vapi.ai/')) {

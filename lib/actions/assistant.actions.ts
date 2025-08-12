@@ -14,7 +14,10 @@ import {
   getStandardAnalysisPlan,
   getAnalysisPlanVersion,
 } from '@/lib/vapi-assistant';
-import { ensureTerminationPolicyAppended } from '@/lib/vapi/termination-policy';
+import {
+  ensureTerminationPolicyAppended,
+  TERMINATION_DISPLAY_NAME_FALLBACK,
+} from '@/lib/vapi/termination-policy';
 
 /**
  * Safely constructs a VAPI assistant URL with validated assistantId
@@ -304,7 +307,7 @@ export async function syncVapiAssistant(
     try {
       mergedSystemMessage = ensureTerminationPolicyAppended(
         greeting,
-        'the team'
+        TERMINATION_DISPLAY_NAME_FALLBACK
       );
     } catch (_) {
       // Non-fatal; proceed with original greeting

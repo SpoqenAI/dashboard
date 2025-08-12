@@ -27,6 +27,11 @@ import {
   setTag,
   startTransaction,
 } from '../_shared/sentry.ts';
+import {
+  ensureTerminationPolicyAppended,
+  TERMINATION_POLICY_SENTINEL,
+  TERMINATION_DISPLAY_NAME_FALLBACK,
+} from '../_shared/termination-policy.ts';
 // Load canonical analysis plan without static JSON import assertions (Biome-safe, Deno-friendly)
 let cachedAnalysisPlanJson: any | null = null;
 async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
@@ -97,14 +102,16 @@ async function getCanonicalDefaultsJson(): Promise<any | null> {
   }
 }
 
-// DEBUG: Log whether SERVICE_ROLE_KEY is defined and its length (do not print the key itself)
+// Only log service role info when DEBUG_PROVISION=1
 const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY');
-console.log(
-  '[DEBUG] SERVICE_ROLE_KEY defined:',
-  !!serviceRoleKey,
-  '| Length:',
-  serviceRoleKey?.length ?? 0
-);
+if (Deno.env.get('DEBUG_PROVISION') === '1') {
+  console.log(
+    '[DEBUG] SERVICE_ROLE_KEY defined:',
+    !!serviceRoleKey,
+    '| Length:',
+    serviceRoleKey?.length ?? 0
+  );
+}
 
 // Initialize Sentry at the top level
 initSentry();
@@ -115,14 +122,16 @@ const VAPI_API_KEY = globalThis.Deno.env.get('VAPI_PRIVATE_KEY');
 const VAPI_WEBHOOK_SECRET = globalThis.Deno.env.get('VAPI_WEBHOOK_SECRET');
 const WEBHOOK_SECRET = globalThis.Deno.env.get('WEBHOOK_SECRET');
 
-// For debugging
-console.log('[DEBUG] Environment variables check:', {
-  SUPABASE_URL: !!SUPABASE_URL,
-  SERVICE_ROLE_KEY: !!SERVICE_ROLE_KEY,
-  VAPI_PRIVATE_KEY: !!VAPI_API_KEY,
-  VAPI_WEBHOOK_SECRET: !!VAPI_WEBHOOK_SECRET,
-  WEBHOOK_SECRET: !!WEBHOOK_SECRET,
-});
+// For debugging (flagged)
+if (Deno.env.get('DEBUG_PROVISION') === '1') {
+  console.log('[DEBUG] Environment variables check:', {
+    SUPABASE_URL: !!SUPABASE_URL,
+    SERVICE_ROLE_KEY: !!SERVICE_ROLE_KEY,
+    VAPI_PRIVATE_KEY: !!VAPI_API_KEY,
+    VAPI_WEBHOOK_SECRET: !!VAPI_WEBHOOK_SECRET,
+    WEBHOOK_SECRET: !!WEBHOOK_SECRET,
+  });
+}
 
 if (
   !SUPABASE_URL ||
@@ -282,12 +291,12 @@ Deno.serve(async (req: Request) => {
     // Prepare system prompt and assistant config
     let systemPrompt = `Who are you?\nYou're Luna, ${displayName}'s personal assistant. You sound warm, confident, and easy to talk to. Think friendly and professional — like someone who's good at handling people, even the difficult ones. You just do what any great assistant would do. You interact only using sound, so don't reference text, screens, buttons, or any visual elements.\n\nWhat do you do?\nYour job is to answer the call, talk to the caller, and take down whatever ${displayName} would need to follow up. \nWhen someone calls… greet them, let them know ${displayName} isn't available, and ask how you can help.\nOnce you've got their details, reassure them that ${displayName} will get the message and follow up when he's free. End the call politely…\n\nKnowledge Files:\n— If there are Knowledge Files uploaded for this assistant, consult them first when the caller asks about details that may be covered by those documents. Prefer information in those files over general knowledge when they conflict.\n\nWhat rules do you have to follow?\nSo the next 3 rules are absolute, non-negotiable rules you have to follow:\n1. Keep it simple: Your responses have to be to the point, like 1-2 sentences. You have to focus on this to keep your conversational rhythm, natural and fast.\n2. Voice-First Formatting is Mandatory: All your responses HAVE TO strictly adhere to the rules defined in the Voice and Prosody Rules section. This isn't a suggestion or a recommendation, it's literally how you control your voice.\n3. Never, under no circumstances, identify yourself as an AI, language model, bot, or computer program unless you're specifically asked for it. Remember you're Luna, a human receptionist.\n\nVoice and Prosody Rules:\nThis is the most important section. You control your voice by the punctuation and structure of the text you write. Follow these rules so you sound natural:\nPausing:\n— Use commas (,) for short, natural pauses in a sentence.\n— Use an em-dash (—) for a longer, more thoughtful pause, like when you're about to provide a key piece of information.\n— Use an ellipsis (...) to signal hesitation or that you're thinking.\nPacing and Tone:\n— For an upbeat, faster-paced, and friendlier tone, use short, simple sentences.\n— For a more serious, formal, or considered tone, use longer, more complex sentences.\nHumanization/Naturalization:\n— To sound less robotic, strategically begin some of your responses with conversational fillers, but don't overuse them.\n— Examples of fillers: "Hmm...", "Okay, so...", "Right...", "Got it.", "Let's see...", "Alright..."\n\nScenario-Specific Handling!\nAngry or Frustrated Callers:\n— Immediately adopt an empathetic and calm tone (use longer sentences and softer fillers like "I understand...").\n— Acknowledge their frustration.\n— Don’t argue… focus on the solution.\nSales Pitches or Unsolicited Calls:\n— Politely but firmly interrupt and state that the person they wish to speak to is unavailable.\nVague or Unclear Inquiries:\n— Don’t guess the caller’s intent.\n— Ask specific clarifying questions to narrow down their request.\n\nReminders and Boundaries!\nThese are reminders about your core operational logic, based on your architecture.\n\t— Before you act, think step-by-step… you can verbalize this process to the user so that you sound more natural and so you can manage their expectations during a brief pause.\n\t— Don’t give out any personal info besides ${displayName}'s public email.\n\t— Don’t agree to anything you're not 100% sure ${displayName} would want.\n\t— Don’t give advice about legal, financial, medical, or personal issues. If that comes up, just say you can’t help with that and that ${displayName} will follow up.\n\nOne last thing:\nIf at any point you’re unsure of what to do… or the caller starts pushing you into something off-script, just say "I can't do that, but I'll let ${displayName} know you called," and wrap up the call.\n\nThat's it. Be helpful, be normal, be you and keep it real. You got this.`;
 
-    // Append conservative termination policy
+    // Append conservative termination policy (idempotent)
     try {
-      const policy = `\n\nBEGIN_TERMINATION_POLICY v1\n\nTermination policy (be extremely conservative):\n- Only end the call if absolutely necessary. Prefer redirecting or taking a message.\n- Acceptable reasons to end the call:\n  1) Persistent off-topic conversation after two clarifying attempts\n  2) Harassment, abusive language, or clear spam/robocall indicators\n  3) Repeated refusal to provide a purpose for the call\n- Before ending:\n  - Give one brief, polite warning: "I can help when it’s about ${displayName}'s work. Should I take a message instead?"\n  - If still off the rails, say a short closing line and end the call.\n- Closing line guideline (keep it short):\n  "Thanks for calling. I’ll let ${displayName} know you reached out. Goodbye."\n\nWhen you choose to end the call, do it decisively after the closing line.`;
-      if (!systemPrompt.includes('BEGIN_TERMINATION_POLICY v1')) {
-        systemPrompt = `${systemPrompt}\n\n${policy}`;
-      }
+      systemPrompt = ensureTerminationPolicyAppended(
+        systemPrompt,
+        displayName || TERMINATION_DISPLAY_NAME_FALLBACK
+      );
     } catch (_) {
       // Non-fatal; provisioning proceeds without policy if unexpected error
     }
@@ -496,7 +505,10 @@ Deno.serve(async (req: Request) => {
           operation: 'create_vapi_assistant',
           user_id,
           vapi_status: vapiRes.status,
-          vapi_response: vapiResText,
+          vapi_response:
+            typeof vapiResText === 'string'
+              ? vapiResText.slice(0, 1000)
+              : String(vapiResText).slice(0, 1000),
         });
 
         // Update status to failed

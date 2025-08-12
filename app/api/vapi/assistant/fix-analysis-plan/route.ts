@@ -46,9 +46,10 @@ export async function POST(req: NextRequest) {
     // Merge a conservative termination policy into existing system message if missing
     const updatedMessages = assistantInfo.data?.model?.messages || [];
     try {
-      const { ensureTerminationPolicyAppended } = await import(
-        '@/lib/vapi/termination-policy'
-      );
+      const {
+        ensureTerminationPolicyAppended,
+        TERMINATION_DISPLAY_NAME_FALLBACK,
+      } = await import('@/lib/vapi/termination-policy');
       const sysIdx = updatedMessages.findIndex(
         (m: any) => m?.role === 'system'
       );
@@ -60,7 +61,10 @@ export async function POST(req: NextRequest) {
             : String(sys.content ?? '');
         updatedMessages[sysIdx] = {
           ...sys,
-          content: ensureTerminationPolicyAppended(content, 'the team'),
+          content: ensureTerminationPolicyAppended(
+            content,
+            TERMINATION_DISPLAY_NAME_FALLBACK
+          ),
         };
       }
     } catch {
@@ -75,32 +79,22 @@ export async function POST(req: NextRequest) {
         ...existingMetadata,
         analysisPlanVersion: getAnalysisPlanVersion(),
       },
-      model: assistantInfo.data?.model
-        ? {
-            ...assistantInfo.data.model,
-            messages: updatedMessages,
-            tools: Array.isArray(assistantInfo.data?.model?.tools)
-              ? (() => {
-                  const tools = [...(assistantInfo.data.model.tools as any[])];
-                  const hasEndCall = tools.some(t => t?.type === 'endCall');
-                  return hasEndCall ? tools : [{ type: 'endCall' }, ...tools];
-                })()
-              : [{ type: 'endCall' }],
-            provider:
-              assistantInfo.data.model.provider ?? modelDefaults.provider,
-            model: assistantInfo.data.model.model ?? modelDefaults.model,
-            temperature:
-              assistantInfo.data.model.temperature ?? modelDefaults.temperature,
-            maxTokens:
-              assistantInfo.data.model.maxTokens ?? modelDefaults.maxTokens,
-          }
-        : {
-            tools: [{ type: 'endCall' }],
-            provider: modelDefaults.provider,
-            model: modelDefaults.model,
-            temperature: modelDefaults.temperature,
-            maxTokens: modelDefaults.maxTokens,
-          },
+      model: {
+        ...(assistantInfo.data?.model ? assistantInfo.data.model : {}),
+        messages: updatedMessages,
+        tools: Array.isArray(assistantInfo.data?.model?.tools)
+          ? (() => {
+              const tools = [...(assistantInfo.data.model.tools as any[])];
+              const hasEndCall = tools.some(t => t?.type === 'endCall');
+              return hasEndCall ? tools : [{ type: 'endCall' }, ...tools];
+            })()
+          : [{ type: 'endCall' }],
+        // Force standard defaults to resolve model drift
+        provider: modelDefaults.provider,
+        model: modelDefaults.model,
+        temperature: modelDefaults.temperature,
+        maxTokens: modelDefaults.maxTokens,
+      },
     } as any;
 
     // Use user-scoped function to update the assistant

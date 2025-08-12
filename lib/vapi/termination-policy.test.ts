@@ -3,6 +3,7 @@ import {
   TERMINATION_POLICY_TEXT,
   renderTerminationPolicy,
   ensureTerminationPolicyAppended,
+  stripTerminationPolicy,
 } from './termination-policy';
 
 describe('Termination Policy Module', () => {
@@ -317,6 +318,34 @@ Additional context:
         TERMINATION_POLICY_TEXT.match(/{displayName}/g) || []
       ).length;
       expect(placeholderCount).toBe(2);
+    });
+  });
+
+  describe('stripTerminationPolicy', () => {
+    it('removes sentinel and everything after it, trimming trailing whitespace before sentinel', () => {
+      const content = `You are a helpful assistant.\n\nSome instructions here.   \n\n${TERMINATION_POLICY_SENTINEL}\n\nHidden developer policy...`;
+      const result = stripTerminationPolicy(content);
+      expect(result).toBe(
+        'You are a helpful assistant.\n\nSome instructions here.'
+      );
+      expect(result).not.toContain(TERMINATION_POLICY_SENTINEL);
+    });
+
+    it('returns original content when sentinel is not present', () => {
+      const content = 'No sentinel here.';
+      const result = stripTerminationPolicy(content);
+      expect(result).toBe(content);
+    });
+
+    it('handles null and undefined by returning empty string', () => {
+      expect(stripTerminationPolicy(undefined as any)).toBe('');
+      expect(stripTerminationPolicy(null as any)).toBe('');
+    });
+
+    it('does not include sentinel in saved/stripped content', () => {
+      const content = `Hello world.\n\n${TERMINATION_POLICY_SENTINEL}\nPOLICY...`;
+      const stripped = stripTerminationPolicy(content);
+      expect(stripped.includes(TERMINATION_POLICY_SENTINEL)).toBe(false);
     });
   });
 });
