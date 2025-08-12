@@ -47,6 +47,7 @@ import dynamic from 'next/dynamic';
 import rawPlan from '@/supabase/functions/_shared/vapi-assistant.plan.json';
 import rawDefaults from '@/supabase/functions/_shared/vapi-assistant.defaults.json';
 import type { Plan } from '@/types/plan';
+import { TERMINATION_POLICY_SENTINEL } from '@/lib/vapi/termination-policy';
 const VapiWidget = dynamic(() => import('@/components/vapi-widget'), {
   ssr: false,
 });
@@ -195,8 +196,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   const stripTerminationPolicy = useCallback(
     (content: string | undefined | null) => {
       if (typeof content !== 'string') return content || '';
-      const SENTINEL = 'BEGIN_TERMINATION_POLICY v1';
-      const idx = content.indexOf(SENTINEL);
+      const idx = content.indexOf(TERMINATION_POLICY_SENTINEL);
       if (idx === -1) return content;
       // Trim trailing whitespace/newlines before sentinel so UI only shows user-editable portion
       return content.slice(0, idx).trimEnd();
@@ -211,7 +211,38 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   } = rawPlan as Plan;
 
   // Canonical model defaults (kept in sync with provisioning)
-  const DEFAULTS = (rawDefaults as any)?.model || {};
+  interface ModelDefaults {
+    provider?: string;
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
+    emotionRecognitionEnabled?: boolean;
+  }
+
+  const DEFAULTS: ModelDefaults = (() => {
+    const unknownDefaults: unknown = rawDefaults;
+    if (
+      typeof unknownDefaults === 'object' &&
+      unknownDefaults !== null &&
+      'model' in unknownDefaults
+    ) {
+      const modelVal = (unknownDefaults as { model?: unknown }).model;
+      if (typeof modelVal === 'object' && modelVal !== null) {
+        const maybe = modelVal as Partial<ModelDefaults>;
+        const safe: ModelDefaults = {};
+        if (typeof maybe.provider === 'string') safe.provider = maybe.provider;
+        if (typeof maybe.model === 'string') safe.model = maybe.model;
+        if (typeof maybe.temperature === 'number')
+          safe.temperature = maybe.temperature;
+        if (typeof maybe.maxTokens === 'number')
+          safe.maxTokens = maybe.maxTokens;
+        if (typeof maybe.emotionRecognitionEnabled === 'boolean')
+          safe.emotionRecognitionEnabled = maybe.emotionRecognitionEnabled;
+        return safe;
+      }
+    }
+    return {} as ModelDefaults;
+  })();
 
   // Utility: deep sort object keys for stable JSON comparison
   const deepSort = useCallback((value: unknown): unknown => {
@@ -272,12 +303,11 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     const needsEndCallTool = !hasEndCallTool;
 
     // Termination policy sentinel check in system prompt
-    const SENTINEL = 'BEGIN_TERMINATION_POLICY v1';
     const sysMsg = (assistantData as any)?.model?.messages?.find(
       (m: any) => m?.role === 'system'
     )?.content;
     const hasTerminationPolicy =
-      typeof sysMsg === 'string' && sysMsg.includes(SENTINEL);
+      typeof sysMsg === 'string' && sysMsg.includes(TERMINATION_POLICY_SENTINEL);
     const needsTerminationPolicy = !hasTerminationPolicy;
 
     // Model drift checks: provider/model, temperature, maxTokens
@@ -332,22 +362,24 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
 
     return {
       firstMessage: assistantData.firstMessage || DEFAULT_FIRST_MESSAGE,
-      systemPrompt:
+      systemPrompt: stripTerminationPolicy(
         assistantData.model?.messages?.find((msg: any) => msg.role === 'system')
-          ?.content || DEFAULT_SYSTEM_PROMPT,
+          ?.content || DEFAULT_SYSTEM_PROMPT
+      ),
       voiceId: assistantData.voice?.voiceId || '',
     };
-  }, [assistantData, DEFAULT_FIRST_MESSAGE, DEFAULT_SYSTEM_PROMPT]);
+  }, [assistantData, DEFAULT_FIRST_MESSAGE, DEFAULT_SYSTEM_PROMPT, stripTerminationPolicy]);
 
   // Memoized unsaved changes detection
   const hasUnsavedChanges = useMemo(() => {
     if (isLoading || !hasInitialized) return false;
-
-    return (
-      debouncedFirstMessage.trim() !== originalValues.firstMessage ||
-      debouncedSystemPrompt.trim() !== originalValues.systemPrompt ||
-      voiceId !== originalValues.voiceId
-    );
+    const normalize = (v: string) => v.replace(/\r\n/g, '\n').trim();
+    const firstMessageChanged =
+      normalize(debouncedFirstMessage) !== normalize(originalValues.firstMessage);
+    const systemPromptChanged =
+      normalize(debouncedSystemPrompt) !== normalize(originalValues.systemPrompt);
+    const voiceChanged = voiceId !== originalValues.voiceId;
+    return firstMessageChanged || systemPromptChanged || voiceChanged;
   }, [
     debouncedFirstMessage,
     debouncedSystemPrompt,

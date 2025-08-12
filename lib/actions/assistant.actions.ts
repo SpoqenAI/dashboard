@@ -14,6 +14,7 @@ import {
   getStandardAnalysisPlan,
   getAnalysisPlanVersion,
 } from '@/lib/vapi-assistant';
+import { ensureTerminationPolicyAppended } from '@/lib/vapi/termination-policy';
 
 /**
  * Safely constructs a VAPI assistant URL with validated assistantId
@@ -301,12 +302,7 @@ export async function syncVapiAssistant(
     // Merge a conservative termination policy into the existing system message
     let mergedSystemMessage = greeting;
     try {
-      // Lightweight inline merge to avoid importing Node-specific modules client side
-      const SENTINEL = 'BEGIN_TERMINATION_POLICY v1';
-      const policy = `\n\n${SENTINEL}\n\nTermination policy (be extremely conservative):\n- Only end the call if absolutely necessary. Prefer redirecting or taking a message.\n- Acceptable reasons to end the call:\n  1) Persistent off-topic conversation after two clarifying attempts\n  2) Harassment, abusive language, or clear spam/robocall indicators\n  3) Repeated refusal to provide a purpose for the call\n- Before ending:\n  - Give one brief, polite warning: "I can help when it’s about our work. Should I take a message instead?"\n  - If still off the rails, say a short closing line and end the call.\n- Closing line guideline (keep it short):\n  "Thanks for calling. I’ll let the team know you reached out. Goodbye."\n\nWhen you choose to end the call, do it decisively after the closing line.`;
-      if (!greeting.includes(SENTINEL)) {
-        mergedSystemMessage = `${greeting.trim()}\n\n${policy}`;
-      }
+      mergedSystemMessage = ensureTerminationPolicyAppended(greeting, 'the team');
     } catch (_) {
       // Non-fatal; proceed with original greeting
     }
