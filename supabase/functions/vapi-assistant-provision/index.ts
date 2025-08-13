@@ -81,9 +81,35 @@ async function fetchWithTimeout(
     clearTimeout(timeout);
   }
 }
+// Lightweight typing for canonical config to prevent drift
+interface AnalysisPlanJson {
+  version: string;
+  plan: {
+    summaryPrompt: string;
+    structuredDataPrompt: string;
+    structuredDataSchema: {
+      type: 'object';
+      additionalProperties: boolean;
+      properties: Record<string, unknown>;
+      required: string[];
+    };
+    successEvaluationPrompt: string;
+    successEvaluationRubric: 'PassFail' | string;
+  };
+}
+
+interface DefaultsJson {
+  model: {
+    provider: string;
+    model: string;
+    temperature: number;
+    maxTokens: number;
+    emotionRecognitionEnabled?: boolean;
+  };
+}
 // Inline fallbacks to ensure provisioning always applies the canonical config
 // These are used only if local JSON files cannot be read at runtime (e.g. packaging/runtime path issues)
-const INLINE_DEFAULTS_JSON = {
+const INLINE_DEFAULTS_JSON: DefaultsJson = {
   model: {
     provider: 'openai',
     model: 'gpt-5-nano',
@@ -93,7 +119,7 @@ const INLINE_DEFAULTS_JSON = {
   },
 } as const;
 
-const INLINE_ANALYSIS_PLAN_JSON = {
+const INLINE_ANALYSIS_PLAN_JSON: AnalysisPlanJson = {
   version: '1.0.1',
   plan: {
     summaryPrompt:
@@ -177,8 +203,8 @@ const INLINE_ANALYSIS_PLAN_JSON = {
   },
 } as const;
 // Load canonical analysis plan without static JSON import assertions (Biome-safe, Deno-friendly)
-let cachedAnalysisPlanJson: any | null = null;
-async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
+let cachedAnalysisPlanJson: AnalysisPlanJson | null = null;
+async function getCanonicalAnalysisPlanJson(): Promise<AnalysisPlanJson> {
   if (cachedAnalysisPlanJson) return cachedAnalysisPlanJson;
   try {
     const planUrl = new URL(
@@ -186,7 +212,7 @@ async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
       import.meta.url
     );
     const planText = await Deno.readTextFile(planUrl);
-    cachedAnalysisPlanJson = JSON.parse(planText);
+    cachedAnalysisPlanJson = JSON.parse(planText) as AnalysisPlanJson;
     return cachedAnalysisPlanJson;
   } catch (err) {
     // Fallback: try local file inside function directory
@@ -196,7 +222,7 @@ async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
         import.meta.url
       );
       const planTextLocal = await Deno.readTextFile(planUrlLocal);
-      cachedAnalysisPlanJson = JSON.parse(planTextLocal);
+      cachedAnalysisPlanJson = JSON.parse(planTextLocal) as AnalysisPlanJson;
       return cachedAnalysisPlanJson;
     } catch (err2) {
       // Final fallback: inline plan to keep provisioned assistants in sync with system defaults
@@ -229,15 +255,15 @@ async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
       // Deep clone to avoid accidental mutation of inline constants
       cachedAnalysisPlanJson = JSON.parse(
         JSON.stringify(INLINE_ANALYSIS_PLAN_JSON)
-      );
+      ) as AnalysisPlanJson;
       return cachedAnalysisPlanJson;
     }
   }
 }
 
 // Load canonical model defaults (provider/model/temperature/maxTokens)
-let cachedDefaultsJson: any | null = null;
-async function getCanonicalDefaultsJson(): Promise<any | null> {
+let cachedDefaultsJson: DefaultsJson | null = null;
+async function getCanonicalDefaultsJson(): Promise<DefaultsJson> {
   if (cachedDefaultsJson) return cachedDefaultsJson;
   try {
     const defaultsUrl = new URL(
@@ -245,7 +271,7 @@ async function getCanonicalDefaultsJson(): Promise<any | null> {
       import.meta.url
     );
     const defaultsText = await Deno.readTextFile(defaultsUrl);
-    cachedDefaultsJson = JSON.parse(defaultsText);
+    cachedDefaultsJson = JSON.parse(defaultsText) as DefaultsJson;
     return cachedDefaultsJson;
   } catch (err) {
     // Fallback: try local file inside function directory
@@ -255,7 +281,7 @@ async function getCanonicalDefaultsJson(): Promise<any | null> {
         import.meta.url
       );
       const defaultsTextLocal = await Deno.readTextFile(defaultsUrlLocal);
-      cachedDefaultsJson = JSON.parse(defaultsTextLocal);
+      cachedDefaultsJson = JSON.parse(defaultsTextLocal) as DefaultsJson;
       return cachedDefaultsJson;
     } catch (err2) {
       // Final fallback: inline defaults to keep provisioned assistants in sync with system defaults
@@ -281,7 +307,9 @@ async function getCanonicalDefaultsJson(): Promise<any | null> {
         attemptedPaths: [primaryPath, fallbackPath],
       });
       // Deep clone to avoid accidental mutation of inline constants
-      cachedDefaultsJson = JSON.parse(JSON.stringify(INLINE_DEFAULTS_JSON));
+      cachedDefaultsJson = JSON.parse(
+        JSON.stringify(INLINE_DEFAULTS_JSON)
+      ) as DefaultsJson;
       return cachedDefaultsJson;
     }
   }
