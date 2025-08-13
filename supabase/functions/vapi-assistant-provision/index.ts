@@ -200,14 +200,36 @@ async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
       return cachedAnalysisPlanJson;
     } catch (err2) {
       // Final fallback: inline plan to keep provisioned assistants in sync with system defaults
+      const primaryPath = new URL(
+        '../_shared/vapi-assistant.plan.json',
+        import.meta.url
+      ).toString();
+      const fallbackPath = new URL(
+        './vapi-assistant.plan.json',
+        import.meta.url
+      ).toString();
       addBreadcrumb(
         'Analysis plan load failed, using inline fallback',
         'config',
         {
-          error: err2 instanceof Error ? err2.message : String(err2),
+          firstErrorMessage: err instanceof Error ? err.message : String(err),
+          secondErrorMessage:
+            err2 instanceof Error ? err2.message : String(err2),
+          firstError:
+            err instanceof Error
+              ? { name: err.name, stack: err.stack }
+              : String(err),
+          secondError:
+            err2 instanceof Error
+              ? { name: err2.name, stack: err2.stack }
+              : String(err2),
+          attemptedPaths: [primaryPath, fallbackPath],
         }
       );
-      cachedAnalysisPlanJson = INLINE_ANALYSIS_PLAN_JSON;
+      // Deep clone to avoid accidental mutation of inline constants
+      cachedAnalysisPlanJson = JSON.parse(
+        JSON.stringify(INLINE_ANALYSIS_PLAN_JSON)
+      );
       return cachedAnalysisPlanJson;
     }
   }
@@ -237,10 +259,29 @@ async function getCanonicalDefaultsJson(): Promise<any | null> {
       return cachedDefaultsJson;
     } catch (err2) {
       // Final fallback: inline defaults to keep provisioned assistants in sync with system defaults
+      const primaryPath = new URL(
+        '../_shared/vapi-assistant.defaults.json',
+        import.meta.url
+      ).toString();
+      const fallbackPath = new URL(
+        './vapi-assistant.defaults.json',
+        import.meta.url
+      ).toString();
       addBreadcrumb('Defaults load failed, using inline fallback', 'config', {
-        error: err2 instanceof Error ? err2.message : String(err2),
+        firstErrorMessage: err instanceof Error ? err.message : String(err),
+        secondErrorMessage: err2 instanceof Error ? err2.message : String(err2),
+        firstError:
+          err instanceof Error
+            ? { name: err.name, stack: err.stack }
+            : String(err),
+        secondError:
+          err2 instanceof Error
+            ? { name: err2.name, stack: err2.stack }
+            : String(err2),
+        attemptedPaths: [primaryPath, fallbackPath],
       });
-      cachedDefaultsJson = INLINE_DEFAULTS_JSON;
+      // Deep clone to avoid accidental mutation of inline constants
+      cachedDefaultsJson = JSON.parse(JSON.stringify(INLINE_DEFAULTS_JSON));
       return cachedDefaultsJson;
     }
   }
