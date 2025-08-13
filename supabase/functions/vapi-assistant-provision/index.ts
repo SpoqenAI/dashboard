@@ -27,6 +27,60 @@ import {
   setTag,
   startTransaction,
 } from '../_shared/sentry.ts';
+import {
+  ensureTerminationPolicyAppended,
+  TERMINATION_POLICY_SENTINEL,
+  TERMINATION_DISPLAY_NAME_FALLBACK,
+} from '../_shared/termination-policy.ts';
+// Sanitizes user-provided display names to a single-line, bounded string
+function sanitizeSingleLineBounded(name: string, maxLen: number = 64): string {
+  if (typeof name !== 'string') return '';
+  const limit = Number.isFinite(maxLen) && maxLen > 0 ? Math.floor(maxLen) : 64;
+  let result = '';
+  let prevWasSpace = false;
+  for (let i = 0; i < name.length; i++) {
+    const code = name.charCodeAt(i);
+    let ch = name[i];
+    // Map CR, LF, TAB to a space; drop other ASCII control chars (including DEL)
+    if (code === 9 || code === 10 || code === 13) {
+      ch = ' ';
+    } else if (code < 32 || code === 127) {
+      continue;
+    }
+    // Collapse consecutive spaces and avoid leading spaces
+    if (ch === ' ') {
+      if (prevWasSpace || result.length === 0) {
+        prevWasSpace = true;
+        continue;
+      }
+      prevWasSpace = true;
+    } else {
+      prevWasSpace = false;
+    }
+    result += ch;
+    if (result.length >= limit) break;
+  }
+  // Trim trailing space
+  if (result.endsWith(' ')) result = result.slice(0, -1);
+  return result;
+}
+// Fetch helper with timeout to prevent hanging HTTP calls
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit & { timeoutMs?: number } = {},
+  timeoutMs = 15000
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    init.timeoutMs ?? timeoutMs
+  );
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 // Load canonical analysis plan without static JSON import assertions (Biome-safe, Deno-friendly)
 let cachedAnalysisPlanJson: any | null = null;
 async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
@@ -40,25 +94,73 @@ async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
     cachedAnalysisPlanJson = JSON.parse(planText);
     return cachedAnalysisPlanJson;
   } catch (err) {
-    addBreadcrumb(
-      'Analysis plan load failed, proceeding without plan',
-      'config',
-      {
-        error: err instanceof Error ? err.message : String(err),
-      }
-    );
-    return null;
+    // Fallback: try local file inside function directory
+    try {
+      const planUrlLocal = new URL(
+        './vapi-assistant.plan.json',
+        import.meta.url
+      );
+      const planTextLocal = await Deno.readTextFile(planUrlLocal);
+      cachedAnalysisPlanJson = JSON.parse(planTextLocal);
+      return cachedAnalysisPlanJson;
+    } catch (err2) {
+      addBreadcrumb(
+        'Analysis plan load failed, proceeding without plan',
+        'config',
+        {
+          error: err2 instanceof Error ? err2.message : String(err2),
+        }
+      );
+      return null;
+    }
   }
 }
 
-// DEBUG: Log whether SERVICE_ROLE_KEY is defined and its length (do not print the key itself)
+// Load canonical model defaults (provider/model/temperature/maxTokens)
+let cachedDefaultsJson: any | null = null;
+async function getCanonicalDefaultsJson(): Promise<any | null> {
+  if (cachedDefaultsJson) return cachedDefaultsJson;
+  try {
+    const defaultsUrl = new URL(
+      '../_shared/vapi-assistant.defaults.json',
+      import.meta.url
+    );
+    const defaultsText = await Deno.readTextFile(defaultsUrl);
+    cachedDefaultsJson = JSON.parse(defaultsText);
+    return cachedDefaultsJson;
+  } catch (err) {
+    // Fallback: try local file inside function directory
+    try {
+      const defaultsUrlLocal = new URL(
+        './vapi-assistant.defaults.json',
+        import.meta.url
+      );
+      const defaultsTextLocal = await Deno.readTextFile(defaultsUrlLocal);
+      cachedDefaultsJson = JSON.parse(defaultsTextLocal);
+      return cachedDefaultsJson;
+    } catch (err2) {
+      addBreadcrumb(
+        'Defaults load failed, proceeding with inline fallbacks',
+        'config',
+        {
+          error: err2 instanceof Error ? err2.message : String(err2),
+        }
+      );
+      return null;
+    }
+  }
+}
+
+// Only log service role info when DEBUG_PROVISION=1
 const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY');
-console.log(
-  '[DEBUG] SERVICE_ROLE_KEY defined:',
-  !!serviceRoleKey,
-  '| Length:',
-  serviceRoleKey?.length ?? 0
-);
+if (Deno.env.get('DEBUG_PROVISION') === '1') {
+  console.log(
+    '[DEBUG] SERVICE_ROLE_KEY defined:',
+    !!serviceRoleKey,
+    '| Length:',
+    serviceRoleKey?.length ?? 0
+  );
+}
 
 // Initialize Sentry at the top level
 initSentry();
@@ -69,14 +171,16 @@ const VAPI_API_KEY = globalThis.Deno.env.get('VAPI_PRIVATE_KEY');
 const VAPI_WEBHOOK_SECRET = globalThis.Deno.env.get('VAPI_WEBHOOK_SECRET');
 const WEBHOOK_SECRET = globalThis.Deno.env.get('WEBHOOK_SECRET');
 
-// For debugging
-console.log('[DEBUG] Environment variables check:', {
-  SUPABASE_URL: !!SUPABASE_URL,
-  SERVICE_ROLE_KEY: !!SERVICE_ROLE_KEY,
-  VAPI_PRIVATE_KEY: !!VAPI_API_KEY,
-  VAPI_WEBHOOK_SECRET: !!VAPI_WEBHOOK_SECRET,
-  WEBHOOK_SECRET: !!WEBHOOK_SECRET,
-});
+// For debugging (flagged)
+if (Deno.env.get('DEBUG_PROVISION') === '1') {
+  console.log('[DEBUG] Environment variables check:', {
+    SUPABASE_URL: !!SUPABASE_URL,
+    SERVICE_ROLE_KEY: !!SERVICE_ROLE_KEY,
+    VAPI_PRIVATE_KEY: !!VAPI_API_KEY,
+    VAPI_WEBHOOK_SECRET: !!VAPI_WEBHOOK_SECRET,
+    WEBHOOK_SECRET: !!WEBHOOK_SECRET,
+  });
+}
 
 if (
   !SUPABASE_URL ||
@@ -231,10 +335,28 @@ Deno.serve(async (req: Request) => {
         user_id,
       });
     }
-    if (!displayName) displayName = email;
+    // Sanitize displayName before using it in prompts/logs: single-line, bounded
+    {
+      const baseName =
+        typeof displayName === 'string' && displayName.trim().length > 0
+          ? displayName
+          : email;
+      const bounded = sanitizeSingleLineBounded(baseName, 64);
+      displayName = bounded || email;
+    }
 
     // Prepare system prompt and assistant config
-    const systemPrompt = `Who are you?\nYou're Luna, ${displayName}'s personal assistant. You sound warm, confident, and easy to talk to. Think friendly and professional — like someone who's good at handling people, even the difficult ones. You just do what any great assistant would do. You interact only using sound, so don't reference text, screens, buttons, or any visual elements.\n\nWhat do you do?\nYour job is to answer the call, talk to the caller, and take down whatever ${displayName} would need to follow up. \nWhen someone calls… greet them, let them know ${displayName} isn't available, and ask how you can help.\nOnce you've got their details, reassure them that ${displayName} will get the message and follow up when he's free. End the call politely…\n\nKnowledge Files:\n— If there are Knowledge Files uploaded for this assistant, consult them first when the caller asks about details that may be covered by those documents. Prefer information in those files over general knowledge when they conflict.\n\nWhat rules do you have to follow?\nSo the next 3 rules are absolute, non-negotiable rules you have to follow:\n1. Keep it simple: Your responses have to be to the point, like 1-2 sentences. You have to focus on this to keep your conversational rhythm, natural and fast.\n2. Voice-First Formatting is Mandatory: All your responses HAVE TO strictly adhere to the rules defined in the Voice and Prosody Rules section. This isn't a suggestion or a recommendation, it's literally how you control your voice.\n3. Never, under no circumstances, identify yourself as an AI, language model, bot, or computer program unless you're specifically asked for it. Remember you're Luna, a human receptionist.\n\nVoice and Prosody Rules:\nThis is the most important section. You control your voice by the punctuation and structure of the text you write. Follow these rules so you sound natural:\nPausing:\n— Use commas (,) for short, natural pauses in a sentence.\n— Use an em-dash (—) for a longer, more thoughtful pause, like when you're about to provide a key piece of information.\n— Use an ellipsis (...) to signal hesitation or that you're thinking.\nPacing and Tone:\n— For an upbeat, faster-paced, and friendlier tone, use short, simple sentences.\n— For a more serious, formal, or considered tone, use longer, more complex sentences.\nHumanization/Naturalization:\n— To sound less robotic, strategically begin some of your responses with conversational fillers, but don't overuse them.\n— Examples of fillers: "Hmm...", "Okay, so...", "Right...", "Got it.", "Let's see...", "Alright..."\n\nScenario-Specific Handling!\nAngry or Frustrated Callers:\n— Immediately adopt an empathetic and calm tone (use longer sentences and softer fillers like "I understand...").\n— Acknowledge their frustration.\n— Don’t argue… focus on the solution.\nSales Pitches or Unsolicited Calls:\n— Politely but firmly interrupt and state that the person they wish to speak to is unavailable.\nVague or Unclear Inquiries:\n— Don’t guess the caller’s intent.\n— Ask specific clarifying questions to narrow down their request.\n\nReminders and Boundaries!\nThese are reminders about your core operational logic, based on your architecture.\n\t— Before you act, think step-by-step… you can verbalize this process to the user so that you sound more natural and so you can manage their expectations during a brief pause.\n\t— Don’t give out any personal info besides ${displayName}'s public email.\n\t— Don’t agree to anything you're not 100% sure ${displayName} would want.\n\t— Don’t give advice about legal, financial, medical, or personal issues. If that comes up, just say you can’t help with that and that ${displayName} will follow up.\n\nOne last thing:\nIf at any point you’re unsure of what to do… or the caller starts pushing you into something off-script, just say "I can't do that, but I'll let ${displayName} know you called," and wrap up the call.\n\nThat's it. Be helpful, be normal, be you and keep it real. You got this.`;
+    let systemPrompt = `Who are you?\nYou're Luna, ${displayName}'s personal assistant. You sound warm, confident, and easy to talk to. Think friendly and professional — like someone who's good at handling people, even the difficult ones. You just do what any great assistant would do. You interact only using sound, so don't reference text, screens, buttons, or any visual elements.\n\nWhat do you do?\nYour job is to answer the call, talk to the caller, and take down whatever ${displayName} would need to follow up. \nWhen someone calls… greet them, let them know ${displayName} isn't available, and ask how you can help.\nOnce you've got their details, reassure them that ${displayName} will get the message and follow up when he's free. End the call politely…\n\nKnowledge Files:\n— If there are Knowledge Files uploaded for this assistant, consult them first when the caller asks about details that may be covered by those documents. Prefer information in those files over general knowledge when they conflict.\n\nWhat rules do you have to follow?\nSo the next 3 rules are absolute, non-negotiable rules you have to follow:\n1. Keep it simple: Your responses have to be to the point, like 1-2 sentences. You have to focus on this to keep your conversational rhythm, natural and fast.\n2. Voice-First Formatting is Mandatory: All your responses HAVE TO strictly adhere to the rules defined in the Voice and Prosody Rules section. This isn't a suggestion or a recommendation, it's literally how you control your voice.\n3. Never, under no circumstances, identify yourself as an AI, language model, bot, or computer program unless you're specifically asked for it. Remember you're Luna, a human receptionist.\n\nVoice and Prosody Rules:\nThis is the most important section. You control your voice by the punctuation and structure of the text you write. Follow these rules so you sound natural:\nPausing:\n— Use commas (,) for short, natural pauses in a sentence.\n— Use an em-dash (—) for a longer, more thoughtful pause, like when you're about to provide a key piece of information.\n— Use an ellipsis (...) to signal hesitation or that you're thinking.\nPacing and Tone:\n— For an upbeat, faster-paced, and friendlier tone, use short, simple sentences.\n— For a more serious, formal, or considered tone, use longer, more complex sentences.\nHumanization/Naturalization:\n— To sound less robotic, strategically begin some of your responses with conversational fillers, but don't overuse them.\n— Examples of fillers: "Hmm...", "Okay, so...", "Right...", "Got it.", "Let's see...", "Alright..."\n\nScenario-Specific Handling!\nAngry or Frustrated Callers:\n— Immediately adopt an empathetic and calm tone (use longer sentences and softer fillers like "I understand...").\n— Acknowledge their frustration.\n— Don’t argue… focus on the solution.\nSales Pitches or Unsolicited Calls:\n— Politely but firmly interrupt and state that the person they wish to speak to is unavailable.\nVague or Unclear Inquiries:\n— Don’t guess the caller’s intent.\n— Ask specific clarifying questions to narrow down their request.\n\nReminders and Boundaries!\nThese are reminders about your core operational logic, based on your architecture.\n\t— Before you act, think step-by-step… you can verbalize this process to the user so that you sound more natural and so you can manage their expectations during a brief pause.\n\t— Don’t give out any personal info besides ${displayName}'s public email.\n\t— Don’t agree to anything you're not 100% sure ${displayName} would want.\n\t— Don’t give advice about legal, financial, medical, or personal issues. If that comes up, just say you can’t help with that and that ${displayName} will follow up.\n\nOne last thing:\nIf at any point you’re unsure of what to do… or the caller starts pushing you into something off-script, just say "I can't do that, but I'll let ${displayName} know you called," and wrap up the call.\n\nThat's it. Be helpful, be normal, be you and keep it real. You got this.`;
+
+    // Append conservative termination policy (idempotent)
+    try {
+      systemPrompt = ensureTerminationPolicyAppended(
+        systemPrompt,
+        displayName || TERMINATION_DISPLAY_NAME_FALLBACK
+      );
+    } catch (_) {
+      // Non-fatal; provisioning proceeds without policy if unexpected error
+    }
     const firstMessage = `...Hi, thank you for calling ${displayName}. This is Luna, how can I help you today?...`;
 
     // Idempotency: check if user already has a vapi_assistant_id
@@ -265,25 +387,64 @@ Deno.serve(async (req: Request) => {
     }
 
     // Update status to pending
-    await supabase
+    const { error: pendingError } = await supabase
       .from('user_settings')
       .update({
         assistant_provisioning_status: 'pending',
         assistant_provisioning_started_at: new Date().toISOString(),
       })
       .eq('id', user_id);
+    if (pendingError) {
+      captureException(pendingError, {
+        function: 'vapi-assistant-provision',
+        operation: 'mark_pending',
+        user_id,
+      });
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to update provisioning status',
+          details: 'An unexpected error occurred',
+        }),
+        { status: 500 }
+      );
+    }
 
     // Call VAPI API to create assistant
     let vapiAssistantId;
     try {
+      const defaultsJson = await getCanonicalDefaultsJson();
+      const userModelDefaults =
+        (defaultsJson && (defaultsJson as any).model) || {};
+      const modelDefaults = {
+        provider:
+          typeof userModelDefaults.provider === 'string'
+            ? userModelDefaults.provider
+            : 'openai',
+        model:
+          typeof userModelDefaults.model === 'string'
+            ? userModelDefaults.model
+            : 'gpt-5-nano',
+        temperature:
+          typeof userModelDefaults.temperature === 'number'
+            ? userModelDefaults.temperature
+            : 1.1,
+        maxTokens:
+          typeof userModelDefaults.maxTokens === 'number'
+            ? userModelDefaults.maxTokens
+            : 10000,
+        emotionRecognitionEnabled:
+          typeof userModelDefaults.emotionRecognitionEnabled === 'boolean'
+            ? userModelDefaults.emotionRecognitionEnabled
+            : true,
+      };
+      const modelOverrides = { ...modelDefaults } as Record<string, unknown>;
+
       const assistantConfig: any = {
         name: email,
         model: {
-          provider: 'openai',
-          model: 'gpt-5-nano',
-          temperature: 1.1,
-          maxTokens: 10000,
-          emotionRecognitionEnabled: true,
+          ...modelOverrides,
+          // Ensure default tools include endCall so the assistant can hang up
+          tools: [{ type: 'endCall' }],
           messages: [
             {
               role: 'system',
@@ -317,6 +478,8 @@ Deno.serve(async (req: Request) => {
           voiceSeconds: 0.4,
           backoffSeconds: 1.2,
         },
+        // Safety: keep a global hard limit as an additional guard
+        // Calls should end automatically after this duration even if not terminated earlier
         maxDurationSeconds: 900,
         metadata: {
           assistantType: 'receptionist',
@@ -337,14 +500,18 @@ Deno.serve(async (req: Request) => {
       }
 
       // First attempt
-      let vapiRes = await fetch('https://api.vapi.ai/assistant', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${VAPI_API_KEY}`,
-          'Content-Type': 'application/json',
+      let vapiRes = await fetchWithTimeout(
+        'https://api.vapi.ai/assistant',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${VAPI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(assistantConfig),
         },
-        body: JSON.stringify(assistantConfig),
-      });
+        15_000
+      );
       let vapiResText = await vapiRes.text();
 
       // Fallback strategy on validation errors (e.g., unsupported model or token limits)
@@ -368,14 +535,18 @@ Deno.serve(async (req: Request) => {
             );
           }
 
-          vapiRes = await fetch('https://api.vapi.ai/assistant', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${VAPI_API_KEY}`,
-              'Content-Type': 'application/json',
+          vapiRes = await fetchWithTimeout(
+            'https://api.vapi.ai/assistant',
+            {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${VAPI_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(fallbackConfig1),
             },
-            body: JSON.stringify(fallbackConfig1),
-          });
+            15_000
+          );
           vapiResText = await vapiRes.text();
         } catch (_) {
           // ignore
@@ -398,14 +569,18 @@ Deno.serve(async (req: Request) => {
               }
             }
 
-            vapiRes = await fetch('https://api.vapi.ai/assistant', {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${VAPI_API_KEY}`,
-                'Content-Type': 'application/json',
+            vapiRes = await fetchWithTimeout(
+              'https://api.vapi.ai/assistant',
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${VAPI_API_KEY}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(fallbackConfig2),
               },
-              body: JSON.stringify(fallbackConfig2),
-            });
+              15_000
+            );
             vapiResText = await vapiRes.text();
           } catch (_) {
             // ignore
@@ -422,7 +597,10 @@ Deno.serve(async (req: Request) => {
           operation: 'create_vapi_assistant',
           user_id,
           vapi_status: vapiRes.status,
-          vapi_response: vapiResText,
+          vapi_response:
+            typeof vapiResText === 'string'
+              ? vapiResText.slice(0, 1000)
+              : String(vapiResText).slice(0, 1000),
         });
 
         // Update status to failed

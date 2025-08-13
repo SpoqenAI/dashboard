@@ -45,7 +45,12 @@ import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { inferMimeFromFilename, isAllowedMime } from '@/lib/file-validation';
 import dynamic from 'next/dynamic';
 import rawPlan from '@/supabase/functions/_shared/vapi-assistant.plan.json';
+import rawDefaults from '@/supabase/functions/_shared/vapi-assistant.defaults.json';
 import type { Plan } from '@/types/plan';
+import {
+  stripTerminationPolicy,
+  TERMINATION_POLICY_SENTINEL,
+} from '@/lib/vapi/termination-policy';
 const VapiWidget = dynamic(() => import('@/components/vapi-widget'), {
   ssr: false,
 });
@@ -196,6 +201,40 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     plan: STANDARD_ANALYSIS_PLAN,
   } = rawPlan as Plan;
 
+  // Canonical model defaults (kept in sync with provisioning)
+  interface ModelDefaults {
+    provider?: string;
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
+    emotionRecognitionEnabled?: boolean;
+  }
+
+  const DEFAULTS: ModelDefaults = (() => {
+    const unknownDefaults: unknown = rawDefaults;
+    if (
+      typeof unknownDefaults === 'object' &&
+      unknownDefaults !== null &&
+      'model' in unknownDefaults
+    ) {
+      const modelVal = (unknownDefaults as { model?: unknown }).model;
+      if (typeof modelVal === 'object' && modelVal !== null) {
+        const maybe = modelVal as Partial<ModelDefaults>;
+        const safe: ModelDefaults = {};
+        if (typeof maybe.provider === 'string') safe.provider = maybe.provider;
+        if (typeof maybe.model === 'string') safe.model = maybe.model;
+        if (typeof maybe.temperature === 'number')
+          safe.temperature = maybe.temperature;
+        if (typeof maybe.maxTokens === 'number')
+          safe.maxTokens = maybe.maxTokens;
+        if (typeof maybe.emotionRecognitionEnabled === 'boolean')
+          safe.emotionRecognitionEnabled = maybe.emotionRecognitionEnabled;
+        return safe;
+      }
+    }
+    return {} as ModelDefaults;
+  })();
+
   // Utility: deep sort object keys for stable JSON comparison
   const deepSort = useCallback((value: unknown): unknown => {
     if (Array.isArray(value)) {
@@ -213,39 +252,100 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     return value;
   }, []);
 
-  // Determine if assistant needs system updates (analysis plan out of date/missing)
+  // Determine if assistant needs system updates
+  // Criteria:
+  // 1) Analysis plan missing/out-of-date or structurally different
+  // 2) Default endCall tool missing
+  // 3) Termination policy sentinel missing in system prompt
   const shouldShowPullSystemUpdates = useMemo(() => {
     if (!assistantData?.id) return false;
+
     const assistantPlan = (assistantData as { analysisPlan?: unknown } | null)
       ?.analysisPlan;
     const assistantVersion = (
       assistantData as { metadata?: { analysisPlanVersion?: string } } | null
     )?.metadata?.analysisPlanVersion;
 
-    // If no plan or version mismatch, updates are needed
-    if (!assistantPlan) return true;
+    // Plan/version checks
+    let needsPlanUpdate = false;
+    if (!assistantPlan) needsPlanUpdate = true;
     if (
       !assistantVersion ||
       assistantVersion !== STANDARD_ANALYSIS_PLAN_VERSION
-    )
-      return true;
-
-    // Compare plans structurally
-    try {
-      const a = JSON.stringify(deepSort(assistantPlan));
-      const b = JSON.stringify(deepSort(STANDARD_ANALYSIS_PLAN));
-      return a !== b;
-    } catch {
-      // If comparison fails for any reason, be conservative and show the button
-      return true;
+    ) {
+      needsPlanUpdate = true;
     }
+    if (!needsPlanUpdate) {
+      try {
+        const a = JSON.stringify(deepSort(assistantPlan));
+        const b = JSON.stringify(deepSort(STANDARD_ANALYSIS_PLAN));
+        if (a !== b) needsPlanUpdate = true;
+      } catch {
+        // If comparison fails for any reason, be conservative
+        needsPlanUpdate = true;
+      }
+    }
+
+    // Tool check: require default endCall tool
+    const tools = (assistantData as any)?.model?.tools;
+    const hasEndCallTool = Array.isArray(tools)
+      ? tools.some((t: any) => t?.type === 'endCall')
+      : false;
+    const needsEndCallTool = !hasEndCallTool;
+
+    // Termination policy sentinel check in system prompt
+    const sysMsg = (assistantData as any)?.model?.messages?.find(
+      (m: any) => m?.role === 'system'
+    )?.content;
+    const hasTerminationPolicy =
+      typeof sysMsg === 'string' &&
+      sysMsg.includes(TERMINATION_POLICY_SENTINEL);
+    const needsTerminationPolicy = !hasTerminationPolicy;
+
+    // Model drift checks: provider/model, temperature, maxTokens
+    // Guard against empty DEFAULTS (when rawDefaults is missing) to avoid false positives
+    const model = (assistantData as any)?.model || {};
+    const hasDefaults = Object.keys(DEFAULTS).length > 0;
+    const needsModelProvider =
+      hasDefaults && DEFAULTS.provider !== undefined
+        ? model?.provider !== DEFAULTS.provider
+        : false;
+    const needsModelName =
+      hasDefaults && DEFAULTS.model !== undefined
+        ? model?.model !== DEFAULTS.model
+        : false;
+    const needsTemperature =
+      hasDefaults && typeof DEFAULTS.temperature === 'number'
+        ? model?.temperature !== DEFAULTS.temperature
+        : false;
+    const needsMaxTokens =
+      hasDefaults && typeof DEFAULTS.maxTokens === 'number'
+        ? model?.maxTokens !== DEFAULTS.maxTokens
+        : false;
+
+    return (
+      needsPlanUpdate ||
+      needsEndCallTool ||
+      needsTerminationPolicy ||
+      needsModelProvider ||
+      needsModelName ||
+      needsTemperature ||
+      needsMaxTokens
+    );
   }, [
     assistantData?.id,
     (assistantData as { analysisPlan?: unknown } | null)?.analysisPlan,
     (assistantData as { metadata?: { analysisPlanVersion?: string } } | null)
       ?.metadata?.analysisPlanVersion,
+    (assistantData as any)?.model?.tools,
+    (assistantData as any)?.model?.messages,
+    (assistantData as any)?.model?.provider,
+    (assistantData as any)?.model?.model,
+    (assistantData as any)?.model?.temperature,
+    (assistantData as any)?.model?.maxTokens,
     STANDARD_ANALYSIS_PLAN_VERSION,
     STANDARD_ANALYSIS_PLAN,
+    DEFAULTS,
     deepSort,
   ]);
 
@@ -265,22 +365,31 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
 
     return {
       firstMessage: assistantData.firstMessage || DEFAULT_FIRST_MESSAGE,
-      systemPrompt:
+      systemPrompt: stripTerminationPolicy(
         assistantData.model?.messages?.find((msg: any) => msg.role === 'system')
-          ?.content || DEFAULT_SYSTEM_PROMPT,
+          ?.content || DEFAULT_SYSTEM_PROMPT
+      ),
       voiceId: assistantData.voice?.voiceId || '',
     };
-  }, [assistantData, DEFAULT_FIRST_MESSAGE, DEFAULT_SYSTEM_PROMPT]);
+  }, [
+    assistantData,
+    DEFAULT_FIRST_MESSAGE,
+    DEFAULT_SYSTEM_PROMPT,
+    stripTerminationPolicy,
+  ]);
 
   // Memoized unsaved changes detection
   const hasUnsavedChanges = useMemo(() => {
     if (isLoading || !hasInitialized) return false;
-
-    return (
-      debouncedFirstMessage.trim() !== originalValues.firstMessage ||
-      debouncedSystemPrompt.trim() !== originalValues.systemPrompt ||
-      voiceId !== originalValues.voiceId
-    );
+    const normalize = (v: string) => v.replace(/\r\n/g, '\n').trim();
+    const firstMessageChanged =
+      normalize(debouncedFirstMessage) !==
+      normalize(originalValues.firstMessage);
+    const systemPromptChanged =
+      normalize(debouncedSystemPrompt) !==
+      normalize(originalValues.systemPrompt);
+    const voiceChanged = voiceId !== originalValues.voiceId;
+    return firstMessageChanged || systemPromptChanged || voiceChanged;
   }, [
     debouncedFirstMessage,
     debouncedSystemPrompt,
@@ -353,7 +462,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       const systemMessage = assistantData.model?.messages?.find(
         (msg: any) => msg.role === 'system'
       );
-      const newSystemPrompt = systemMessage?.content || DEFAULT_SYSTEM_PROMPT;
+      const newSystemPrompt = stripTerminationPolicy(
+        systemMessage?.content || DEFAULT_SYSTEM_PROMPT
+      );
       const newVoice = assistantData.voice?.voiceId || '';
 
       setFirstMessage(newFirstMessage);
@@ -520,7 +631,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         aiAssistantName: assistantData?.name || 'AI Assistant', // Preserve the actual assistant name
         yourName: profile?.full_name || '',
         businessName: profile?.business_name || '',
-        greetingScript: systemPrompt.trim(),
+        greetingScript: stripTerminationPolicy(systemPrompt).trim(),
       };
       if (voiceId !== originalValues.voiceId) {
         aiSettingsPayload.voiceId = voiceId;
@@ -539,7 +650,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         const systemMessage = refreshedData.model?.messages?.find(
           (msg: any) => msg.role === 'system'
         );
-        const newSystemPrompt = systemMessage?.content || systemPrompt.trim();
+        const newSystemPrompt = stripTerminationPolicy(
+          systemMessage?.content || systemPrompt.trim()
+        );
 
         setFirstMessage(newFirstMessage);
         setSystemPrompt(newSystemPrompt);
@@ -579,6 +692,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     profile?.business_name,
     refreshAssistantData,
     voiceId,
+    originalValues.voiceId,
   ]);
 
   // Handle refresh (memoized for performance)
@@ -602,8 +716,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
             const systemMessage = assistant.model?.messages?.find(
               (msg: any) => msg.role === 'system'
             );
-            const newSystemPrompt =
-              systemMessage?.content || DEFAULT_SYSTEM_PROMPT;
+            const newSystemPrompt = stripTerminationPolicy(
+              systemMessage?.content || DEFAULT_SYSTEM_PROMPT
+            );
             const newVoice = assistant.voice?.voiceId || '';
 
             setFirstMessage(newFirstMessage);
@@ -625,7 +740,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
         const systemMessage = refreshedData.model?.messages?.find(
           (msg: any) => msg.role === 'system'
         );
-        const newSystemPrompt = systemMessage?.content || DEFAULT_SYSTEM_PROMPT;
+        const newSystemPrompt = stripTerminationPolicy(
+          systemMessage?.content || DEFAULT_SYSTEM_PROMPT
+        );
         const newVoice = refreshedData.voice?.voiceId || '';
 
         setFirstMessage(newFirstMessage);

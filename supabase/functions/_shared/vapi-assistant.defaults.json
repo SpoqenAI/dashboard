@@ -1,0 +1,9 @@
+{
+  "model": {
+    "provider": "openai",
+    "model": "gpt-5-nano",
+    "temperature": 1.1,
+    "maxTokens": 10000,
+    "emotionRecognitionEnabled": true
+  }
+}

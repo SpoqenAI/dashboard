@@ -14,6 +14,10 @@ import {
   getStandardAnalysisPlan,
   getAnalysisPlanVersion,
 } from '@/lib/vapi-assistant';
+import {
+  ensureTerminationPolicyAppended,
+  TERMINATION_DISPLAY_NAME_FALLBACK,
+} from '@/lib/vapi/termination-policy';
 
 /**
  * Safely constructs a VAPI assistant URL with validated assistantId
@@ -298,6 +302,17 @@ export async function syncVapiAssistant(
       // Best-effort; proceed without blocking if GET fails
     }
 
+    // Merge a conservative termination policy into the existing system message
+    let mergedSystemMessage = greeting;
+    try {
+      mergedSystemMessage = ensureTerminationPolicyAppended(
+        greeting,
+        TERMINATION_DISPLAY_NAME_FALLBACK
+      );
+    } catch (_) {
+      // Non-fatal; proceed with original greeting
+    }
+
     const res = await fetch(safeUrl, {
       method: 'PATCH',
       headers: {
@@ -312,9 +327,17 @@ export async function syncVapiAssistant(
           messages: [
             {
               role: 'system',
-              content: greeting,
+              content: mergedSystemMessage,
             },
           ],
+          // Ensure endCall tool exists so assistant can hang up when policy triggers
+          tools: Array.isArray((existingModel as any)?.tools)
+            ? (() => {
+                const tools = [...((existingModel as any).tools as any[])];
+                const hasEndCall = tools.some(t => t?.type === 'endCall');
+                return hasEndCall ? tools : [{ type: 'endCall' }, ...tools];
+              })()
+            : [{ type: 'endCall' }],
         },
         ...(voiceId
           ? {

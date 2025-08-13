@@ -6,6 +6,10 @@ import { useAuth } from './use-auth';
 import { updateUserEmail } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
+import {
+  stripTerminationPolicy,
+  TERMINATION_POLICY_SENTINEL,
+} from '@/lib/vapi/termination-policy';
 
 export interface UserSettings {
   id: string;
@@ -318,10 +322,22 @@ export function useUserSettings() {
               ? newSettings.voiceId
               : undefined;
 
+          // Ensure we never send developer-only termination policy sentinel from UI
+          const sanitizedGreeting = stripTerminationPolicy(
+            newSettings.greetingScript
+          ).trim();
+          if (sanitizedGreeting.includes(TERMINATION_POLICY_SENTINEL)) {
+            // Defensive: should never happen, but avoid leaking sentinel
+            logger.warn(
+              'USER_SETTINGS',
+              'Sanitization failed; removing sentinel from greeting before sync'
+            );
+          }
+
           syncVapiAssistant(
             browserUser.id,
             newSettings.aiAssistantName.trim(),
-            newSettings.greetingScript.trim(),
+            sanitizedGreeting,
             voiceIdForSync
           );
         }
@@ -388,7 +404,9 @@ export function useUserSettings() {
           ? {
               ...prev,
               assistant_name: newSettings.aiAssistantName,
-              ai_greeting: newSettings.greetingScript,
+              ai_greeting: stripTerminationPolicy(
+                newSettings.greetingScript
+              ).trim(),
             }
           : null
       );
@@ -396,7 +414,7 @@ export function useUserSettings() {
       // Update local assistant cache (used for display purposes)
       setAssistant({
         assistant_name: newSettings.aiAssistantName,
-        greeting: newSettings.greetingScript,
+        greeting: stripTerminationPolicy(newSettings.greetingScript).trim(),
       });
 
       toast({

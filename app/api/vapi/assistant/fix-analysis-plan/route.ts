@@ -8,6 +8,7 @@ import {
 } from '@/lib/vapi-assistant';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import defaults from '@/supabase/functions/_shared/vapi-assistant.defaults.json';
 
 // POST /api/vapi/assistant/fix-analysis-plan
 // Updates existing assistant with a simplified analysis plan that works
@@ -41,13 +42,70 @@ export async function POST(req: NextRequest) {
     // Preserve existing metadata and set analysisPlanVersion for traceability
     const assistantInfo = await getUserAssistantInfo(supabase);
     const existingMetadata = assistantInfo.data?.metadata || {};
+
+    // Merge a conservative termination policy into existing system message if missing
+    const updatedMessages = assistantInfo.data?.model?.messages || [];
+    try {
+      const {
+        ensureTerminationPolicyAppended,
+        TERMINATION_DISPLAY_NAME_FALLBACK,
+      } = await import('@/lib/vapi/termination-policy');
+      const sysIdx = updatedMessages.findIndex(
+        (m: any) => m?.role === 'system'
+      );
+      if (sysIdx >= 0) {
+        const sys = updatedMessages[sysIdx];
+        const content =
+          typeof sys.content === 'string'
+            ? sys.content
+            : String(sys.content ?? '');
+        updatedMessages[sysIdx] = {
+          ...sys,
+          content: ensureTerminationPolicyAppended(
+            content,
+            TERMINATION_DISPLAY_NAME_FALLBACK
+          ),
+        };
+      }
+    } catch {
+      // best-effort
+    }
+
+    const modelDefaults = (defaults as any)?.model || {};
+    const modelOverrides = {
+      ...(typeof modelDefaults.provider === 'string'
+        ? { provider: modelDefaults.provider }
+        : {}),
+      ...(typeof modelDefaults.model === 'string'
+        ? { model: modelDefaults.model }
+        : {}),
+      ...(typeof modelDefaults.temperature === 'number'
+        ? { temperature: modelDefaults.temperature }
+        : {}),
+      ...(typeof modelDefaults.maxTokens === 'number'
+        ? { maxTokens: modelDefaults.maxTokens }
+        : {}),
+    } as Record<string, unknown>;
+
     const analysisUpdates = {
       analysisPlan: getStandardAnalysisPlan(),
       metadata: {
         ...existingMetadata,
         analysisPlanVersion: getAnalysisPlanVersion(),
       },
-    };
+      model: {
+        ...(assistantInfo.data?.model ? assistantInfo.data.model : {}),
+        ...modelOverrides,
+        messages: updatedMessages,
+        tools: Array.isArray(assistantInfo.data?.model?.tools)
+          ? (() => {
+              const tools = [...(assistantInfo.data.model.tools as any[])];
+              const hasEndCall = tools.some(t => t?.type === 'endCall');
+              return hasEndCall ? tools : [{ type: 'endCall' }, ...tools];
+            })()
+          : [{ type: 'endCall' }],
+      },
+    } as any;
 
     // Use user-scoped function to update the assistant
     const result = await updateUserAssistant(
