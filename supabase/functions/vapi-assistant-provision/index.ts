@@ -200,9 +200,13 @@ async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
       return cachedAnalysisPlanJson;
     } catch (err2) {
       // Final fallback: inline plan to keep provisioned assistants in sync with system defaults
-      addBreadcrumb('Analysis plan load failed, using inline fallback', 'config', {
-        error: err2 instanceof Error ? err2.message : String(err2),
-      });
+      addBreadcrumb(
+        'Analysis plan load failed, using inline fallback',
+        'config',
+        {
+          error: err2 instanceof Error ? err2.message : String(err2),
+        }
+      );
       cachedAnalysisPlanJson = INLINE_ANALYSIS_PLAN_JSON;
       return cachedAnalysisPlanJson;
     }
