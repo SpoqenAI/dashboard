@@ -71,7 +71,10 @@ async function fetchWithTimeout(
   timeoutMs = 15000
 ): Promise<Response> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), init.timeoutMs ?? timeoutMs);
+  const timeout = setTimeout(
+    () => controller.abort(),
+    init.timeoutMs ?? timeoutMs
+  );
   try {
     return await fetch(input, { ...init, signal: controller.signal });
   } finally {
@@ -497,14 +500,18 @@ Deno.serve(async (req: Request) => {
       }
 
       // First attempt
-      let vapiRes = await fetchWithTimeout('https://api.vapi.ai/assistant', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${VAPI_API_KEY}`,
-          'Content-Type': 'application/json',
+      let vapiRes = await fetchWithTimeout(
+        'https://api.vapi.ai/assistant',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${VAPI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(assistantConfig),
         },
-        body: JSON.stringify(assistantConfig),
-      }, 15_000);
+        15_000
+      );
       let vapiResText = await vapiRes.text();
 
       // Fallback strategy on validation errors (e.g., unsupported model or token limits)
@@ -528,14 +535,18 @@ Deno.serve(async (req: Request) => {
             );
           }
 
-          vapiRes = await fetchWithTimeout('https://api.vapi.ai/assistant', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${VAPI_API_KEY}`,
-              'Content-Type': 'application/json',
+          vapiRes = await fetchWithTimeout(
+            'https://api.vapi.ai/assistant',
+            {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${VAPI_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(fallbackConfig1),
             },
-            body: JSON.stringify(fallbackConfig1),
-          }, 15_000);
+            15_000
+          );
           vapiResText = await vapiRes.text();
         } catch (_) {
           // ignore
@@ -558,14 +569,18 @@ Deno.serve(async (req: Request) => {
               }
             }
 
-            vapiRes = await fetchWithTimeout('https://api.vapi.ai/assistant', {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${VAPI_API_KEY}`,
-                'Content-Type': 'application/json',
+            vapiRes = await fetchWithTimeout(
+              'https://api.vapi.ai/assistant',
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${VAPI_API_KEY}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(fallbackConfig2),
               },
-              body: JSON.stringify(fallbackConfig2),
-            }, 15_000);
+              15_000
+            );
             vapiResText = await vapiRes.text();
           } catch (_) {
             // ignore
