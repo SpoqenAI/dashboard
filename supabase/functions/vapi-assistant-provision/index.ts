@@ -81,6 +81,101 @@ async function fetchWithTimeout(
     clearTimeout(timeout);
   }
 }
+// Inline fallbacks to ensure provisioning always applies the canonical config
+// These are used only if local JSON files cannot be read at runtime (e.g. packaging/runtime path issues)
+const INLINE_DEFAULTS_JSON = {
+  model: {
+    provider: 'openai',
+    model: 'gpt-5-nano',
+    temperature: 1.1,
+    maxTokens: 10000,
+    emotionRecognitionEnabled: true,
+  },
+} as const;
+
+const INLINE_ANALYSIS_PLAN_JSON = {
+  version: '1.0.1',
+  plan: {
+    summaryPrompt:
+      "You are an expert call analyst. Summarize this call in 2-3 sentences, focusing on the caller's main purpose, key discussion points, and any outcomes or next steps.",
+    structuredDataPrompt:
+      'You are an expert data extractor for business calls. Extract structured data from this call transcript focusing on lead qualification, customer intent, and business opportunities. Provide reasoning for your sentiment and lead quality assessments when possible.',
+    structuredDataSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        sentiment: {
+          type: 'string',
+          enum: ['positive', 'neutral', 'negative'],
+          description: 'Overall sentiment of the caller',
+        },
+        leadQuality: {
+          type: 'string',
+          enum: ['hot', 'warm', 'cold'],
+          description: 'Quality of the lead based on interest and urgency',
+        },
+        callPurpose: {
+          type: 'string',
+          description: 'Main reason for the call',
+        },
+        keyPoints: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Important points discussed during the call',
+        },
+        followUpItems: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Action items or follow-up tasks identified',
+        },
+        urgentConcerns: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Any urgent issues or time-sensitive matters',
+        },
+        appointmentRequested: {
+          type: 'boolean',
+          description: 'Whether the caller requested an appointment or meeting',
+        },
+        timeline: {
+          type: 'string',
+          description:
+            'Timeframe mentioned by caller (immediate, within a week, month, etc.)',
+        },
+        contactPreference: {
+          type: 'string',
+          description: 'Preferred method of contact (phone, email, text, etc.)',
+        },
+        businessInterest: {
+          type: 'string',
+          description: 'Specific business interest or service inquired about',
+        },
+        budgetMentioned: {
+          type: 'boolean',
+          description: 'Whether budget or pricing was discussed',
+        },
+        decisionMaker: {
+          type: 'boolean',
+          description: 'Whether the caller appears to be a decision maker',
+        },
+        sentimentAnalysisReasoning: {
+          type: 'string',
+          description:
+            'Brief explanation of why this sentiment was assigned based on conversation tone and language patterns.',
+        },
+        leadQualityReasoning: {
+          type: 'string',
+          description:
+            'Brief explanation of why this lead quality score was assigned based on engagement and interest signals.',
+        },
+      },
+      required: ['sentiment', 'leadQuality', 'callPurpose'],
+    },
+    successEvaluationPrompt:
+      'Evaluate if this call was successful based on: 1) Did the caller get their questions answered? 2) Was relevant information exchanged? 3) Were next steps established? 4) Did the conversation flow naturally without technical issues?',
+    successEvaluationRubric: 'PassFail',
+  },
+} as const;
 // Load canonical analysis plan without static JSON import assertions (Biome-safe, Deno-friendly)
 let cachedAnalysisPlanJson: any | null = null;
 async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
@@ -104,14 +199,12 @@ async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
       cachedAnalysisPlanJson = JSON.parse(planTextLocal);
       return cachedAnalysisPlanJson;
     } catch (err2) {
-      addBreadcrumb(
-        'Analysis plan load failed, proceeding without plan',
-        'config',
-        {
-          error: err2 instanceof Error ? err2.message : String(err2),
-        }
-      );
-      return null;
+      // Final fallback: inline plan to keep provisioned assistants in sync with system defaults
+      addBreadcrumb('Analysis plan load failed, using inline fallback', 'config', {
+        error: err2 instanceof Error ? err2.message : String(err2),
+      });
+      cachedAnalysisPlanJson = INLINE_ANALYSIS_PLAN_JSON;
+      return cachedAnalysisPlanJson;
     }
   }
 }
@@ -139,14 +232,12 @@ async function getCanonicalDefaultsJson(): Promise<any | null> {
       cachedDefaultsJson = JSON.parse(defaultsTextLocal);
       return cachedDefaultsJson;
     } catch (err2) {
-      addBreadcrumb(
-        'Defaults load failed, proceeding with inline fallbacks',
-        'config',
-        {
-          error: err2 instanceof Error ? err2.message : String(err2),
-        }
-      );
-      return null;
+      // Final fallback: inline defaults to keep provisioned assistants in sync with system defaults
+      addBreadcrumb('Defaults load failed, using inline fallback', 'config', {
+        error: err2 instanceof Error ? err2.message : String(err2),
+      });
+      cachedDefaultsJson = INLINE_DEFAULTS_JSON;
+      return cachedDefaultsJson;
     }
   }
 }
