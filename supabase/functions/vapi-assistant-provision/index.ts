@@ -81,9 +81,130 @@ async function fetchWithTimeout(
     clearTimeout(timeout);
   }
 }
+// Lightweight typing for canonical config to prevent drift
+interface AnalysisPlanJson {
+  version: string;
+  plan: {
+    summaryPrompt: string;
+    structuredDataPrompt: string;
+    structuredDataSchema: {
+      type: 'object';
+      additionalProperties: boolean;
+      properties: Record<string, unknown>;
+      required: string[];
+    };
+    successEvaluationPrompt: string;
+    successEvaluationRubric: 'PassFail' | string;
+  };
+}
+
+interface DefaultsJson {
+  model: {
+    provider: string;
+    model: string;
+    temperature: number;
+    maxTokens: number;
+    emotionRecognitionEnabled?: boolean;
+  };
+}
+// Inline fallbacks to ensure provisioning always applies the canonical config
+// These are used only if local JSON files cannot be read at runtime (e.g. packaging/runtime path issues)
+const INLINE_DEFAULTS_JSON: DefaultsJson = {
+  model: {
+    provider: 'openai',
+    model: 'gpt-5-nano',
+    temperature: 1.1,
+    maxTokens: 10000,
+    emotionRecognitionEnabled: true,
+  },
+} as const;
+
+const INLINE_ANALYSIS_PLAN_JSON: AnalysisPlanJson = {
+  version: '1.0.1',
+  plan: {
+    summaryPrompt:
+      "You are an expert call analyst. Summarize this call in 2-3 sentences, focusing on the caller's main purpose, key discussion points, and any outcomes or next steps.",
+    structuredDataPrompt:
+      'You are an expert data extractor for business calls. Extract structured data from this call transcript focusing on lead qualification, customer intent, and business opportunities. Provide reasoning for your sentiment and lead quality assessments when possible.',
+    structuredDataSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        sentiment: {
+          type: 'string',
+          enum: ['positive', 'neutral', 'negative'],
+          description: 'Overall sentiment of the caller',
+        },
+        leadQuality: {
+          type: 'string',
+          enum: ['hot', 'warm', 'cold'],
+          description: 'Quality of the lead based on interest and urgency',
+        },
+        callPurpose: {
+          type: 'string',
+          description: 'Main reason for the call',
+        },
+        keyPoints: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Important points discussed during the call',
+        },
+        followUpItems: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Action items or follow-up tasks identified',
+        },
+        urgentConcerns: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Any urgent issues or time-sensitive matters',
+        },
+        appointmentRequested: {
+          type: 'boolean',
+          description: 'Whether the caller requested an appointment or meeting',
+        },
+        timeline: {
+          type: 'string',
+          description:
+            'Timeframe mentioned by caller (immediate, within a week, month, etc.)',
+        },
+        contactPreference: {
+          type: 'string',
+          description: 'Preferred method of contact (phone, email, text, etc.)',
+        },
+        businessInterest: {
+          type: 'string',
+          description: 'Specific business interest or service inquired about',
+        },
+        budgetMentioned: {
+          type: 'boolean',
+          description: 'Whether budget or pricing was discussed',
+        },
+        decisionMaker: {
+          type: 'boolean',
+          description: 'Whether the caller appears to be a decision maker',
+        },
+        sentimentAnalysisReasoning: {
+          type: 'string',
+          description:
+            'Brief explanation of why this sentiment was assigned based on conversation tone and language patterns.',
+        },
+        leadQualityReasoning: {
+          type: 'string',
+          description:
+            'Brief explanation of why this lead quality score was assigned based on engagement and interest signals.',
+        },
+      },
+      required: ['sentiment', 'leadQuality', 'callPurpose'],
+    },
+    successEvaluationPrompt:
+      'Evaluate if this call was successful based on: 1) Did the caller get their questions answered? 2) Was relevant information exchanged? 3) Were next steps established? 4) Did the conversation flow naturally without technical issues?',
+    successEvaluationRubric: 'PassFail',
+  },
+} as const;
 // Load canonical analysis plan without static JSON import assertions (Biome-safe, Deno-friendly)
-let cachedAnalysisPlanJson: any | null = null;
-async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
+let cachedAnalysisPlanJson: AnalysisPlanJson | null = null;
+async function getCanonicalAnalysisPlanJson(): Promise<AnalysisPlanJson> {
   if (cachedAnalysisPlanJson) return cachedAnalysisPlanJson;
   try {
     const planUrl = new URL(
@@ -91,7 +212,7 @@ async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
       import.meta.url
     );
     const planText = await Deno.readTextFile(planUrl);
-    cachedAnalysisPlanJson = JSON.parse(planText);
+    cachedAnalysisPlanJson = JSON.parse(planText) as AnalysisPlanJson;
     return cachedAnalysisPlanJson;
   } catch (err) {
     // Fallback: try local file inside function directory
@@ -101,24 +222,48 @@ async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
         import.meta.url
       );
       const planTextLocal = await Deno.readTextFile(planUrlLocal);
-      cachedAnalysisPlanJson = JSON.parse(planTextLocal);
+      cachedAnalysisPlanJson = JSON.parse(planTextLocal) as AnalysisPlanJson;
       return cachedAnalysisPlanJson;
     } catch (err2) {
+      // Final fallback: inline plan to keep provisioned assistants in sync with system defaults
+      const primaryPath = new URL(
+        '../_shared/vapi-assistant.plan.json',
+        import.meta.url
+      ).toString();
+      const fallbackPath = new URL(
+        './vapi-assistant.plan.json',
+        import.meta.url
+      ).toString();
       addBreadcrumb(
-        'Analysis plan load failed, proceeding without plan',
+        'Analysis plan load failed, using inline fallback',
         'config',
         {
-          error: err2 instanceof Error ? err2.message : String(err2),
+          firstErrorMessage: err instanceof Error ? err.message : String(err),
+          secondErrorMessage:
+            err2 instanceof Error ? err2.message : String(err2),
+          firstError:
+            err instanceof Error
+              ? { name: err.name, stack: err.stack }
+              : String(err),
+          secondError:
+            err2 instanceof Error
+              ? { name: err2.name, stack: err2.stack }
+              : String(err2),
+          attemptedPaths: [primaryPath, fallbackPath],
         }
       );
-      return null;
+      // Deep clone to avoid accidental mutation of inline constants
+      cachedAnalysisPlanJson = JSON.parse(
+        JSON.stringify(INLINE_ANALYSIS_PLAN_JSON)
+      ) as AnalysisPlanJson;
+      return cachedAnalysisPlanJson;
     }
   }
 }
 
 // Load canonical model defaults (provider/model/temperature/maxTokens)
-let cachedDefaultsJson: any | null = null;
-async function getCanonicalDefaultsJson(): Promise<any | null> {
+let cachedDefaultsJson: DefaultsJson | null = null;
+async function getCanonicalDefaultsJson(): Promise<DefaultsJson> {
   if (cachedDefaultsJson) return cachedDefaultsJson;
   try {
     const defaultsUrl = new URL(
@@ -126,7 +271,7 @@ async function getCanonicalDefaultsJson(): Promise<any | null> {
       import.meta.url
     );
     const defaultsText = await Deno.readTextFile(defaultsUrl);
-    cachedDefaultsJson = JSON.parse(defaultsText);
+    cachedDefaultsJson = JSON.parse(defaultsText) as DefaultsJson;
     return cachedDefaultsJson;
   } catch (err) {
     // Fallback: try local file inside function directory
@@ -136,17 +281,36 @@ async function getCanonicalDefaultsJson(): Promise<any | null> {
         import.meta.url
       );
       const defaultsTextLocal = await Deno.readTextFile(defaultsUrlLocal);
-      cachedDefaultsJson = JSON.parse(defaultsTextLocal);
+      cachedDefaultsJson = JSON.parse(defaultsTextLocal) as DefaultsJson;
       return cachedDefaultsJson;
     } catch (err2) {
-      addBreadcrumb(
-        'Defaults load failed, proceeding with inline fallbacks',
-        'config',
-        {
-          error: err2 instanceof Error ? err2.message : String(err2),
-        }
-      );
-      return null;
+      // Final fallback: inline defaults to keep provisioned assistants in sync with system defaults
+      const primaryPath = new URL(
+        '../_shared/vapi-assistant.defaults.json',
+        import.meta.url
+      ).toString();
+      const fallbackPath = new URL(
+        './vapi-assistant.defaults.json',
+        import.meta.url
+      ).toString();
+      addBreadcrumb('Defaults load failed, using inline fallback', 'config', {
+        firstErrorMessage: err instanceof Error ? err.message : String(err),
+        secondErrorMessage: err2 instanceof Error ? err2.message : String(err2),
+        firstError:
+          err instanceof Error
+            ? { name: err.name, stack: err.stack }
+            : String(err),
+        secondError:
+          err2 instanceof Error
+            ? { name: err2.name, stack: err2.stack }
+            : String(err2),
+        attemptedPaths: [primaryPath, fallbackPath],
+      });
+      // Deep clone to avoid accidental mutation of inline constants
+      cachedDefaultsJson = JSON.parse(
+        JSON.stringify(INLINE_DEFAULTS_JSON)
+      ) as DefaultsJson;
+      return cachedDefaultsJson;
     }
   }
 }
