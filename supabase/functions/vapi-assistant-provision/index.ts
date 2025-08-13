@@ -342,7 +342,8 @@ Deno.serve(async (req: Request) => {
     let vapiAssistantId;
     try {
       const defaultsJson = await getCanonicalDefaultsJson();
-      const userModelDefaults = (defaultsJson && (defaultsJson as any).model) || {};
+      const userModelDefaults =
+        (defaultsJson && (defaultsJson as any).model) || {};
       const modelDefaults = {
         provider:
           typeof userModelDefaults.provider === 'string'
