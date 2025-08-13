@@ -342,27 +342,35 @@ Deno.serve(async (req: Request) => {
     let vapiAssistantId;
     try {
       const defaultsJson = await getCanonicalDefaultsJson();
-      const modelDefaults = (defaultsJson && defaultsJson.model) || {
-        provider: 'openai',
-        model: 'gpt-5-nano',
-        temperature: 1.1,
-        maxTokens: 10000,
-        emotionRecognitionEnabled: true,
+      const userModelDefaults = (defaultsJson && (defaultsJson as any).model) || {};
+      const modelDefaults = {
+        provider:
+          typeof userModelDefaults.provider === 'string'
+            ? userModelDefaults.provider
+            : 'openai',
+        model:
+          typeof userModelDefaults.model === 'string'
+            ? userModelDefaults.model
+            : 'gpt-5-nano',
+        temperature:
+          typeof userModelDefaults.temperature === 'number'
+            ? userModelDefaults.temperature
+            : 1.1,
+        maxTokens:
+          typeof userModelDefaults.maxTokens === 'number'
+            ? userModelDefaults.maxTokens
+            : 10000,
+        emotionRecognitionEnabled:
+          typeof userModelDefaults.emotionRecognitionEnabled === 'boolean'
+            ? userModelDefaults.emotionRecognitionEnabled
+            : true,
       };
+      const modelOverrides = { ...modelDefaults } as Record<string, unknown>;
 
       const assistantConfig: any = {
         name: email,
         model: {
-          provider: modelDefaults.provider,
-          model: modelDefaults.model,
-          temperature: modelDefaults.temperature,
-          maxTokens: modelDefaults.maxTokens,
-          ...(typeof modelDefaults.emotionRecognitionEnabled === 'boolean'
-            ? {
-                emotionRecognitionEnabled:
-                  modelDefaults.emotionRecognitionEnabled,
-              }
-            : {}),
+          ...modelOverrides,
           // Ensure default tools include endCall so the assistant can hang up
           tools: [{ type: 'endCall' }],
           messages: [

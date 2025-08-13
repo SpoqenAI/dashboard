@@ -72,6 +72,20 @@ export async function POST(req: NextRequest) {
     }
 
     const modelDefaults = (defaults as any)?.model || {};
+    const modelOverrides = {
+      ...(typeof modelDefaults.provider === 'string'
+        ? { provider: modelDefaults.provider }
+        : {}),
+      ...(typeof modelDefaults.model === 'string'
+        ? { model: modelDefaults.model }
+        : {}),
+      ...(typeof modelDefaults.temperature === 'number'
+        ? { temperature: modelDefaults.temperature }
+        : {}),
+      ...(typeof modelDefaults.maxTokens === 'number'
+        ? { maxTokens: modelDefaults.maxTokens }
+        : {}),
+    } as Record<string, unknown>;
 
     const analysisUpdates = {
       analysisPlan: getStandardAnalysisPlan(),
@@ -81,6 +95,7 @@ export async function POST(req: NextRequest) {
       },
       model: {
         ...(assistantInfo.data?.model ? assistantInfo.data.model : {}),
+        ...modelOverrides,
         messages: updatedMessages,
         tools: Array.isArray(assistantInfo.data?.model?.tools)
           ? (() => {
@@ -89,11 +104,6 @@ export async function POST(req: NextRequest) {
               return hasEndCall ? tools : [{ type: 'endCall' }, ...tools];
             })()
           : [{ type: 'endCall' }],
-        // Force standard defaults to resolve model drift
-        provider: modelDefaults.provider,
-        model: modelDefaults.model,
-        temperature: modelDefaults.temperature,
-        maxTokens: modelDefaults.maxTokens,
       },
     } as any;
 

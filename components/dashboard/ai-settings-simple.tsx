@@ -47,7 +47,10 @@ import dynamic from 'next/dynamic';
 import rawPlan from '@/supabase/functions/_shared/vapi-assistant.plan.json';
 import rawDefaults from '@/supabase/functions/_shared/vapi-assistant.defaults.json';
 import type { Plan } from '@/types/plan';
-import { TERMINATION_POLICY_SENTINEL } from '@/lib/vapi/termination-policy';
+import {
+  stripTerminationPolicy,
+  TERMINATION_POLICY_SENTINEL,
+} from '@/lib/vapi/termination-policy';
 const VapiWidget = dynamic(() => import('@/components/vapi-widget'), {
   ssr: false,
 });
@@ -189,18 +192,6 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   );
   const DEFAULT_SYSTEM_PROMPT = useMemo(
     () => 'Hello! Thank you for calling. How can I assist you today?',
-    []
-  );
-
-  // Hide developer-only termination policy from UI by stripping sentinel content
-  const stripTerminationPolicy = useCallback(
-    (content: string | undefined | null) => {
-      if (typeof content !== 'string') return content || '';
-      const idx = content.indexOf(TERMINATION_POLICY_SENTINEL);
-      if (idx === -1) return content;
-      // Trim trailing whitespace/newlines before sentinel so UI only shows user-editable portion
-      return content.slice(0, idx).trimEnd();
-    },
     []
   );
 
@@ -701,6 +692,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
     profile?.business_name,
     refreshAssistantData,
     voiceId,
+    originalValues.voiceId,
   ]);
 
   // Handle refresh (memoized for performance)
