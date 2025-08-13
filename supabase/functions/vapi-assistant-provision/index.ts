@@ -32,6 +32,38 @@ import {
   TERMINATION_POLICY_SENTINEL,
   TERMINATION_DISPLAY_NAME_FALLBACK,
 } from '../_shared/termination-policy.ts';
+// Sanitizes user-provided display names to a single-line, bounded string
+function sanitizeSingleLineBounded(name: string, maxLen: number = 64): string {
+  if (typeof name !== 'string') return '';
+  const limit = Number.isFinite(maxLen) && maxLen > 0 ? Math.floor(maxLen) : 64;
+  let result = '';
+  let prevWasSpace = false;
+  for (let i = 0; i < name.length; i++) {
+    const code = name.charCodeAt(i);
+    let ch = name[i];
+    // Map CR, LF, TAB to a space; drop other ASCII control chars (including DEL)
+    if (code === 9 || code === 10 || code === 13) {
+      ch = ' ';
+    } else if (code < 32 || code === 127) {
+      continue;
+    }
+    // Collapse consecutive spaces and avoid leading spaces
+    if (ch === ' ') {
+      if (prevWasSpace || result.length === 0) {
+        prevWasSpace = true;
+        continue;
+      }
+      prevWasSpace = true;
+    } else {
+      prevWasSpace = false;
+    }
+    result += ch;
+    if (result.length >= limit) break;
+  }
+  // Trim trailing space
+  if (result.endsWith(' ')) result = result.slice(0, -1);
+  return result;
+}
 // Load canonical analysis plan without static JSON import assertions (Biome-safe, Deno-friendly)
 let cachedAnalysisPlanJson: any | null = null;
 async function getCanonicalAnalysisPlanJson(): Promise<any | null> {
@@ -292,12 +324,7 @@ Deno.serve(async (req: Request) => {
         typeof displayName === 'string' && displayName.trim().length > 0
           ? displayName
           : email;
-      // Replace control characters (including newlines/tabs) with spaces
-      const noCtrl = String(baseName).replace(/[\x00-\x1F\x7F]+/g, ' ');
-      // Collapse any internal whitespace to a single space and trim ends
-      const collapsed = noCtrl.replace(/\s+/g, ' ').trim();
-      // Enforce max length
-      const bounded = collapsed.slice(0, 64).trim();
+      const bounded = sanitizeSingleLineBounded(baseName, 64);
       displayName = bounded || email;
     }
 
@@ -343,13 +370,27 @@ Deno.serve(async (req: Request) => {
     }
 
     // Update status to pending
-    await supabase
+    const { error: pendingError } = await supabase
       .from('user_settings')
       .update({
         assistant_provisioning_status: 'pending',
         assistant_provisioning_started_at: new Date().toISOString(),
       })
       .eq('id', user_id);
+    if (pendingError) {
+      captureException(pendingError, {
+        function: 'vapi-assistant-provision',
+        operation: 'mark_pending',
+        user_id,
+      });
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to update provisioning status',
+          details: 'An unexpected error occurred',
+        }),
+        { status: 500 }
+      );
+    }
 
     // Call VAPI API to create assistant
     let vapiAssistantId;
