@@ -45,7 +45,7 @@ const integrationCategories: IntegrationCategory[] = [
 
 function IntegrationCard({ category }: { category: IntegrationCategory }) {
   return (
-    <Card className="hover:shadow-glow-primary/20 group border border-white/10 bg-card/20 backdrop-blur-glass transition-all duration-300 hover:scale-105 hover:bg-card/30">
+    <Card className="hover:shadow-glow-primary/20 group border border-white/10 bg-card/10 transition-all duration-300 hover:scale-105 hover:bg-card/20">
       <CardContent className="space-y-4 p-6">
         <div className="flex items-center space-x-3">
           <div
@@ -79,7 +79,7 @@ function IntegrationCard({ category }: { category: IntegrationCategory }) {
 
 export function IntegrationsShowcase() {
   return (
-    <section className="w-full bg-gradient-to-b from-card/30 to-background py-20">
+    <section className="w-full py-20">
       <div className="container px-6">
         <div className="mb-16 animate-fade-in text-center">
           <h2 className="mb-6 text-4xl font-bold lg:text-5xl">
@@ -109,7 +109,7 @@ export function IntegrationsShowcase() {
         </div>
 
         {/* API Documentation CTA */}
-        <Card className="mx-auto max-w-4xl border border-primary/30 bg-gradient-to-r from-primary/20 to-accent/20 backdrop-blur-glass">
+        <Card className="mx-auto max-w-4xl border border-primary/20 bg-card/10">
           <CardContent className="p-8">
             <div className="grid items-center gap-8 md:grid-cols-2">
               <div className="space-y-4">

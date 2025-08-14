@@ -71,7 +71,7 @@ export function GlobalHeader() {
             href="/"
             className="flex items-center transition-transform duration-300 hover:scale-105"
           >
-            <Logo width={140} height={48} />
+            <Logo width={178} height={50} />
           </Link>
         </div>
 

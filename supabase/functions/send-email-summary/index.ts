@@ -159,8 +159,8 @@ serve(async req => {
         phoneNumber,
         callerName,
         callAnalysis,
-        logoUrl: `${bucketUrl}/Spoqen.png`,
-        fullLogoUrl: `${bucketUrl}/Spoqen-full.png`,
+        logoUrl: `${bucketUrl}/Spoqen.svg`,
+        fullLogoUrl: `${bucketUrl}/Spoqen.svg`,
         dashboardUrl: `${baseUrl}/recent-calls`,
       })
     );

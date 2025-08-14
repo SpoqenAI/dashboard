@@ -37,7 +37,7 @@ export function ROICalculator() {
   };
 
   return (
-    <Card className="mx-auto max-w-2xl border border-white/10 bg-card/20 backdrop-blur-glass transition-all duration-300 hover:bg-card/30">
+    <Card className="mx-auto max-w-2xl border border-white/10 bg-card/10 transition-all duration-300 hover:bg-card/20">
       <CardHeader className="text-center">
         <div className="mb-2 flex items-center justify-center gap-2">
           <Calculator className="h-6 w-6 text-primary" />
@@ -92,7 +92,7 @@ export function ROICalculator() {
         </div>
 
         <div className="grid gap-4 border-t border-white/10 pt-4 md:grid-cols-3">
-          <div className="rounded-lg border border-destructive/30 bg-destructive/20 p-4 text-center backdrop-blur-glass">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-center">
             <div className="mb-1 text-sm text-muted-foreground">
               Monthly revenue lost:
             </div>
@@ -101,7 +101,7 @@ export function ROICalculator() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-primary/30 bg-primary/20 p-4 text-center backdrop-blur-glass">
+          <div className="rounded-lg border border-primary/30 bg-primary/10 p-4 text-center">
             <div className="mb-1 text-sm text-muted-foreground">
               With Spoqen recovered:
             </div>
@@ -110,7 +110,7 @@ export function ROICalculator() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-accent/30 bg-accent/20 p-4 text-center backdrop-blur-glass">
+          <div className="rounded-lg border border-accent/30 bg-accent/10 p-4 text-center">
             <div className="mb-1 text-sm text-muted-foreground">ROI:</div>
             <div className="flex items-center justify-center gap-1 text-2xl font-bold text-accent">
               <TrendingUp className="h-5 w-5" />

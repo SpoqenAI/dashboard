@@ -11,7 +11,7 @@ export function DashboardHeader() {
             href="/"
             className="transition-transform duration-300 hover:scale-105"
           >
-            <Logo width={140} height={48} />
+            <Logo width={178} height={50} />
           </Link>
         </div>
         <nav className="flex items-center gap-4">

@@ -79,21 +79,21 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 24% 4%;
 
-    /* Brand Magenta Primary */
-    --primary: 315 100% 50%;
-    --primary-foreground: 210 40% 98%;
+    /* Brand Green Primary */
+    --primary: 160 57% 47%; /* #33BD8F */
+    --primary-foreground: 0 0% 100%;
 
-    /* Brand Cyan Secondary */
-    --secondary: 180 100% 50%;
+    /* Brand Green Secondary (deeper) */
+    --secondary: 160 42% 38%;
     --secondary-foreground: 0 0% 100%;
 
     /* Light Muted */
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
 
-    /* Brand Purple Accent */
-    --accent: 270 100% 60%;
-    --accent-foreground: 210 40% 98%;
+    /* Brand Green Accent (lighter) */
+    --accent: 160 65% 54%;
+    --accent-foreground: 0 0% 100%;
 
     /* Red Destructive */
     --destructive: 0 85% 60%;
@@ -102,14 +102,14 @@
     /* Light borders */
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 315 100% 50%;
+    --ring: 160 57% 47%;
 
-    /* Charts */
-    --chart-1: 315 100% 50%;
-    --chart-2: 180 100% 50%;
-    --chart-3: 270 100% 60%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Charts - green tints */
+    --chart-1: 160 57% 47%;
+    --chart-2: 160 42% 38%;
+    --chart-3: 160 65% 54%;
+    --chart-4: 160 35% 28%;
+    --chart-5: 160 75% 65%;
 
     /* Rounded corners */
     --radius: 1rem;
@@ -117,36 +117,35 @@
     /* Light Sidebar */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 24% 4%;
-    --sidebar-primary: 315 100% 50%;
-    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-primary: 160 57% 47%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 210 40% 96%;
     --sidebar-accent-foreground: 215 16% 47%;
     --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 315 100% 50%;
+    --sidebar-ring: 160 57% 47%;
 
-    /* Brand Gradients - Matching Logo */
+    /* Brand Gradients - Green */
     --gradient-primary: linear-gradient(
       135deg,
-      hsl(315 100% 50%),
-      hsl(270 100% 60%),
-      hsl(180 100% 50%)
+      hsl(160 65% 60%),
+      hsl(160 57% 47%)
     );
     --gradient-secondary: linear-gradient(
       135deg,
-      hsl(180 100% 50%),
-      hsl(220 100% 60%)
+      hsl(160 42% 38%),
+      hsl(160 65% 54%)
     );
     --gradient-dark: linear-gradient(135deg, hsl(222 24% 4%), hsl(222 24% 8%));
     --gradient-glow: linear-gradient(
       135deg,
-      hsl(315 100% 50% / 0.2),
-      hsl(180 100% 50% / 0.2)
+      hsl(160 57% 47% / 0.2),
+      hsl(160 65% 60% / 0.2)
     );
 
-    /* Brand Neon Glows */
-    --glow-primary: 0 0 20px hsl(315 100% 50% / 0.5);
-    --glow-secondary: 0 0 20px hsl(180 100% 50% / 0.5);
-    --glow-accent: 0 0 20px hsl(270 100% 60% / 0.5);
+    /* Brand Green Glows */
+    --glow-primary: 0 0 20px hsl(160 57% 47% / 0.5);
+    --glow-secondary: 0 0 20px hsl(160 65% 54% / 0.5);
+    --glow-accent: 0 0 20px hsl(160 42% 38% / 0.5);
 
     /* Glass Effect */
     --glass-bg: hsl(222 24% 6% / 0.8);
@@ -171,17 +170,17 @@
     --popover-foreground: 210 40% 98%;
 
     /* Brand Colors (same in both themes) */
-    --primary: 315 100% 50%;
+    --primary: 160 57% 47%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 180 100% 50%;
-    --secondary-foreground: 222 24% 4%;
+    --secondary: 160 42% 38%;
+    --secondary-foreground: 210 40% 98%;
 
     /* Dark Muted */
     --muted: 222 24% 12%;
     --muted-foreground: 215 20% 65%;
 
-    /* Brand Purple Accent */
-    --accent: 270 100% 60%;
+    /* Brand Green Accent */
+    --accent: 160 65% 54%;
     --accent-foreground: 210 40% 98%;
 
     /* Red Destructive */
@@ -191,24 +190,24 @@
     /* Dark borders */
     --border: 222 24% 16%;
     --input: 222 24% 16%;
-    --ring: 315 100% 50%;
+    --ring: 160 57% 47%;
 
     /* Charts */
-    --chart-1: 315 100% 50%;
-    --chart-2: 180 100% 50%;
-    --chart-3: 270 100% 60%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-1: 160 57% 47%;
+    --chart-2: 160 42% 38%;
+    --chart-3: 160 65% 54%;
+    --chart-4: 160 35% 28%;
+    --chart-5: 160 75% 65%;
 
     /* Dark Sidebar */
     --sidebar-background: 222 24% 4%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 315 100% 50%;
+    --sidebar-primary: 160 57% 47%;
     --sidebar-primary-foreground: 210 40% 98%;
     --sidebar-accent: 222 24% 12%;
     --sidebar-accent-foreground: 215 20% 65%;
     --sidebar-border: 222 24% 16%;
-    --sidebar-ring: 315 100% 50%;
+    --sidebar-ring: 160 57% 47%;
   }
 }
 
@@ -219,11 +218,11 @@
   body {
     @apply bg-background text-foreground transition-colors duration-300;
     font-family:
-      'Inter',
+      'Segoe UI',
       -apple-system,
       BlinkMacSystemFont,
-      'Segoe UI',
       'Roboto',
+      Arial,
       sans-serif;
   }
 }

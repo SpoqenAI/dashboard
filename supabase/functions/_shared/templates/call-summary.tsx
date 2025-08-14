@@ -34,7 +34,7 @@ interface CallSummaryEmailProps {
   dashboardUrl: string;
 }
 
-const BRAND_COLOR = '#4F46E5';
+const BRAND_COLOR = '#33BD8F';
 
 export default function CallSummaryEmail({
   summary,
