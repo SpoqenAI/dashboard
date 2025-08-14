@@ -39,11 +39,11 @@ export default function HomePage() {
           <section>
             <div className="container px-4 py-12 sm:px-6 sm:py-16 lg:py-24">
               <div className="mx-auto max-w-4xl text-center">
-                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-6xl whitespace-nowrap">
+                <h1 className="whitespace-nowrap text-3xl font-bold tracking-tight sm:text-4xl lg:text-6xl">
                   Tired of answering calls all day?
                 </h1>
                 <div className="mt-4 sm:mt-6">
-                  <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent text-4xl font-bold sm:text-5xl lg:text-7xl tracking-tight">
+                  <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl lg:text-7xl">
                     We got you covered.
                   </span>
                 </div>
