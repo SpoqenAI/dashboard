@@ -16,7 +16,7 @@ export function ProblemBanner({ className }: ProblemBannerProps) {
       {/* Solid, edge-to-edge backdrop that matches the orange card footprint */}
       <div
         className="absolute inset-0 rounded-lg bg-white dark:bg-black"
-        aria-hidden
+        aria-hidden="true"
       />
       <div
         className={cn(

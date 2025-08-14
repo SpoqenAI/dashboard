@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Phone, Waveform } from 'lucide-react';
+import { Phone } from 'lucide-react';
 
 interface CallCardProps {
   className?: string;
