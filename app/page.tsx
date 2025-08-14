@@ -16,7 +16,7 @@ import { ROICalculator } from '@/components/roi-calculator';
 import { FinalCTAButtons } from '@/components/final-cta-buttons';
 import { ScarcityBannerProvider } from '@/components/scarcity-banner-provider';
 import ExitIntentModalLoader from '@/components/ui/exit-intent-modal-loader';
-import { CallCard } from '@/components/hero/call-card';
+// Removed static incoming call component per rebrand
 import { BenefitsBar } from '@/components/benefits-bar';
 import { BenefitsGrid } from '@/components/features/benefits-grid';
 
@@ -38,21 +38,17 @@ export default function HomePage() {
           {/* Hero Section (Option A: split hero, subtle gradient) */}
           <section>
             <div className="container px-4 py-12 sm:px-6 sm:py-16 lg:py-24">
-              <div className="grid items-center gap-10 md:grid-cols-2">
-                <div className="space-y-6">
-                  <h1 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-6xl">
-                    Stop Missing Calls. Start Booking More.
-                  </h1>
-                  <p className="text-base text-muted-foreground sm:text-lg lg:text-2xl">
-                    Spoqen answers, understands, and schedules so you never lose
-                    another lead.
-                  </p>
-                  <div className="flex flex-wrap gap-3">
-                    <HeroCTASection />
-                  </div>
+              <div className="mx-auto max-w-4xl text-center">
+                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-6xl whitespace-nowrap">
+                  Tired of answering calls all day?
+                </h1>
+                <div className="mt-4 sm:mt-6">
+                  <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent text-4xl font-bold sm:text-5xl lg:text-7xl tracking-tight">
+                    We got you covered.
+                  </span>
                 </div>
-                <div className="flex justify-center md:justify-end">
-                  <CallCard />
+                <div className="mt-6 flex justify-center">
+                  <HeroCTASection />
                 </div>
               </div>
               <div className="mt-10">
