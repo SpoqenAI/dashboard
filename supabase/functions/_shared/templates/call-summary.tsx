@@ -259,10 +259,10 @@ export default function CallSummaryEmail({
                       {callAnalysis.leadQualityReasoning && (
                         <div
                           style={{
-                              fontSize: '14px',
-                              color: TEXT_COLOR,
+                            fontSize: '14px',
+                            color: TEXT_COLOR,
                             marginBottom: '8px',
-                              backgroundColor: SURFACE,
+                            backgroundColor: SURFACE,
                             padding: '8px',
                             borderRadius: '4px',
                             border: '1px solid #E5E7EB',
@@ -277,10 +277,10 @@ export default function CallSummaryEmail({
                       {callAnalysis.sentimentAnalysisReasoning && (
                         <div
                           style={{
-                              fontSize: '14px',
-                              color: TEXT_COLOR,
+                            fontSize: '14px',
+                            color: TEXT_COLOR,
                             marginBottom: '8px',
-                              backgroundColor: SURFACE,
+                            backgroundColor: SURFACE,
                             padding: '8px',
                             borderRadius: '4px',
                             border: '1px solid #E5E7EB',
@@ -295,8 +295,8 @@ export default function CallSummaryEmail({
                       {callAnalysis.callPurpose && (
                         <div
                           style={{
-                              fontSize: '14px',
-                              color: TEXT_COLOR,
+                            fontSize: '14px',
+                            color: TEXT_COLOR,
                             marginBottom: '4px',
                           }}
                         >
