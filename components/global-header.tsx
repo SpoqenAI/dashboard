@@ -81,7 +81,11 @@ export function GlobalHeader() {
             {[
               { name: 'Home', href: '/#top', active: isLandingPage },
               { name: 'Features', href: '/#features', active: false },
-              { name: 'Pricing', href: '/#pricing', active: pathname === '/pricing' },
+              {
+                name: 'Pricing',
+                href: '/#pricing',
+                active: pathname === '/pricing',
+              },
             ].map(link => (
               <Link
                 key={link.name}
@@ -96,7 +100,9 @@ export function GlobalHeader() {
                 <span
                   className={cn(
                     'pointer-events-none absolute inset-x-0 -bottom-0.5 h-0.5 rounded-full bg-green-500 transition-opacity duration-300',
-                    link.active ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
+                    link.active
+                      ? 'opacity-100'
+                      : 'opacity-0 group-hover:opacity-50'
                   )}
                   aria-hidden="true"
                 />
@@ -127,7 +133,9 @@ export function GlobalHeader() {
                   <span
                     className={cn(
                       'pointer-events-none absolute inset-x-0 -bottom-0.5 h-0.5 rounded-full bg-green-500 transition-opacity duration-300',
-                      isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
+                      isActive
+                        ? 'opacity-100'
+                        : 'opacity-0 group-hover:opacity-50'
                     )}
                     aria-hidden="true"
                   />
