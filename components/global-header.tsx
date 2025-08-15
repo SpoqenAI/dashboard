@@ -78,24 +78,30 @@ export function GlobalHeader() {
         {/* Centered navigation for public (logged-out) pages (desktop only) */}
         {!user && !loading && !isAuthPage && (
           <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-6 lg:flex">
-            <Link
-              href="/#top"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-            >
-              Home
-            </Link>
-            <Link
-              href="/#features"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-            >
-              Features
-            </Link>
-            <Link
-              href="/#pricing"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-            >
-              Pricing
-            </Link>
+            {[
+              { name: 'Home', href: '/#top', active: isLandingPage },
+              { name: 'Features', href: '/#features', active: false },
+              { name: 'Pricing', href: '/#pricing', active: pathname === '/pricing' },
+            ].map(link => (
+              <Link
+                key={link.name}
+                href={link.href}
+                aria-current={link.active ? 'page' : undefined}
+                className={cn(
+                  'group relative pb-2 text-sm font-medium transition-colors hover:text-primary',
+                  link.active ? 'text-primary' : 'text-muted-foreground'
+                )}
+              >
+                {link.name}
+                <span
+                  className={cn(
+                    'pointer-events-none absolute inset-x-0 -bottom-0.5 h-0.5 rounded-full bg-green-500 transition-opacity duration-300',
+                    link.active ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
+                  )}
+                  aria-hidden="true"
+                />
+              </Link>
+            ))}
           </nav>
         )}
 
@@ -110,13 +116,21 @@ export function GlobalHeader() {
                 <Link
                   key={item.name}
                   href={item.href}
+                  aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    'flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary',
+                    'group relative flex items-center space-x-2 pb-2 text-sm font-medium transition-colors hover:text-primary',
                     isActive ? 'text-primary' : 'text-muted-foreground'
                   )}
                 >
                   <Icon className="h-4 w-4" />
                   <span>{item.name}</span>
+                  <span
+                    className={cn(
+                      'pointer-events-none absolute inset-x-0 -bottom-0.5 h-0.5 rounded-full bg-green-500 transition-opacity duration-300',
+                      isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
+                    )}
+                    aria-hidden="true"
+                  />
                 </Link>
               );
             })}
