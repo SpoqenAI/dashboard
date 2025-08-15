@@ -8,7 +8,7 @@ interface DashboardShellProps {
 export function DashboardShell({ children }: DashboardShellProps) {
   return (
     <SimpleBackground variant="minimal" className="flex-1">
-      <div className="space-y-4 p-8 pt-6">{children}</div>
+      <div className="relative z-10 space-y-4 p-8 pt-6">{children}</div>
     </SimpleBackground>
   );
 }
