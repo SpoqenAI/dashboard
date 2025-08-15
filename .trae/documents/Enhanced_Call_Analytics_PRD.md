@@ -27,64 +27,69 @@ Our enhanced call analytics requirements consist of the following main pages:
 
 ### 2.3 Page Details
 
-| Page Name            | Module Name           | Feature Description                                                                                                |
-| -------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Page Name            | Module Name           | Feature Description                                                                                                  |
+| -------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | Analytics Dashboard  | Widget Grid System    | AWS-style customizable dashboard with drag-and-drop widgets, resizable containers, and persistent layout preferences |
-| Analytics Dashboard  | Key Metrics Widgets   | Individual metric cards (calls, answer rate, duration, cost) as draggable widgets with real-time updates          |
-| Analytics Dashboard  | Chart Widgets         | Modular chart components (line, bar, pie, donut) as independent widgets with drill-down capabilities               |
-| Analytics Dashboard  | Widget Library        | Add/remove widgets from a comprehensive library including custom KPI widgets and third-party integrations          |
-| Analytics Dashboard  | Layout Presets        | Pre-configured dashboard layouts (Executive, Operations, Sales) with one-click switching                           |
-| Analytics Dashboard  | Time Range Selector   | Global time filter affecting all widgets with sync capabilities and custom date ranges                             |
-| Detailed Reports     | Advanced Filtering    | Filter by date range, call status, sentiment, lead quality, duration, cost with multi-select options               |
-| Detailed Reports     | Data Table            | Sortable columns, pagination, search functionality, call detail modal integration                                  |
-| Detailed Reports     | Trend Analysis        | Line charts for call volume over time, sentiment trends, cost analysis with comparative periods                    |
-| Detailed Reports     | Performance Metrics   | Calculate conversion rates, average handling time, cost per lead, ROI metrics                                      |
-| Export Center        | Report Generation     | Generate PDF/Excel reports with custom date ranges, selected metrics, branded templates                            |
-| Export Center        | Data Export           | Export raw data in CSV/JSON formats with filtering options and data transformation                                 |
-| Export Center        | Scheduled Reports     | Configure automated daily/weekly/monthly reports with email delivery                                               |
-| Performance Insights | Comparative Analytics | Compare current period vs previous period, year-over-year analysis, benchmark against industry standards           |
-| Performance Insights | Predictive Analytics  | Forecast call volume trends, identify peak hours, predict lead conversion rates                                    |
-| Performance Insights | Alert System          | Set up alerts for unusual patterns, performance thresholds, cost limits                                            |
+| Analytics Dashboard  | Key Metrics Widgets   | Individual metric cards (calls, answer rate, duration, cost) as draggable widgets with real-time updates             |
+| Analytics Dashboard  | Chart Widgets         | Modular chart components (line, bar, pie, donut) as independent widgets with drill-down capabilities                 |
+| Analytics Dashboard  | Widget Library        | Add/remove widgets from a comprehensive library including custom KPI widgets and third-party integrations            |
+| Analytics Dashboard  | Layout Presets        | Pre-configured dashboard layouts (Executive, Operations, Sales) with one-click switching                             |
+| Analytics Dashboard  | Time Range Selector   | Global time filter affecting all widgets with sync capabilities and custom date ranges                               |
+| Detailed Reports     | Advanced Filtering    | Filter by date range, call status, sentiment, lead quality, duration, cost with multi-select options                 |
+| Detailed Reports     | Data Table            | Sortable columns, pagination, search functionality, call detail modal integration                                    |
+| Detailed Reports     | Trend Analysis        | Line charts for call volume over time, sentiment trends, cost analysis with comparative periods                      |
+| Detailed Reports     | Performance Metrics   | Calculate conversion rates, average handling time, cost per lead, ROI metrics                                        |
+| Export Center        | Report Generation     | Generate PDF/Excel reports with custom date ranges, selected metrics, branded templates                              |
+| Export Center        | Data Export           | Export raw data in CSV/JSON formats with filtering options and data transformation                                   |
+| Export Center        | Scheduled Reports     | Configure automated daily/weekly/monthly reports with email delivery                                                 |
+| Performance Insights | Comparative Analytics | Compare current period vs previous period, year-over-year analysis, benchmark against industry standards             |
+| Performance Insights | Predictive Analytics  | Forecast call volume trends, identify peak hours, predict lead conversion rates                                      |
+| Performance Insights | Alert System          | Set up alerts for unusual patterns, performance thresholds, cost limits                                              |
 
 ## 2.4 Widget-Based Dashboard Architecture
 
 ### 2.4.1 Widget System Overview
+
 The Analytics Dashboard implements a modern widget-based architecture similar to AWS CloudWatch dashboards, providing users with complete control over their analytics experience through customizable, draggable, and resizable components.
 
 ### 2.4.2 Available Widget Types
 
-| Widget Type | Description | Size Options | Data Sources |
-|-------------|-------------|--------------|-------------|
-| Metric Card | Single KPI display with trend indicator | Small (1x1), Medium (2x1) | Real-time call metrics |
-| Line Chart | Time-series data visualization | Medium (2x2), Large (4x2) | Call volume, duration trends |
-| Bar Chart | Categorical data comparison | Medium (2x2), Large (3x2) | Lead quality, status distribution |
-| Pie Chart | Percentage distribution display | Small (2x2), Medium (3x2) | Sentiment analysis, call outcomes |
-| Data Table | Tabular data with sorting/filtering | Large (4x3), Extra Large (6x4) | Recent calls, detailed records |
-| Heatmap | Time-based activity visualization | Large (4x2) | Call volume by hour/day |
-| Gauge | Progress/performance indicators | Small (2x2) | Answer rate, conversion rate |
-| Text Widget | Custom notes and annotations | Small (2x1), Medium (3x1) | User-defined content |
+| Widget Type | Description                             | Size Options                   | Data Sources                      |
+| ----------- | --------------------------------------- | ------------------------------ | --------------------------------- |
+| Metric Card | Single KPI display with trend indicator | Small (1x1), Medium (2x1)      | Real-time call metrics            |
+| Line Chart  | Time-series data visualization          | Medium (2x2), Large (4x2)      | Call volume, duration trends      |
+| Bar Chart   | Categorical data comparison             | Medium (2x2), Large (3x2)      | Lead quality, status distribution |
+| Pie Chart   | Percentage distribution display         | Small (2x2), Medium (3x2)      | Sentiment analysis, call outcomes |
+| Data Table  | Tabular data with sorting/filtering     | Large (4x3), Extra Large (6x4) | Recent calls, detailed records    |
+| Heatmap     | Time-based activity visualization       | Large (4x2)                    | Call volume by hour/day           |
+| Gauge       | Progress/performance indicators         | Small (2x2)                    | Answer rate, conversion rate      |
+| Text Widget | Custom notes and annotations            | Small (2x1), Medium (3x1)      | User-defined content              |
 
 ### 2.4.3 Dashboard Customization Features
 
 **Drag-and-Drop Interface**
+
 - Intuitive widget repositioning with visual feedback
 - Grid-based snapping for precise alignment
 - Real-time layout preview during drag operations
 - Collision detection and automatic repositioning
 
 **Widget Management**
+
 - Add widgets from comprehensive library panel
 - Remove widgets with confirmation dialog
 - Duplicate existing widgets with modified configurations
 - Widget-specific configuration panels
 
 **Layout Persistence**
+
 - User-specific layout preferences stored in database
 - Auto-save functionality with 2-second debounce
 - Layout versioning for rollback capabilities
 - Export/import layout configurations
 
 **Responsive Behavior**
+
 - Automatic widget reflow on screen size changes
 - Mobile-optimized stacked layout
 - Breakpoint-specific widget sizing
@@ -93,12 +98,14 @@ The Analytics Dashboard implements a modern widget-based architecture similar to
 ### 2.4.4 Pre-configured Layout Templates
 
 **Executive Dashboard**
+
 - High-level KPI metrics (4 metric cards)
 - Call volume trend chart (large)
 - Sentiment distribution pie chart (medium)
 - Cost analysis bar chart (medium)
 
 **Operations Dashboard**
+
 - Real-time call status widgets
 - Answer rate gauge
 - Recent calls data table
@@ -106,6 +113,7 @@ The Analytics Dashboard implements a modern widget-based architecture similar to
 - Alert notifications panel
 
 **Sales Dashboard**
+
 - Lead quality distribution
 - Conversion rate metrics
 - Revenue tracking charts
@@ -115,18 +123,21 @@ The Analytics Dashboard implements a modern widget-based architecture similar to
 ### 2.4.5 Widget Configuration Options
 
 **Data Refresh Settings**
+
 - Real-time updates (5-second intervals)
 - Manual refresh controls
 - Auto-refresh toggle per widget
 - Data staleness indicators
 
 **Visual Customization**
+
 - Color scheme selection per widget
 - Chart type switching for compatible data
 - Title and description editing
 - Border and shadow styling options
 
 **Data Filtering**
+
 - Widget-specific time range overrides
 - Custom filter criteria per widget
 - Global filter inheritance options
@@ -178,17 +189,17 @@ graph TD
 
 ### 4.1 Design Style
 
-* **Primary Colors**: Blue (#3B82F6) for primary actions, Green (#10B981) for positive metrics, Red (#EF4444) for alerts
+- **Primary Colors**: Blue (#3B82F6) for primary actions, Green (#10B981) for positive metrics, Red (#EF4444) for alerts
 
-* **Secondary Colors**: Gray (#6B7280) for text, Light Gray (#F3F4F6) for backgrounds, White (#FFFFFF) for cards
+- **Secondary Colors**: Gray (#6B7280) for text, Light Gray (#F3F4F6) for backgrounds, White (#FFFFFF) for cards
 
-* **Button Style**: Rounded corners (8px), subtle shadows, hover animations with color transitions
+- **Button Style**: Rounded corners (8px), subtle shadows, hover animations with color transitions
 
-* **Font**: Inter font family, 14px base size, 16px for headings, 12px for captions
+- **Font**: Inter font family, 14px base size, 16px for headings, 12px for captions
 
-* **Layout Style**: Card-based design with clean spacing, top navigation with breadcrumbs, responsive grid system
+- **Layout Style**: Card-based design with clean spacing, top navigation with breadcrumbs, responsive grid system
 
-* **Icons**: Lucide React icons for consistency, 16px-24px sizes, matching color scheme
+- **Icons**: Lucide React icons for consistency, 16px-24px sizes, matching color scheme
 
 ### 4.2 Page Design Overview
 
@@ -206,13 +217,12 @@ graph TD
 
 Desktop-first approach with mobile-adaptive design. Touch interaction optimization for mobile devices including:
 
-* Swipeable chart navigation
+- Swipeable chart navigation
 
-* Touch-friendly filter controls
+- Touch-friendly filter controls
 
-* Collapsible sidebar navigation
+- Collapsible sidebar navigation
 
-* Optimized table scrolling
+- Optimized table scrolling
 
-* Mobile-specific chart layouts
-
+- Mobile-specific chart layouts

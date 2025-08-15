@@ -13,23 +13,23 @@ graph TD
     C --> H[Chart.js/Recharts]
     C --> I[Export Service]
     I --> J[PDF/Excel Generation]
-    
+
     subgraph "Frontend Layer"
         B
         C
         H
     end
-    
+
     subgraph "API Layer"
         D
         E
         I
     end
-    
+
     subgraph "Data Layer"
         G
     end
-    
+
     subgraph "External Services"
         F
         J
@@ -38,23 +38,23 @@ graph TD
 
 ## 2. Technology Description
 
-* **Frontend**: React\@18 + TypeScript + Tailwind CSS\@3 + Vite
+- **Frontend**: React\@18 + TypeScript + Tailwind CSS\@3 + Vite
 
-* **Widget System**: React-Grid-Layout\@1.4 + React-Resizable\@3.0 + React-DnD\@16
+- **Widget System**: React-Grid-Layout\@1.4 + React-Resizable\@3.0 + React-DnD\@16
 
-* **Charts**: Chart.js\@4 + React-Chartjs-2 OR Recharts\@2
+- **Charts**: Chart.js\@4 + React-Chartjs-2 OR Recharts\@2
 
-* **Data Fetching**: SWR\@2 + React Query\@4 (for real-time updates)
+- **Data Fetching**: SWR\@2 + React Query\@4 (for real-time updates)
 
-* **State Management**: Zustand\@4 (for widget layout state)
+- **State Management**: Zustand\@4 (for widget layout state)
 
-* **Export**: jsPDF\@2 + xlsx\@0.18 + html2canvas\@1
+- **Export**: jsPDF\@2 + xlsx\@0.18 + html2canvas\@1
 
-* **Backend**: Next.js\@14 API Routes + Supabase
+- **Backend**: Next.js\@14 API Routes + Supabase
 
-* **Database**: Supabase (PostgreSQL)
+- **Database**: Supabase (PostgreSQL)
 
-* **External API**: VAPI API for call data
+- **External API**: VAPI API for call data
 
 ## 2.1 Widget System Architecture
 
@@ -104,7 +104,7 @@ interface BaseWidget {
   lastUpdated: Date;
 }
 
-type WidgetType = 
+type WidgetType =
   | 'metric-card'
   | 'line-chart'
   | 'bar-chart'
@@ -127,13 +127,13 @@ interface WidgetConfig {
 
 **Widget Factory Pattern**
 
-* Centralized widget creation and registration
+- Centralized widget creation and registration
 
-* Type-safe widget instantiation
+- Type-safe widget instantiation
 
-* Plugin architecture for custom widgets
+- Plugin architecture for custom widgets
 
-* Widget validation and error boundaries
+- Widget validation and error boundaries
 
 **Layout Persistence Service**
 
@@ -142,20 +142,24 @@ class LayoutPersistenceService {
   async saveLayout(userId: string, layout: DashboardLayout): Promise<void>;
   async loadLayout(userId: string, layoutId?: string): Promise<DashboardLayout>;
   async deleteLayout(userId: string, layoutId: string): Promise<void>;
-  async duplicateLayout(userId: string, layoutId: string, newName: string): Promise<DashboardLayout>;
+  async duplicateLayout(
+    userId: string,
+    layoutId: string,
+    newName: string
+  ): Promise<DashboardLayout>;
   async getLayoutTemplates(): Promise<DashboardLayout[]>;
 }
 ```
 
 **Real-time Widget Updates**
 
-* WebSocket connections for live data streaming
+- WebSocket connections for live data streaming
 
-* Selective widget refresh based on data dependencies
+- Selective widget refresh based on data dependencies
 
-* Optimistic updates with rollback capabilities
+- Optimistic updates with rollback capabilities
 
-* Bandwidth optimization through data diffing
+- Bandwidth optimization through data diffing
 
 ### 2.1.3 Grid System Implementation
 
@@ -163,32 +167,32 @@ class LayoutPersistenceService {
 
 ```typescript
 interface GridBreakpoints {
-  lg: { cols: 12, rowHeight: 100 }; // Desktop
-  md: { cols: 8, rowHeight: 80 };  // Tablet
-  sm: { cols: 4, rowHeight: 60 };  // Mobile
-  xs: { cols: 2, rowHeight: 50 };  // Small Mobile
+  lg: { cols: 12; rowHeight: 100 }; // Desktop
+  md: { cols: 8; rowHeight: 80 }; // Tablet
+  sm: { cols: 4; rowHeight: 60 }; // Mobile
+  xs: { cols: 2; rowHeight: 50 }; // Small Mobile
 }
 ```
 
 **Drag and Drop Implementation**
 
-* React-Grid-Layout for grid management
+- React-Grid-Layout for grid management
 
-* React-DnD for widget library interactions
+- React-DnD for widget library interactions
 
-* Custom collision detection algorithms
+- Custom collision detection algorithms
 
-* Smooth animations during layout changes
+- Smooth animations during layout changes
 
 **Widget Sizing and Constraints**
 
-* Minimum/maximum size enforcement
+- Minimum/maximum size enforcement
 
-* Aspect ratio preservation for charts
+- Aspect ratio preservation for charts
 
-* Content-aware auto-sizing
+- Content-aware auto-sizing
 
-* Responsive breakpoint handling
+- Responsive breakpoint handling
 
 ### 2.1.4 Widget Data Management
 
@@ -221,7 +225,7 @@ interface WidgetStore {
   widgets: Record<string, BaseWidget>;
   globalFilters: FilterConfig[];
   isEditMode: boolean;
-  
+
   // Actions
   setLayout: (layout: DashboardLayout) => void;
   addWidget: (widget: BaseWidget, position: WidgetLayout) => void;
@@ -347,17 +351,17 @@ GET /api/analytics/filters
 
 Returns available filter options based on current data:
 
-* Date ranges
+- Date ranges
 
-* Call statuses
+- Call statuses
 
-* Sentiment categories
+- Sentiment categories
 
-* Lead quality levels
+- Lead quality levels
 
-* Duration ranges
+- Duration ranges
 
-* Cost ranges
+- Cost ranges
 
 ## 5. Server Architecture Diagram
 
@@ -373,19 +377,19 @@ graph TD
     F --> I[VAPI API]
     H --> J[Supabase]
     G --> K[Redis Cache]
-    
+
     subgraph "API Layer"
         B
         C
         D
     end
-    
+
     subgraph "Service Layer"
         E
         F
         H
     end
-    
+
     subgraph "Data Layer"
         I
         J
@@ -403,14 +407,14 @@ erDiagram
     USER ||--o{ ANALYTICS_PREFERENCES : configures
     USER ||--o{ SCHEDULED_REPORTS : creates
     USER ||--o{ EXPORT_HISTORY : generates
-    
+
     USER {
         uuid id PK
         string email
         string name
         timestamp created_at
     }
-    
+
     USER_SETTINGS {
         uuid id PK
         uuid user_id FK
@@ -418,7 +422,7 @@ erDiagram
         json preferences
         timestamp updated_at
     }
-    
+
     ANALYTICS_PREFERENCES {
         uuid id PK
         uuid user_id FK
@@ -427,7 +431,7 @@ erDiagram
         json chart_preferences
         timestamp updated_at
     }
-    
+
     SCHEDULED_REPORTS {
         uuid id PK
         uuid user_id FK
@@ -439,7 +443,7 @@ erDiagram
         timestamp created_at
         timestamp last_sent
     }
-    
+
     EXPORT_HISTORY {
         uuid id PK
         uuid user_id FK
@@ -454,7 +458,7 @@ erDiagram
 
 ### 6.2 Widget System Database Schema
 
-**Dashboard Layouts Table (dashboard\_layouts)**
+**Dashboard Layouts Table (dashboard_layouts)**
 
 ```sql
 CREATE TABLE dashboard_layouts (
@@ -482,7 +486,7 @@ CREATE POLICY "Users can manage their own dashboard layouts" ON dashboard_layout
 GRANT SELECT, INSERT, UPDATE, DELETE ON dashboard_layouts TO authenticated;
 ```
 
-**Widget Configurations Table (widget\_configs)**
+**Widget Configurations Table (widget_configs)**
 
 ```sql
 CREATE TABLE widget_configs (
@@ -652,7 +656,7 @@ GRANT ALL PRIVILEGES ON export_history TO service_role;
 
 -- Initial data
 INSERT INTO analytics_preferences (user_id, dashboard_layout, default_filters, chart_preferences)
-SELECT 
+SELECT
     id,
     '{"widgets": ["metrics", "charts", "trends"]}',
     '{"timeRange": "30", "includeTestCalls": false}',
@@ -660,4 +664,3 @@ SELECT
 FROM auth.users
 WHERE id NOT IN (SELECT user_id FROM analytics_preferences);
 ```
-

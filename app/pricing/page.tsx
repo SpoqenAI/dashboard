@@ -190,7 +190,9 @@ export default function PricingPage() {
             </div>
 
             {/* Billing Toggle */}
-            <div className="inline-block"><BillingToggle /></div>
+            <div className="inline-block">
+              <BillingToggle />
+            </div>
           </div>
 
           {/* Pricing Grid */}
