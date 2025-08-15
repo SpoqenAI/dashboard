@@ -179,16 +179,18 @@ export default function PricingPage() {
         <main className="container mx-auto px-6 py-16">
           {/* Hero Section */}
           <div className="mb-16 text-center">
-            <h1 className="mb-6 text-4xl font-bold tracking-tight lg:text-5xl">
-              Simple, Transparent Pricing
-            </h1>
-            <p className="mx-auto mb-8 max-w-3xl text-xl text-muted-foreground">
-              Choose the perfect plan for your business. Start free, upgrade
-              when you're ready.
-            </p>
+            <div className="mx-auto max-w-4xl pb-12 sm:pb-14 md:pb-16 lg:pb-20">
+              <h1 className="mb-6 text-4xl font-bold tracking-tight lg:text-5xl">
+                Simple, Transparent Pricing
+              </h1>
+              <p className="mx-auto mb-0 max-w-3xl text-xl text-muted-foreground">
+                Choose the perfect plan for your business. Start free, upgrade
+                when you're ready.
+              </p>
+            </div>
 
             {/* Billing Toggle */}
-            <BillingToggle />
+            <div className="inline-block"><BillingToggle /></div>
           </div>
 
           {/* Pricing Grid */}

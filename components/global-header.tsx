@@ -75,6 +75,30 @@ export function GlobalHeader() {
           </Link>
         </div>
 
+        {/* Centered navigation for public (logged-out) pages */}
+        {!user && !loading && !isAuthPage && (
+          <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-6 md:flex">
+            <Link
+              href="/#top"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+            >
+              Home
+            </Link>
+            <Link
+              href="/#features"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+            >
+              Features
+            </Link>
+            <Link
+              href="/#pricing"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+            >
+              Pricing
+            </Link>
+          </nav>
+        )}
+
         {/* Navigation - only show if user is authenticated and not on onboarding */}
         {user && !isOnboarding && !loading && (
           <nav className="hidden items-center space-x-6 md:flex">
@@ -165,24 +189,27 @@ export function GlobalHeader() {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <nav className="flex flex-col space-y-4">
-                {isLandingPage && (
-                  <>
-                    <Link
-                      href="#features"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
-                    >
-                      Features
-                    </Link>
-                    <Link
-                      href="#pricing"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
-                    >
-                      Pricing
-                    </Link>
-                  </>
-                )}
+                <Link
+                  href="/#top"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                >
+                  Home
+                </Link>
+                <Link
+                  href="/#features"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                >
+                  Features
+                </Link>
+                <Link
+                  href="/#pricing"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                >
+                  Pricing
+                </Link>
                 <div className="space-y-2 border-t pt-4">
                   <Link
                     href="/faq"
@@ -255,28 +282,6 @@ export function GlobalHeader() {
             /* Show login/signup for non-authenticated users */
             !isAuthPage && (
               <nav className="flex items-center gap-4">
-                {isLandingPage && (
-                  <>
-                    <Link
-                      href="#features"
-                      className="text-sm font-medium transition-colors hover:text-primary"
-                    >
-                      Features
-                    </Link>
-                    <Link
-                      href="#pricing"
-                      className="text-sm font-medium transition-colors hover:text-primary"
-                    >
-                      Pricing
-                    </Link>
-                    <Link
-                      href="/faq"
-                      className="text-sm font-medium transition-colors hover:text-primary"
-                    >
-                      FAQ
-                    </Link>
-                  </>
-                )}
                 <Link
                   href="/login"
                   className="text-sm font-medium transition-colors hover:text-primary"

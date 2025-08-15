@@ -249,7 +249,7 @@ interface WidgetStore {
 
 **Enhanced Analytics Data**
 
-```
+```PowerShell
 GET /api/vapi/analytics/enhanced
 ```
 

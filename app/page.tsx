@@ -101,7 +101,9 @@ export default function HomePage() {
                   when you're ready.
                 </p>
                 {/* Billing Toggle */}
-                <BillingToggle />
+                <div className="pt-10 sm:pt-12 md:pt-14 lg:pt-16">
+                  <BillingToggle />
+                </div>
               </div>
               <Suspense fallback={<div className="h-96" />}>
                 <PricingGrid pricingTiers={pricingTiers} />
