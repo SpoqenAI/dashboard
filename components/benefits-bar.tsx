@@ -13,7 +13,7 @@ export function BenefitsBar() {
         <div className="flex items-center gap-3">
           <MessageSquareText className="h-5 w-5 text-primary" />
           <span className="text-sm text-muted-foreground sm:text-sm">
-            Human-like voice + SMS follow-up
+            Human-like voice + Email follow-up
           </span>
         </div>
         <div className="flex items-center gap-3">
