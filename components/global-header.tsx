@@ -75,9 +75,9 @@ export function GlobalHeader() {
           </Link>
         </div>
 
-        {/* Centered navigation for public (logged-out) pages */}
+        {/* Centered navigation for public (logged-out) pages (desktop only) */}
         {!user && !loading && !isAuthPage && (
-          <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-6 md:flex">
+          <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-6 lg:flex">
             <Link
               href="/#top"
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
@@ -256,14 +256,14 @@ export function GlobalHeader() {
           {/* FAQ & Help links - always visible to all users */}
           <Link
             href="/faq"
-            className="hidden items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary sm:flex"
+            className="hidden items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary lg:flex"
           >
             <BookOpen className="h-4 w-4" />
             <span>FAQ</span>
           </Link>
           <Link
             href="/contact"
-            className="hidden items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary sm:flex"
+            className="hidden items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary lg:flex"
           >
             <HelpCircle className="h-4 w-4" />
             <span>Help</span>

@@ -29,8 +29,6 @@ export default function HomePage() {
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-0 overflow-hidden"
         >
-          {/* Fast-fade overlay to push most green to the top */}
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/25 via-transparent to-transparent [mask-image:linear-gradient(to_bottom,black,black_20%,transparent_40%,transparent_100%)]" />
           <div className="absolute inset-0 opacity-[0.03] [background-image:url('/Icon.svg')] [background-repeat:repeat] [background-size:96px] sm:opacity-[0.035] sm:[background-size:128px] md:opacity-[0.04] md:[background-size:160px]" />
         </div>
 

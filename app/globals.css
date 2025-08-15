@@ -100,8 +100,8 @@
     --destructive-foreground: 210 40% 98%;
 
     /* Light borders */
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
+    --border: 160 28% 88%; /* subtle green-tinted border */
+    --input: 160 28% 88%; /* match inputs to border tint */
     --ring: 160 57% 47%;
 
     /* Charts - green tints */
@@ -149,7 +149,7 @@
 
     /* Glass Effect */
     --glass-bg: hsl(222 24% 6% / 0.8);
-    --glass-border: hsl(210 40% 98% / 0.1);
+    --glass-border: hsl(160 40% 60% / 0.08); /* faint green border on glass */
 
     /* Smooth Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -188,8 +188,8 @@
     --destructive-foreground: 210 40% 98%;
 
     /* Dark borders */
-    --border: 222 24% 16%;
-    --input: 222 24% 16%;
+    --border: 160 16% 22%; /* subtle green tint for dark borders */
+    --input: 160 16% 22%;
     --ring: 160 57% 47%;
 
     /* Charts */
@@ -224,6 +224,58 @@
       'Roboto',
       Arial,
       sans-serif;
+  }
+
+  /* Subtle site-wide green glow from the edges */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1; /* render above page backgrounds, below header/content with z-index > 1 */
+    /* Full-height side light bars (light mode) with deeper, softer fade */
+    background:
+      linear-gradient(
+        to right,
+        hsl(160 72% 46% / 0.16) 0%,
+        hsl(160 72% 46% / 0.10) 25%,
+        hsl(160 72% 46% / 0.06) 55%,
+        hsl(160 72% 46% / 0.03) 80%,
+        transparent 100%
+      ) left center / clamp(220px, 28vw, 720px) 100% no-repeat,
+      linear-gradient(
+        to left,
+        hsl(160 72% 46% / 0.16) 0%,
+        hsl(160 72% 46% / 0.10) 25%,
+        hsl(160 72% 46% / 0.06) 55%,
+        hsl(160 72% 46% / 0.03) 80%,
+        transparent 100%
+      ) right center / clamp(220px, 28vw, 720px) 100% no-repeat;
+    filter: blur(30px) saturate(105%);
+    mix-blend-mode: normal;
+  }
+
+  /* Dark mode tuning: deeper reach and screen blend, slightly stronger start but smoother falloff */
+  .dark body::after {
+    background:
+      linear-gradient(
+        to right,
+        hsl(160 72% 60% / 0.20) 0%,
+        hsl(160 72% 60% / 0.12) 28%,
+        hsl(160 72% 60% / 0.07) 60%,
+        hsl(160 72% 60% / 0.035) 85%,
+        transparent 100%
+      ) left center / clamp(240px, 32vw, 800px) 100% no-repeat,
+      linear-gradient(
+        to left,
+        hsl(160 72% 60% / 0.20) 0%,
+        hsl(160 72% 60% / 0.12) 28%,
+        hsl(160 72% 60% / 0.07) 60%,
+        hsl(160 72% 60% / 0.035) 85%,
+        transparent 100%
+      ) right center / clamp(240px, 32vw, 800px) 100% no-repeat;
+    filter: blur(34px) saturate(110%);
+    mix-blend-mode: screen;
   }
 }
 
