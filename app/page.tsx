@@ -2,7 +2,6 @@ import { Suspense } from 'react';
 import Image from 'next/image';
 import { SimpleBackground } from '@/components/simple-background';
 import { HeroCTASection } from '@/components/hero-cta-section';
-import { ProblemBanner } from '@/components/ui/problem-banner';
 import { InteractiveDemo } from '@/components/interactive-demo';
 import { PricingGrid } from '@/app/pricing/components/pricing-grid';
 import {
@@ -19,6 +18,8 @@ import ExitIntentModalLoader from '@/components/ui/exit-intent-modal-loader';
 // Removed static incoming call component per rebrand
 import { BenefitsBar } from '@/components/benefits-bar';
 import { BenefitsGrid } from '@/components/features/benefits-grid';
+import { PhoneLottie } from '@/components/phone-lottie';
+import { FeatureGuideRail } from '@/components/feature-guide-rail';
 
 export default function HomePage() {
   return (
@@ -45,8 +46,11 @@ export default function HomePage() {
                     We got you covered.
                   </span>
                 </div>
-                <div className="mt-6 flex justify-center">
+                <div className="mt-6 flex items-center justify-center gap-3 sm:gap-4">
                   <HeroCTASection />
+                  <div className="hidden h-14 w-14 items-center sm:flex" aria-hidden>
+                    <PhoneLottie src="/animations/Call.json" height={56} tintStrength={1} tintMode="full" />
+                  </div>
                 </div>
               </div>
               <div className="mt-10">
@@ -55,12 +59,100 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* Problem Banner */}
-          <section className="py-12">
-            <div className="container px-6">
-              <ProblemBanner />
+          
+
+          {/* Feature trio wrapper with central guide rail */}
+          <div className="relative">
+            <div aria-hidden className="pointer-events-none absolute inset-0">
+              <div className="container relative mx-auto h-full px-6">
+                <FeatureGuideRail
+                  anchors={[
+                    { side: 'right', id: 'save-time-heading' },
+                    { side: 'left', id: 'keep-number-heading' },
+                    { side: 'right', id: 'always-on-heading' },
+                  ]}
+                  className="absolute inset-0 hidden text-primary sm:block"
+                  endBeforeId="solution"
+                  endOffset={24}
+                  strokeWidth={2}
+                />
+              </div>
             </div>
-          </section>
+
+            {/* Save time with your AI phone assistant */}
+            <section className="py-12">
+              <div className="container px-6">
+                <div data-feature-row className="mx-auto grid max-w-6xl items-center gap-8 md:grid-cols-2">
+                  <div className="order-2 md:order-1">
+                    <h2 id="save-time-heading" className="text-3xl font-bold tracking-tight sm:text-4xl">Save time with your AI phone assistant</h2>
+                    <p className="mt-4 text-lg text-muted-foreground">
+                      Let your assistant answer, qualify and summarize calls so you can get back to the work that matters.
+                      Meetings are scheduled, notes are emailed, and your CRM stays up-to-date—automatically.
+                    </p>
+                  </div>
+                  <div data-anim className="order-1 mx-auto w-full max-w-md md:order-2">
+                    <PhoneLottie src="/animations/Meetings.json" tintStrength={0.7} tintMode="full" />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Setup & Call Forwarding section (moved below and flipped) */}
+            <section className="py-12">
+              <div className="container px-6">
+                <div data-feature-row className="mx-auto grid max-w-6xl items-center gap-8 md:grid-cols-2">
+                  <div data-anim className="order-1 mx-auto w-full max-w-md md:order-1">
+                    <PhoneLottie
+                      src="/animations/Number Phone icon.json"
+                      tint
+                      tintMode="full"
+                      tintStrength={0.85}
+                    />
+                  </div>
+                  <div className="order-2 md:order-2 md:pl-8">
+                    <h2 id="keep-number-heading" className="text-3xl font-bold tracking-tight sm:text-4xl">Keep your number. Forward calls in minutes.</h2>
+                    <p className="mt-4 text-lg text-muted-foreground">
+                      Point your existing phone number to your AI assistant with simple call forwarding. No new
+                      hardware, no porting required—just turn it on and let us answer.
+                    </p>
+                    <ul className="mt-6 space-y-2 text-left text-muted-foreground">
+                      <li>• Keep your business number</li>
+                      <li>• Instant setup with your carrier</li>
+                      <li>• Seamless handoff back to you when needed</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Always-on Answering section */}
+            <section className="py-12">
+              <div className="container px-6">
+                <div data-feature-row className="mx-auto grid max-w-6xl items-center gap-8 md:grid-cols-2">
+                  <div className="order-2 md:order-1">
+                    <h2 id="always-on-heading" className="text-3xl font-bold tracking-tight sm:text-4xl">Always-on answering, even when you can’t pick up</h2>
+                    <p className="mt-4 text-lg text-muted-foreground">
+                      Whether you’re on a flight, your phone is dead, or you just don’t want to take the call, your agent still answers, qualifies, and follows up—so you never miss a thing.
+                    </p>
+                    <ul className="mt-6 space-y-2 text-left text-muted-foreground">
+                      <li>• Answers 24/7 in your brand voice</li>
+                      <li>• Captures messages and next steps</li>
+                      <li>• Schedules callbacks and sends summaries</li>
+                    </ul>
+                  </div>
+                  <div data-anim className="order-1 mx-auto w-full max-w-md md:order-2">
+                    <PhoneLottie
+                      src="/animations/Sharing content on social media.json"
+                      tint
+                      tintMode="full"
+                      tintStrength={0.8}
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+          </div>
 
           {/* Solution (Interactive Demo) */}
           <section id="solution">
@@ -74,10 +166,18 @@ export default function HomePage() {
             <BenefitsGrid />
           </section>
 
-          <section id="roi" className="py-20">
-            <Suspense fallback={<div className="h-96" />}>
-              <ROICalculator />
-            </Suspense>
+          <section id="roi" className="relative py-24">
+            {/* Artistic background accents for the ROI area */}
+            <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+              <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl sm:h-80 sm:w-80" />
+              <div className="absolute right-10 bottom-8 h-40 w-40 rounded-full bg-accent/20 blur-2xl" />
+              <div className="absolute left-10 bottom-0 h-28 w-28 rounded-full bg-primary/10 blur-xl" />
+            </div>
+            <div className="container px-6">
+              <Suspense fallback={<div className="h-96" />}>
+                <ROICalculator />
+              </Suspense>
+            </div>
           </section>
 
           {/* Trust & Integration */}
