@@ -4,7 +4,13 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calculator, TrendingUp, AlertTriangle, PhoneOff, GitBranch } from 'lucide-react';
+import {
+  Calculator,
+  TrendingUp,
+  AlertTriangle,
+  PhoneOff,
+  GitBranch,
+} from 'lucide-react';
 
 export function ROICalculator() {
   const [missedLeads, setMissedLeads] = useState(50);
@@ -55,7 +61,9 @@ export function ROICalculator() {
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="flex items-center justify-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-2 text-orange-700 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-300">
             <AlertTriangle className="h-4 w-4" />
-            <span className="text-xs font-medium uppercase tracking-wide">Hidden Cost</span>
+            <span className="text-xs font-medium uppercase tracking-wide">
+              Hidden Cost
+            </span>
           </div>
           <div className="flex items-center justify-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-2 text-orange-700 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-300">
             <PhoneOff className="h-4 w-4" />
@@ -73,21 +81,36 @@ export function ROICalculator() {
             <Label htmlFor="missed-leads" className="text-sm font-medium">
               Monthly leads you miss:
             </Label>
-            <Input id="missed-leads" type="number" value={missedLeads} onChange={e => setMissedLeads(Number(e.target.value))} />
+            <Input
+              id="missed-leads"
+              type="number"
+              value={missedLeads}
+              onChange={e => setMissedLeads(Number(e.target.value))}
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="deal-value" className="text-sm font-medium">
               Average deal value ($):
             </Label>
-            <Input id="deal-value" type="number" value={dealValue} onChange={e => setDealValue(Number(e.target.value))} />
+            <Input
+              id="deal-value"
+              type="number"
+              value={dealValue}
+              onChange={e => setDealValue(Number(e.target.value))}
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="close-rate" className="text-sm font-medium">
               Close rate (%):
             </Label>
-            <Input id="close-rate" type="number" value={closeRate} onChange={e => setCloseRate(Number(e.target.value))} />
+            <Input
+              id="close-rate"
+              type="number"
+              value={closeRate}
+              onChange={e => setCloseRate(Number(e.target.value))}
+            />
           </div>
         </div>
 

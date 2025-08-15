@@ -16,14 +16,20 @@ interface FeatureGuideLineProps {
  * Render inside a relatively positioned parent. This component is aria-hidden
  * and pointer-events-none by default (via consumer className).
  */
-export function FeatureGuideLine({ side, branchY = 58, className, strokeWidth = 2 }: FeatureGuideLineProps) {
+export function FeatureGuideLine({
+  side,
+  branchY = 58,
+  className,
+  strokeWidth = 2,
+}: FeatureGuideLineProps) {
   const y = Math.max(0, Math.min(100, branchY));
   const cx = 50;
-  const path = side === 'left'
-    // Vertical line + branch to the left (slight curve)
-    ? `M ${cx},0 L ${cx},100 M ${cx},${y} C ${cx - 6},${y} ${cx - 18},${y} 0,${y}`
-    // Vertical line + branch to the right (slight curve)
-    : `M ${cx},0 L ${cx},100 M ${cx},${y} C ${cx + 6},${y} ${cx + 18},${y} 100,${y}`;
+  const path =
+    side === 'left'
+      ? // Vertical line + branch to the left (slight curve)
+        `M ${cx},0 L ${cx},100 M ${cx},${y} C ${cx - 6},${y} ${cx - 18},${y} 0,${y}`
+      : // Vertical line + branch to the right (slight curve)
+        `M ${cx},0 L ${cx},100 M ${cx},${y} C ${cx + 6},${y} ${cx + 18},${y} 100,${y}`;
 
   return (
     <svg
@@ -46,5 +52,3 @@ export function FeatureGuideLine({ side, branchY = 58, className, strokeWidth = 
 }
 
 export default FeatureGuideLine;
-
-

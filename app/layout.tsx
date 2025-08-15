@@ -112,7 +112,11 @@ export default function RootLayout({
           Skip to main content
         </a>
         <PaddleProvider>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem={false}
+          >
             <AuthProvider>
               <NuqsAdapter>
                 <GlobalHeader />

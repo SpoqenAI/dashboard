@@ -3,9 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 
-const Lottie = dynamic(() => import('react-lottie-player').then(m => m.default), {
-  ssr: false,
-});
+const Lottie = dynamic(
+  () => import('react-lottie-player').then(m => m.default),
+  {
+    ssr: false,
+  }
+);
 
 interface PhoneLottieProps {
   src?: string;
@@ -18,9 +21,21 @@ interface PhoneLottieProps {
   tintMode?: 'soft' | 'full'; // 'soft' keeps palette; 'full' forces brand hue
 }
 
-export function PhoneLottie({ src, className, loop = true, speed = 1, height = 220, tint = true, tintStrength = 0.35, tintMode = 'soft' }: PhoneLottieProps) {
+export function PhoneLottie({
+  src,
+  className,
+  loop = true,
+  speed = 1,
+  height = 220,
+  tint = true,
+  tintStrength = 0.35,
+  tintMode = 'soft',
+}: PhoneLottieProps) {
   // Prefer explicit prop, then env URL, then a conventional local path under public
-  const animationSrc = src || process.env.NEXT_PUBLIC_PHONE_ANIMATION_URL || '/animations/phone.json';
+  const animationSrc =
+    src ||
+    process.env.NEXT_PUBLIC_PHONE_ANIMATION_URL ||
+    '/animations/phone.json';
 
   const [data, setData] = useState<any | null>(null);
   const [failed, setFailed] = useState(false);
@@ -30,47 +45,76 @@ export function PhoneLottie({ src, className, loop = true, speed = 1, height = 2
     const c = (1 - Math.abs(2 * l - 1)) * s;
     const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
     const m = l - c / 2;
-    let r = 0, g = 0, b = 0;
+    let r = 0,
+      g = 0,
+      b = 0;
     if (0 <= h && h < 60) [r, g, b] = [c, x, 0];
     else if (60 <= h && h < 120) [r, g, b] = [x, c, 0];
     else if (120 <= h && h < 180) [r, g, b] = [0, c, x];
     else if (180 <= h && h < 240) [r, g, b] = [0, x, c];
     else if (240 <= h && h < 300) [r, g, b] = [x, 0, c];
     else [r, g, b] = [c, 0, x];
-    return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+    return [
+      Math.round((r + m) * 255),
+      Math.round((g + m) * 255),
+      Math.round((b + m) * 255),
+    ];
   }
 
   function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
-    r /= 255; g /= 255; b /= 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h = 0, s = 0, l = (max + min) / 2;
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    const max = Math.max(r, g, b),
+      min = Math.min(r, g, b);
+    let h = 0,
+      s = 0,
+      l = (max + min) / 2;
     if (max !== min) {
       const d = max - min;
       s = l > 0.5 ? d / (2 - max - min) : d / (max - min);
       switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        default: h = (r - g) / d + 4; break;
+        case r:
+          h = (g - b) / d + (g < b ? 6 : 0);
+          break;
+        case g:
+          h = (b - r) / d + 2;
+          break;
+        default:
+          h = (r - g) / d + 4;
+          break;
       }
       h *= 60;
     }
     return [h, s, l];
   }
 
-  function parseCssColorToRgb(color: string | null | undefined): [number, number, number] | null {
+  function parseCssColorToRgb(
+    color: string | null | undefined
+  ): [number, number, number] | null {
     if (!color) return null;
     const c = color.trim();
     // hex #rrggbb
     if (c.startsWith('#')) {
       const hex = c.replace('#', '');
-      const bigint = parseInt(hex.length === 3 ? hex.split('').map((ch) => ch + ch).join('') : hex, 16);
+      const bigint = parseInt(
+        hex.length === 3
+          ? hex
+              .split('')
+              .map(ch => ch + ch)
+              .join('')
+          : hex,
+        16
+      );
       const r = (bigint >> 16) & 255;
       const g = (bigint >> 8) & 255;
       const b = bigint & 255;
       return [r, g, b];
     }
     // hsl( h s% l% ) or raw "h s% l%"
-    const hslMatch = c.match(/^(?:hsl\(|)(\d+(?:\.\d+)?)\s*,?\s*(\d+(?:\.\d+)?)%\s*,?\s*(\d+(?:\.\d+)?)%\)?$/i);
+    const hslMatch = c.match(
+      /^(?:hsl\(|)(\d+(?:\.\d+)?)\s*,?\s*(\d+(?:\.\d+)?)%\s*,?\s*(\d+(?:\.\d+)?)%\)?$/i
+    );
     if (hslMatch) {
       const h = parseFloat(hslMatch[1]);
       const s = parseFloat(hslMatch[2]) / 100;
@@ -86,7 +130,14 @@ export function PhoneLottie({ src, className, loop = true, speed = 1, height = 2
       const root = getComputedStyle(document.documentElement);
       const raw = root.getPropertyValue('--primary')?.trim();
       // shadcn/tailwind stores as "H S% L%"
-      return parseCssColorToRgb(raw) ?? parseCssColorToRgb(getComputedStyle(document.documentElement).getPropertyValue('--primary-foreground'));
+      return (
+        parseCssColorToRgb(raw) ??
+        parseCssColorToRgb(
+          getComputedStyle(document.documentElement).getPropertyValue(
+            '--primary-foreground'
+          )
+        )
+      );
     } catch {
       return null;
     }
@@ -96,17 +147,27 @@ export function PhoneLottie({ src, className, loop = true, speed = 1, height = 2
     try {
       const root = getComputedStyle(document.documentElement);
       const raw = root.getPropertyValue('--primary')?.trim();
-      const hslMatch = raw.match(/^(\d+(?:\.\d+)?)\s*(\d+(?:\.\d+)?)%\s*(\d+(?:\.\d+)?)%$/);
+      const hslMatch = raw.match(
+        /^(\d+(?:\.\d+)?)\s*(\d+(?:\.\d+)?)%\s*(\d+(?:\.\d+)?)%$/
+      );
       if (hslMatch) {
-        return [parseFloat(hslMatch[1]), parseFloat(hslMatch[2]) / 100, parseFloat(hslMatch[3]) / 100];
+        return [
+          parseFloat(hslMatch[1]),
+          parseFloat(hslMatch[2]) / 100,
+          parseFloat(hslMatch[3]) / 100,
+        ];
       }
       const rgb = parseCssColorToRgb(raw);
       if (rgb) return rgbToHsl(rgb[0], rgb[1], rgb[2]);
       return null;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
 
-  function normalizeHexOrCssToRgb(input: string): [number, number, number] | null {
+  function normalizeHexOrCssToRgb(
+    input: string
+  ): [number, number, number] | null {
     return parseCssColorToRgb(input) ?? null;
   }
 
@@ -126,8 +187,14 @@ export function PhoneLottie({ src, className, loop = true, speed = 1, height = 2
     return (a + delta * t + 360) % 360;
   }
 
-  function recolorRgbSoft(arr: number[], brandHsl: [number, number, number], strength: number): [number, number, number] | null {
-    const [r, g, b] = [arr[0], arr[1], arr[2]].map((v) => Math.round(Math.min(1, Math.max(0, v)) * 255));
+  function recolorRgbSoft(
+    arr: number[],
+    brandHsl: [number, number, number],
+    strength: number
+  ): [number, number, number] | null {
+    const [r, g, b] = [arr[0], arr[1], arr[2]].map(v =>
+      Math.round(Math.min(1, Math.max(0, v)) * 255)
+    );
     const [h, s, l] = rgbToHsl(r, g, b);
     const isNearBlack = l < 0.06;
     const isNearWhite = l > 0.95;
@@ -136,13 +203,20 @@ export function PhoneLottie({ src, className, loop = true, speed = 1, height = 2
     if (isNearBlack || isNearWhite || isNeutral || isSkinRange) return null;
     const [bh, bs, bl] = brandHsl;
     const nh = blendAngle(h, bh, strength);
-    const ns = Math.max(0, Math.min(1, s * (1 - strength * 0.2) + bs * (strength * 0.2)));
+    const ns = Math.max(
+      0,
+      Math.min(1, s * (1 - strength * 0.2) + bs * (strength * 0.2))
+    );
     const nl = l; // preserve original lightness for shading
     const [nr, ng, nb] = hslToRgb(nh, ns, nl);
     return [nr / 255, ng / 255, nb / 255];
   }
 
-  function applySoftTintToLottie(lottieData: any, brandHsl: [number, number, number], strength: number): any {
+  function applySoftTintToLottie(
+    lottieData: any,
+    brandHsl: [number, number, number],
+    strength: number
+  ): any {
     const clone = JSON.parse(JSON.stringify(lottieData));
     const visit = (node: any) => {
       if (!node || typeof node !== 'object') return;
@@ -173,8 +247,14 @@ export function PhoneLottie({ src, className, loop = true, speed = 1, height = 2
     return clone;
   }
 
-  function recolorRgbFull(arr: number[], brandHsl: [number, number, number], strength: number): [number, number, number] | null {
-    const [r, g, b] = [arr[0], arr[1], arr[2]].map((v) => Math.round(Math.min(1, Math.max(0, v)) * 255));
+  function recolorRgbFull(
+    arr: number[],
+    brandHsl: [number, number, number],
+    strength: number
+  ): [number, number, number] | null {
+    const [r, g, b] = [arr[0], arr[1], arr[2]].map(v =>
+      Math.round(Math.min(1, Math.max(0, v)) * 255)
+    );
     const [h, s, l] = rgbToHsl(r, g, b);
     const isNearBlack = l < 0.06;
     const isNearWhite = l > 0.95;
@@ -187,7 +267,11 @@ export function PhoneLottie({ src, className, loop = true, speed = 1, height = 2
     return [nr / 255, ng / 255, nb / 255];
   }
 
-  function applyFullTintToLottie(lottieData: any, brandHsl: [number, number, number], strength: number): any {
+  function applyFullTintToLottie(
+    lottieData: any,
+    brandHsl: [number, number, number],
+    strength: number
+  ): any {
     const clone = JSON.parse(JSON.stringify(lottieData));
     const visit = (node: any) => {
       if (!node || typeof node !== 'object') return;
@@ -219,7 +303,7 @@ export function PhoneLottie({ src, className, loop = true, speed = 1, height = 2
     setData(null);
     setTinted(null);
     fetch(animationSrc, { cache: 'force-cache' })
-      .then(async (res) => {
+      .then(async res => {
         if (!res.ok) throw new Error('Failed to load Lottie');
         const json = await res.json();
         if (mounted) setData(json);
@@ -251,18 +335,26 @@ export function PhoneLottie({ src, className, loop = true, speed = 1, height = 2
       return;
     }
     const strength = Math.max(0, Math.min(1, tintStrength));
-    const recolored = tintMode === 'full'
-      ? applyFullTintToLottie(data, brandHsl, strength)
-      : applySoftTintToLottie(data, brandHsl, strength);
+    const recolored =
+      tintMode === 'full'
+        ? applyFullTintToLottie(data, brandHsl, strength)
+        : applySoftTintToLottie(data, brandHsl, strength);
     setTinted(recolored);
   }, [data, tint, tintStrength, tintMode]);
 
   if (!tinted) {
     return (
       <div className={className} aria-hidden>
-        <div style={{ width: '100%', height }} className="flex items-center justify-center rounded-lg border border-border bg-muted/10">
+        <div
+          style={{ width: '100%', height }}
+          className="flex items-center justify-center rounded-lg border border-border bg-muted/10"
+        >
           {/* Dev hint if asset missing */}
-          <span className="text-xs text-muted-foreground">{failed ? 'Add NEXT_PUBLIC_PHONE_ANIMATION_URL or place /public/animations/phone.json' : 'Loading animation…'}</span>
+          <span className="text-xs text-muted-foreground">
+            {failed
+              ? 'Add NEXT_PUBLIC_PHONE_ANIMATION_URL or place /public/animations/phone.json'
+              : 'Loading animation…'}
+          </span>
         </div>
       </div>
     );
@@ -270,11 +362,16 @@ export function PhoneLottie({ src, className, loop = true, speed = 1, height = 2
 
   return (
     <div className={className} aria-hidden>
-      <Lottie play loop={loop} speed={speed} renderer="svg" style={{ width: '100%', height }} animationData={tinted} />
+      <Lottie
+        play
+        loop={loop}
+        speed={speed}
+        renderer="svg"
+        style={{ width: '100%', height }}
+        animationData={tinted}
+      />
     </div>
   );
 }
 
 export default PhoneLottie;
-
-

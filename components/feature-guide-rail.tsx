@@ -43,7 +43,7 @@ export function FeatureGuideRail({
     const rect = svg.getBoundingClientRect();
     const h = Math.max(1, rect.height);
     const w = Math.max(1, rect.width);
-    const cxPx = rect.left + (w * 0.5);
+    const cxPx = rect.left + w * 0.5;
     const paddingPx = 16;
     const minLenPx = 24;
 
@@ -62,7 +62,7 @@ export function FeatureGuideRail({
       setBottomPercent(100);
     }
 
-    const ys = anchors.map((a) => {
+    const ys = anchors.map(a => {
       const el = document.getElementById(a.id);
       if (!el) return 50;
       const r = el.getBoundingClientRect();
@@ -72,7 +72,7 @@ export function FeatureGuideRail({
     });
     setYPercents(ys);
 
-    const xs = anchors.map((a) => {
+    const xs = anchors.map(a => {
       const el = document.getElementById(a.id);
       const row = el?.closest('[data-feature-row]') as HTMLElement | null;
       const anim = row?.querySelector('[data-anim]') as HTMLElement | null;
@@ -86,11 +86,17 @@ export function FeatureGuideRail({
       // Compute branch end just before entering the animation column area
       if (a.side === 'left') {
         const targetPx = Math.min(cxPx - minLenPx, animRect.right + paddingPx);
-        const clamped = Math.min(cxPx - minLenPx, Math.max(rect.left, targetPx));
+        const clamped = Math.min(
+          cxPx - minLenPx,
+          Math.max(rect.left, targetPx)
+        );
         return ((clamped - rect.left) / w) * 100;
       } else {
         const targetPx = Math.max(cxPx + minLenPx, animRect.left - paddingPx);
-        const clamped = Math.max(cxPx + minLenPx, Math.min(rect.right, targetPx));
+        const clamped = Math.max(
+          cxPx + minLenPx,
+          Math.min(rect.right, targetPx)
+        );
         return ((clamped - rect.left) / w) * 100;
       }
     });
@@ -110,7 +116,7 @@ export function FeatureGuideRail({
       ro.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [anchors.map((a) => a.id).join('|'), endBeforeId, endOffset]);
+  }, [anchors.map(a => a.id).join('|'), endBeforeId, endOffset]);
 
   const d = useMemo(() => {
     const cx = 50;
@@ -121,10 +127,14 @@ export function FeatureGuideRail({
       const dynamicEnd = xEnds[idx];
       const endX = Number.isFinite(dynamicEnd)
         ? dynamicEnd
-        : (side === 'left' ? endLeftX : endRightX);
+        : side === 'left'
+          ? endLeftX
+          : endRightX;
       const ctrlDelta = side === 'left' ? -8 : 8;
       const yClamped = Math.min(y, bottom - 0.5);
-      segments.push(`M ${cx},${yClamped} C ${cx + ctrlDelta},${yClamped} ${cx + ctrlDelta * 2},${yClamped} ${endX},${yClamped}`);
+      segments.push(
+        `M ${cx},${yClamped} C ${cx + ctrlDelta},${yClamped} ${cx + ctrlDelta * 2},${yClamped} ${endX},${yClamped}`
+      );
     });
     return segments.join(' ');
   }, [yPercents, xEnds, anchors, endLeftX, endRightX, bottomPercent]);
@@ -151,5 +161,3 @@ export function FeatureGuideRail({
 }
 
 export default FeatureGuideRail;
-
-
