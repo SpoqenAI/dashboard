@@ -1087,9 +1087,11 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
 
       <Card>
         <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex min-w-0 items-center gap-2">
             <Bot className="h-5 w-5" />
-            <CardTitle className="truncate">AI Assistant Configuration</CardTitle>
+            <CardTitle className="truncate">
+              AI Assistant Configuration
+            </CardTitle>
             {assistantData && (
               <Badge variant="secondary" className="ml-2">
                 <CheckCircle className="mr-1 h-3 w-3" />
