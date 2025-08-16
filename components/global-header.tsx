@@ -18,7 +18,13 @@ import {
   Menu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 
 const navigationItems = [
   {
@@ -154,7 +160,14 @@ export function GlobalHeader() {
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+            <SheetContent
+              side="right"
+              className="w-[300px] sm:w-[400px]"
+              aria-label="Navigation menu"
+            >
+              <SheetHeader>
+                <SheetTitle className="sr-only">Navigation menu</SheetTitle>
+              </SheetHeader>
               <nav className="flex flex-col space-y-4">
                 {navigationItems.map(item => {
                   const Icon = item.icon;
@@ -209,7 +222,14 @@ export function GlobalHeader() {
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+            <SheetContent
+              side="right"
+              className="w-[300px] sm:w-[400px]"
+              aria-label="Navigation menu"
+            >
+              <SheetHeader>
+                <SheetTitle className="sr-only">Navigation menu</SheetTitle>
+              </SheetHeader>
               <nav className="flex flex-col space-y-4">
                 <Link
                   href="/#top"
