@@ -152,15 +152,17 @@ serve(async req => {
       'template'
     );
     const baseUrl = Deno.env.get('BASE_URL') ?? 'https://www.spoqen.com';
-    const bucketUrl = `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/public-assets`;
+    // Use site-hosted assets so emails always use the current branding
+    const logoUrl = `${baseUrl}/Icon.png`;
+    const fullLogoUrl = `${baseUrl}/Spoqen (2).png`;
     const html = renderToStaticMarkup(
       React.createElement(CallSummaryEmail, {
         summary,
         phoneNumber,
         callerName,
         callAnalysis,
-        logoUrl: `${bucketUrl}/Spoqen.png`,
-        fullLogoUrl: `${bucketUrl}/Spoqen-full.png`,
+        logoUrl,
+        fullLogoUrl,
         dashboardUrl: `${baseUrl}/recent-calls`,
       })
     );

@@ -34,7 +34,10 @@ interface CallSummaryEmailProps {
   dashboardUrl: string;
 }
 
-const BRAND_COLOR = '#4F46E5';
+const BRAND_COLOR = '#33BD8F';
+const TEXT_COLOR = '#0B1221';
+const MUTED_TEXT = '#4B5563';
+const SURFACE = '#F6F8FA';
 
 export default function CallSummaryEmail({
   summary,
@@ -52,8 +55,9 @@ export default function CallSummaryEmail({
       cellSpacing={0}
       role="presentation"
       style={{
-        fontFamily: 'Arial, sans-serif',
-        color: '#333',
+        fontFamily: 'Inter, -apple-system, Segoe UI, Roboto, Arial, sans-serif',
+        color: TEXT_COLOR,
+        backgroundColor: '#ffffff',
       }}
     >
       {/* Header with logo */}
@@ -108,8 +112,8 @@ export default function CallSummaryEmail({
                 <div
                   style={{
                     color: BRAND_COLOR,
-                    fontSize: '20px',
-                    fontWeight: 600,
+                    fontSize: '22px',
+                    fontWeight: 700,
                     marginBottom: '16px',
                   }}
                 >
@@ -122,7 +126,7 @@ export default function CallSummaryEmail({
                     style={{
                       fontSize: '16px',
                       fontWeight: 600,
-                      color: '#333',
+                      color: TEXT_COLOR,
                       marginBottom: '8px',
                     }}
                   >
@@ -133,8 +137,8 @@ export default function CallSummaryEmail({
                       fontSize: '14px',
                       lineHeight: 1.5,
                       whiteSpace: 'pre-line',
-                      color: '#000',
-                      backgroundColor: '#F9FAFB',
+                      color: TEXT_COLOR,
+                      backgroundColor: SURFACE,
                       padding: '12px',
                       borderRadius: '6px',
                       border: '1px solid #E5E7EB',
@@ -151,7 +155,7 @@ export default function CallSummaryEmail({
                       style={{
                         fontSize: '16px',
                         fontWeight: 600,
-                        color: '#333',
+                        color: TEXT_COLOR,
                         marginBottom: '8px',
                       }}
                     >
@@ -161,7 +165,7 @@ export default function CallSummaryEmail({
                       <div
                         style={{
                           fontSize: '14px',
-                          color: '#000',
+                          color: TEXT_COLOR,
                           marginBottom: '4px',
                         }}
                       >
@@ -169,7 +173,7 @@ export default function CallSummaryEmail({
                       </div>
                     )}
                     {phoneNumber && (
-                      <div style={{ fontSize: '14px', color: '#000' }}>
+                      <div style={{ fontSize: '14px', color: TEXT_COLOR }}>
                         <strong>Phone:</strong> {phoneNumber}
                       </div>
                     )}
@@ -185,7 +189,7 @@ export default function CallSummaryEmail({
                         style={{
                           fontSize: '16px',
                           fontWeight: 600,
-                          color: '#333',
+                          color: TEXT_COLOR,
                           marginBottom: '8px',
                         }}
                       >
@@ -256,9 +260,9 @@ export default function CallSummaryEmail({
                         <div
                           style={{
                             fontSize: '14px',
-                            color: '#000',
+                            color: TEXT_COLOR,
                             marginBottom: '8px',
-                            backgroundColor: '#F9FAFB',
+                            backgroundColor: SURFACE,
                             padding: '8px',
                             borderRadius: '4px',
                             border: '1px solid #E5E7EB',
@@ -274,9 +278,9 @@ export default function CallSummaryEmail({
                         <div
                           style={{
                             fontSize: '14px',
-                            color: '#000',
+                            color: TEXT_COLOR,
                             marginBottom: '8px',
-                            backgroundColor: '#F9FAFB',
+                            backgroundColor: SURFACE,
                             padding: '8px',
                             borderRadius: '4px',
                             border: '1px solid #E5E7EB',
@@ -292,7 +296,7 @@ export default function CallSummaryEmail({
                         <div
                           style={{
                             fontSize: '14px',
-                            color: '#000',
+                            color: TEXT_COLOR,
                             marginBottom: '4px',
                           }}
                         >
@@ -322,7 +326,7 @@ export default function CallSummaryEmail({
                                 key={index}
                                 style={{
                                   fontSize: '14px',
-                                  color: '#000',
+                                  color: TEXT_COLOR,
                                   marginBottom: '6px',
                                   lineHeight: 1.4,
                                 }}
@@ -354,7 +358,7 @@ export default function CallSummaryEmail({
                                 key={index}
                                 style={{
                                   fontSize: '14px',
-                                  color: '#000',
+                                  color: TEXT_COLOR,
                                   marginBottom: '6px',
                                   lineHeight: 1.4,
                                   backgroundColor: '#FEF3C7',
@@ -393,7 +397,7 @@ export default function CallSummaryEmail({
                                   key={index}
                                   style={{
                                     fontSize: '14px',
-                                    color: '#000',
+                                    color: TEXT_COLOR,
                                     marginBottom: '6px',
                                     lineHeight: 1.4,
                                     backgroundColor: '#FEF2F2',
@@ -435,7 +439,7 @@ export default function CallSummaryEmail({
                           <div
                             style={{
                               fontSize: '14px',
-                              color: '#000',
+                              color: TEXT_COLOR,
                               marginBottom: '4px',
                             }}
                           >
@@ -449,7 +453,7 @@ export default function CallSummaryEmail({
                           <div
                             style={{
                               fontSize: '14px',
-                              color: '#000',
+                              color: TEXT_COLOR,
                               marginBottom: '8px',
                             }}
                           >
@@ -533,7 +537,7 @@ export default function CallSummaryEmail({
                           <div
                             style={{
                               fontSize: '14px',
-                              color: '#000',
+                              color: TEXT_COLOR,
                             }}
                           >
                             <strong>Contact Preference:</strong>{' '}

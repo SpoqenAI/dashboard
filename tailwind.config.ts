@@ -55,24 +55,23 @@ const config = {
         },
       },
       backgroundImage: {
-        'spoqen-gradient':
-          'linear-gradient(135deg, #eb39ff 0%, #7537ff 50%, #00b4d8 100%)',
+        'spoqen-gradient': 'linear-gradient(135deg, #6ee7c2 0%, #33bd8f 60%)',
         'gradient-primary':
-          'linear-gradient(135deg, hsl(315 100% 50%), hsl(270 100% 60%), hsl(180 100% 50%))',
+          'linear-gradient(135deg, hsl(160 65% 60%), hsl(160 57% 47%))',
         'gradient-secondary':
-          'linear-gradient(135deg, hsl(180 100% 50%), hsl(220 100% 60%))',
+          'linear-gradient(135deg, hsl(160 42% 38%), hsl(160 65% 54%))',
         'gradient-dark':
           'linear-gradient(135deg, hsl(222 24% 4%), hsl(222 24% 8%))',
         'gradient-glow':
-          'linear-gradient(135deg, hsl(315 100% 50% / 0.2), hsl(180 100% 50% / 0.2))',
+          'linear-gradient(135deg, hsl(160 57% 47% / 0.2), hsl(160 65% 60% / 0.2))',
       },
       backdropBlur: {
         glass: '16px',
       },
       boxShadow: {
-        'glow-primary': '0 0 20px hsl(315 100% 50% / 0.5)',
-        'glow-secondary': '0 0 20px hsl(180 100% 50% / 0.5)',
-        'glow-accent': '0 0 20px hsl(270 100% 60% / 0.5)',
+        'glow-primary': '0 0 20px hsl(160 57% 47% / 0.5)',
+        'glow-secondary': '0 0 20px hsl(160 65% 54% / 0.5)',
+        'glow-accent': '0 0 20px hsl(160 42% 38% / 0.5)',
         glass: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
       },
       borderRadius: {

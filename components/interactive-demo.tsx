@@ -279,10 +279,7 @@ export const InteractiveDemo = memo(() => {
   }, [isPlaying, currentStep, isVisible]);
 
   return (
-    <section
-      ref={containerRef}
-      className="w-full bg-gradient-to-b from-background to-card/30 py-20"
-    >
+    <section ref={containerRef} className="w-full py-20">
       <div className="container px-6">
         <div className="mb-12 text-center">
           <h2 className="mb-6 text-4xl font-bold lg:text-5xl">
@@ -321,7 +318,7 @@ export const InteractiveDemo = memo(() => {
 
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <Card className="h-[600px] border border-white/10 bg-card/20 backdrop-blur-glass">
+            <Card className="h-[600px] border border-white/10 bg-card/10">
               <CardHeader className="border-b border-white/10">
                 <CardTitle className="flex items-center gap-2">
                   <Phone className="h-5 w-5 text-primary" />
@@ -340,7 +337,7 @@ export const InteractiveDemo = memo(() => {
 
           <div className="space-y-6">
             {/* Lead Data Capture */}
-            <Card className="border border-white/10 bg-card/20 backdrop-blur-glass">
+            <Card className="border border-white/10 bg-card/10">
               <CardHeader className="border-b border-white/10">
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5 text-accent" />
@@ -359,7 +356,7 @@ export const InteractiveDemo = memo(() => {
             </Card>
 
             {/* Real-time Analysis */}
-            <Card className="border border-white/10 bg-card/20 backdrop-blur-glass">
+            <Card className="border border-white/10 bg-card/10">
               <CardHeader className="border-b border-white/10">
                 <CardTitle className="flex items-center gap-2">
                   <Zap className="h-5 w-5 text-secondary" />
@@ -415,7 +412,7 @@ export const InteractiveDemo = memo(() => {
             </Card>
 
             {/* Action Items */}
-            <Card className="border border-white/10 bg-card/20 backdrop-blur-glass">
+            <Card className="border border-white/10 bg-card/10">
               <CardHeader className="border-b border-white/10">
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-primary" />
