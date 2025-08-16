@@ -1086,10 +1086,10 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       )}
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div className="flex items-center gap-2">
+        <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 min-w-0">
             <Bot className="h-5 w-5" />
-            <CardTitle>AI Assistant Configuration</CardTitle>
+            <CardTitle className="truncate">AI Assistant Configuration</CardTitle>
             {assistantData && (
               <Badge variant="secondary" className="ml-2">
                 <CheckCircle className="mr-1 h-3 w-3" />
@@ -1097,7 +1097,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             {shouldShowPullSystemUpdates && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
