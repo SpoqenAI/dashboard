@@ -153,8 +153,8 @@ serve(async req => {
     );
     const baseUrl = Deno.env.get('BASE_URL') ?? 'https://www.spoqen.com';
     // Use site-hosted assets so emails always use the current branding
-    const logoUrl = `${baseUrl}/Icon.svg`;
-    const fullLogoUrl = `${baseUrl}/Spoqen(2).svg`;
+    const logoUrl = `${baseUrl}/Icon.png`;
+    const fullLogoUrl = `${baseUrl}/Spoqen (2).png`;
     const html = renderToStaticMarkup(
       React.createElement(CallSummaryEmail, {
         summary,

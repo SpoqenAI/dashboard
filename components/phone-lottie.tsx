@@ -37,9 +37,9 @@ export function PhoneLottie({
     process.env.NEXT_PUBLIC_PHONE_ANIMATION_URL ||
     '/animations/phone.json';
 
-  const [data, setData] = useState<any | null>(null);
+  const [data, setData] = useState<unknown | null>(null);
   const [failed, setFailed] = useState(false);
-  const [tinted, setTinted] = useState<any | null>(null);
+  const [tinted, setTinted] = useState<unknown | null>(null);
 
   function hslToRgb(h: number, s: number, l: number): [number, number, number] {
     const c = (1 - Math.abs(2 * l - 1)) * s;
@@ -68,8 +68,8 @@ export function PhoneLottie({
     const max = Math.max(r, g, b),
       min = Math.min(r, g, b);
     let h = 0,
-      s = 0,
-      l = (max + min) / 2;
+      s = 0;
+    const l = (max + min) / 2;
     if (max !== min) {
       const d = max - min;
       s = l > 0.5 ? d / (2 - max - min) : d / (max - min);
@@ -125,24 +125,6 @@ export function PhoneLottie({
     return null;
   }
 
-  function getPrimaryRgb(): [number, number, number] | null {
-    try {
-      const root = getComputedStyle(document.documentElement);
-      const raw = root.getPropertyValue('--primary')?.trim();
-      // shadcn/tailwind stores as "H S% L%"
-      return (
-        parseCssColorToRgb(raw) ??
-        parseCssColorToRgb(
-          getComputedStyle(document.documentElement).getPropertyValue(
-            '--primary-foreground'
-          )
-        )
-      );
-    } catch {
-      return null;
-    }
-  }
-
   function getPrimaryHsl(): [number, number, number] | null {
     try {
       const root = getComputedStyle(document.documentElement);
@@ -183,7 +165,7 @@ export function PhoneLottie({
   }
 
   function blendAngle(a: number, b: number, t: number): number {
-    let delta = ((b - a + 540) % 360) - 180; // shortest path
+    const delta = ((b - a + 540) % 360) - 180; // shortest path
     return (a + delta * t + 360) % 360;
   }
 
@@ -201,7 +183,7 @@ export function PhoneLottie({
     const isNeutral = s < 0.18;
     const isSkinRange = h >= 10 && h <= 55 && s > 0.2 && l > 0.25 && l < 0.9;
     if (isNearBlack || isNearWhite || isNeutral || isSkinRange) return null;
-    const [bh, bs, bl] = brandHsl;
+    const [bh, bs] = brandHsl;
     const nh = blendAngle(h, bh, strength);
     const ns = Math.max(
       0,
@@ -213,35 +195,54 @@ export function PhoneLottie({
   }
 
   function applySoftTintToLottie(
-    lottieData: any,
+    lottieData: unknown,
     brandHsl: [number, number, number],
     strength: number
-  ): any {
-    const clone = JSON.parse(JSON.stringify(lottieData));
-    const visit = (node: any) => {
+  ): unknown {
+    const clone: unknown = JSON.parse(JSON.stringify(lottieData));
+    const visit = (node: unknown): void => {
       if (!node || typeof node !== 'object') return;
-      if ((node.ty === 'fl' || node.ty === 'st') && node.c) {
-        const c = node.c;
-        if (c.a === 0 && Array.isArray(c.k) && c.k.length >= 3) {
-          const arr = c.k as number[];
-          if (shouldRecolorColor(arr)) {
-            const soft = recolorRgbSoft(arr, brandHsl, strength);
-            if (soft) node.c.k = [...soft, arr[3] ?? 1];
-          }
-        } else if (c.a === 1 && Array.isArray(c.k)) {
-          // Keyframed color values
-          for (const kf of c.k) {
-            if (kf.s && Array.isArray(kf.s) && kf.s.length >= 3) {
-              const arr = kf.s as number[];
-              if (shouldRecolorColor(arr)) {
-                const soft = recolorRgbSoft(arr, brandHsl, strength);
-                if (soft) kf.s = [...soft, arr[3] ?? 1];
+      const obj = node as Record<string, unknown>;
+      const ty = (obj as { ty?: unknown }).ty;
+      if ((ty === 'fl' || ty === 'st') && 'c' in obj) {
+        const c = (obj as { c?: unknown }).c;
+        if (c && typeof c === 'object') {
+          const cObj = c as { a?: unknown; k?: unknown };
+          const aVal = typeof cObj.a === 'number' ? cObj.a : undefined;
+          const kVal = cObj.k;
+          if (
+            aVal === 0 &&
+            Array.isArray(kVal) &&
+            kVal.length >= 3 &&
+            typeof (kVal as unknown[])[0] === 'number'
+          ) {
+            const arr = kVal as number[];
+            if (shouldRecolorColor(arr)) {
+              const soft = recolorRgbSoft(arr, brandHsl, strength);
+              if (soft) cObj.k = [...soft, arr[3] ?? 1];
+            }
+          } else if (aVal === 1 && Array.isArray(kVal)) {
+            // Keyframed color values
+            for (const kf of kVal as unknown[]) {
+              if (kf && typeof kf === 'object') {
+                const sProp = (kf as { s?: unknown }).s;
+                if (
+                  Array.isArray(sProp) &&
+                  sProp.length >= 3 &&
+                  typeof (sProp as unknown[])[0] === 'number'
+                ) {
+                  const arr = sProp as number[];
+                  if (shouldRecolorColor(arr)) {
+                    const soft = recolorRgbSoft(arr, brandHsl, strength);
+                    if (soft) (kf as { s: unknown }).s = [...soft, arr[3] ?? 1];
+                  }
+                }
               }
             }
           }
         }
       }
-      for (const key of Object.keys(node)) visit(node[key]);
+      for (const key of Object.keys(obj)) visit(obj[key]);
     };
     visit(clone);
     return clone;
@@ -255,7 +256,7 @@ export function PhoneLottie({
     const [r, g, b] = [arr[0], arr[1], arr[2]].map(v =>
       Math.round(Math.min(1, Math.max(0, v)) * 255)
     );
-    const [h, s, l] = rgbToHsl(r, g, b);
+    const [, s, l] = rgbToHsl(r, g, b);
     const isNearBlack = l < 0.06;
     const isNearWhite = l > 0.95;
     if (isNearBlack || isNearWhite) return null;
@@ -268,30 +269,49 @@ export function PhoneLottie({
   }
 
   function applyFullTintToLottie(
-    lottieData: any,
+    lottieData: unknown,
     brandHsl: [number, number, number],
     strength: number
-  ): any {
-    const clone = JSON.parse(JSON.stringify(lottieData));
-    const visit = (node: any) => {
+  ): unknown {
+    const clone: unknown = JSON.parse(JSON.stringify(lottieData));
+    const visit = (node: unknown): void => {
       if (!node || typeof node !== 'object') return;
-      if ((node.ty === 'fl' || node.ty === 'st') && node.c) {
-        const c = node.c;
-        if (c.a === 0 && Array.isArray(c.k) && c.k.length >= 3) {
-          const arr = c.k as number[];
-          const full = recolorRgbFull(arr, brandHsl, strength);
-          if (full) node.c.k = [...full, arr[3] ?? 1];
-        } else if (c.a === 1 && Array.isArray(c.k)) {
-          for (const kf of c.k) {
-            if (kf.s && Array.isArray(kf.s) && kf.s.length >= 3) {
-              const arr = kf.s as number[];
-              const full = recolorRgbFull(arr, brandHsl, strength);
-              if (full) kf.s = [...full, arr[3] ?? 1];
+      const obj = node as Record<string, unknown>;
+      const ty = (obj as { ty?: unknown }).ty;
+      if ((ty === 'fl' || ty === 'st') && 'c' in obj) {
+        const c = (obj as { c?: unknown }).c;
+        if (c && typeof c === 'object') {
+          const cObj = c as { a?: unknown; k?: unknown };
+          const aVal = typeof cObj.a === 'number' ? cObj.a : undefined;
+          const kVal = cObj.k;
+          if (
+            aVal === 0 &&
+            Array.isArray(kVal) &&
+            kVal.length >= 3 &&
+            typeof (kVal as unknown[])[0] === 'number'
+          ) {
+            const arr = kVal as number[];
+            const full = recolorRgbFull(arr, brandHsl, strength);
+            if (full) cObj.k = [...full, arr[3] ?? 1];
+          } else if (aVal === 1 && Array.isArray(kVal)) {
+            for (const kf of kVal as unknown[]) {
+              if (kf && typeof kf === 'object') {
+                const sProp = (kf as { s?: unknown }).s;
+                if (
+                  Array.isArray(sProp) &&
+                  sProp.length >= 3 &&
+                  typeof (sProp as unknown[])[0] === 'number'
+                ) {
+                  const arr = sProp as number[];
+                  const full = recolorRgbFull(arr, brandHsl, strength);
+                  if (full) (kf as { s: unknown }).s = [...full, arr[3] ?? 1];
+                }
+              }
             }
           }
         }
       }
-      for (const key of Object.keys(node)) visit(node[key]);
+      for (const key of Object.keys(obj)) visit(obj[key]);
     };
     visit(clone);
     return clone;
@@ -340,6 +360,7 @@ export function PhoneLottie({
         ? applyFullTintToLottie(data, brandHsl, strength)
         : applySoftTintToLottie(data, brandHsl, strength);
     setTinted(recolored);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, tint, tintStrength, tintMode]);
 
   if (!tinted) {
