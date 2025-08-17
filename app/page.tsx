@@ -23,7 +23,7 @@ import { FeatureGuideRail } from '@/components/feature-guide-rail';
 
 export default function HomePage() {
   return (
-    <BillingProvider>
+    <>
       <SimpleBackground variant="heroV2" className="relative overflow-hidden">
         {/* Tiled background of subtle icons across full page */}
         <div
@@ -231,24 +231,26 @@ export default function HomePage() {
 
           {/* Pricing Section */}
           <section id="pricing" className="py-20">
-            <div className="container px-6">
-              <div className="mb-16 text-center">
-                <h2 className="mb-6 text-4xl font-bold tracking-tight lg:text-5xl">
-                  Simple, Transparent Pricing
-                </h2>
-                <p className="mx-auto max-w-3xl text-xl text-muted-foreground">
-                  Choose the perfect plan for your business. Start free, upgrade
-                  when you're ready.
-                </p>
-                {/* Billing Toggle */}
-                <div className="pt-10 sm:pt-12 md:pt-14 lg:pt-16">
-                  <BillingToggle />
+            <BillingProvider>
+              <div className="container px-6">
+                <div className="mb-16 text-center">
+                  <h2 className="mb-6 text-4xl font-bold tracking-tight lg:text-5xl">
+                    Simple, Transparent Pricing
+                  </h2>
+                  <p className="mx-auto max-w-3xl text-xl text-muted-foreground">
+                    Choose the perfect plan for your business. Start free, upgrade
+                    when you're ready.
+                  </p>
+                  {/* Billing Toggle */}
+                  <div className="pt-10 sm:pt-12 md:pt-14 lg:pt-16">
+                    <BillingToggle />
+                  </div>
                 </div>
+                <Suspense fallback={<div className="h-96" />}>
+                  <PricingGrid pricingTiers={pricingTiers} />
+                </Suspense>
               </div>
-              <Suspense fallback={<div className="h-96" />}>
-                <PricingGrid pricingTiers={pricingTiers} />
-              </Suspense>
-            </div>
+            </BillingProvider>
           </section>
 
           {/* Testimonials section removed - no real reviews yet */}
@@ -285,6 +287,6 @@ export default function HomePage() {
       <Suspense fallback={null}>
         <ExitIntentModalLoader />
       </Suspense>
-    </BillingProvider>
+    </>
   );
 }
