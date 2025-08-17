@@ -4,7 +4,13 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calculator, TrendingUp } from 'lucide-react';
+import {
+  Calculator,
+  TrendingUp,
+  AlertTriangle,
+  PhoneOff,
+  GitBranch,
+} from 'lucide-react';
 
 export function ROICalculator() {
   const [missedLeads, setMissedLeads] = useState(50);
@@ -37,19 +43,39 @@ export function ROICalculator() {
   };
 
   return (
-    <Card className="mx-auto max-w-2xl border border-white/10 bg-card/20 backdrop-blur-glass transition-all duration-300 hover:bg-card/30">
+    <Card className="hover:shadow-glow-primary/20 mx-auto max-w-4xl overflow-hidden border border-white/10 bg-card/10 transition-all duration-300 hover:scale-105 hover:bg-card/20">
       <CardHeader className="text-center">
-        <div className="mb-2 flex items-center justify-center gap-2">
+        {/* Ribbon headline merges Hidden Cost with ROI */}
+        <div className="relative z-10 mb-3 flex items-center justify-center gap-2">
           <Calculator className="h-6 w-6 text-primary" />
           <CardTitle className="text-2xl font-bold">
-            Calculate Your ROI
+            The Hidden Cost of Missed Calls — and Your ROI
           </CardTitle>
         </div>
-        <p className="text-muted-foreground">
-          See how much revenue you're leaving on the table
+        <p className="relative z-10 text-muted-foreground">
+          Tweak the inputs to see how much you can recover each month
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Inline stats from the old Hidden Cost banner */}
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="flex items-center justify-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-2 text-orange-700 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-300">
+            <AlertTriangle className="h-4 w-4" />
+            <span className="text-xs font-medium uppercase tracking-wide">
+              Hidden Cost
+            </span>
+          </div>
+          <div className="flex items-center justify-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-2 text-orange-700 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-300">
+            <PhoneOff className="h-4 w-4" />
+            <span className="text-sm">73% never call back</span>
+          </div>
+          <div className="flex items-center justify-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-2 text-orange-700 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-300">
+            <GitBranch className="h-4 w-4" />
+            <span className="text-sm">42% go to competitors</span>
+          </div>
+        </div>
+
+        {/* Inputs + results */}
         <div className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
             <Label htmlFor="missed-leads" className="text-sm font-medium">
@@ -60,7 +86,6 @@ export function ROICalculator() {
               type="number"
               value={missedLeads}
               onChange={e => setMissedLeads(Number(e.target.value))}
-              className="border-white/20 bg-background/50"
             />
           </div>
 
@@ -73,7 +98,6 @@ export function ROICalculator() {
               type="number"
               value={dealValue}
               onChange={e => setDealValue(Number(e.target.value))}
-              className="border-white/20 bg-background/50"
             />
           </div>
 
@@ -86,13 +110,12 @@ export function ROICalculator() {
               type="number"
               value={closeRate}
               onChange={e => setCloseRate(Number(e.target.value))}
-              className="border-white/20 bg-background/50"
             />
           </div>
         </div>
 
-        <div className="grid gap-4 border-t border-white/10 pt-4 md:grid-cols-3">
-          <div className="rounded-lg border border-destructive/30 bg-destructive/20 p-4 text-center backdrop-blur-glass">
+        <div className="grid gap-4 border-t border-border pt-4 md:grid-cols-3">
+          <div className="rounded-lg border border-destructive/30 bg-card p-4 text-center">
             <div className="mb-1 text-sm text-muted-foreground">
               Monthly revenue lost:
             </div>
@@ -101,7 +124,7 @@ export function ROICalculator() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-primary/30 bg-primary/20 p-4 text-center backdrop-blur-glass">
+          <div className="rounded-lg border border-primary/30 bg-card p-4 text-center">
             <div className="mb-1 text-sm text-muted-foreground">
               With Spoqen recovered:
             </div>
@@ -110,9 +133,9 @@ export function ROICalculator() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-accent/30 bg-accent/20 p-4 text-center backdrop-blur-glass">
+          <div className="relative overflow-hidden rounded-lg border border-accent/30 bg-card p-4 text-center">
             <div className="mb-1 text-sm text-muted-foreground">ROI:</div>
-            <div className="flex items-center justify-center gap-1 text-2xl font-bold text-accent">
+            <div className="relative z-10 flex items-center justify-center gap-1 text-2xl font-bold text-accent">
               <TrendingUp className="h-5 w-5" />
               {roiMultiple.toFixed(0)}%
             </div>

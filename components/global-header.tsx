@@ -18,7 +18,13 @@ import {
   Menu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 
 const navigationItems = [
   {
@@ -71,9 +77,45 @@ export function GlobalHeader() {
             href="/"
             className="flex items-center transition-transform duration-300 hover:scale-105"
           >
-            <Logo width={140} height={48} />
+            <Logo width={178} height={50} />
           </Link>
         </div>
+
+        {/* Centered navigation for public (logged-out) pages (desktop only) */}
+        {!user && !loading && !isAuthPage && (
+          <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-6 lg:flex">
+            {[
+              { name: 'Home', href: '/#top', active: isLandingPage },
+              { name: 'Features', href: '/#features', active: false },
+              {
+                name: 'Pricing',
+                href: '/#pricing',
+                active: pathname === '/pricing',
+              },
+            ].map(link => (
+              <Link
+                key={link.name}
+                href={link.href}
+                aria-current={link.active ? 'page' : undefined}
+                className={cn(
+                  'group relative pb-2 text-sm font-medium transition-colors hover:text-primary',
+                  link.active ? 'text-primary' : 'text-muted-foreground'
+                )}
+              >
+                {link.name}
+                <span
+                  className={cn(
+                    'pointer-events-none absolute inset-x-0 -bottom-0.5 h-0.5 rounded-full bg-green-500 transition-opacity duration-300',
+                    link.active
+                      ? 'opacity-100'
+                      : 'opacity-0 group-hover:opacity-50'
+                  )}
+                  aria-hidden="true"
+                />
+              </Link>
+            ))}
+          </nav>
+        )}
 
         {/* Navigation - only show if user is authenticated and not on onboarding */}
         {user && !isOnboarding && !loading && (
@@ -86,13 +128,23 @@ export function GlobalHeader() {
                 <Link
                   key={item.name}
                   href={item.href}
+                  aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    'flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary',
+                    'group relative flex items-center space-x-2 pb-2 text-sm font-medium transition-colors hover:text-primary',
                     isActive ? 'text-primary' : 'text-muted-foreground'
                   )}
                 >
                   <Icon className="h-4 w-4" />
                   <span>{item.name}</span>
+                  <span
+                    className={cn(
+                      'pointer-events-none absolute inset-x-0 -bottom-0.5 h-0.5 rounded-full bg-green-500 transition-opacity duration-300',
+                      isActive
+                        ? 'opacity-100'
+                        : 'opacity-0 group-hover:opacity-50'
+                    )}
+                    aria-hidden="true"
+                  />
                 </Link>
               );
             })}
@@ -108,7 +160,14 @@ export function GlobalHeader() {
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+            <SheetContent
+              side="right"
+              className="w-[300px] sm:w-[400px]"
+              aria-label="Navigation menu"
+            >
+              <SheetHeader>
+                <SheetTitle className="sr-only">Navigation menu</SheetTitle>
+              </SheetHeader>
               <nav className="flex flex-col space-y-4">
                 {navigationItems.map(item => {
                   const Icon = item.icon;
@@ -163,26 +222,36 @@ export function GlobalHeader() {
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+            <SheetContent
+              side="right"
+              className="w-[300px] sm:w-[400px]"
+              aria-label="Navigation menu"
+            >
+              <SheetHeader>
+                <SheetTitle className="sr-only">Navigation menu</SheetTitle>
+              </SheetHeader>
               <nav className="flex flex-col space-y-4">
-                {isLandingPage && (
-                  <>
-                    <Link
-                      href="#features"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
-                    >
-                      Features
-                    </Link>
-                    <Link
-                      href="#pricing"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
-                    >
-                      Pricing
-                    </Link>
-                  </>
-                )}
+                <Link
+                  href="/#top"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                >
+                  Home
+                </Link>
+                <Link
+                  href="/#features"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                >
+                  Features
+                </Link>
+                <Link
+                  href="/#pricing"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                >
+                  Pricing
+                </Link>
                 <div className="space-y-2 border-t pt-4">
                   <Link
                     href="/faq"
@@ -229,14 +298,14 @@ export function GlobalHeader() {
           {/* FAQ & Help links - always visible to all users */}
           <Link
             href="/faq"
-            className="hidden items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary sm:flex"
+            className="hidden items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary lg:flex"
           >
             <BookOpen className="h-4 w-4" />
             <span>FAQ</span>
           </Link>
           <Link
             href="/contact"
-            className="hidden items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary sm:flex"
+            className="hidden items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary lg:flex"
           >
             <HelpCircle className="h-4 w-4" />
             <span>Help</span>
@@ -255,28 +324,6 @@ export function GlobalHeader() {
             /* Show login/signup for non-authenticated users */
             !isAuthPage && (
               <nav className="flex items-center gap-4">
-                {isLandingPage && (
-                  <>
-                    <Link
-                      href="#features"
-                      className="text-sm font-medium transition-colors hover:text-primary"
-                    >
-                      Features
-                    </Link>
-                    <Link
-                      href="#pricing"
-                      className="text-sm font-medium transition-colors hover:text-primary"
-                    >
-                      Pricing
-                    </Link>
-                    <Link
-                      href="/faq"
-                      className="text-sm font-medium transition-colors hover:text-primary"
-                    >
-                      FAQ
-                    </Link>
-                  </>
-                )}
                 <Link
                   href="/login"
                   className="text-sm font-medium transition-colors hover:text-primary"

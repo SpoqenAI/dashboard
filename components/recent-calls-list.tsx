@@ -1,8 +1,15 @@
+'use client';
+
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, PhoneCall, Mic, Play } from 'lucide-react';
 import { useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { CallRecordingPlayer } from './call-recording-player';
 
 interface RecentCall {
@@ -77,7 +84,13 @@ export function RecentCallsList() {
           if (!open) setQuickPlayCallId(null);
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent
+          className="max-w-lg"
+          aria-label="Quick play recording dialog"
+        >
+          <DialogHeader>
+            <DialogTitle className="sr-only">Quick Play Recording</DialogTitle>
+          </DialogHeader>
           {quickPlayCallId !== null && (
             <CallRecordingPlayer callId={quickPlayCallId.toString()} />
           )}
