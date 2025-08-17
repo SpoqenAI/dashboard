@@ -215,13 +215,6 @@ export default function HomePage() {
           </section>
 
           <section id="roi" className="relative py-24">
-            {/* Artistic background accents for the ROI area */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 -z-10"
-            >
-              <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl sm:h-80 sm:w-80" />
-            </div>
             <div className="container px-6">
               <Suspense fallback={<div className="h-96" />}>
                 <ROICalculator />
