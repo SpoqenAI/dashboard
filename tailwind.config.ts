@@ -69,9 +69,9 @@ const config = {
         glass: '16px',
       },
       boxShadow: {
-        'glow-primary': '0 0 20px hsl(160 57% 47% / 0.5)',
-        'glow-secondary': '0 0 20px hsl(160 65% 54% / 0.5)',
-        'glow-accent': '0 0 20px hsl(160 42% 38% / 0.5)',
+        'glow-primary': '0 0 20px hsl(160 57% 47% / 0.2)',
+        'glow-secondary': '0 0 20px hsl(160 65% 54% / 0.2)',
+        'glow-accent': '0 0 20px hsl(160 42% 38% / 0.2)',
         glass: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
       },
       borderRadius: {

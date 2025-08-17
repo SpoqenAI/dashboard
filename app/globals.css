@@ -143,9 +143,9 @@
     );
 
     /* Brand Green Glows */
-    --glow-primary: 0 0 20px hsl(160 57% 47% / 0.5);
-    --glow-secondary: 0 0 20px hsl(160 65% 54% / 0.5);
-    --glow-accent: 0 0 20px hsl(160 42% 38% / 0.5);
+    --glow-primary: 0 0 20px hsl(160 57% 47% / 0.2);
+    --glow-secondary: 0 0 20px hsl(160 65% 54% / 0.2);
+    --glow-accent: 0 0 20px hsl(160 42% 38% / 0.2);
 
     /* Glass Effect */
     --glass-bg: hsl(222 24% 6% / 0.8);

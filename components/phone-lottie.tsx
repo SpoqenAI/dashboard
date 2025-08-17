@@ -121,6 +121,53 @@ export function PhoneLottie({
       const l = parseFloat(hslMatch[3]) / 100;
       return hslToRgb(h, s, l);
     }
+    // rgb()/rgba() support: accepts comma- or space-separated, numeric (0-255) or percentage channels
+    // Examples: rgb(255, 0, 0), rgba(255,0,0,0.5), rgb(100% 0% 0%), rgba(50% 25% 0% / 40%)
+    const rgbFuncMatch = c.match(/^rgba?\((.*)\)$/i);
+    if (rgbFuncMatch) {
+      const inside = rgbFuncMatch[1].trim();
+
+      const clamp = (value: number, min: number, max: number): number =>
+        Math.min(max, Math.max(min, value));
+
+      const parseChannel = (token: string): number => {
+        const t = token.trim();
+        const percent = t.match(/^([+-]?\d+(?:\.\d+)?)%$/);
+        if (percent) {
+          const pct = parseFloat(percent[1]);
+          if (Number.isNaN(pct)) return NaN;
+          return Math.round(clamp(pct, 0, 100) * 2.55);
+        }
+        const num = parseFloat(t);
+        if (Number.isNaN(num)) return NaN;
+        // Be tolerant of 0..1 inputs by scaling to 0..255
+        const scaled = num <= 1 && num >= 0 ? num * 255 : num;
+        return Math.round(clamp(scaled, 0, 255));
+      };
+
+      let rStr = '';
+      let gStr = '';
+      let bStr = '';
+
+      if (inside.includes(',')) {
+        // Comma-separated form: r,g,b[,a]
+        const parts = inside.split(/\s*,\s*/);
+        if (parts.length < 3) return null;
+        [rStr, gStr, bStr] = parts;
+      } else {
+        // Space-separated form: r g b [/ a]
+        const [rgbPart] = inside.split('/').map(s => s.trim());
+        const parts = rgbPart.split(/\s+/).filter(Boolean);
+        if (parts.length < 3) return null;
+        [rStr, gStr, bStr] = parts;
+      }
+
+      const r = parseChannel(rStr);
+      const g = parseChannel(gStr);
+      const b = parseChannel(bStr);
+      if ([r, g, b].some(v => Number.isNaN(v))) return null;
+      return [r, g, b];
+    }
     // raw "r g b" (from hsl(var(--primary)) pattern sometimes stores "H S% L%"; for safety, return null)
     return null;
   }

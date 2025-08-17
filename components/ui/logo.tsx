@@ -1,6 +1,5 @@
 import Image from 'next/image';
 import React from 'react';
-import SpoqenFull from '@/public/Spoqen(2).svg';
 
 interface LogoProps {
   width?: number;
@@ -19,7 +18,7 @@ export const Logo: React.FC<LogoProps> = ({
   className,
 }) => (
   <Image
-    src={SpoqenFull}
+    src="/Spoqen(2).svg"
     alt="Spoqen Logo"
     width={width}
     height={height}
