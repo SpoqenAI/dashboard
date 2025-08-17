@@ -37,14 +37,14 @@ export const metadata: Metadata = {
     title: 'Spoqen – AI Receptionist & Personal AI Agent',
     description:
       'Never miss a lead again with Spoqen – your personal AI receptionist that answers calls 24/7, qualifies prospects, and syncs voicemails to your CRM.',
-    images: '/Icon(2).svg',
+    images: '/Icon(2).png',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Spoqen – AI Receptionist & Personal AI Agent',
     description:
       'Never miss a lead again with Spoqen – your personal AI receptionist that answers calls 24/7, qualifies prospects, and syncs voicemails to your CRM.',
-    images: '/Icon(2).svg',
+    images: '/Icon(2).png',
   },
   alternates: {
     canonical: 'https://www.spoqen.com/',
@@ -57,12 +57,17 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/Icon(2).svg',
+        url: '/Icon(2).png',
         sizes: 'any',
       },
     ],
-    shortcut: '/Icon(2).svg',
-    apple: '/Icon(2).svg',
+    shortcut: '/Icon.png',
+    apple: [
+      {
+        url: '/Icon.png',
+        type: 'image/png',
+      },
+    ],
   },
 };
 
@@ -83,7 +88,7 @@ export default function RootLayout({
               '@type': 'Organization',
               name: 'Spoqen',
               url: 'https://www.spoqen.com',
-              logo: 'https://www.spoqen.com/Icon(2).svg',
+              logo: 'https://www.spoqen.com/Icon(2).png',
             }),
           }}
         />
@@ -97,7 +102,7 @@ export default function RootLayout({
               name: 'Spoqen AI Receptionist',
               description:
                 'An interactive AI voicemail assistant that answers calls, qualifies leads, and syncs with your CRM.',
-              image: 'https://www.spoqen.com/Icon(2).svg',
+              image: 'https://www.spoqen.com/Icon(2).png',
               offers: {
                 '@type': 'Offer',
                 url: 'https://www.spoqen.com/signup',

@@ -63,6 +63,12 @@
   .checkout-transition {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
+
+  /* Stronger focus ring utility to ensure ≥3:1 non-text contrast via thickness */
+  .focus-visible-ring:focus-visible {
+    outline: 3px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
 }
 
 @layer base {
@@ -79,8 +85,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 24% 4%;
 
-    /* Brand Green Primary */
-    --primary: 160 57% 47%; /* #33BD8F */
+    /* Brand Green Primary — darker for WCAG AA contrast */
+    --primary: 160 62% 36%;
     --primary-foreground: 0 0% 100%;
 
     /* Brand Green Secondary (deeper) */
@@ -91,18 +97,19 @@
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
 
-    /* Brand Green Accent (lighter) */
-    --accent: 160 65% 54%;
+    /* Brand Green Accent — slightly darker for text contrast */
+    --accent: 160 60% 42%;
     --accent-foreground: 0 0% 100%;
 
     /* Red Destructive */
     --destructive: 0 85% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    /* Light borders */
-    --border: 160 28% 88%; /* subtle green-tinted border */
-    --input: 160 28% 88%; /* match inputs to border tint */
-    --ring: 160 57% 47%;
+    /* Light borders — lowered L% to meet ≥3:1 against white */
+    --border: 160 12% 46%;
+    --input: 160 12% 46%;
+    /* Ring aligned to primary for stronger visibility */
+    --ring: 160 62% 36%;
 
     /* Charts - green tints */
     --chart-1: 160 57% 47%;
@@ -121,7 +128,8 @@
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 210 40% 96%;
     --sidebar-accent-foreground: 215 16% 47%;
-    --sidebar-border: 214 32% 91%;
+    /* Sidebar border — increase contrast on light backgrounds */
+    --sidebar-border: 214 22% 70%;
     --sidebar-ring: 160 57% 47%;
 
     /* Brand Gradients - Green */
@@ -187,10 +195,10 @@
     --destructive: 0 85% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    /* Dark borders */
-    --border: 160 16% 22%; /* subtle green tint for dark borders */
-    --input: 160 16% 22%;
-    --ring: 160 57% 47%;
+    /* Dark borders — slightly higher L% for 3:1 against dark bg */
+    --border: 160 16% 28%;
+    --input: 160 16% 28%;
+    --ring: 160 62% 36%;
 
     /* Charts */
     --chart-1: 160 57% 47%;
