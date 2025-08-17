@@ -134,6 +134,14 @@ export default function RootLayout({
                 <Toaster />
               </NuqsAdapter>
             </AuthProvider>
+            <Script id="preload-fix-script" strategy="afterInteractive">
+              {`
+                (function () {
+                  if (typeof window === 'undefined') return;
+                  document.documentElement.classList.remove('preload');
+                })();
+              `}
+            </Script>
             {/* PERF: mark animations done after initial scroll to stop heavy keyframes */}
             <Script id="motion-done-script" strategy="afterInteractive">
               {`
