@@ -238,8 +238,8 @@ export default function HomePage() {
                     Simple, Transparent Pricing
                   </h2>
                   <p className="mx-auto max-w-3xl text-xl text-muted-foreground">
-                    Choose the perfect plan for your business. Start free, upgrade
-                    when you're ready.
+                    Choose the perfect plan for your business. Start free,
+                    upgrade when you're ready.
                   </p>
                   {/* Billing Toggle */}
                   <div className="pt-10 sm:pt-12 md:pt-14 lg:pt-16">
