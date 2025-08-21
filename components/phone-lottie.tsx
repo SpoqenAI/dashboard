@@ -53,21 +53,32 @@ export function PhoneLottie({
     }
   }, []);
 
-  const forceAnimations = useMemo(() => {
-    if (typeof window === 'undefined') return false;
+  const [forceAnimations, setForceAnimations] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
     try {
       const params = new URLSearchParams(window.location.search);
       const q =
         params.get('anim') ||
         params.get('animations') ||
         params.get('force-animations');
-      if (q && /^(1|true|on|force)$/i.test(q))
+      if (q && /^(1|true|on|force)$/i.test(q)) {
         localStorage.setItem('spq_force_animations', '1');
-      if (q && /^(0|false|off)$/i.test(q))
+      } else if (q && /^(0|false|off)$/i.test(q)) {
         localStorage.removeItem('spq_force_animations');
-      return localStorage.getItem('spq_force_animations') === '1';
+      }
+      const read = () =>
+        setForceAnimations(
+          localStorage.getItem('spq_force_animations') === '1'
+        );
+      read();
+      const onStorage = (e: StorageEvent) => {
+        if (e.key === 'spq_force_animations') read();
+      };
+      window.addEventListener('storage', onStorage);
+      return () => window.removeEventListener('storage', onStorage);
     } catch {
-      return false;
+      setForceAnimations(false);
     }
   }, []);
 
