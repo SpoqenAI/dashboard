@@ -71,8 +71,7 @@
   }
 
   /* Animation fallback utilities */
-  @media (prefers-reduced-motion: reduce),
-         (prefers-reduced-data: reduce) {
+  @media (prefers-reduced-motion: reduce), (prefers-reduced-data: reduce) {
     .animate-fade-in,
     .animate-slide-up,
     .animate-slide-down,
@@ -245,7 +244,8 @@
     @apply border-border;
   }
 
-  html, body {
+  html,
+  body {
     @apply bg-background text-foreground transition-colors duration-300;
     font-family:
       'Segoe UI',
@@ -261,7 +261,8 @@
 
   /* Additional mobile-specific overflow prevention */
   @media (max-width: 768px) {
-    html, body {
+    html,
+    body {
       overflow-x: hidden !important;
       width: 100%;
       max-width: 100vw;
@@ -274,7 +275,10 @@
     }
 
     /* Prevent any element from extending beyond viewport */
-    .container, section, main, div {
+    .container,
+    section,
+    main,
+    div {
       max-width: 100vw;
       overflow-x: hidden;
     }

@@ -44,7 +44,8 @@ export function PhoneLottie({
   const [inView, setInView] = useState(false);
 
   const prefersReducedMotion = useMemo(() => {
-    if (typeof window === 'undefined' || !('matchMedia' in window)) return false;
+    if (typeof window === 'undefined' || !('matchMedia' in window))
+      return false;
     try {
       return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     } catch {
@@ -56,16 +57,22 @@ export function PhoneLottie({
     if (typeof window === 'undefined') return false;
     try {
       const params = new URLSearchParams(window.location.search);
-      const q = params.get('anim') || params.get('animations') || params.get('force-animations');
-      if (q && /^(1|true|on|force)$/i.test(q)) localStorage.setItem('spq_force_animations', '1');
-      if (q && /^(0|false|off)$/i.test(q)) localStorage.removeItem('spq_force_animations');
+      const q =
+        params.get('anim') ||
+        params.get('animations') ||
+        params.get('force-animations');
+      if (q && /^(1|true|on|force)$/i.test(q))
+        localStorage.setItem('spq_force_animations', '1');
+      if (q && /^(0|false|off)$/i.test(q))
+        localStorage.removeItem('spq_force_animations');
       return localStorage.getItem('spq_force_animations') === '1';
     } catch {
       return false;
     }
   }, []);
 
-  const shouldPlay = (inView && (!prefersReducedMotion || forceAnimations)) && !failed && !!tinted;
+  const shouldPlay =
+    inView && (!prefersReducedMotion || forceAnimations) && !failed && !!tinted;
 
   function hslToRgb(h: number, s: number, l: number): [number, number, number] {
     const c = (1 - Math.abs(2 * l - 1)) * s;
@@ -455,7 +462,9 @@ export function PhoneLottie({
     const onVisChange = () => {
       if (document.hidden) setInView(false);
     };
-    document.addEventListener('visibilitychange', onVisChange, { passive: true });
+    document.addEventListener('visibilitychange', onVisChange, {
+      passive: true,
+    });
 
     return () => {
       destroyed = true;
@@ -466,7 +475,12 @@ export function PhoneLottie({
 
   if (!tinted) {
     return (
-      <div className={className} aria-hidden ref={containerRef} style={{ minHeight: 1 }}>
+      <div
+        className={className}
+        aria-hidden
+        ref={containerRef}
+        style={{ minHeight: 1 }}
+      >
         <div
           style={{ width: '100%', height }}
           className="flex items-center justify-center rounded-lg border border-border bg-muted/10"
@@ -483,7 +497,12 @@ export function PhoneLottie({
   }
 
   return (
-    <div className={className} aria-hidden ref={containerRef} style={{ minHeight: 1 }}>
+    <div
+      className={className}
+      aria-hidden
+      ref={containerRef}
+      style={{ minHeight: 1 }}
+    >
       <Lottie
         play={shouldPlay}
         loop={loop}

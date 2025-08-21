@@ -6,9 +6,11 @@ import { getUserAssistantInfo } from '@/lib/vapi-assistant';
 // DELETE /api/vapi/files/:id - deletes a file from Vapi storage
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { params } = context;
+    const resolvedParams = await params;
     const supabase = await createClient();
     const {
       data: { user },
@@ -26,7 +28,7 @@ export async function DELETE(
       );
     }
 
-    const fileId = params.id;
+    const fileId = resolvedParams.id;
     if (!fileId) {
       return NextResponse.json({ error: 'Missing file id' }, { status: 400 });
     }

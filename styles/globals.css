@@ -241,7 +241,8 @@ body {
     @apply border-border;
   }
 
-  html, body {
+  html,
+  body {
     @apply bg-background text-foreground;
     /* ACCESSIBILITY: Smooth scrolling with reduced motion support */
     scroll-behavior: smooth;
@@ -253,7 +254,8 @@ body {
 
   /* Mobile-specific horizontal scroll prevention */
   @media (max-width: 768px) {
-    html, body {
+    html,
+    body {
       overflow-x: hidden !important;
       width: 100% !important;
       max-width: 100vw !important;
@@ -261,7 +263,9 @@ body {
     }
 
     /* Ensure all elements stay within viewport bounds */
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       box-sizing: border-box;
       max-width: 100vw;
     }
@@ -280,14 +284,17 @@ body {
     }
 
     /* Handle grid and flex layouts that might cause overflow */
-    [class*="grid"],
-    [class*="flex"] {
+    [class*='grid'],
+    [class*='flex'] {
       min-width: 0;
       max-width: 100vw;
     }
 
     /* Ensure images don't cause horizontal scroll */
-    img, video, canvas, iframe {
+    img,
+    video,
+    canvas,
+    iframe {
       max-width: 100%;
       height: auto;
     }
@@ -437,8 +444,7 @@ body {
 }
 
 /* Enhanced fallback states for motion-disabled elements */
-@media (prefers-reduced-motion: reduce),
-       (prefers-reduced-data: reduce) {
+@media (prefers-reduced-motion: reduce), (prefers-reduced-data: reduce) {
   .motion-done .animate-slide-down,
   .motion-done .animate-slide-up,
   .motion-done .animate-fade-in,
@@ -480,8 +486,7 @@ body {
 }
 
 /* Additional animation fallbacks for specific components */
-@media (prefers-reduced-motion: reduce),
-       (prefers-reduced-data: reduce) {
+@media (prefers-reduced-motion: reduce), (prefers-reduced-data: reduce) {
   /* Phone animations fallback */
   .phone-lottie-container {
     opacity: 1 !important;
@@ -523,10 +528,10 @@ body {
 
 /* Fallback for transform-based animations */
 @media (prefers-reduced-motion: reduce) {
-  [style*="transform"],
-  [class*="translate"],
-  [class*="scale"],
-  [class*="rotate"] {
+  [style*='transform'],
+  [class*='translate'],
+  [class*='scale'],
+  [class*='rotate'] {
     transform: none !important;
   }
 }
