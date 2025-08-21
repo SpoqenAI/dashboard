@@ -476,7 +476,7 @@ export function PhoneLottie({
   if (!tinted) {
     return (
       <div
-        className={className}
+        className={`phone-lottie-container ${className || ''}`}
         aria-hidden
         ref={containerRef}
         style={{ minHeight: 1 }}
@@ -498,7 +498,7 @@ export function PhoneLottie({
 
   return (
     <div
-      className={className}
+      className={`phone-lottie-container ${className || ''}`}
       aria-hidden
       ref={containerRef}
       style={{ minHeight: 1 }}

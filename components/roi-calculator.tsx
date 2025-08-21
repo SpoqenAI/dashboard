@@ -43,7 +43,7 @@ export function ROICalculator() {
   };
 
   return (
-    <Card className="hover:shadow-glow-primary/20 mx-auto max-w-4xl overflow-hidden border border-white/10 bg-card/10 transition-all duration-300 hover:scale-105 hover:bg-card/20">
+    <Card className="roi-calculator hover:shadow-glow-primary/20 mx-auto max-w-4xl overflow-hidden border border-white/10 bg-card/10 transition-all duration-300 hover:scale-105 hover:bg-card/20">
       <CardHeader className="text-center">
         {/* Ribbon headline merges Hidden Cost with ROI */}
         <div className="relative z-10 mb-3 flex items-center justify-center gap-2">
