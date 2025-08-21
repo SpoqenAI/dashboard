@@ -177,7 +177,7 @@ export const ExitIntentModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex animate-fade-in items-center justify-center bg-black/50 backdrop-blur-sm dark:bg-black/70"
+      className="exit-intent-modal fixed inset-0 z-50 flex animate-fade-in items-center justify-center bg-black/50 backdrop-blur-sm dark:bg-black/70"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"

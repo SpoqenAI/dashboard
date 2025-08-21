@@ -46,18 +46,67 @@ body {
     }
   }
 
-  /* ACCESSIBILITY: Reduced motion support */
+  /* ACCESSIBILITY: Comprehensive animation fallbacks */
   @media (prefers-reduced-motion: reduce) {
     .animate-fade-in,
     .animate-slide-up,
+    .animate-slide-down,
+    .animate-slide-in-right,
+    .animate-scale-in,
     .animate-pulse,
-    .animate-spin {
+    .animate-spin,
+    .animate-bounce {
       animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+      visibility: visible !important;
     }
 
+    /* Disable all transitions */
     .transition-all,
     .transition-transform,
-    .transition-colors {
+    .transition-colors,
+    .transition-opacity,
+    .transition-smooth,
+    .smooth-transform,
+    .smooth-transition {
+      transition: none !important;
+    }
+  }
+
+  /* Optional: lighter animations on touch devices when user hasn't asked to reduce motion/data */
+  @media (prefers-reduced-motion: no-preference) and (prefers-reduced-data: no-preference) and (pointer: coarse) {
+    .animate-fade-in,
+    .animate-slide-up,
+    .animate-slide-down,
+    .animate-slide-in-right,
+    .animate-scale-in {
+      animation-duration: 160ms !important;
+    }
+  }
+
+  /* Fallback for data saving modes and slow connections */
+  @media (prefers-reduced-data: reduce) {
+    .animate-fade-in,
+    .animate-slide-up,
+    .animate-slide-down,
+    .animate-slide-in-right,
+    .animate-scale-in,
+    .animate-pulse,
+    .animate-spin,
+    .animate-bounce {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+      visibility: visible !important;
+    }
+    .transition-all,
+    .transition-transform,
+    .transition-colors,
+    .transition-opacity,
+    .transition-smooth,
+    .smooth-transform,
+    .smooth-transition {
       transition: none !important;
     }
   }
@@ -177,10 +226,70 @@ body {
     @apply border-border;
   }
 
+  /* Establish global box-sizing for predictable layout */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
   body {
     @apply bg-background text-foreground;
     /* ACCESSIBILITY: Smooth scrolling with reduced motion support */
     scroll-behavior: smooth;
+    /* Prevent horizontal scrolling on all devices */
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+  }
+
+  @supports (width: 100dvw) {
+    html,
+    body {
+      max-width: 100dvw;
+    }
+  }
+
+  /* Mobile-specific horizontal scroll prevention */
+  @media (max-width: 768px) {
+    html,
+    body {
+      overflow-x: hidden !important;
+      width: 100% !important;
+      max-width: 100vw !important;
+      position: relative;
+    }
+
+    /* Keep common containers within viewport; avoid clamping all elements */
+    .container,
+    .prose,
+    .content,
+    .page-wrapper,
+    .layout,
+    .overflow-guard {
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
+
+    /* Fix overflow from flex/grid children */
+    .container > *,
+    .prose > *,
+    .content > *,
+    .page-wrapper > *,
+    .layout > *,
+    .overflow-guard > * {
+      min-width: 0;
+    }
+
+    /* Ensure images don't cause horizontal scroll */
+    img,
+    video,
+    canvas,
+    iframe {
+      max-width: 100%;
+      height: auto;
+    }
   }
 
   /* ACCESSIBILITY: Ensure all interactive elements are keyboard accessible */
@@ -321,7 +430,12 @@ body {
 .motion-done .animate-slide-in-right,
 .motion-done .animate-scale-in {
   animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  visibility: visible !important;
 }
+
+/* Removed redundant motion-done fallbacks; covered by earlier rules */
 
 /* Performance optimizations for dashboard preview */
 .dashboard-component {
@@ -349,6 +463,65 @@ body {
 
   .smooth-transition {
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Additional animation fallbacks for specific components */
+@media (prefers-reduced-motion: reduce), (prefers-reduced-data: reduce) {
+  /* Phone animations fallback */
+  .phone-lottie-container {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Interactive demo fallbacks */
+  .interactive-demo {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Hero section animations */
+  .hero-cta-section {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Benefits bar animations */
+  .benefits-bar {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* ROI calculator animations */
+  .roi-calculator {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Exit intent modal */
+  .exit-intent-modal {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Fallback for transform-based animations (scoped to known animation hooks) */
+@media (prefers-reduced-motion: reduce) {
+  /* Scope to our animation classes or explicit data hooks */
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-slide-down,
+  .animate-slide-in-right,
+  .animate-scale-in,
+  [data-anim],
+  [data-motion-target] {
+    transform: none !important;
+  }
+  [data-anim],
+  [data-motion-target] {
+    transition: none !important;
   }
 }
 

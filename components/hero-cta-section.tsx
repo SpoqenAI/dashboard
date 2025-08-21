@@ -6,7 +6,7 @@ import { ArrowRight } from 'lucide-react';
 
 export function HeroCTASection() {
   return (
-    <div className="flex flex-col items-center justify-center gap-4">
+    <div className="hero-cta-section flex flex-col items-center justify-center gap-4">
       <Button
         variant="neon"
         size="xl"

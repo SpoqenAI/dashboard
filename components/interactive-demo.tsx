@@ -279,7 +279,7 @@ export const InteractiveDemo = memo(() => {
   }, [isPlaying, currentStep, isVisible]);
 
   return (
-    <section ref={containerRef} className="w-full py-20">
+    <section ref={containerRef} className="interactive-demo w-full py-20">
       <div className="container px-6">
         <div className="mb-12 text-center">
           <h2 className="mb-6 text-4xl font-bold lg:text-5xl">
