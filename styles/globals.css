@@ -84,24 +84,8 @@ body {
     }
   }
 
-  /* Fallback for when animations are disabled via browser settings */
-  @media (prefers-reduced-motion: no-preference) {
-    @supports not (animation: fade-in 0s) {
-      .animate-fade-in,
-      .animate-slide-up,
-      .animate-slide-down,
-      .animate-slide-in-right,
-      .animate-scale-in {
-        animation: none !important;
-        opacity: 1 !important;
-        transform: none !important;
-        visibility: visible !important;
-      }
-    }
-  }
-
   /* Fallback for low-performance devices */
-  @media (max-width: 768px) and (max-device-width: 768px) {
+  @media (max-width: 768px) {
     .animate-fade-in,
     .animate-slide-up,
     .animate-slide-down,
@@ -270,17 +254,15 @@ body {
       max-width: 100vw;
     }
 
-    /* Prevent common horizontal overflow causes */
+    /* Prevent common horizontal overflow causes (scoped) */
     .container,
-    section,
-    main,
-    div,
-    article,
-    aside,
-    header,
-    footer {
-      max-width: 100vw !important;
-      overflow-x: hidden !important;
+    .prose,
+    .content,
+    .page-wrapper,
+    .layout,
+    .overflow-guard {
+      max-width: 100vw;
+      overflow-x: hidden;
     }
 
     /* Handle grid and flex layouts that might cause overflow */
@@ -526,12 +508,16 @@ body {
   }
 }
 
-/* Fallback for transform-based animations */
+/* Fallback for transform-based animations (scoped to known animation hooks) */
 @media (prefers-reduced-motion: reduce) {
-  [style*='transform'],
-  [class*='translate'],
-  [class*='scale'],
-  [class*='rotate'] {
+  /* Scope to our animation classes or explicit data hooks */
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-slide-down,
+  .animate-slide-in-right,
+  .animate-scale-in,
+  [data-anim],
+  [data-motion-target] {
     transform: none !important;
   }
 }

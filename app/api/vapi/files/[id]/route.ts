@@ -28,7 +28,7 @@ export async function DELETE(
       );
     }
 
-    const fileId = resolvedParams.id;
+    const { id: fileId } = resolvedParams;
     if (!fileId) {
       return NextResponse.json({ error: 'Missing file id' }, { status: 400 });
     }
