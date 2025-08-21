@@ -79,6 +79,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Force-animations removed; handled per component */}
         <Script
           id="ld-org"
           type="application/ld+json"
@@ -142,7 +143,7 @@ export default function RootLayout({
                 })();
               `}
             </Script>
-            {/* PERF: mark animations done after initial scroll to stop heavy keyframes */}
+            {/* PERF: mark animations done after first scroll to stop heavy keyframes */}
             <Script id="motion-done-script" strategy="afterInteractive">
               {`
                 (function () {
