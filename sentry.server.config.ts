@@ -27,8 +27,8 @@ Sentry.init({
   // Set environment
   environment: process.env.NODE_ENV,
 
-  // Enable Sentry Logs feature
-  _experiments: { features: ['logs'] },
+  // Enable Sentry Logs feature (supported shape)
+  _experiments: { enableLogs: true },
 
   // Configure sampling for different transaction types
   tracesSampler: samplingContext => {

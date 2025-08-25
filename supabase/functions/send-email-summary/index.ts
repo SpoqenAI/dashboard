@@ -152,7 +152,13 @@ serve(async (req: Request): Promise<Response> => {
     addBreadcrumb('Request received', 'http', {
       method: req.method,
     });
-    const payloadUnknown: unknown = await req.json();
+    let payloadUnknown: unknown;
+    try {
+      payloadUnknown = await req.json();
+    } catch (error) {
+      captureException(error as Error, { function: 'send-email-summary' });
+      return new Response('Invalid JSON payload', { status: 400 });
+    }
     if (typeof payloadUnknown !== 'object' || payloadUnknown === null) {
       const error = new Error('Invalid JSON payload');
       captureException(error, { function: 'send-email-summary' });
@@ -270,7 +276,6 @@ serve(async (req: Request): Promise<Response> => {
     }
     addBreadcrumb('User profile found', 'database', {
       user_id: userId,
-      email: typedProfile.email,
     });
     /* b. Render React template to HTML ------------------------------------ */ addBreadcrumb(
       'Rendering email template',
@@ -298,8 +303,8 @@ serve(async (req: Request): Promise<Response> => {
       Deno.env.get('BREVO_API_KEY')!;
     const from = Deno.env.get('FROM_EMAIL')!;
     addBreadcrumb('Sending email via Brevo', 'email', {
-      to: typedProfile.email,
-      from: from,
+      to_present: Boolean(typedProfile.email),
+      from_domain: from.split('@')[1] ?? 'unknown',
     });
     try {
       const brevoResp = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -331,7 +336,8 @@ serve(async (req: Request): Promise<Response> => {
           operation: 'brevo_api',
           user_id: userId,
           brevo_status: brevoResp.status,
-          brevo_response: errText,
+          // Avoid sending provider body (could contain PII)
+          brevo_response_length: errText?.length ?? 0,
         });
         // Avoid noisy console logging in production functions
         if (Deno.env.get('ENVIRONMENT') !== 'production') {
