@@ -25,9 +25,9 @@ export function FinalCTAButtons() {
         variant="outline"
         size="xl"
         className="focus-visible-ring"
-        onClick={() => undefined}
+        asChild
       >
-        Book a Demo Call
+        <Link href="/contact">Book a Demo Call</Link>
       </Button>
     </div>
   );

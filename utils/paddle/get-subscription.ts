@@ -88,7 +88,12 @@ export async function getSubscription(
       return { data: parseSDKResponse(subscription) };
     }
   } catch (e) {
-    console.error('Error fetching subscription:', e);
+    try {
+      const Sentry = await import('@sentry/nextjs');
+      Sentry.captureException(e as Error, {
+        tags: { component: 'GET_SUBSCRIPTION' },
+      });
+    } catch {}
     return { error: ErrorMessage };
   }
 

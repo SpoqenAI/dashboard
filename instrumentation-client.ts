@@ -72,8 +72,10 @@ async function initSentry() {
     }
   } catch (err) {
     // Optionally log the error or handle gracefully
-    // eslint-disable-next-line no-console
-    console.warn('Sentry failed to load:', err);
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.warn('Sentry failed to load:', err);
+    }
   }
 }
 

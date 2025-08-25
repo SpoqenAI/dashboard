@@ -132,8 +132,7 @@ class Logger {
         });
       }
     } catch (sentryError) {
-      // Fail silently if Sentry has issues
-      console.warn('Failed to send to Sentry:', sentryError);
+      // Fail silently if Sentry has issues (no console in production)
     }
 
     // LogRocket integration (commented out - uncomment if you add LogRocket)
@@ -182,7 +181,10 @@ class Logger {
    */
   warn(component: string, message: string, context?: LogContext) {
     const formattedMessage = this.formatMessage('warn', component, message);
-    console.warn(formattedMessage, context ? this.sanitizeData(context) : '');
+    if (this.isDevelopment) {
+      // eslint-disable-next-line no-console
+      console.warn(formattedMessage, context ? this.sanitizeData(context) : '');
+    }
     this.sendToExternalService(
       'warn',
       message,
@@ -200,11 +202,14 @@ class Logger {
     context?: LogContext
   ) {
     const formattedMessage = this.formatMessage('error', component, message);
-    console.error(
-      formattedMessage,
-      error,
-      context ? this.sanitizeData(context) : ''
-    );
+    if (this.isDevelopment) {
+      // eslint-disable-next-line no-console
+      console.error(
+        formattedMessage,
+        error,
+        context ? this.sanitizeData(context) : ''
+      );
+    }
     this.sendToExternalService(
       'error',
       message,

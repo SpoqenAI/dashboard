@@ -31,14 +31,17 @@ export async function POST(request: NextRequest) {
     });
 
     if (!sizeValidation.isValid) {
-      // Log potential DoS attempt for security monitoring
-      console.warn('Request body size limit exceeded:', {
-        ipAddress: ipAddress.substring(0, 8) + '***',
-        contentLength: sizeValidation.actualSize,
-        maxAllowed: sizeValidation.maxSize,
-        endpoint: 'faq-feedback',
-        timestamp: new Date().toISOString(),
-      });
+      // Log potential DoS attempt for security monitoring (dev only)
+      if (process.env.NODE_ENV !== 'production') {
+        // eslint-disable-next-line no-console
+        console.warn('Request body size limit exceeded:', {
+          ipAddress: ipAddress.substring(0, 8) + '***',
+          contentLength: sizeValidation.actualSize,
+          maxAllowed: sizeValidation.maxSize,
+          endpoint: 'faq-feedback',
+          timestamp: new Date().toISOString(),
+        });
+      }
 
       return NextResponse.json(
         {
@@ -124,12 +127,15 @@ export async function POST(request: NextRequest) {
     const rateLimitResult = await checkMultipleRateLimits(rateLimitChecks);
 
     if (!rateLimitResult.allowed) {
-      console.warn('Rate limit exceeded for FAQ feedback:', {
-        ipAddress: ipAddress.substring(0, 8) + '***', // Partial IP for privacy
-        hasSessionId: !!feedbackData.sessionId, // Only log presence, not the actual ID
-        failedCheck: rateLimitResult.failedCheck,
-        retryAfter: rateLimitResult.retryAfter,
-      });
+      if (process.env.NODE_ENV !== 'production') {
+        // eslint-disable-next-line no-console
+        console.warn('Rate limit exceeded for FAQ feedback:', {
+          ipAddress: ipAddress.substring(0, 8) + '***', // Partial IP for privacy
+          hasSessionId: !!feedbackData.sessionId, // Only log presence, not the actual ID
+          failedCheck: rateLimitResult.failedCheck,
+          retryAfter: rateLimitResult.retryAfter,
+        });
+      }
 
       const response = NextResponse.json(
         {
@@ -177,7 +183,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Database error:', error);
+      try {
+        const Sentry = await import('@sentry/nextjs');
+        Sentry.captureException(error, { tags: { component: 'FAQ_FEEDBACK' } });
+      } catch {}
       return NextResponse.json(
         { error: 'Failed to store feedback' },
         { status: 500 }
@@ -185,13 +194,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Log for analytics (excluding sensitive session data)
-    console.log('FAQ Feedback recorded in database:', {
-      id: feedbackId,
-      questionId: feedbackData.questionId,
-      feedback: feedbackData.feedback,
-      timestamp: feedbackData.timestamp,
-      hasSessionId: !!feedbackData.sessionId, // Only log presence, not the actual ID
-    });
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log('FAQ Feedback recorded in database:', {
+        id: feedbackId,
+        questionId: feedbackData.questionId,
+        feedback: feedbackData.feedback,
+        timestamp: feedbackData.timestamp,
+        hasSessionId: !!feedbackData.sessionId, // Only log presence, not the actual ID
+      });
+    }
 
     // Production enhancements to consider:
     // 1. [DONE] Database storage (implemented)
@@ -224,7 +236,12 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Error processing FAQ feedback:', error);
+    try {
+      const Sentry = await import('@sentry/nextjs');
+      Sentry.captureException(error as Error, {
+        tags: { component: 'FAQ_FEEDBACK' },
+      });
+    } catch {}
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

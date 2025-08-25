@@ -148,7 +148,12 @@ export async function getTransactions(
       return { data: [], hasMore: false, totalRecords: 0 };
     }
   } catch (e) {
-    console.error('Error fetching transactions:', e);
+    // Use centralized logger which handles Sentry in production
+    logger.error(
+      'GET_TRANSACTIONS',
+      'Failed to fetch transactions',
+      (e as Error) ?? undefined
+    );
     return getErrorMessage();
   }
 }
