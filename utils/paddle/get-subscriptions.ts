@@ -2,6 +2,7 @@
 
 import { getPaddleServerInstance } from '@/utils/paddle/get-paddle-instance';
 import { getErrorMessage, ErrorMessage } from '@/utils/paddle/data-helpers';
+import { logger } from '@/lib/logger';
 import { getCustomerId } from '@/utils/paddle/get-customer-id';
 import type { Subscription } from '@paddle/paddle-node-sdk';
 
@@ -40,12 +41,12 @@ export async function getSubscriptions(): Promise<SubscriptionResponse> {
       };
     }
   } catch (e) {
-    try {
-      const Sentry = await import('@sentry/nextjs');
-      Sentry.captureException(e as Error, {
-        tags: { component: 'GET_SUBSCRIPTIONS' },
-      });
-    } catch {}
+    // Use centralized logger which handles Sentry in production
+    logger.error(
+      'GET_SUBSCRIPTIONS',
+      'Failed to fetch subscriptions',
+      (e as Error) ?? undefined
+    );
     return getErrorMessage();
   }
 

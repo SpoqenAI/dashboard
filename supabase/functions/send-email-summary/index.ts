@@ -1,7 +1,13 @@
-// @ts-nocheck
+// Minimal Deno ambient to satisfy non-Deno type checkers
+declare const Deno: { env: { get: (name: string) => string | undefined } };
+
+// @ts-expect-error Deno resolves remote module types at runtime
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
+// @ts-expect-error Deno resolves remote module types at runtime
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// @ts-expect-error Deno resolves remote module types at runtime
 import React from 'https://esm.sh/react@18.3.1';
+// @ts-expect-error Deno resolves remote module types at runtime
 import { renderToStaticMarkup } from 'https://esm.sh/react-dom@18.3.1/server';
 import CallSummaryEmail from '../_shared/templates/call-summary.tsx';
 import {
@@ -12,6 +18,98 @@ import {
   setTag,
   startTransaction,
 } from '../_shared/sentry.ts';
+// Types -----------------------------------------------------------------------
+// Shape of AI call analysis. Mirrors the props expected by the email template.
+interface CallAnalysis {
+  sentiment?: 'positive' | 'negative' | 'neutral';
+  leadQuality?: 'hot' | 'warm' | 'cold';
+  leadQualityReasoning?: string;
+  sentimentAnalysisReasoning?: string;
+  callPurpose?: string;
+  keyPoints?: string[];
+  urgentConcerns?: string[];
+  followUpItems?: string[];
+  businessInterest?: string;
+  timeline?: string;
+  budgetMentioned?: boolean;
+  decisionMaker?: boolean;
+  appointmentRequested?: boolean;
+  contactPreference?: string;
+}
+
+// Incoming HTTP payload
+interface SendEmailSummaryPayload {
+  assistantId: string;
+  summary: string;
+  phoneNumber?: string;
+  callerName?: string;
+  callAnalysis?: CallAnalysis;
+}
+
+// Minimal row shapes for queried tables
+interface UserSettingsRow {
+  id: string;
+  email_notifications: boolean | null;
+}
+
+interface ProfileRow {
+  email: string | null;
+}
+
+// Minimal Sentry transaction contract used here
+interface SentryTransactionLike {
+  finish: () => void;
+}
+
+// Type guards -----------------------------------------------------------------
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isStringOrUndefined(value: unknown): value is string | undefined {
+  return value === undefined || typeof value === 'string';
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(item => typeof item === 'string');
+}
+
+function isCallAnalysis(value: unknown): value is CallAnalysis {
+  if (!isRecord(value)) return false;
+  const v = value as Record<string, unknown>;
+  if (
+    v.sentiment !== undefined &&
+    v.sentiment !== 'positive' &&
+    v.sentiment !== 'negative' &&
+    v.sentiment !== 'neutral'
+  )
+    return false;
+  if (
+    v.leadQuality !== undefined &&
+    v.leadQuality !== 'hot' &&
+    v.leadQuality !== 'warm' &&
+    v.leadQuality !== 'cold'
+  )
+    return false;
+  if (
+    !isStringOrUndefined(v.leadQualityReasoning) ||
+    !isStringOrUndefined(v.sentimentAnalysisReasoning) ||
+    !isStringOrUndefined(v.callPurpose) ||
+    (v.keyPoints !== undefined && !isStringArray(v.keyPoints)) ||
+    (v.urgentConcerns !== undefined && !isStringArray(v.urgentConcerns)) ||
+    (v.followUpItems !== undefined && !isStringArray(v.followUpItems)) ||
+    !isStringOrUndefined(v.businessInterest) ||
+    !isStringOrUndefined(v.timeline) ||
+    (v.budgetMentioned !== undefined &&
+      typeof v.budgetMentioned !== 'boolean') ||
+    (v.decisionMaker !== undefined && typeof v.decisionMaker !== 'boolean') ||
+    (v.appointmentRequested !== undefined &&
+      typeof v.appointmentRequested !== 'boolean') ||
+    !isStringOrUndefined(v.contactPreference)
+  )
+    return false;
+  return true;
+}
 // Initialize Sentry at the top level
 initSentry();
 const requiredEnvVars = [
@@ -31,11 +129,14 @@ for (const envVar of requiredEnvVars) {
   }
 }
 const supabase = createClient(
-  Deno.env.get('SUPABASE_URL'),
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
-serve(async req => {
-  const transaction = startTransaction('send-email-summary', 'email');
+serve(async (req: Request): Promise<Response> => {
+  const transaction = startTransaction(
+    'send-email-summary',
+    'email'
+  ) as SentryTransactionLike | null;
   try {
     if (req.method !== 'POST') {
       addBreadcrumb('Invalid method', 'validation', {
@@ -51,9 +152,14 @@ serve(async req => {
     addBreadcrumb('Request received', 'http', {
       method: req.method,
     });
-    const payload = await req.json();
+    const payloadUnknown: unknown = await req.json();
+    if (typeof payloadUnknown !== 'object' || payloadUnknown === null) {
+      const error = new Error('Invalid JSON payload');
+      captureException(error, { function: 'send-email-summary' });
+      return new Response('Invalid JSON payload', { status: 400 });
+    }
     const { assistantId, summary, phoneNumber, callerName, callAnalysis } =
-      payload;
+      payloadUnknown as Record<string, unknown>;
     addBreadcrumb('Payload parsed', 'data', {
       assistant_id: assistantId,
       has_summary: !!summary,
@@ -77,7 +183,6 @@ serve(async req => {
       captureException(error, {
         function: 'send-email-summary',
         summary_type: typeof summary,
-        summary_length: summary?.length || 0,
       });
       return new Response('Invalid summary', {
         status: 400,
@@ -93,8 +198,25 @@ serve(async req => {
         status: 400,
       });
     }
+    if (callerName !== undefined && typeof callerName !== 'string') {
+      const error = new Error('Invalid callerName');
+      captureException(error, {
+        function: 'send-email-summary',
+        caller_name_type: typeof callerName,
+      });
+      return new Response('Invalid callerName', { status: 400 });
+    }
+    if (callAnalysis !== undefined) {
+      if (!isCallAnalysis(callAnalysis)) {
+        const error = new Error('Invalid callAnalysis');
+        captureException(error, {
+          function: 'send-email-summary',
+        });
+        return new Response('Invalid callAnalysis', { status: 400 });
+      }
+    }
     setTag('function', 'send-email-summary');
-    setTag('assistant_id', assistantId);
+    setTag('assistant_id', assistantId as string);
     /* a. Resolve user & email preferences -------------------------------- */ addBreadcrumb(
       'Fetching user settings',
       'database',
@@ -107,10 +229,11 @@ serve(async req => {
       .select('id,email_notifications')
       .eq('vapi_assistant_id', assistantId)
       .maybeSingle();
-    if (!userSettings || userSettings.email_notifications === false) {
+    const typedUserSettings = userSettings as unknown as UserSettingsRow | null;
+    if (!typedUserSettings || typedUserSettings.email_notifications === false) {
       addBreadcrumb('Email notifications disabled or user not found', 'email', {
-        user_found: !!userSettings,
-        email_notifications: userSettings?.email_notifications,
+        user_found: !!typedUserSettings,
+        email_notifications: typedUserSettings?.email_notifications,
       });
       return new Response(
         JSON.stringify({
@@ -121,7 +244,7 @@ serve(async req => {
         }
       );
     }
-    const userId = userSettings.id;
+    const userId = typedUserSettings.id;
     setUser(userId);
     addBreadcrumb('Fetching user profile', 'database', {
       user_id: userId,
@@ -131,7 +254,8 @@ serve(async req => {
       .select('email')
       .eq('id', userId)
       .single();
-    if (!profile?.email) {
+    const typedProfile = profile as unknown as ProfileRow | null;
+    if (!typedProfile?.email) {
       addBreadcrumb('No email found for user', 'email', {
         user_id: userId,
       });
@@ -146,7 +270,7 @@ serve(async req => {
     }
     addBreadcrumb('User profile found', 'database', {
       user_id: userId,
-      email: profile.email,
+      email: typedProfile.email,
     });
     /* b. Render React template to HTML ------------------------------------ */ addBreadcrumb(
       'Rendering email template',
@@ -156,35 +280,34 @@ serve(async req => {
     // Use site-hosted assets so emails always use the current branding
     const logoUrl = `${baseUrl}/Icon.png`;
     const fullLogoUrl = `${baseUrl}/Spoqen (2).png`;
-    const html = renderToStaticMarkup(
+    const html: string = renderToStaticMarkup(
       React.createElement(CallSummaryEmail, {
-        summary,
-        phoneNumber,
-        callerName,
-        callAnalysis,
+        summary: summary as string,
+        phoneNumber: typeof phoneNumber === 'string' ? phoneNumber : undefined,
+        callerName: typeof callerName === 'string' ? callerName : undefined,
+        callAnalysis: callAnalysis as CallAnalysis | undefined,
         logoUrl,
         fullLogoUrl,
         dashboardUrl: `${baseUrl}/recent-calls`,
       })
     );
     addBreadcrumb('Email template rendered', 'template', {
-      html_length: html.length,
       base_url: baseUrl,
     });
     /* c. Send email via Brevo REST API --------------------------------- */ const apiKey =
-      Deno.env.get('BREVO_API_KEY');
-    const from = Deno.env.get('FROM_EMAIL');
+      Deno.env.get('BREVO_API_KEY')!;
+    const from = Deno.env.get('FROM_EMAIL')!;
     addBreadcrumb('Sending email via Brevo', 'email', {
-      to: profile.email,
+      to: typedProfile.email,
       from: from,
     });
     try {
       const brevoResp = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
-        headers: {
+        headers: new Headers({
           'Content-Type': 'application/json',
           'api-key': apiKey,
-        },
+        }),
         body: JSON.stringify({
           sender: {
             email: from,
@@ -192,7 +315,7 @@ serve(async req => {
           },
           to: [
             {
-              email: profile.email,
+              email: typedProfile.email,
             },
           ],
           subject: '[Spoqen] Complete Call Details Report',

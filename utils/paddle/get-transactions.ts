@@ -148,12 +148,12 @@ export async function getTransactions(
       return { data: [], hasMore: false, totalRecords: 0 };
     }
   } catch (e) {
-    try {
-      const Sentry = await import('@sentry/nextjs');
-      Sentry.captureException(e as Error, {
-        tags: { component: 'GET_TRANSACTIONS' },
-      });
-    } catch {}
+    // Use centralized logger which handles Sentry in production
+    logger.error(
+      'GET_TRANSACTIONS',
+      'Failed to fetch transactions',
+      (e as Error) ?? undefined
+    );
     return getErrorMessage();
   }
 }

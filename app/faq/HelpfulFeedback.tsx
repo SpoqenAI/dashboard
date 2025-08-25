@@ -50,6 +50,14 @@ export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
             errorData.message ||
               "You've submitted feedback too quickly. Please wait a moment before trying again."
           );
+          if (process.env.NODE_ENV !== 'production') {
+            // eslint-disable-next-line no-console
+            console.error('Error submitting feedback (rate limited):', {
+              status: response.status,
+              statusText: response.statusText,
+              body: errorData,
+            });
+          }
           return;
         } else {
           // Other errors
@@ -57,6 +65,14 @@ export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
             errorData.message ||
               'Unable to submit feedback right now. Please try again later.'
           );
+          if (process.env.NODE_ENV !== 'production') {
+            // eslint-disable-next-line no-console
+            console.error('Error submitting feedback (server error):', {
+              status: response.status,
+              statusText: response.statusText,
+              body: errorData,
+            });
+          }
           return;
         }
       }
@@ -64,6 +80,10 @@ export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
       // Success
       setFeedback(feedbackType);
     } catch (error) {
+      if (process.env.NODE_ENV !== 'production') {
+        // eslint-disable-next-line no-console
+        console.error('Error submitting feedback:', error);
+      }
       import('@sentry/nextjs')
         .then(Sentry => {
           Sentry.captureException(error as Error, {
@@ -71,10 +91,7 @@ export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
           });
         })
         .catch(() => {
-          if (process.env.NODE_ENV !== 'production') {
-            // eslint-disable-next-line no-console
-            console.error('Error submitting feedback:', error);
-          }
+          // Swallow errors if Sentry import/capture fails
         });
       setError('Network error. Please check your connection and try again.');
     } finally {
