@@ -144,6 +144,37 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
+
+// Response helpers to ensure consistent CORS + JSON
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+} as const;
+
+function jsonResponse(
+  body: unknown,
+  status = 200,
+  extraHeaders: Record<string, string> = {}
+): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      ...CORS_HEADERS,
+      ...extraHeaders,
+    },
+  });
+}
+
+function optionsResponse(): Response {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      ...CORS_HEADERS,
+    },
+  });
+}
 serve(async (req: Request): Promise<Response> => {
   const transaction = startTransaction(
     'send-email-summary',
@@ -152,25 +183,14 @@ serve(async (req: Request): Promise<Response> => {
   try {
     // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          Allow: 'POST, OPTIONS',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        },
-      });
+      return optionsResponse();
     }
     if (req.method !== 'POST') {
       addBreadcrumb('Invalid method', 'validation', {
         method: req.method,
       });
-      return new Response('Method Not Allowed', {
-        status: 405,
-        headers: {
-          Allow: 'POST',
-        },
+      return jsonResponse({ error: 'Method Not Allowed' }, 405, {
+        Allow: 'POST',
       });
     }
     addBreadcrumb('Request received', 'http', {
@@ -181,12 +201,12 @@ serve(async (req: Request): Promise<Response> => {
       payloadUnknown = await req.json();
     } catch (error) {
       captureException(error as Error, { function: 'send-email-summary' });
-      return new Response('Invalid JSON payload', { status: 400 });
+      return jsonResponse({ error: 'Invalid JSON payload' }, 400);
     }
     if (typeof payloadUnknown !== 'object' || payloadUnknown === null) {
       const error = new Error('Invalid JSON payload');
       captureException(error, { function: 'send-email-summary' });
-      return new Response('Invalid JSON payload', { status: 400 });
+      return jsonResponse({ error: 'Invalid JSON payload' }, 400);
     }
     const { assistantId, summary, phoneNumber, callerName, callAnalysis } =
       payloadUnknown as Record<string, unknown>;
@@ -204,9 +224,7 @@ serve(async (req: Request): Promise<Response> => {
         assistant_id: assistantId,
         assistant_id_type: typeof assistantId,
       });
-      return new Response('Invalid assistantId', {
-        status: 400,
-      });
+      return jsonResponse({ error: 'Invalid assistantId' }, 400);
     }
     if (typeof summary !== 'string' || summary.trim().length === 0) {
       const error = new Error('Invalid summary');
@@ -214,9 +232,7 @@ serve(async (req: Request): Promise<Response> => {
         function: 'send-email-summary',
         summary_type: typeof summary,
       });
-      return new Response('Invalid summary', {
-        status: 400,
-      });
+      return jsonResponse({ error: 'Invalid summary' }, 400);
     }
     if (phoneNumber !== undefined && typeof phoneNumber !== 'string') {
       const error = new Error('Invalid phoneNumber');
@@ -224,9 +240,7 @@ serve(async (req: Request): Promise<Response> => {
         function: 'send-email-summary',
         phone_number_type: typeof phoneNumber,
       });
-      return new Response('Invalid phoneNumber', {
-        status: 400,
-      });
+      return jsonResponse({ error: 'Invalid phoneNumber' }, 400);
     }
     if (callerName !== undefined && typeof callerName !== 'string') {
       const error = new Error('Invalid callerName');
@@ -234,7 +248,7 @@ serve(async (req: Request): Promise<Response> => {
         function: 'send-email-summary',
         caller_name_type: typeof callerName,
       });
-      return new Response('Invalid callerName', { status: 400 });
+      return jsonResponse({ error: 'Invalid callerName' }, 400);
     }
     if (callAnalysis !== undefined) {
       if (!isCallAnalysis(callAnalysis)) {
@@ -242,7 +256,7 @@ serve(async (req: Request): Promise<Response> => {
         captureException(error, {
           function: 'send-email-summary',
         });
-        return new Response('Invalid callAnalysis', { status: 400 });
+        return jsonResponse({ error: 'Invalid callAnalysis' }, 400);
       }
     }
     setTag('function', 'send-email-summary');
@@ -265,14 +279,7 @@ serve(async (req: Request): Promise<Response> => {
         user_found: !!typedUserSettings,
         email_notifications: typedUserSettings?.email_notifications,
       });
-      return new Response(
-        JSON.stringify({
-          skipped: true,
-        }),
-        {
-          status: 200,
-        }
-      );
+      return jsonResponse({ skipped: true }, 200);
     }
     const userId = typedUserSettings.id;
     setUser(userId);
@@ -289,14 +296,7 @@ serve(async (req: Request): Promise<Response> => {
       addBreadcrumb('No email found for user', 'email', {
         user_id: userId,
       });
-      return new Response(
-        JSON.stringify({
-          skipped: true,
-        }),
-        {
-          status: 200,
-        }
-      );
+      return jsonResponse({ skipped: true }, 200);
     }
     addBreadcrumb('User profile found', 'database', {
       user_id: userId,
@@ -380,9 +380,7 @@ serve(async (req: Request): Promise<Response> => {
             response_length: errText?.length ?? 0,
           });
         }
-        return new Response('Email send failed', {
-          status: 502,
-        });
+        return jsonResponse({ error: 'Email send failed' }, 502);
       }
       addBreadcrumb('Email sent successfully', 'email', {
         user_id: userId,
@@ -398,22 +396,13 @@ serve(async (req: Request): Promise<Response> => {
       if (Deno.env.get('ENVIRONMENT') !== 'production') {
         console.error('Brevo fetch threw', err);
       }
-      return new Response('Email send encountered an error', {
-        status: 500,
-      });
+      return jsonResponse({ error: 'Email send encountered an error' }, 500);
     }
     addBreadcrumb('Email summary completed successfully', 'email', {
       user_id: userId,
       assistant_id: assistantId,
     });
-    return new Response(
-      JSON.stringify({
-        sent: true,
-      }),
-      {
-        status: 200,
-      }
-    );
+    return jsonResponse({ sent: true }, 200);
   } catch (error) {
     const sentryError =
       error instanceof Error
@@ -426,9 +415,7 @@ serve(async (req: Request): Promise<Response> => {
     if (Deno.env.get('ENVIRONMENT') !== 'production') {
       console.error('Unexpected error in send-email-summary:', error);
     }
-    return new Response('Internal server error', {
-      status: 500,
-    });
+    return jsonResponse({ error: 'Internal server error' }, 500);
   } finally {
     if (transaction) {
       transaction.finish();
