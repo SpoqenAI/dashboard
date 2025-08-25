@@ -128,6 +128,18 @@ for (const envVar of requiredEnvVars) {
     throw error;
   }
 }
+// Early format validation for FROM_EMAIL to fail fast with a clear error
+const fromEmailEnv = Deno.env.get('FROM_EMAIL')!;
+// Simple RFC5322-ish email validation suitable for config checks
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+if (!EMAIL_RE.test(fromEmailEnv)) {
+  const error = new Error('Invalid FROM_EMAIL format');
+  captureException(error, {
+    function: 'send-email-summary',
+    invalid_env_var: 'FROM_EMAIL',
+  });
+  throw error;
+}
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -138,6 +150,18 @@ serve(async (req: Request): Promise<Response> => {
     'email'
   ) as SentryTransactionLike | null;
   try {
+    // Handle CORS preflight requests
+    if (req.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          Allow: 'POST, OPTIONS',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
+    }
     if (req.method !== 'POST') {
       addBreadcrumb('Invalid method', 'validation', {
         method: req.method,
@@ -288,7 +312,8 @@ serve(async (req: Request): Promise<Response> => {
     const baseUrl = Deno.env.get('BASE_URL') ?? 'https://www.spoqen.com';
     // Use site-hosted assets so emails always use the current branding
     const logoUrl = `${baseUrl}/Icon.png`;
-    const fullLogoUrl = `${baseUrl}/Spoqen (2).png`;
+    // Encode filename to avoid issues with spaces/parentheses in email clients
+    const fullLogoUrl = `${baseUrl}/${encodeURIComponent('Spoqen (2).png')}`;
     const html: string = renderToStaticMarkup(
       React.createElement(CallSummaryEmail, {
         summary: summary as string,
