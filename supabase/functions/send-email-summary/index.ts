@@ -222,7 +222,7 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
     setTag('function', 'send-email-summary');
-    setTag('assistant_id', assistantId as string);
+    setTag('assistant_id', assistantId);
     /* a. Resolve user & email preferences -------------------------------- */ addBreadcrumb(
       'Fetching user settings',
       'database',
@@ -276,6 +276,10 @@ serve(async (req: Request): Promise<Response> => {
     }
     addBreadcrumb('User profile found', 'database', {
       user_id: userId,
+      email_present: true,
+      email_domain: typedProfile.email.includes('@')
+        ? typedProfile.email.split('@')[1]
+        : 'unknown',
     });
     /* b. Render React template to HTML ------------------------------------ */ addBreadcrumb(
       'Rendering email template',
@@ -304,6 +308,10 @@ serve(async (req: Request): Promise<Response> => {
     const from = Deno.env.get('FROM_EMAIL')!;
     addBreadcrumb('Sending email via Brevo', 'email', {
       to_present: Boolean(typedProfile.email),
+      to_domain:
+        typeof typedProfile.email === 'string' && typedProfile.email.includes('@')
+          ? typedProfile.email.split('@')[1]
+          : 'unknown',
       from_domain: from.split('@')[1] ?? 'unknown',
     });
     try {
@@ -330,7 +338,7 @@ serve(async (req: Request): Promise<Response> => {
       });
       if (!brevoResp.ok) {
         const errText = await brevoResp.text();
-        const error = new Error(`Brevo error: ${brevoResp.status} ${errText}`);
+        const error = new Error(`Brevo error: ${brevoResp.status}`);
         captureException(error, {
           function: 'send-email-summary',
           operation: 'brevo_api',
@@ -343,7 +351,7 @@ serve(async (req: Request): Promise<Response> => {
         if (Deno.env.get('ENVIRONMENT') !== 'production') {
           console.error('Brevo error', {
             status: brevoResp.status,
-            body: errText,
+            response_length: errText?.length ?? 0,
           });
         }
         return new Response('Email send failed', {
