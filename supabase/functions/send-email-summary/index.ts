@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { Database } from '../_shared/types/supabase.ts';
 import React from 'https://esm.sh/react@18.3.1';
 import { renderToStaticMarkup } from 'https://esm.sh/react-dom@18.3.1/server';
 import CallSummaryEmail from '../_shared/templates/call-summary.tsx';
@@ -39,15 +40,7 @@ interface SendEmailSummaryPayload {
   callAnalysis?: CallAnalysis;
 }
 
-// Minimal row shapes for queried tables
-interface UserSettingsRow {
-  id: string;
-  email_notifications: boolean | null;
-}
-
-interface ProfileRow {
-  email: string | null;
-}
+// (Row types now provided by generated Database type)
 
 // Minimal Sentry transaction contract used here
 interface SentryTransactionLike {
@@ -133,7 +126,7 @@ if (!EMAIL_RE.test(fromEmailEnv)) {
   });
   throw error;
 }
-const supabase = createClient(
+const supabase = createClient<Database>(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
@@ -216,7 +209,7 @@ serve(async (req: Request): Promise<Response> => {
     });
     if (typeof assistantId !== 'string' || assistantId.trim().length === 0) {
       addBreadcrumb('Invalid assistantId', 'validation', {
-        assistant_id: assistantId as unknown as string,
+        assistant_id: assistantId,
         assistant_id_type: typeof assistantId,
       });
       return jsonResponse({ error: 'Invalid assistantId' }, 400);
@@ -277,8 +270,7 @@ serve(async (req: Request): Promise<Response> => {
         500
       );
     }
-    const typedUserSettings = userSettings as unknown as UserSettingsRow | null;
-    if (!typedUserSettings) {
+    if (!userSettings) {
       addBreadcrumb('User not found for assistant', 'email', {
         user_found: false,
       });
@@ -287,7 +279,7 @@ serve(async (req: Request): Promise<Response> => {
         200
       );
     }
-    if (typedUserSettings.email_notifications === false) {
+    if (userSettings.email_notifications === false) {
       addBreadcrumb('Email notifications disabled', 'email', {
         user_found: true,
         email_notifications: false,
@@ -297,7 +289,7 @@ serve(async (req: Request): Promise<Response> => {
         200
       );
     }
-    const userId = typedUserSettings.id;
+    const userId = userSettings.id;
     setUser(userId);
     addBreadcrumb('Fetching user profile', 'database', {
       user_id: userId,
@@ -322,8 +314,7 @@ serve(async (req: Request): Promise<Response> => {
       );
       return jsonResponse({ error: 'Database error fetching profile' }, 500);
     }
-    const typedProfile = profile as unknown as ProfileRow | null;
-    if (!typedProfile?.email) {
+    if (!profile?.email) {
       addBreadcrumb('No email found for user', 'email', {
         user_id: userId,
       });
@@ -335,8 +326,8 @@ serve(async (req: Request): Promise<Response> => {
     addBreadcrumb('User profile found', 'database', {
       user_id: userId,
       email_present: true,
-      email_domain: typedProfile.email.includes('@')
-        ? typedProfile.email.split('@')[1].toLowerCase()
+      email_domain: profile.email.includes('@')
+        ? profile.email.split('@')[1].toLowerCase()
         : 'unknown',
     });
     /* b. Render React template to HTML ------------------------------------ */ addBreadcrumb(
@@ -368,13 +359,12 @@ serve(async (req: Request): Promise<Response> => {
     /* c. Send email via Brevo REST API --------------------------------- */ const apiKey =
       Deno.env.get('BREVO_API_KEY')!;
     const from = Deno.env.get('FROM_EMAIL')!;
+    const userEmail = profile.email;
     addBreadcrumb('Sending email via Brevo', 'email', {
-      to_present: Boolean(typedProfile.email),
-      to_domain:
-        typeof typedProfile.email === 'string' &&
-        typedProfile.email.includes('@')
-          ? typedProfile.email.split('@')[1].toLowerCase()
-          : 'unknown',
+      to_present: Boolean(userEmail),
+      to_domain: userEmail.includes('@')
+        ? userEmail.split('@')[1].toLowerCase()
+        : 'unknown',
       from_domain: (from.split('@')[1] ?? 'unknown').toLowerCase(),
     });
     try {
@@ -399,7 +389,7 @@ serve(async (req: Request): Promise<Response> => {
           },
           to: [
             {
-              email: typedProfile.email,
+              email: userEmail,
             },
           ],
           subject: '[Spoqen] Complete Call Details Report',
