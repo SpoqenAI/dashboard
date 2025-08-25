@@ -199,13 +199,16 @@ serve(async (req: Request): Promise<Response> => {
     let payloadUnknown: unknown;
     try {
       payloadUnknown = await req.json();
-    } catch (error) {
-      captureException(error as Error, { function: 'send-email-summary' });
+    } catch (_error) {
+      addBreadcrumb('Invalid JSON payload', 'validation', {
+        reason: 'json_parse_error',
+      });
       return jsonResponse({ error: 'Invalid JSON payload' }, 400);
     }
     if (typeof payloadUnknown !== 'object' || payloadUnknown === null) {
-      const error = new Error('Invalid JSON payload');
-      captureException(error, { function: 'send-email-summary' });
+      addBreadcrumb('Invalid JSON payload', 'validation', {
+        reason: 'non_object_body',
+      });
       return jsonResponse({ error: 'Invalid JSON payload' }, 400);
     }
     const { assistantId, summary, phoneNumber, callerName, callAnalysis } =
@@ -218,44 +221,33 @@ serve(async (req: Request): Promise<Response> => {
       has_call_analysis: !!callAnalysis,
     });
     if (typeof assistantId !== 'string' || assistantId.trim().length === 0) {
-      const error = new Error('Invalid assistantId');
-      captureException(error, {
-        function: 'send-email-summary',
-        assistant_id: assistantId,
+      addBreadcrumb('Invalid assistantId', 'validation', {
+        assistant_id: assistantId as unknown as string,
         assistant_id_type: typeof assistantId,
       });
       return jsonResponse({ error: 'Invalid assistantId' }, 400);
     }
     if (typeof summary !== 'string' || summary.trim().length === 0) {
-      const error = new Error('Invalid summary');
-      captureException(error, {
-        function: 'send-email-summary',
+      addBreadcrumb('Invalid summary', 'validation', {
         summary_type: typeof summary,
       });
       return jsonResponse({ error: 'Invalid summary' }, 400);
     }
     if (phoneNumber !== undefined && typeof phoneNumber !== 'string') {
-      const error = new Error('Invalid phoneNumber');
-      captureException(error, {
-        function: 'send-email-summary',
+      addBreadcrumb('Invalid phoneNumber', 'validation', {
         phone_number_type: typeof phoneNumber,
       });
       return jsonResponse({ error: 'Invalid phoneNumber' }, 400);
     }
     if (callerName !== undefined && typeof callerName !== 'string') {
-      const error = new Error('Invalid callerName');
-      captureException(error, {
-        function: 'send-email-summary',
+      addBreadcrumb('Invalid callerName', 'validation', {
         caller_name_type: typeof callerName,
       });
       return jsonResponse({ error: 'Invalid callerName' }, 400);
     }
     if (callAnalysis !== undefined) {
       if (!isCallAnalysis(callAnalysis)) {
-        const error = new Error('Invalid callAnalysis');
-        captureException(error, {
-          function: 'send-email-summary',
-        });
+        addBreadcrumb('Invalid callAnalysis', 'validation', {});
         return jsonResponse({ error: 'Invalid callAnalysis' }, 400);
       }
     }
@@ -286,11 +278,20 @@ serve(async (req: Request): Promise<Response> => {
     addBreadcrumb('Fetching user profile', 'database', {
       user_id: userId,
     });
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('email')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
+    if (profileError) {
+      captureException(profileError instanceof Error ? profileError : new Error('Profile query error'), {
+        function: 'send-email-summary',
+        operation: 'fetch_profile',
+        user_id: userId,
+        db_error_code: (profileError as { code?: string } | null)?.code ?? 'unknown',
+      });
+      return jsonResponse({ error: 'Database error fetching profile' }, 500);
+    }
     const typedProfile = profile as unknown as ProfileRow | null;
     if (!typedProfile?.email) {
       addBreadcrumb('No email found for user', 'email', {
