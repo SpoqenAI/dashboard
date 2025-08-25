@@ -1,13 +1,6 @@
-// Minimal Deno ambient to satisfy non-Deno type checkers
-declare const Deno: { env: { get: (name: string) => string | undefined } };
-
-// @ts-expect-error Deno resolves remote module types at runtime
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
-// @ts-expect-error Deno resolves remote module types at runtime
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-// @ts-expect-error Deno resolves remote module types at runtime
 import React from 'https://esm.sh/react@18.3.1';
-// @ts-expect-error Deno resolves remote module types at runtime
 import { renderToStaticMarkup } from 'https://esm.sh/react-dom@18.3.1/server';
 import CallSummaryEmail from '../_shared/templates/call-summary.tsx';
 import {

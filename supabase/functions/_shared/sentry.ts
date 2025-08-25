@@ -20,11 +20,6 @@ export function initSentry() {
     environment: Deno.env.get('ENVIRONMENT') || 'development',
     release: Deno.env.get('RELEASE_VERSION') || '1.0.0',
     debug: Deno.env.get('SENTRY_DEBUG') === 'true',
-    integrations: [
-      // Capture console messages automatically
-      Sentry.captureConsoleIntegration(),
-      // Add any specific integrations for Deno/Edge Functions
-    ],
     // Enable Sentry Logs per org standard
     _experiments: { enableLogs: true },
     // Configure sampling for performance monitoring
