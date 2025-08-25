@@ -14,6 +14,7 @@ Sentry.init({
       breadcrumbs: true,
       errors: true,
     }),
+    Sentry.captureConsoleIntegration(),
     // ...other integrations (if any)
   ],
 
@@ -25,6 +26,9 @@ Sentry.init({
 
   // Set environment
   environment: process.env.NODE_ENV,
+
+  // Enable Sentry Logs feature (supported shape)
+  _experiments: { enableLogs: true },
 
   // Configure sampling for different transaction types
   tracesSampler: samplingContext => {

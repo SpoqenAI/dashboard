@@ -49,7 +49,7 @@ export function ROICalculator() {
         <div className="relative z-10 mb-3 flex items-center justify-center gap-2">
           <Calculator className="h-6 w-6 text-primary" />
           <CardTitle className="text-2xl font-bold">
-            The Hidden Cost of Missed Calls — and Your ROI
+            The Hidden Cost of Missed Calls and Your ROI
           </CardTitle>
         </div>
         <p className="relative z-10 text-muted-foreground">

@@ -240,9 +240,12 @@ export const getSubscriptionTier = (
   }
 
   // Default fallback for paid subscriptions
-  console.warn(
-    `Unrecognized price_id: ${subscription.price_id}, defaulting to starter tier`
-  );
+  if (process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `Unrecognized price_id: ${subscription.price_id}, defaulting to starter tier`
+    );
+  }
   return 'starter';
 };
 

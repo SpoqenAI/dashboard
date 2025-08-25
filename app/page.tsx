@@ -103,7 +103,7 @@ export default function HomePage() {
                       Let your assistant answer, qualify and summarize calls so
                       you can get back to the work that matters. Meetings are
                       scheduled, notes are emailed, and your CRM stays
-                      up-to-date—automatically.
+                      up-to-date automatically.
                     </p>
                   </div>
                   <div
@@ -148,7 +148,7 @@ export default function HomePage() {
                     <p className="mt-4 text-lg text-muted-foreground">
                       Point your existing phone number to your AI assistant with
                       simple call forwarding. No new hardware, no porting
-                      required—just turn it on and let us answer.
+                      required. Just turn it on and let us answer.
                     </p>
                     <ul className="mt-6 space-y-2 text-left text-muted-foreground">
                       <li>• Keep your business number</li>
@@ -177,7 +177,7 @@ export default function HomePage() {
                     <p className="mt-4 text-lg text-muted-foreground">
                       Whether you’re on a flight, your phone is dead, or you
                       just don’t want to take the call, your agent still
-                      answers, qualifies, and follows up—so you never miss a
+                      answers, qualifies, and follows up so you never miss a
                       thing.
                     </p>
                     <ul className="mt-6 space-y-2 text-left text-muted-foreground">

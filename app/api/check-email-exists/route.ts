@@ -43,15 +43,17 @@ export async function GET(req: NextRequest) {
       .maybeSingle();
 
     if (error) {
-      Sentry.captureException(error);
-      console.error('Supabase error while checking email', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      Sentry.captureException(error, {
+        tags: { component: 'CHECK_EMAIL_EXISTS' },
+      });
+      return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
     return NextResponse.json({ exists: data !== null });
   } catch (err: any) {
-    Sentry.captureException(err);
-    console.error('Unexpected error while checking email', err);
+    Sentry.captureException(err, {
+      tags: { component: 'CHECK_EMAIL_EXISTS' },
+    });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

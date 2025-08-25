@@ -91,7 +91,7 @@ export function IntegrationsShowcase() {
           </h2>
           <p className="mx-auto max-w-3xl text-xl text-muted-foreground">
             Plug-and-play connections let Spoqen fit right into the tools you
-            already use—no coding required. Sync contacts, get instant alerts,
+            already use. No coding required. Sync contacts, get instant alerts,
             and automate follow-ups in minutes.
           </p>
         </div>
@@ -121,8 +121,8 @@ export function IntegrationsShowcase() {
                 </div>
                 <p className="leading-relaxed text-muted-foreground">
                   Enterprise-grade security, 99.9% uptime, and white-glove
-                  support—so you can focus on delighting customers, not managing
-                  phone lines.
+                  support, so you can focus on delighting customers, not
+                  managing phone lines.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Badge

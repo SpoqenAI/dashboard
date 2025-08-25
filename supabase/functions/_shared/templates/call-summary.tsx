@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'https://esm.sh/react@18';
 
 interface CallAnalysis {
@@ -60,7 +61,7 @@ export default function CallSummaryEmail({
         backgroundColor: '#ffffff',
       }}
     >
-      {/* Header with logo */}
+      {/* Header with logo + title */}
       <tr>
         <td align="center" style={{ padding: '24px 0 0' }}>
           <table
@@ -72,13 +73,36 @@ export default function CallSummaryEmail({
           >
             <tr>
               <td style={{ padding: '0 20px' }}>
-                <img
-                  src={logoUrl}
-                  alt="Spoqen logo"
-                  width={32}
-                  height={32}
-                  style={{ display: 'block' }}
-                />
+                <table
+                  width="100%"
+                  cellPadding={0}
+                  cellSpacing={0}
+                  role="presentation"
+                  style={{ borderCollapse: 'collapse' }}
+                >
+                  <tr>
+                    <td style={{ verticalAlign: 'middle', width: '40px' }}>
+                      <img
+                        src={logoUrl}
+                        alt="Spoqen logo"
+                        width={32}
+                        height={32}
+                        style={{ display: 'block' }}
+                      />
+                    </td>
+                    <td style={{ verticalAlign: 'middle', paddingLeft: '8px' }}>
+                      <div
+                        style={{
+                          color: BRAND_COLOR,
+                          fontSize: '22px',
+                          fontWeight: 700,
+                        }}
+                      >
+                        Call Details Report
+                      </div>
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
           </table>
@@ -109,17 +133,6 @@ export default function CallSummaryEmail({
           >
             <tr>
               <td style={{ padding: '0 20px' }}>
-                <div
-                  style={{
-                    color: BRAND_COLOR,
-                    fontSize: '22px',
-                    fontWeight: 700,
-                    marginBottom: '16px',
-                  }}
-                >
-                  Call Details Report
-                </div>
-
                 {/* Call Summary Section */}
                 <div style={{ marginBottom: '24px' }}>
                   <div
