@@ -1,138 +1,57 @@
 import { useEffect, useRef, useState } from 'react';
+import Pusher from 'pusher-js';
 import { logger } from '@/lib/logger';
 import type { CallUpdateEvent } from '@/lib/events';
 
 interface UseCallUpdatesOptions {
   enabled?: boolean;
+  userId?: string;
   onNewCall?: (event: CallUpdateEvent) => void;
   onCallUpdated?: (event: CallUpdateEvent) => void;
 }
 
 export function useCallUpdates({
   enabled = true,
+  userId,
   onNewCall,
   onCallUpdated,
 }: UseCallUpdatesOptions = {}) {
   const [isConnected, setIsConnected] = useState(false);
-  const [lastEvent, setLastEvent] = useState<CallUpdateEvent | null>(null);
-  const eventSourceRef = useRef<EventSource | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const reconnectAttempts = useRef(0);
+  const pusherRef = useRef<Pusher | null>(null);
 
-  const connect = () => {
-    if (!enabled || eventSourceRef.current) return;
+  useEffect(() => {
+    if (!enabled || !userId || pusherRef.current) return;
 
     try {
-      const eventSource = new EventSource('/api/sse/call-updates');
-      eventSourceRef.current = eventSource;
+      const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+        cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+      });
+      pusherRef.current = pusher;
 
-      eventSource.onopen = () => {
-        setIsConnected(true);
-        reconnectAttempts.current = 0;
-        logger.info('CALL_UPDATES', 'SSE connection established');
-      };
+      pusher.connection.bind('connected', () => setIsConnected(true));
+      pusher.connection.bind('disconnected', () => setIsConnected(false));
 
-      eventSource.onmessage = event => {
-        try {
-          const raw = JSON.parse(event.data) as { type: string };
-
-          // Type guard for connection/heartbeat events
-          if (raw.type === 'connected' || raw.type === 'heartbeat') {
-            // Connection/heartbeat messages - just log
-            return;
-          }
-
-          // Now assert as CallUpdateEvent for other types
-          const data = raw as CallUpdateEvent;
-          setLastEvent(data);
-
-          // Call appropriate handler
-          if (data.type === 'new-call' && onNewCall) {
-            onNewCall(data);
-          } else if (data.type === 'call-updated' && onCallUpdated) {
-            onCallUpdated(data);
-          }
-
-          logger.info('CALL_UPDATES', 'Received call update event', {
-            type: data.type,
-            callId: data.callId,
-          });
-        } catch (error) {
-          logger.error(
-            'CALL_UPDATES',
-            'Error parsing SSE message',
-            error as Error
-          );
-        }
-      };
-
-      eventSource.onerror = () => {
-        setIsConnected(false);
-        eventSource.close();
-        eventSourceRef.current = null;
-
-        // Exponential backoff for reconnection
-        const delay = Math.min(
-          1000 * Math.pow(2, reconnectAttempts.current),
-          30000
-        );
-        reconnectAttempts.current++;
-
-        logger.warn('CALL_UPDATES', 'SSE connection error, reconnecting', {
-          attempt: reconnectAttempts.current,
-          delayMs: delay,
-        });
-
-        reconnectTimeoutRef.current = setTimeout(() => {
-          if (enabled) {
-            connect();
-          }
-        }, delay);
-      };
+      const channel = pusher.subscribe(`user-${userId}`);
+      channel.bind('new-call', (data: CallUpdateEvent) => {
+        if (onNewCall) onNewCall(data);
+      });
+      channel.bind('call-updated', (data: CallUpdateEvent) => {
+        if (onCallUpdated) onCallUpdated(data);
+      });
     } catch (error) {
-      logger.error(
-        'CALL_UPDATES',
-        'Failed to create SSE connection',
-        error as Error
-      );
-    }
-  };
-
-  const disconnect = () => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-    setIsConnected(false);
-  };
-
-  useEffect(() => {
-    if (enabled) {
-      connect();
-    } else {
-      disconnect();
+      logger.error('CALL_UPDATES', 'Failed to initialize Pusher', error as Error);
     }
 
     return () => {
-      disconnect();
+      if (pusherRef.current) {
+        try {
+          pusherRef.current.disconnect();
+        } catch {}
+        pusherRef.current = null;
+      }
+      setIsConnected(false);
     };
-  }, [enabled]);
+  }, [enabled, userId, onNewCall, onCallUpdated]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      disconnect();
-    };
-  }, []);
-
-  return {
-    isConnected,
-    lastEvent,
-    connect,
-    disconnect,
-  };
+  return { isConnected };
 }
