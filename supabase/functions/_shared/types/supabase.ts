@@ -61,3 +61,8 @@ export type Database = {
     };
   };
 };
+
+// Convenience aliases for ergonomics in Edge Functions
+export type PublicTables = Database['public']['Tables'];
+export type UserSettingsRow = PublicTables['user_settings']['Row'];
+export type ProfileRow = PublicTables['profiles']['Row'];

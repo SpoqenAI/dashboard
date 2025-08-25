@@ -22,6 +22,13 @@ export function initSentry() {
     debug: Deno.env.get('SENTRY_DEBUG') === 'true',
     // Enable Sentry Logs per org standard
     _experiments: { enableLogs: true },
+    // Forward console.error/warn/info/debug as structured logs. Using the
+    // built-in integration from the Deno SDK avoids extra ESM imports.
+    integrations: [
+      Sentry.captureConsoleIntegration({
+        levels: ['error', 'warn', 'info', 'debug'],
+      }),
+    ],
     // Configure sampling for performance monitoring
     tracesSampleRate: 0.1,
     // Configure sampling for session replay

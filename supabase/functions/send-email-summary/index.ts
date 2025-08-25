@@ -183,6 +183,23 @@ serve(async (req: Request): Promise<Response> => {
     addBreadcrumb('Request received', 'http', {
       method: req.method,
     });
+    // Optional bearer token authentication controlled by EMAIL_SUMMARY_AUTH_TOKEN
+    const expectedToken = Deno.env.get('EMAIL_SUMMARY_AUTH_TOKEN');
+    if (expectedToken && expectedToken.length > 0) {
+      const authHeader = req.headers.get('authorization') ?? '';
+      const match = authHeader.match(/^Bearer\s+(.+)$/i);
+      const provided = match?.[1];
+      if (!provided || provided !== expectedToken) {
+        addBreadcrumb('Unauthorized request', 'auth', {
+          has_auth_header: Boolean(authHeader),
+        });
+        return jsonResponse({ error: 'Unauthorized' }, 401, {
+          'WWW-Authenticate':
+            'Bearer realm="send-email-summary", error="invalid_token"',
+        });
+      }
+      addBreadcrumb('Bearer token auth ok', 'auth', {});
+    }
     let payloadUnknown: unknown;
     try {
       payloadUnknown = await req.json();
