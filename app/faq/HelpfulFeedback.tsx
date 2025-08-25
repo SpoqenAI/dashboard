@@ -64,7 +64,18 @@ export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
       // Success
       setFeedback(feedbackType);
     } catch (error) {
-      console.error('Error submitting feedback:', error);
+      import('@sentry/nextjs')
+        .then(Sentry => {
+          Sentry.captureException(error as Error, {
+            tags: { component: 'HelpfulFeedback' },
+          });
+        })
+        .catch(() => {
+          if (process.env.NODE_ENV !== 'production') {
+            // eslint-disable-next-line no-console
+            console.error('Error submitting feedback:', error);
+          }
+        });
       setError('Network error. Please check your connection and try again.');
     } finally {
       setIsSubmitting(false);
@@ -88,7 +99,10 @@ export default function HelpfulFeedback({ questionId }: HelpfulFeedbackProps) {
             uuid = generateSecureUUID();
           } catch (fallbackError) {
             // Final fallback if all crypto methods fail
-            console.warn('Crypto API unavailable, using timestamp-based ID');
+            if (process.env.NODE_ENV !== 'production') {
+              // eslint-disable-next-line no-console
+              console.warn('Crypto API unavailable, using timestamp-based ID');
+            }
             uuid = generateTimestampBasedId();
           }
         }

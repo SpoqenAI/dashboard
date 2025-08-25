@@ -209,10 +209,13 @@ serve(async req => {
           brevo_status: brevoResp.status,
           brevo_response: errText,
         });
-        console.error('Brevo error', {
-          status: brevoResp.status,
-          body: errText,
-        });
+        // Avoid noisy console logging in production functions
+        if (Deno.env.get('ENVIRONMENT') !== 'production') {
+          console.error('Brevo error', {
+            status: brevoResp.status,
+            body: errText,
+          });
+        }
         return new Response('Email send failed', {
           status: 502,
         });
@@ -228,7 +231,9 @@ serve(async req => {
         operation: 'brevo_fetch',
         user_id: userId,
       });
-      console.error('Brevo fetch threw', err);
+      if (Deno.env.get('ENVIRONMENT') !== 'production') {
+        console.error('Brevo fetch threw', err);
+      }
       return new Response('Email send encountered an error', {
         status: 500,
       });
@@ -254,7 +259,9 @@ serve(async req => {
       function: 'send-email-summary',
       operation: 'main_handler',
     });
-    console.error('Unexpected error in send-email-summary:', error);
+    if (Deno.env.get('ENVIRONMENT') !== 'production') {
+      console.error('Unexpected error in send-email-summary:', error);
+    }
     return new Response('Internal server error', {
       status: 500,
     });

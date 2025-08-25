@@ -40,7 +40,12 @@ export async function getSubscriptions(): Promise<SubscriptionResponse> {
       };
     }
   } catch (e) {
-    console.error('Error fetching subscriptions:', e);
+    try {
+      const Sentry = await import('@sentry/nextjs');
+      Sentry.captureException(e as Error, {
+        tags: { component: 'GET_SUBSCRIPTIONS' },
+      });
+    } catch {}
     return getErrorMessage();
   }
 

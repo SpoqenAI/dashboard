@@ -49,7 +49,10 @@ function ResetPasswordForm() {
         } = await supabase.auth.getSession();
 
         if (error) {
-          console.error('Error getting session:', error.message);
+          if (process.env.NODE_ENV !== 'production') {
+            // eslint-disable-next-line no-console
+            console.error('Error getting session:', error.message);
+          }
           setIsValidSession(false);
           return;
         }
@@ -73,7 +76,10 @@ function ResetPasswordForm() {
 
         setIsValidSession(true);
       } catch (error) {
-        console.error('Error validating session:', error);
+        if (process.env.NODE_ENV !== 'production') {
+          // eslint-disable-next-line no-console
+          console.error('Error validating session:', error);
+        }
         setIsValidSession(false);
       }
     };

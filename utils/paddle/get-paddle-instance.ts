@@ -14,7 +14,10 @@ export function getPaddleServerInstance() {
   };
 
   if (!process.env.PADDLE_API_KEY) {
-    console.error('Paddle API key is missing');
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.error('Paddle API key is missing');
+    }
   }
 
   return new Paddle(process.env.PADDLE_API_KEY!, paddleOptions);

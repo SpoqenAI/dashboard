@@ -61,7 +61,22 @@ function VapiWidgetInner({
     };
     const handleSpeechStart = () => setIsSpeaking(true);
     const handleSpeechEnd = () => setIsSpeaking(false);
-    const handleError = (err: any) => console.error('Vapi error:', err);
+    const handleError = (err: any) => {
+      // Defer import to avoid increasing initial bundle size
+      import('@sentry/nextjs')
+        .then(Sentry => {
+          Sentry.captureException(err, {
+            tags: { component: 'VapiWidget' },
+            extra: { message: 'Vapi error' },
+          });
+        })
+        .catch(() => {
+          if (process.env.NODE_ENV !== 'production') {
+            // eslint-disable-next-line no-console
+            console.error('Vapi error:', err);
+          }
+        });
+    };
 
     // Attach
     instance.on('call-start', handleCallStart);

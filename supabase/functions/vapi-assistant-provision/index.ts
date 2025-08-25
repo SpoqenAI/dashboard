@@ -322,7 +322,7 @@ if (Deno.env.get('DEBUG_PROVISION') === '1') {
     '[DEBUG] SERVICE_ROLE_KEY defined:',
     !!serviceRoleKey,
     '| Length:',
-    serviceRoleKey?.length ?? 0
+    typeof serviceRoleKey === 'string' ? serviceRoleKey.length : 0
   );
 }
 

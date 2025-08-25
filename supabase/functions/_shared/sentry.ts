@@ -9,7 +9,9 @@ export function initSentry() {
   const dsn = Deno.env.get('SENTRY_DSN');
 
   if (!dsn) {
-    console.warn('SENTRY_DSN not configured, Sentry monitoring disabled');
+    if (Deno.env.get('ENVIRONMENT') !== 'production') {
+      console.warn('SENTRY_DSN not configured, Sentry monitoring disabled');
+    }
     return;
   }
 
@@ -28,7 +30,9 @@ export function initSentry() {
     replaysOnErrorSampleRate: 1.0,
   });
 
-  console.log('Sentry initialized for Edge Function');
+  if (Deno.env.get('ENVIRONMENT') !== 'production') {
+    console.log('Sentry initialized for Edge Function');
+  }
 }
 
 // Helper function to capture exceptions with context
@@ -39,11 +43,13 @@ export function captureException(error: Error, context?: Record<string, any>) {
     }
     Sentry.captureException(error);
   } catch (sentryError) {
-    // Fallback to console if Sentry fails
-    console.error('Failed to send to Sentry:', sentryError);
-    console.error('Original error:', error);
-    if (context) {
-      console.error('Context:', context);
+    // Fallback to console if Sentry fails (dev only)
+    if (Deno.env.get('ENVIRONMENT') !== 'production') {
+      console.error('Failed to send to Sentry:', sentryError);
+      console.error('Original error:', error);
+      if (context) {
+        console.error('Context:', context);
+      }
     }
   }
 }
@@ -62,8 +68,10 @@ export function addBreadcrumb(
       level: 'info',
     });
   } catch (sentryError) {
-    // Fallback to console if Sentry fails
-    console.warn('Failed to add Sentry breadcrumb:', sentryError);
+    // Fallback to console if Sentry fails (dev only)
+    if (Deno.env.get('ENVIRONMENT') !== 'production') {
+      console.warn('Failed to add Sentry breadcrumb:', sentryError);
+    }
   }
 }
 
@@ -75,7 +83,9 @@ export function setUser(userId: string, email?: string) {
       email,
     });
   } catch (sentryError) {
-    console.warn('Failed to set Sentry user:', sentryError);
+    if (Deno.env.get('ENVIRONMENT') !== 'production') {
+      console.warn('Failed to set Sentry user:', sentryError);
+    }
   }
 }
 
@@ -84,7 +94,9 @@ export function setTag(key: string, value: string) {
   try {
     Sentry.setTag(key, value);
   } catch (sentryError) {
-    console.warn('Failed to set Sentry tag:', sentryError);
+    if (Deno.env.get('ENVIRONMENT') !== 'production') {
+      console.warn('Failed to set Sentry tag:', sentryError);
+    }
   }
 }
 
@@ -96,7 +108,9 @@ export function startTransaction(name: string, operation?: string) {
       op: operation || 'function',
     });
   } catch (sentryError) {
-    console.warn('Failed to start Sentry transaction:', sentryError);
+    if (Deno.env.get('ENVIRONMENT') !== 'production') {
+      console.warn('Failed to start Sentry transaction:', sentryError);
+    }
     return null;
   }
 }

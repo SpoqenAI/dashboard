@@ -148,7 +148,12 @@ export async function getTransactions(
       return { data: [], hasMore: false, totalRecords: 0 };
     }
   } catch (e) {
-    console.error('Error fetching transactions:', e);
+    try {
+      const Sentry = await import('@sentry/nextjs');
+      Sentry.captureException(e as Error, {
+        tags: { component: 'GET_TRANSACTIONS' },
+      });
+    } catch {}
     return getErrorMessage();
   }
 }

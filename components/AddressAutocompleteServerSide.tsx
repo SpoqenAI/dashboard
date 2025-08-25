@@ -88,7 +88,10 @@ const AddressAutocompleteServerSide: React.FC<AddressAutocompleteProps> = ({
   };
 
   const handleError = (errorMessage: string) => {
-    console.error('AddressAutocomplete error:', errorMessage);
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.error('AddressAutocomplete error:', errorMessage);
+    }
     setError(errorMessage);
     setIsLoading(false);
     setSuggestions([]);
