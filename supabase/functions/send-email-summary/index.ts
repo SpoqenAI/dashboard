@@ -309,7 +309,8 @@ serve(async (req: Request): Promise<Response> => {
     addBreadcrumb('Sending email via Brevo', 'email', {
       to_present: Boolean(typedProfile.email),
       to_domain:
-        typeof typedProfile.email === 'string' && typedProfile.email.includes('@')
+        typeof typedProfile.email === 'string' &&
+        typedProfile.email.includes('@')
           ? typedProfile.email.split('@')[1]
           : 'unknown',
       from_domain: from.split('@')[1] ?? 'unknown',
