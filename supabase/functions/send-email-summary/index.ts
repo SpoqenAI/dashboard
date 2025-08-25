@@ -284,12 +284,18 @@ serve(async (req: Request): Promise<Response> => {
       .eq('id', userId)
       .maybeSingle();
     if (profileError) {
-      captureException(profileError instanceof Error ? profileError : new Error('Profile query error'), {
-        function: 'send-email-summary',
-        operation: 'fetch_profile',
-        user_id: userId,
-        db_error_code: (profileError as { code?: string } | null)?.code ?? 'unknown',
-      });
+      captureException(
+        profileError instanceof Error
+          ? profileError
+          : new Error('Profile query error'),
+        {
+          function: 'send-email-summary',
+          operation: 'fetch_profile',
+          user_id: userId,
+          db_error_code:
+            (profileError as { code?: string } | null)?.code ?? 'unknown',
+        }
+      );
       return jsonResponse({ error: 'Database error fetching profile' }, 500);
     }
     const typedProfile = profile as unknown as ProfileRow | null;
