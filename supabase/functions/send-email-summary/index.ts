@@ -150,6 +150,7 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Max-Age': '600',
 } as const;
 
 function jsonResponse(
@@ -190,7 +191,7 @@ serve(async (req: Request): Promise<Response> => {
         method: req.method,
       });
       return jsonResponse({ error: 'Method Not Allowed' }, 405, {
-        Allow: 'POST',
+        Allow: 'POST, OPTIONS',
       });
     }
     addBreadcrumb('Request received', 'http', {
@@ -260,18 +261,48 @@ serve(async (req: Request): Promise<Response> => {
         assistant_id: assistantId,
       }
     );
-    const { data: userSettings } = await supabase
+    const { data: userSettings, error: userSettingsError } = await supabase
       .from('user_settings')
       .select('id,email_notifications')
       .eq('vapi_assistant_id', assistantId)
       .maybeSingle();
+    if (userSettingsError) {
+      captureException(
+        userSettingsError instanceof Error
+          ? userSettingsError
+          : new Error('User settings query error'),
+        {
+          function: 'send-email-summary',
+          operation: 'fetch_user_settings',
+          assistant_id: assistantId,
+          db_error_code:
+            (userSettingsError as { code?: string } | null)?.code ?? 'unknown',
+        }
+      );
+      return jsonResponse(
+        { error: 'Database error fetching user settings' },
+        500
+      );
+    }
     const typedUserSettings = userSettings as unknown as UserSettingsRow | null;
-    if (!typedUserSettings || typedUserSettings.email_notifications === false) {
-      addBreadcrumb('Email notifications disabled or user not found', 'email', {
-        user_found: !!typedUserSettings,
-        email_notifications: typedUserSettings?.email_notifications,
+    if (!typedUserSettings) {
+      addBreadcrumb('User not found for assistant', 'email', {
+        user_found: false,
       });
-      return jsonResponse({ skipped: true }, 200);
+      return jsonResponse(
+        { skipped: true, skipped_reason: 'user_not_found' },
+        200
+      );
+    }
+    if (typedUserSettings.email_notifications === false) {
+      addBreadcrumb('Email notifications disabled', 'email', {
+        user_found: true,
+        email_notifications: false,
+      });
+      return jsonResponse(
+        { skipped: true, skipped_reason: 'notifications_disabled' },
+        200
+      );
     }
     const userId = typedUserSettings.id;
     setUser(userId);
@@ -303,20 +334,26 @@ serve(async (req: Request): Promise<Response> => {
       addBreadcrumb('No email found for user', 'email', {
         user_id: userId,
       });
-      return jsonResponse({ skipped: true }, 200);
+      return jsonResponse(
+        { skipped: true, skipped_reason: 'missing_email' },
+        200
+      );
     }
     addBreadcrumb('User profile found', 'database', {
       user_id: userId,
       email_present: true,
       email_domain: typedProfile.email.includes('@')
-        ? typedProfile.email.split('@')[1]
+        ? typedProfile.email.split('@')[1].toLowerCase()
         : 'unknown',
     });
     /* b. Render React template to HTML ------------------------------------ */ addBreadcrumb(
       'Rendering email template',
       'template'
     );
-    const baseUrl = Deno.env.get('BASE_URL') ?? 'https://www.spoqen.com';
+    // Normalize BASE_URL by removing trailing slashes to prevent double slashes in links
+    const baseUrl = (
+      Deno.env.get('BASE_URL') ?? 'https://www.spoqen.com'
+    ).replace(/\/+$/, '');
     // Use site-hosted assets so emails always use the current branding
     const logoUrl = `${baseUrl}/Icon.png`;
     // Encode filename to avoid issues with spaces/parentheses in email clients
@@ -343,11 +380,19 @@ serve(async (req: Request): Promise<Response> => {
       to_domain:
         typeof typedProfile.email === 'string' &&
         typedProfile.email.includes('@')
-          ? typedProfile.email.split('@')[1]
+          ? typedProfile.email.split('@')[1].toLowerCase()
           : 'unknown',
-      from_domain: from.split('@')[1] ?? 'unknown',
+      from_domain: (from.split('@')[1] ?? 'unknown').toLowerCase(),
     });
     try {
+      // Add a timeout to prevent hanging on network hiccups
+      const brevoTimeoutMsRaw = Deno.env.get('BREVO_TIMEOUT_MS');
+      const brevoTimeoutMs = (() => {
+        const n = Number(brevoTimeoutMsRaw);
+        return Number.isFinite(n) && n > 0 ? n : 10000; // default 10s
+      })();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), brevoTimeoutMs);
       const brevoResp = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: new Headers({
@@ -368,7 +413,9 @@ serve(async (req: Request): Promise<Response> => {
           textContent: summary,
           htmlContent: html,
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId as unknown as number);
       if (!brevoResp.ok) {
         const errText = await brevoResp.text();
         const error = new Error(`Brevo error: ${brevoResp.status}`);
@@ -394,6 +441,21 @@ serve(async (req: Request): Promise<Response> => {
         brevo_status: brevoResp.status,
       });
     } catch (err) {
+      // Specifically handle AbortError from timeout
+      if ((err as { name?: string } | null)?.name === 'AbortError') {
+        captureException(
+          err instanceof Error ? err : new Error('Brevo fetch timeout'),
+          {
+            function: 'send-email-summary',
+            operation: 'brevo_timeout',
+            user_id: userId,
+          }
+        );
+        if (Deno.env.get('ENVIRONMENT') !== 'production') {
+          console.error('Brevo fetch timed out', err);
+        }
+        return jsonResponse({ error: 'Email send timed out' }, 504);
+      }
       const error = err instanceof Error ? err : new Error('Brevo fetch error');
       captureException(error, {
         function: 'send-email-summary',
