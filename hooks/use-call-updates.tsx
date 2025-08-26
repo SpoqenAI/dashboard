@@ -35,13 +35,19 @@ export function useCallUpdates({
     try {
       const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
         cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+        authEndpoint: '/api/pusher/auth',
+        auth: {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
       });
       pusherRef.current = pusher;
 
       pusher.connection.bind('connected', () => setIsConnected(true));
       pusher.connection.bind('disconnected', () => setIsConnected(false));
 
-      const channel = pusher.subscribe(`user-${userId}`);
+      const channel = pusher.subscribe(`private-user-${userId}`);
       channel.bind('new-call', (data: CallUpdateEvent) => {
         onNewCallRef.current?.(data);
       });
