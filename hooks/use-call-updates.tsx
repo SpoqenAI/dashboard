@@ -62,7 +62,11 @@ export function useCallUpdates({
         }
         pusherRef.current.unsubscribe(currentChannelRef.current);
       } catch (error) {
-        logger.error('CALL_UPDATES', 'Failed to cleanup previous channel', error as Error);
+        logger.error(
+          'CALL_UPDATES',
+          'Failed to cleanup previous channel',
+          error as Error
+        );
       }
       currentChannelRef.current = null;
     }
@@ -70,59 +74,61 @@ export function useCallUpdates({
     // Initialize Pusher connection if it doesn't exist
     if (!pusherRef.current) {
       // Dynamic import to avoid SSR bundle inclusion
-      import('pusher-js').then(({ default: Pusher }) => {
-        if (isUnmountedRef.current) return; // Component unmounted during import
-        
-        try {
-          const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
-            cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
-            authEndpoint: '/api/pusher/auth',
-            auth: {
-              headers: {
-                'Content-Type': 'application/json',
+      import('pusher-js')
+        .then(({ default: Pusher }) => {
+          if (isUnmountedRef.current) return; // Component unmounted during import
+
+          try {
+            const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+              cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+              authEndpoint: '/api/pusher/auth',
+              auth: {
+                headers: {
+                  'Content-Type': 'application/json',
+                },
               },
-            },
-          });
-          pusherRef.current = pusher;
-
-          pusher.connection.bind('connected', () => {
-            if (!isUnmountedRef.current) {
-              setIsConnected(true);
-            }
-          });
-          pusher.connection.bind('disconnected', () => {
-            if (!isUnmountedRef.current) {
-              setIsConnected(false);
-            }
-          });
-
-          // Subscribe to channel after Pusher is initialized
-          if (userId) {
-            const channelName = `private-user-${userId}`;
-            const channel = pusher.subscribe(channelName);
-            currentChannelRef.current = channelName;
-
-            channel.bind('new-call', (data: CallUpdateEvent) => {
-              onNewCallRef.current?.(data);
             });
-            channel.bind('call-updated', (data: CallUpdateEvent) => {
-              onCallUpdatedRef.current?.(data);
+            pusherRef.current = pusher;
+
+            pusher.connection.bind('connected', () => {
+              if (!isUnmountedRef.current) {
+                setIsConnected(true);
+              }
             });
+            pusher.connection.bind('disconnected', () => {
+              if (!isUnmountedRef.current) {
+                setIsConnected(false);
+              }
+            });
+
+            // Subscribe to channel after Pusher is initialized
+            if (userId) {
+              const channelName = `private-user-${userId}`;
+              const channel = pusher.subscribe(channelName);
+              currentChannelRef.current = channelName;
+
+              channel.bind('new-call', (data: CallUpdateEvent) => {
+                onNewCallRef.current?.(data);
+              });
+              channel.bind('call-updated', (data: CallUpdateEvent) => {
+                onCallUpdatedRef.current?.(data);
+              });
+            }
+          } catch (error) {
+            logger.error(
+              'CALL_UPDATES',
+              'Failed to initialize Pusher',
+              error as Error
+            );
           }
-        } catch (error) {
+        })
+        .catch(error => {
           logger.error(
             'CALL_UPDATES',
-            'Failed to initialize Pusher',
+            'Failed to load Pusher library',
             error as Error
           );
-        }
-      }).catch((error) => {
-        logger.error(
-          'CALL_UPDATES',
-          'Failed to load Pusher library',
-          error as Error
-        );
-      });
+        });
       return; // Exit early since initialization is async
     }
 
@@ -157,7 +163,11 @@ export function useCallUpdates({
         try {
           pusherRef.current.disconnect();
         } catch (error) {
-          logger.error('CALL_UPDATES', 'Failed to disconnect Pusher', error as Error);
+          logger.error(
+            'CALL_UPDATES',
+            'Failed to disconnect Pusher',
+            error as Error
+          );
         }
         pusherRef.current = null;
       }
