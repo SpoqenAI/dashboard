@@ -13,7 +13,7 @@ for (const [varName, value] of Object.entries(requiredEnvVars)) {
   if (!value) {
     throw new Error(
       `Missing required environment variable: ${varName}. ` +
-      `Please ensure this variable is set in your environment configuration.`
+        `Please ensure this variable is set in your environment configuration.`
     );
   }
 }
