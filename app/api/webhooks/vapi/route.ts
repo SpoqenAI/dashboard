@@ -124,7 +124,11 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
         callEventEmitter.emit(userId, eventPayload);
 
         // Publish to Pusher for serverless-friendly realtime delivery
-        await pusher.trigger(`private-user-${userId}`, eventPayload.type, eventPayload);
+        await pusher.trigger(
+          `private-user-${userId}`,
+          eventPayload.type,
+          eventPayload
+        );
 
         logger.info(
           'VAPI_WEBHOOK',
