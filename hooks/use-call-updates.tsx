@@ -50,9 +50,7 @@ export function useCallUpdates({
   }, [onCallUpdated]);
 
   useEffect(() => {
-    if (!enabled || !userId) return;
-
-    // Cleanup previous channel if it exists
+    // Cleanup previous channel if it exists (always run cleanup first)
     if (pusherRef.current && currentChannelRef.current) {
       try {
         const channel = pusherRef.current.channel(currentChannelRef.current);
@@ -70,6 +68,9 @@ export function useCallUpdates({
       }
       currentChannelRef.current = null;
     }
+
+    // Early return after cleanup if not enabled or no userId
+    if (!enabled || !userId) return;
 
     // Initialize Pusher connection if it doesn't exist
     if (!pusherRef.current) {
