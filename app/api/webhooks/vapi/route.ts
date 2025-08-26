@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { callEventEmitter } from '@/lib/events';
+import { pusher } from '@/lib/pusher';
 import { callCache } from '@/lib/call-cache';
 import crypto from 'crypto';
 import type { VapiCall } from '@/lib/types';
@@ -89,14 +90,12 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
         // Invalidate analytics cache immediately to ensure fresh data
         callCache.clear();
 
-        // Emit real-time event with call data to connected clients
-        // Include the analysis data from the webhook for immediate display
-        callEventEmitter.emit(userId, {
+        // Prepare event payload once
+        const eventPayload: import('@/lib/events').CallUpdateEvent = {
           type: 'new-call',
           callId,
           userId,
           timestamp: new Date().toISOString(),
-          // Include the call data from webhook for immediate display
           callData: {
             id: callId,
             summary: message.summary || message.analysis?.summary,
@@ -104,7 +103,6 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
             endedReason: message.endedReason,
             transcript: message.transcript,
             recordingUrl: message.recordingUrl,
-            // Extract phone number from call object
             phoneNumber: message.customer?.number,
             callerName: message.customer?.name,
             createdAt: message.call?.createdAt || new Date().toISOString(),
@@ -120,7 +118,17 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
                   )
                 : 0,
           },
-        });
+        };
+
+        // Emit in-memory for backward compatibility
+        callEventEmitter.emit(userId, eventPayload);
+
+        // Publish to Pusher for serverless-friendly realtime delivery
+        await pusher.trigger(
+          `private-user-${userId}`,
+          eventPayload.type,
+          eventPayload
+        );
 
         logger.info(
           'VAPI_WEBHOOK',

@@ -114,6 +114,8 @@ export default function RootLayout({
           >
             <AuthProvider>
               <NuqsAdapter>
+                {/* Spacer for fixed header height */}
+                <div aria-hidden className="h-16" />
                 <GlobalHeader />
                 {children}
                 <Toaster />

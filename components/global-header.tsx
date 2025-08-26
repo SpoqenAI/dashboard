@@ -69,7 +69,7 @@ export function GlobalHeader() {
     pathname?.includes('/reset-password');
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-card/20 backdrop-blur-glass">
+    <header className="fixed inset-x-0 top-0 z-50 w-full border-b border-white/10 bg-card/20 backdrop-blur-glass">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <div className="flex items-center">
