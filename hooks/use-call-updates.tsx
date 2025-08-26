@@ -1,7 +1,25 @@
+'use client';
+
 import { useEffect, useRef, useState } from 'react';
-import Pusher from 'pusher-js';
 import { logger } from '@/lib/logger';
 import type { CallUpdateEvent } from '@/lib/events';
+
+// Type for dynamically imported Pusher instance
+type PusherInstance = {
+  subscribe: (channelName: string) => {
+    bind: (event: string, callback: (data: CallUpdateEvent) => void) => void;
+    unbind: (event: string) => void;
+  };
+  unsubscribe: (channelName: string) => void;
+  channel: (channelName: string) => {
+    bind: (event: string, callback: (data: CallUpdateEvent) => void) => void;
+    unbind: (event: string) => void;
+  } | null;
+  disconnect: () => void;
+  connection: {
+    bind: (event: string, callback: () => void) => void;
+  };
+};
 
 interface UseCallUpdatesOptions {
   enabled?: boolean;
@@ -17,7 +35,7 @@ export function useCallUpdates({
   onCallUpdated,
 }: UseCallUpdatesOptions = {}) {
   const [isConnected, setIsConnected] = useState(false);
-  const pusherRef = useRef<Pusher | null>(null);
+  const pusherRef = useRef<PusherInstance | null>(null);
   const currentChannelRef = useRef<string | null>(null);
   const isUnmountedRef = useRef(false);
   const onNewCallRef = useRef<typeof onNewCall | undefined>(undefined);
@@ -51,56 +69,83 @@ export function useCallUpdates({
 
     // Initialize Pusher connection if it doesn't exist
     if (!pusherRef.current) {
-      try {
-        const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
-          cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
-          authEndpoint: '/api/pusher/auth',
-          auth: {
-            headers: {
-              'Content-Type': 'application/json',
+      // Dynamic import to avoid SSR bundle inclusion
+      import('pusher-js').then(({ default: Pusher }) => {
+        if (isUnmountedRef.current) return; // Component unmounted during import
+        
+        try {
+          const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+            cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+            authEndpoint: '/api/pusher/auth',
+            auth: {
+              headers: {
+                'Content-Type': 'application/json',
+              },
             },
-          },
-        });
-        pusherRef.current = pusher;
+          });
+          pusherRef.current = pusher;
 
-        pusher.connection.bind('connected', () => {
-          if (!isUnmountedRef.current) {
-            setIsConnected(true);
+          pusher.connection.bind('connected', () => {
+            if (!isUnmountedRef.current) {
+              setIsConnected(true);
+            }
+          });
+          pusher.connection.bind('disconnected', () => {
+            if (!isUnmountedRef.current) {
+              setIsConnected(false);
+            }
+          });
+
+          // Subscribe to channel after Pusher is initialized
+          if (userId) {
+            const channelName = `private-user-${userId}`;
+            const channel = pusher.subscribe(channelName);
+            currentChannelRef.current = channelName;
+
+            channel.bind('new-call', (data: CallUpdateEvent) => {
+              onNewCallRef.current?.(data);
+            });
+            channel.bind('call-updated', (data: CallUpdateEvent) => {
+              onCallUpdatedRef.current?.(data);
+            });
           }
+        } catch (error) {
+          logger.error(
+            'CALL_UPDATES',
+            'Failed to initialize Pusher',
+            error as Error
+          );
+        }
+      }).catch((error) => {
+        logger.error(
+          'CALL_UPDATES',
+          'Failed to load Pusher library',
+          error as Error
+        );
+      });
+      return; // Exit early since initialization is async
+    }
+
+    // Subscribe to new private channel (only if Pusher is already initialized)
+    if (pusherRef.current) {
+      try {
+        const channelName = `private-user-${userId}`;
+        const channel = pusherRef.current.subscribe(channelName);
+        currentChannelRef.current = channelName;
+
+        channel.bind('new-call', (data: CallUpdateEvent) => {
+          onNewCallRef.current?.(data);
         });
-        pusher.connection.bind('disconnected', () => {
-          if (!isUnmountedRef.current) {
-            setIsConnected(false);
-          }
+        channel.bind('call-updated', (data: CallUpdateEvent) => {
+          onCallUpdatedRef.current?.(data);
         });
       } catch (error) {
         logger.error(
           'CALL_UPDATES',
-          'Failed to initialize Pusher',
+          'Failed to subscribe to channel',
           error as Error
         );
-        return;
       }
-    }
-
-    // Subscribe to new private channel
-    try {
-      const channelName = `private-user-${userId}`;
-      const channel = pusherRef.current.subscribe(channelName);
-      currentChannelRef.current = channelName;
-
-      channel.bind('new-call', (data: CallUpdateEvent) => {
-        onNewCallRef.current?.(data);
-      });
-      channel.bind('call-updated', (data: CallUpdateEvent) => {
-        onCallUpdatedRef.current?.(data);
-      });
-    } catch (error) {
-      logger.error(
-        'CALL_UPDATES',
-        'Failed to subscribe to channel',
-        error as Error
-      );
     }
   }, [enabled, userId]);
 
