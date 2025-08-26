@@ -18,13 +18,18 @@ for (const [varName, value] of Object.entries(requiredEnvVars)) {
   }
 }
 
-// Type-safe environment variables after validation
-const validatedEnvVars = {
+// Type-safe environment variables after validation with server-only fallbacks
+const pusherEnv: {
+  PUSHER_APP_ID: string;
+  NEXT_PUBLIC_PUSHER_KEY: string;
+  PUSHER_SECRET: string;
+  NEXT_PUBLIC_PUSHER_CLUSTER: string;
+} = {
   PUSHER_APP_ID: requiredEnvVars.PUSHER_APP_ID as string,
   NEXT_PUBLIC_PUSHER_KEY: requiredEnvVars.NEXT_PUBLIC_PUSHER_KEY as string,
   PUSHER_SECRET: requiredEnvVars.PUSHER_SECRET as string,
-  NEXT_PUBLIC_PUSHER_CLUSTER:
-    requiredEnvVars.NEXT_PUBLIC_PUSHER_CLUSTER as string,
+  NEXT_PUBLIC_PUSHER_CLUSTER: 
+    (process.env.PUSHER_CLUSTER || requiredEnvVars.NEXT_PUBLIC_PUSHER_CLUSTER) as string,
 };
 
 // Global singleton pattern to avoid re-instantiation in Next.js dev mode
@@ -36,10 +41,10 @@ declare global {
 function getPusherInstance(): PusherServer {
   if (!globalThis.__pusher) {
     globalThis.__pusher = new PusherServer({
-      appId: validatedEnvVars.PUSHER_APP_ID,
-      key: validatedEnvVars.NEXT_PUBLIC_PUSHER_KEY,
-      secret: validatedEnvVars.PUSHER_SECRET,
-      cluster: validatedEnvVars.NEXT_PUBLIC_PUSHER_CLUSTER,
+      appId: pusherEnv.PUSHER_APP_ID,
+      key: pusherEnv.NEXT_PUBLIC_PUSHER_KEY,
+      secret: pusherEnv.PUSHER_SECRET,
+      cluster: pusherEnv.NEXT_PUBLIC_PUSHER_CLUSTER,
       useTLS: true,
     });
   }
