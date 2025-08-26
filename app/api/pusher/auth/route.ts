@@ -17,12 +17,17 @@ export async function POST(req: NextRequest) {
       return new NextResponse('Missing required parameters', { status: 400 });
     }
 
-    // Validate channel name format for private user channels
-    const privateChannelPattern = /^private-user-[a-f0-9-]+$/;
+    // Validate channel name format for private user channels (strict UUID v4/v5 validation)
+    const privateChannelPattern =
+      /^private-user-[0-9a-f]{8}-[0-9a-f]{4}-[45][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!privateChannelPattern.test(channel_name)) {
-      logger.warn('PUSHER_AUTH', 'Invalid channel name format', {
-        channelName: channel_name,
-      });
+      logger.warn(
+        'PUSHER_AUTH',
+        'Invalid channel name format - must be private-user-<uuid-v4-or-v5>',
+        {
+          channelName: channel_name,
+        }
+      );
       return new NextResponse('Invalid channel name', { status: 400 });
     }
 
