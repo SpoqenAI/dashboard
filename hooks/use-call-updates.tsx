@@ -18,6 +18,16 @@ export function useCallUpdates({
 }: UseCallUpdatesOptions = {}) {
   const [isConnected, setIsConnected] = useState(false);
   const pusherRef = useRef<Pusher | null>(null);
+  const onNewCallRef = useRef<typeof onNewCall | undefined>(undefined);
+  const onCallUpdatedRef = useRef<typeof onCallUpdated | undefined>(undefined);
+
+  // Keep latest callbacks without retriggering the connection effect
+  useEffect(() => {
+    onNewCallRef.current = onNewCall;
+  }, [onNewCall]);
+  useEffect(() => {
+    onCallUpdatedRef.current = onCallUpdated;
+  }, [onCallUpdated]);
 
   useEffect(() => {
     if (!enabled || !userId || pusherRef.current) return;
@@ -33,13 +43,17 @@ export function useCallUpdates({
 
       const channel = pusher.subscribe(`user-${userId}`);
       channel.bind('new-call', (data: CallUpdateEvent) => {
-        if (onNewCall) onNewCall(data);
+        onNewCallRef.current?.(data);
       });
       channel.bind('call-updated', (data: CallUpdateEvent) => {
-        if (onCallUpdated) onCallUpdated(data);
+        onCallUpdatedRef.current?.(data);
       });
     } catch (error) {
-      logger.error('CALL_UPDATES', 'Failed to initialize Pusher', error as Error);
+      logger.error(
+        'CALL_UPDATES',
+        'Failed to initialize Pusher',
+        error as Error
+      );
     }
 
     return () => {
@@ -51,7 +65,7 @@ export function useCallUpdates({
       }
       setIsConnected(false);
     };
-  }, [enabled, userId, onNewCall, onCallUpdated]);
+  }, [enabled, userId]);
 
   return { isConnected };
 }
