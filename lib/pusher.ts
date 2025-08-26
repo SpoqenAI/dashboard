@@ -28,8 +28,8 @@ const pusherEnv: {
   PUSHER_APP_ID: requiredEnvVars.PUSHER_APP_ID as string,
   NEXT_PUBLIC_PUSHER_KEY: requiredEnvVars.NEXT_PUBLIC_PUSHER_KEY as string,
   PUSHER_SECRET: requiredEnvVars.PUSHER_SECRET as string,
-  NEXT_PUBLIC_PUSHER_CLUSTER: 
-    (process.env.PUSHER_CLUSTER || requiredEnvVars.NEXT_PUBLIC_PUSHER_CLUSTER) as string,
+  NEXT_PUBLIC_PUSHER_CLUSTER: (process.env.PUSHER_CLUSTER ||
+    requiredEnvVars.NEXT_PUBLIC_PUSHER_CLUSTER) as string,
 };
 
 // Global singleton pattern to avoid re-instantiation in Next.js dev mode
