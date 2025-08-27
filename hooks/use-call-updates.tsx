@@ -89,11 +89,7 @@ export function useCallUpdates({
             const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
               cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
               authEndpoint: '/api/pusher/auth',
-              auth: {
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-              },
+              // Do not override default auth content type; Pusher sends form-encoded by default
             });
             pusherRef.current = pusher;
 

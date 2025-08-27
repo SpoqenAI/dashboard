@@ -208,11 +208,22 @@ export async function createAssistantAction(
       let existingModel: any = {};
       try {
         const getRes = await fetch(safeUrl, {
-          headers: { Authorization: `Bearer ${vapiApiKey}` },
+          cache: 'no-store',
+          headers: {
+            Authorization: `Bearer ${vapiApiKey}`,
+            Accept: 'application/json',
+            'User-Agent': 'spoqen-dashboard/1.0',
+          },
+          signal: AbortSignal.timeout(15000),
         });
         if (getRes.ok) {
-          const assistantJson = await getRes.json();
-          existingModel = assistantJson?.model || {};
+          const ct = (getRes.headers.get('content-type') || '').toLowerCase();
+          if (ct.includes('application/json')) {
+            const assistantJson = await getRes.json();
+            existingModel = assistantJson?.model || {};
+          } else {
+            // Non-JSON – skip preserving model to avoid parse errors
+          }
         }
       } catch (_) {
         // Non-fatal; continue with minimal patch

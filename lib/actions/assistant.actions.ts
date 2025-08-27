@@ -291,12 +291,23 @@ export async function syncVapiAssistant(
     let existingMetadata: any = {};
     try {
       const getRes = await fetch(safeUrl, {
-        headers: { Authorization: `Bearer ${apiKey}` },
+        cache: 'no-store',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Accept: 'application/json',
+          'User-Agent': 'spoqen-dashboard/1.0',
+        },
+        signal: AbortSignal.timeout(15000),
       });
       if (getRes.ok) {
-        const assistantJson = await getRes.json();
-        existingModel = assistantJson?.model || {};
-        existingMetadata = assistantJson?.metadata || {};
+        const ct = (getRes.headers.get('content-type') || '').toLowerCase();
+        if (ct.includes('application/json')) {
+          const assistantJson = await getRes.json();
+          existingModel = assistantJson?.model || {};
+          existingMetadata = assistantJson?.metadata || {};
+        } else {
+          // Non-JSON – skip preserving model/metadata rather than throwing
+        }
       }
     } catch (_) {
       // Best-effort; proceed without blocking if GET fails

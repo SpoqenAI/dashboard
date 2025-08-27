@@ -6,13 +6,39 @@ import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
-    const { socket_id, channel_name } = await req.json();
+    // Accept both JSON and x-www-form-urlencoded bodies from Pusher
+    const contentType = (req.headers.get('content-type') || '').toLowerCase();
+    let socket_id: string | undefined;
+    let channel_name: string | undefined;
+
+    if (contentType.includes('application/json')) {
+      try {
+        const body = await req.json();
+        socket_id = body?.socket_id;
+        channel_name = body?.channel_name;
+      } catch (e) {
+        // Fall through to try form parsing
+      }
+    }
+
+    if (!socket_id || !channel_name) {
+      try {
+        const form = await req.formData();
+        const sid = form.get('socket_id');
+        const ch = form.get('channel_name');
+        socket_id = typeof sid === 'string' ? sid : undefined;
+        channel_name = typeof ch === 'string' ? ch : undefined;
+      } catch (e) {
+        // Ignore; validation below will handle missing values
+      }
+    }
 
     // Validate required parameters
     if (!socket_id || !channel_name) {
       logger.warn('PUSHER_AUTH', 'Missing required parameters', {
         hasSocketId: !!socket_id,
         hasChannelName: !!channel_name,
+        contentType,
       });
       return new NextResponse('Missing required parameters', { status: 400 });
     }
