@@ -38,23 +38,23 @@ graph TD
 
 ## 2. Technology Description
 
-* **Frontend**: React\@18 + TypeScript + Tailwind CSS\@3 + Vite
+- **Frontend**: React\@18 + TypeScript + Tailwind CSS\@3 + Vite
 
-* **Widget System**: React-Grid-Layout\@1.4 + React-Resizable\@3.0 + React-DnD\@16
+- **Widget System**: React-Grid-Layout\@1.4 + React-Resizable\@3.0 + React-DnD\@16
 
-* **Charts**: Chart.js\@4 + React-Chartjs-2 OR Recharts\@2
+- **Charts**: Chart.js\@4 + React-Chartjs-2 OR Recharts\@2
 
-* **Data Fetching**: SWR\@2 + React Query\@4 (for real-time updates)
+- **Data Fetching**: SWR\@2 + React Query\@4 (for real-time updates)
 
-* **State Management**: Zustand\@4 (for widget layout state)
+- **State Management**: Zustand\@4 (for widget layout state)
 
-* **Export**: jsPDF\@2 + xlsx\@0.18 + html2canvas\@1
+- **Export**: jsPDF\@2 + xlsx\@0.18 + html2canvas\@1
 
-* **Backend**: Next.js\@14 API Routes + Supabase
+- **Backend**: Next.js\@14 API Routes + Supabase
 
-* **Database**: Supabase (PostgreSQL)
+- **Database**: Supabase (PostgreSQL)
 
-* **External API**: VAPI API for call data
+- **External API**: VAPI API for call data
 
 ## 2.1 Widget System Architecture
 
@@ -127,13 +127,13 @@ interface WidgetConfig {
 
 **Widget Factory Pattern**
 
-* Centralized widget creation and registration
+- Centralized widget creation and registration
 
-* Type-safe widget instantiation
+- Type-safe widget instantiation
 
-* Plugin architecture for custom widgets
+- Plugin architecture for custom widgets
 
-* Widget validation and error boundaries
+- Widget validation and error boundaries
 
 **Layout Persistence Service**
 
@@ -153,13 +153,13 @@ class LayoutPersistenceService {
 
 **Real-time Widget Updates**
 
-* WebSocket connections for live data streaming
+- WebSocket connections for live data streaming
 
-* Selective widget refresh based on data dependencies
+- Selective widget refresh based on data dependencies
 
-* Optimistic updates with rollback capabilities
+- Optimistic updates with rollback capabilities
 
-* Bandwidth optimization through data diffing
+- Bandwidth optimization through data diffing
 
 ### 2.1.3 Grid System Implementation
 
@@ -176,23 +176,23 @@ interface GridBreakpoints {
 
 **Drag and Drop Implementation**
 
-* React-Grid-Layout for grid management
+- React-Grid-Layout for grid management
 
-* React-DnD for widget library interactions
+- React-DnD for widget library interactions
 
-* Custom collision detection algorithms
+- Custom collision detection algorithms
 
-* Smooth animations during layout changes
+- Smooth animations during layout changes
 
 **Widget Sizing and Constraints**
 
-* Minimum/maximum size enforcement
+- Minimum/maximum size enforcement
 
-* Aspect ratio preservation for charts
+- Aspect ratio preservation for charts
 
-* Content-aware auto-sizing
+- Content-aware auto-sizing
 
-* Responsive breakpoint handling
+- Responsive breakpoint handling
 
 ### 2.1.4 Widget Data Management
 
@@ -351,17 +351,17 @@ GET /api/analytics/filters
 
 Returns available filter options based on current data:
 
-* Date ranges
+- Date ranges
 
-* Call statuses
+- Call statuses
 
-* Sentiment categories
+- Sentiment categories
 
-* Lead quality levels
+- Lead quality levels
 
-* Duration ranges
+- Duration ranges
 
-* Cost ranges
+- Cost ranges
 
 ## 5. Server Architecture Diagram
 
@@ -458,7 +458,7 @@ erDiagram
 
 ### 6.2 Widget System Database Schema
 
-**Dashboard Layouts Table (dashboard\_layouts)**
+**Dashboard Layouts Table (dashboard_layouts)**
 
 ```sql
 CREATE TABLE dashboard_layouts (
@@ -486,7 +486,7 @@ CREATE POLICY "Users can manage their own dashboard layouts" ON dashboard_layout
 GRANT SELECT, INSERT, UPDATE, DELETE ON dashboard_layouts TO authenticated;
 ```
 
-**Widget Configurations Table (widget\_configs)**
+**Widget Configurations Table (widget_configs)**
 
 ```sql
 CREATE TABLE widget_configs (
@@ -664,4 +664,3 @@ SELECT
 FROM auth.users
 WHERE id NOT IN (SELECT user_id FROM analytics_preferences);
 ```
-
