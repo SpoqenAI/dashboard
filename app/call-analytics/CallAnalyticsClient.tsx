@@ -11,7 +11,6 @@ import { isFreeUser } from '@/lib/paddle';
 // Removed LockedOverlay - free users now have full access
 import { useDashboardAnalytics } from '@/hooks/use-dashboard-analytics';
 import { useCallUpdates } from '@/hooks/use-call-updates';
-import { callCache } from '@/lib/call-cache';
 import { AlertCircle, ArrowUp } from 'lucide-react';
 import { AnalyticsTab } from '@/components/dashboard/analytics-tab';
 
