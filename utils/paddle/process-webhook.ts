@@ -426,6 +426,116 @@ export class ProcessWebhook {
         eventData.data.items[0]?.price?.id || null
       ),
     });
+
+    // Trigger phone-number provisioning when a user's subscription is paid and active
+    try {
+      const newStatus = eventData.data.status;
+      const newTierType = this.getTierFromPriceId(
+        eventData.data.items[0]?.price?.id || null
+      );
+
+      // Only consider provisioning for paid, active subscriptions
+      if (newStatus === 'active' && newTierType !== 'free') {
+        // Guard: Skip if user already has an active phone number
+        const { data: existingPhone } = await supabase
+          .from('phone_numbers')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (!existingPhone) {
+          logger.info(
+            'PADDLE_WEBHOOK',
+            'Triggering phone-number provisioning for paid subscription',
+            {
+              userId: logger.maskUserId(userId),
+              subscriptionId: eventData.data.id,
+              tierType: newTierType,
+              status: newStatus,
+            }
+          );
+
+          // Fire-and-forget invocation of the Supabase Edge Function
+          // using the admin client (Service-Role) so Authorization is included
+          supabase.functions
+            .invoke('phone-number-provision', {
+              body: {
+                user_id: userId,
+                tier_type: newTierType,
+                subscription_status: newStatus,
+                trigger_action: 'subscription_activated',
+                timestamp: new Date().toISOString(),
+                subscription_id: eventData.data.id,
+              },
+            })
+            .then(({ error }) => {
+              if (error) {
+                logger.error(
+                  'PHONE_PROVISION',
+                  'Provisioning function invocation failed',
+                  error,
+                  {
+                    userId: logger.maskUserId(userId),
+                    subscriptionId: eventData.data.id,
+                  }
+                );
+              } else {
+                logger.info(
+                  'PHONE_PROVISION',
+                  'Provisioning function invoked',
+                  {
+                    userId: logger.maskUserId(userId),
+                    subscriptionId: eventData.data.id,
+                  }
+                );
+              }
+            })
+            .catch(err => {
+              logger.error(
+                'PHONE_PROVISION',
+                'Provisioning function invocation threw error',
+                err instanceof Error ? err : new Error(String(err)),
+                {
+                  userId: logger.maskUserId(userId),
+                  subscriptionId: eventData.data.id,
+                }
+              );
+            });
+        } else {
+          logger.info(
+            'PHONE_PROVISION',
+            'Active phone already exists; skipping',
+            {
+              userId: logger.maskUserId(userId),
+              subscriptionId: eventData.data.id,
+            }
+          );
+        }
+      } else {
+        logger.info(
+          'PHONE_PROVISION',
+          'Subscription not eligible for provisioning',
+          {
+            userId: logger.maskUserId(userId),
+            subscriptionId: eventData.data.id,
+            status: newStatus,
+            tierType: newTierType,
+          }
+        );
+      }
+    } catch (provErr) {
+      logger.error(
+        'PHONE_PROVISION',
+        'Error during provisioning trigger logic',
+        provErr instanceof Error ? provErr : new Error(String(provErr)),
+        {
+          userId: logger.maskUserId(userId),
+          subscriptionId: eventData.data.id,
+        }
+      );
+      // Do not throw; webhook flow must complete regardless
+    }
   }
 
   private async updateCustomerData(
@@ -881,6 +991,95 @@ export class ProcessWebhook {
             newTierType,
           }
         );
+
+        // After successful resume to active paid tier, ensure phone provisioning is triggered if needed
+        try {
+          if (newStatus === 'active' && newTierType !== 'free') {
+            const { data: existingPhone } = await supabase
+              .from('phone_numbers')
+              .select('id')
+              .eq('user_id', userId)
+              .eq('status', 'active')
+              .maybeSingle();
+
+            if (!existingPhone) {
+              logger.info(
+                'PHONE_PROVISION',
+                'Triggering phone-number provisioning on subscription resume',
+                {
+                  userId: logger.maskUserId(userId),
+                  subscriptionId: subscriptionData.id,
+                  tierType: newTierType,
+                  status: newStatus,
+                }
+              );
+
+              supabase.functions
+                .invoke('phone-number-provision', {
+                  body: {
+                    user_id: userId,
+                    tier_type: newTierType,
+                    subscription_status: newStatus,
+                    trigger_action: 'subscription_resumed',
+                    timestamp: new Date().toISOString(),
+                    subscription_id: subscriptionData.id,
+                  },
+                })
+                .then(({ error }) => {
+                  if (error) {
+                    logger.error(
+                      'PHONE_PROVISION',
+                      'Provisioning function invocation failed (resume)',
+                      error,
+                      {
+                        userId: logger.maskUserId(userId),
+                        subscriptionId: subscriptionData.id,
+                      }
+                    );
+                  } else {
+                    logger.info(
+                      'PHONE_PROVISION',
+                      'Provisioning function invoked (resume)',
+                      {
+                        userId: logger.maskUserId(userId),
+                        subscriptionId: subscriptionData.id,
+                      }
+                    );
+                  }
+                })
+                .catch(err => {
+                  logger.error(
+                    'PHONE_PROVISION',
+                    'Provisioning function invocation threw error (resume)',
+                    err instanceof Error ? err : new Error(String(err)),
+                    {
+                      userId: logger.maskUserId(userId),
+                      subscriptionId: subscriptionData.id,
+                    }
+                  );
+                });
+            } else {
+              logger.info(
+                'PHONE_PROVISION',
+                'Active phone already exists on resume; skipping',
+                {
+                  userId: logger.maskUserId(userId),
+                  subscriptionId: subscriptionData.id,
+                }
+              );
+            }
+          }
+        } catch (provErr) {
+          logger.error(
+            'PHONE_PROVISION',
+            'Error during provisioning trigger logic (resume)',
+            provErr instanceof Error ? provErr : new Error(String(provErr)),
+            {
+              userId: logger.maskUserId(userId),
+              subscriptionId: subscriptionData.id,
+            }
+          );
+        }
       }
 
       logger.info(
