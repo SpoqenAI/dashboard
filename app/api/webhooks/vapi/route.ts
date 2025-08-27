@@ -74,6 +74,13 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
 
   // === Emit real-time event for new call ===
   try {
+    logger.info('VAPI_WEBHOOK', 'Starting real-time event processing', {
+      hasCallId: !!callId,
+      hasAssistantId: !!assistantId,
+      callId,
+      assistantId,
+    });
+
     if (callId && assistantId) {
       const supabase = createSupabaseAdmin();
 
@@ -83,6 +90,14 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
         .select('id')
         .eq('vapi_assistant_id', assistantId)
         .maybeSingle();
+
+      logger.info('VAPI_WEBHOOK', 'Database lookup for assistant ID', {
+        assistantId,
+        hasError: !!settingsErr,
+        error: settingsErr?.message,
+        hasSettingsRow: !!settingsRow,
+        userId: settingsRow?.id ? logger.maskUserId(settingsRow.id) : null,
+      });
 
       if (!settingsErr && settingsRow) {
         const userId: string = settingsRow.id;
@@ -139,9 +154,33 @@ async function processVapiWebhook(envelope: VapiWebhookEnvelope) {
             activeListeners: callEventEmitter.getListenerCount(),
             hasAnalysis: !!message.analysis,
             hasStructuredData: !!message.analysis?.structuredData,
+            pusherChannelName: `private-user-${userId}`,
+            eventType: eventPayload.type,
+          }
+        );
+      } else {
+        logger.warn(
+          'VAPI_WEBHOOK',
+          'User not found for assistant ID or database error',
+          {
+            assistantId,
+            hasError: !!settingsErr,
+            error: settingsErr?.message,
+            hasSettingsRow: !!settingsRow,
           }
         );
       }
+    } else {
+      logger.warn(
+        'VAPI_WEBHOOK',
+        'Missing required fields for real-time event',
+        {
+          hasCallId: !!callId,
+          hasAssistantId: !!assistantId,
+          callId,
+          assistantId,
+        }
+      );
     }
   } catch (eventErr) {
     logger.error(
@@ -303,7 +342,21 @@ export async function POST(req: NextRequest) {
   // Kick off async processing but do NOT await it
   try {
     const envelope = JSON.parse(requestBody);
-    processVapiWebhook(envelope); // Process in background without waiting
+
+    // Process in background with error handling
+    processVapiWebhook(envelope).catch(processErr => {
+      logger.error(
+        'VAPI_WEBHOOK',
+        'Background processing failed',
+        processErr as Error
+      );
+      try {
+        import('@sentry/nextjs').then(({ captureException }) => {
+          captureException(processErr);
+        });
+      } catch (_sentryErr) {}
+    });
+
     return new NextResponse(null, { status: 200 });
   } catch (err) {
     logger.error('VAPI_WEBHOOK', 'Processing failed', err as Error);
