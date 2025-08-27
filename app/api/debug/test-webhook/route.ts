@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     // Clear cache and emit event
     callCache.clear();
     callEventEmitter.emit(user.id, testEvent);
-    await pusher.trigger(`user-${user.id}`, testEvent.type, testEvent);
+    await pusher.trigger(`private-user-${user.id}`, testEvent.type, testEvent);
 
     logger.info('TEST_WEBHOOK', 'Test webhook event emitted', {
       callId: testCallId,
