@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { createClient } from '@/lib/supabase/server';
 import { callEventEmitter } from '@/lib/events';
+import { pusher } from '@/lib/pusher';
 import { callCache } from '@/lib/call-cache';
 
 export async function POST(request: NextRequest) {
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
     // Clear cache and emit event
     callCache.clear();
     callEventEmitter.emit(user.id, testEvent);
+    await pusher.trigger(`private-user-${user.id}`, testEvent.type, testEvent);
 
     logger.info('TEST_WEBHOOK', 'Test webhook event emitted', {
       callId: testCallId,

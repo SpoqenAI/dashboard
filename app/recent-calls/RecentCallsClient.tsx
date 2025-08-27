@@ -310,6 +310,8 @@ export default function RecentCallsClient() {
   // Real-time call updates
   const { isConnected: isRealTimeConnected } = useCallUpdates({
     enabled: !!user, // Free users now get action points
+    userId: user?.id,
+    onUpdate: refetch,
     onNewCall: useCallback(
       (event: CallUpdateEvent) => {
         logger.info(

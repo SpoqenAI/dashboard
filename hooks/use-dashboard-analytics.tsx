@@ -151,6 +151,7 @@ export function useDashboardAnalytics(
     isLoading,
     error,
     refetch,
+    mutate, // Expose SWR's mutate function directly
     isRefetching: isValidating && !isLoading, // SWR's background revalidation
     hasCachedData: !!analytics, // Use SWR's data property to determine if we have cached data
   };

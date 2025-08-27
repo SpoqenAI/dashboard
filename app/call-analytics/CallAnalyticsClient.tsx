@@ -10,6 +10,7 @@ import { useSubscription } from '@/hooks/use-subscription';
 import { isFreeUser } from '@/lib/paddle';
 // Removed LockedOverlay - free users now have full access
 import { useDashboardAnalytics } from '@/hooks/use-dashboard-analytics';
+import { useCallUpdates } from '@/hooks/use-call-updates';
 import { AlertCircle, ArrowUp } from 'lucide-react';
 import { AnalyticsTab } from '@/components/dashboard/analytics-tab';
 
@@ -50,10 +51,16 @@ export default function CallAnalyticsClient() {
   }, [subscriptionLoading, subscription]);
 
   // Analytics hook
-  const { analytics, isLoading, error } = useDashboardAnalytics({
+  const { analytics, isLoading, error, mutate } = useDashboardAnalytics({
     days: Number(timeRange),
-    refetchInterval: 300_000,
     enabled: !!user, // Free users now have access to analytics
+  });
+
+  // Real-time updates hook - trigger SWR revalidation when new calls come in
+  useCallUpdates({
+    enabled: !!user,
+    userId: user?.id,
+    onUpdate: mutate, // Use SWR's mutate function directly
   });
 
   if (!user) {
