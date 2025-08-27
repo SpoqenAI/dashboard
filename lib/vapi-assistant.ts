@@ -222,9 +222,16 @@ export async function getUserAssistantInfo(
     // Fetch assistant from VAPI API using safe URL construction
     const safeUrl = constructSafeVapiUrl(assistantId);
     const vapiResponse = await fetch(safeUrl, {
+      // Avoid accidental caching and make intent explicit
+      cache: 'no-store',
+      redirect: 'follow',
       headers: {
         Authorization: `Bearer ${apiKey}`,
+        Accept: 'application/json',
+        'User-Agent': 'spoqen-dashboard/1.0',
       },
+      // Defensive timeout to avoid hanging on protocol mismatches
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!vapiResponse.ok) {
@@ -236,6 +243,23 @@ export async function getUserAssistantInfo(
         {
           status: vapiResponse.status,
           assistantId,
+        }
+      );
+      return { data: null, error: 'Failed to fetch assistant from VAPI' };
+    }
+
+    // Ensure we actually received JSON to prevent JSON.parse errors on non-JSON bodies
+    const contentType = vapiResponse.headers.get('content-type') || '';
+    if (!contentType.toLowerCase().includes('application/json')) {
+      const textSample = await vapiResponse.text();
+      logger.error(
+        'VAPI_ASSISTANT',
+        'Unexpected non-JSON response from VAPI',
+        new Error('Non-JSON response'),
+        {
+          status: vapiResponse.status,
+          contentType,
+          bodySample: textSample.slice(0, 200),
         }
       );
       return { data: null, error: 'Failed to fetch assistant from VAPI' };
