@@ -303,7 +303,7 @@ export async function POST(req: NextRequest) {
   // Kick off async processing but do NOT await it
   try {
     const envelope = JSON.parse(requestBody);
-    await processVapiWebhook(envelope); // wait until e-mail logic completes
+    processVapiWebhook(envelope); // Process in background without waiting
     return new NextResponse(null, { status: 200 });
   } catch (err) {
     logger.error('VAPI_WEBHOOK', 'Processing failed', err as Error);
