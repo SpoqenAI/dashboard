@@ -52,23 +52,16 @@ export default function CallAnalyticsClient() {
   }, [subscriptionLoading, subscription]);
 
   // Analytics hook
-  const { analytics, isLoading, error, refetch } = useDashboardAnalytics({
+  const { analytics, isLoading, error, mutate } = useDashboardAnalytics({
     days: Number(timeRange),
     enabled: !!user, // Free users now have access to analytics
   });
 
-  // Real-time updates hook - trigger refetch when new calls come in
+  // Real-time updates hook - trigger SWR revalidation when new calls come in
   useCallUpdates({
     enabled: !!user,
     userId: user?.id,
-    onNewCall: () => {
-      callCache.clear(); // Clear cache to force fresh data
-      refetch(); // Trigger analytics refetch on new call
-    },
-    onCallUpdated: () => {
-      callCache.clear(); // Clear cache to force fresh data
-      refetch(); // Trigger analytics refetch on call update
-    },
+    onUpdate: mutate, // Use SWR's mutate function directly
   });
 
   if (!user) {

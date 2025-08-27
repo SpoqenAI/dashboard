@@ -26,6 +26,7 @@ interface UseCallUpdatesOptions {
   userId?: string;
   onNewCall?: (event: CallUpdateEvent) => void;
   onCallUpdated?: (event: CallUpdateEvent) => void;
+  onUpdate?: () => void; // New callback for triggering SWR revalidation
 }
 
 export function useCallUpdates({
@@ -33,6 +34,7 @@ export function useCallUpdates({
   userId,
   onNewCall,
   onCallUpdated,
+  onUpdate,
 }: UseCallUpdatesOptions = {}) {
   const [isConnected, setIsConnected] = useState(false);
   const pusherRef = useRef<PusherInstance | null>(null);
@@ -40,6 +42,7 @@ export function useCallUpdates({
   const isUnmountedRef = useRef(false);
   const onNewCallRef = useRef<typeof onNewCall | undefined>(undefined);
   const onCallUpdatedRef = useRef<typeof onCallUpdated | undefined>(undefined);
+  const onUpdateRef = useRef<typeof onUpdate | undefined>(undefined);
 
   // Keep latest callbacks without retriggering the connection effect
   useEffect(() => {
@@ -48,6 +51,9 @@ export function useCallUpdates({
   useEffect(() => {
     onCallUpdatedRef.current = onCallUpdated;
   }, [onCallUpdated]);
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
 
   useEffect(() => {
     // Cleanup previous channel if it exists (always run cleanup first)
@@ -110,9 +116,11 @@ export function useCallUpdates({
 
               channel.bind('new-call', (data: CallUpdateEvent) => {
                 onNewCallRef.current?.(data);
+                onUpdateRef.current?.(); // Trigger SWR revalidation
               });
               channel.bind('call-updated', (data: CallUpdateEvent) => {
                 onCallUpdatedRef.current?.(data);
+                onUpdateRef.current?.(); // Trigger SWR revalidation
               });
             }
           } catch (error) {
@@ -142,9 +150,11 @@ export function useCallUpdates({
 
         channel.bind('new-call', (data: CallUpdateEvent) => {
           onNewCallRef.current?.(data);
+          onUpdateRef.current?.(); // Trigger SWR revalidation
         });
         channel.bind('call-updated', (data: CallUpdateEvent) => {
           onCallUpdatedRef.current?.(data);
+          onUpdateRef.current?.(); // Trigger SWR revalidation
         });
       } catch (error) {
         logger.error(
