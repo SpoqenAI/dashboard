@@ -12,6 +12,7 @@
  * - Comprehensive error handling and logging
  */
 
+// @ts-ignore - Deno URL import resolved at runtime in Supabase Edge
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
 import {
   initSentry,
@@ -30,7 +31,6 @@ const SUPABASE_URL = globalThis.Deno.env.get('SUPABASE_URL');
 const SERVICE_ROLE_KEY = globalThis.Deno.env.get('SERVICE_ROLE_KEY');
 const TWILIO_ACCOUNT_SID = globalThis.Deno.env.get('TWILIO_ACCOUNT_SID');
 const TWILIO_AUTH_TOKEN = globalThis.Deno.env.get('TWILIO_AUTH_TOKEN');
-const TWILIO_WEBHOOK_URL = globalThis.Deno.env.get('TWILIO_WEBHOOK_URL');
 const VAPI_API_KEY = globalThis.Deno.env.get('VAPI_PRIVATE_KEY');
 
 // Validate required environment variables
@@ -39,7 +39,6 @@ if (
   !SERVICE_ROLE_KEY ||
   !TWILIO_ACCOUNT_SID ||
   !TWILIO_AUTH_TOKEN ||
-  !TWILIO_WEBHOOK_URL ||
   !VAPI_API_KEY
 ) {
   const error = new Error('Missing required environment variables');
@@ -50,7 +49,6 @@ if (
       SERVICE_ROLE_KEY: !!SERVICE_ROLE_KEY,
       TWILIO_ACCOUNT_SID: !!TWILIO_ACCOUNT_SID,
       TWILIO_AUTH_TOKEN: !!TWILIO_AUTH_TOKEN,
-      TWILIO_WEBHOOK_URL: !!TWILIO_WEBHOOK_URL,
       VAPI_PRIVATE_KEY: !!VAPI_API_KEY,
     },
   });
@@ -86,62 +84,44 @@ interface UserData {
 }
 
 /**
- * Retrieve user data with single JOIN query
+ * Retrieve user data without relying on FK joins (four parallel queries)
  */
 async function getUserData(userId: string): Promise<UserData | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select(
-      `
-      id,
-      paddle_customer_id,
-      email,
-      city,
-      state,
-      subscriptions!inner (
-        id,
-        tier_type,
-        status,
-        current
-      ),
-      phone_numbers (
-        id,
-        e164_number,
-        status
-      ),
-      user_settings (
-        vapi_assistant_id,
-        assistant_provisioning_status
-      )
-    `
-    )
-    .eq('id', userId)
-    .eq('subscriptions.current', true)
-    .single();
+  const [profileRes, subRes, phoneRes, settingsRes] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', userId).single(),
+    supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('current', true)
+      .maybeSingle(),
+    supabase
+      .from('phone_numbers')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .maybeSingle(),
+    supabase.from('user_settings').select('*').eq('id', userId).maybeSingle(),
+  ]);
 
-  if (error || !data) {
-    console.error('Failed to fetch user data:', error);
+  if (profileRes.error) {
+    console.error('Failed to fetch profile:', profileRes.error);
     return null;
   }
 
-  const subscription = Array.isArray(data.subscriptions)
-    ? data.subscriptions[0]
-    : data.subscriptions;
-  const phoneNumber =
-    Array.isArray(data.phone_numbers) && data.phone_numbers.length > 0
-      ? data.phone_numbers[0]
-      : null;
-  const userSettings =
-    Array.isArray(data.user_settings) && data.user_settings.length > 0
-      ? data.user_settings[0]
-      : null;
+  const profile = profileRes.data;
+  if (!profile) return null;
+
+  const subscription = subRes.data || null;
+  const phoneNumber = phoneRes.data || null;
+  const userSettings = settingsRes.data || null;
 
   return {
-    id: data.id,
-    paddle_customer_id: data.paddle_customer_id,
-    email: data.email,
-    city: data.city,
-    state: data.state,
+    id: profile.id,
+    paddle_customer_id: profile.paddle_customer_id,
+    email: profile.email,
+    city: profile.city,
+    state: profile.state,
     subscription_id: subscription?.id,
     subscription_tier_type: subscription?.tier_type,
     subscription_status: subscription?.status,
@@ -185,8 +165,6 @@ async function provisionPhoneNumber(phoneNumber: string): Promise<any> {
     PhoneNumber: phoneNumber,
     SmsEnabled: 'true',
     VoiceEnabled: 'true',
-    VoiceUrl: TWILIO_WEBHOOK_URL,
-    SmsUrl: TWILIO_WEBHOOK_URL,
   });
 
   const response = await fetch(url, {
@@ -215,6 +193,12 @@ async function storePhoneNumber(
   providerNumberId: string,
   tierType: string
 ): Promise<{ success: boolean; error?: string }> {
+  console.log('[PNP][store] begin', {
+    userId,
+    phoneNumber,
+    providerNumberId,
+    tierType,
+  });
   const { data, error } = await supabase.rpc('provision_phone_transaction', {
     p_user_id: userId,
     p_phone_number: phoneNumber,
@@ -227,6 +211,14 @@ async function storePhoneNumber(
     return { success: false, error: error.message };
   }
 
+  const ok = data && (data as any).success === true;
+  console.log('[PNP][store] rpc result', { ok, data });
+  if (!ok) {
+    const errMsg =
+      (data && (data as any).error) || 'Unknown DB error from RPC result';
+    return { success: false, error: errMsg };
+  }
+
   return { success: true };
 }
 
@@ -235,7 +227,8 @@ async function storePhoneNumber(
  */
 async function linkPhoneToVAPIAssistant(
   userId: string,
-  phoneNumber: string
+  phoneNumber: string,
+  name: string
 ): Promise<void> {
   // Call the vapi-number-update function
   const vapiUpdateUrl = `${SUPABASE_URL}/functions/v1/vapi-number-update`;
@@ -249,6 +242,7 @@ async function linkPhoneToVAPIAssistant(
     body: JSON.stringify({
       user_id: userId,
       phone_number: phoneNumber,
+      name,
     }),
   });
 
@@ -256,26 +250,8 @@ async function linkPhoneToVAPIAssistant(
     const errorText = await response.text();
     console.warn(`VAPI linking failed: ${response.status} ${errorText}`);
     // Don't throw - this is not critical for phone provisioning
-  }
-}
-
-/**
- * Release Twilio phone number (rollback)
- */
-async function releaseTwilioNumber(providerNumberId: string): Promise<void> {
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/IncomingPhoneNumbers/${providerNumberId}.json`;
-
-  const response = await fetch(url, {
-    method: 'DELETE',
-    headers: {
-      Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
-    },
-  });
-
-  if (!response.ok) {
-    console.error(
-      `Failed to release Twilio number ${providerNumberId}: ${response.status}`
-    );
+  } else {
+    console.log('[PNP][vapi] linked to assistant successfully');
   }
 }
 
@@ -285,20 +261,39 @@ async function releaseTwilioNumber(providerNumberId: string): Promise<void> {
 async function processPhoneProvisioning(
   payload: PhoneProvisionPayload
 ): Promise<{ success: boolean; message: string; error?: string }> {
+  const rid =
+    globalThis.crypto && 'randomUUID' in globalThis.crypto
+      ? globalThis.crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  console.log(`[PNP][${rid}] start process`, {
+    payload_keys: Object.keys(payload),
+  });
   const { user_id, tier_type, subscription_status } = payload;
 
   // Get user data with single JOIN query
+  console.log(`[PNP][${rid}] fetching user data`);
   const userData = await getUserData(user_id);
   if (!userData) {
+    console.log(`[PNP][${rid}] user not found`);
     return {
       success: false,
       message: 'User not found',
       error: 'USER_NOT_FOUND',
     };
   }
+  console.log(`[PNP][${rid}] user data loaded`, {
+    hasActivePhone: !!(
+      userData.phone_e164_number && userData.phone_status === 'active'
+    ),
+    subTier: userData.subscription_tier_type,
+    subCurrent: userData.subscription_current,
+    subStatus: userData.subscription_status,
+    assistStatus: userData.assistant_provisioning_status,
+  });
 
   // Determine if phone provisioning is needed
   if (tier_type === 'free') {
+    console.log(`[PNP][${rid}] skip: free tier`);
     return {
       success: true,
       message: 'Free tier - no phone provisioning needed',
@@ -306,6 +301,9 @@ async function processPhoneProvisioning(
   }
 
   if (subscription_status !== 'active') {
+    console.log(
+      `[PNP][${rid}] skip: subscription not active (${subscription_status})`
+    );
     return {
       success: true,
       message: 'Subscription not active - skipping provisioning',
@@ -314,6 +312,9 @@ async function processPhoneProvisioning(
 
   // Check for existing phone numbers to prevent duplicates
   if (userData.phone_e164_number && userData.phone_status === 'active') {
+    console.log(
+      `[PNP][${rid}] skip: already has active phone ${userData.phone_e164_number}`
+    );
     return { success: true, message: 'Phone number already provisioned' };
   }
 
@@ -322,21 +323,30 @@ async function processPhoneProvisioning(
     !userData.subscription_current ||
     userData.subscription_tier_type === 'free'
   ) {
+    console.log(`[PNP][${rid}] skip: subscription not eligible`, {
+      current: userData.subscription_current,
+      tier: userData.subscription_tier_type,
+    });
+    // Treat as benign no-op, not an error
     return {
-      success: false,
+      success: true,
       message: 'Subscription not eligible for phone provisioning',
     };
   }
 
-  let provisionedNumber = null;
-  let providerNumberId = null;
+  let provisionedNumber: string | null = null;
+  let providerNumberId: string | null = null;
 
   try {
     // Search for available phone numbers
-    console.log('Searching for available phone numbers...');
+    console.log(`[PNP][${rid}] searching available phone numbers`);
     const availableNumbers = await searchAvailablePhoneNumbers();
+    console.log(`[PNP][${rid}] search results`, {
+      count: availableNumbers.length,
+    });
 
     if (availableNumbers.length === 0) {
+      console.log(`[PNP][${rid}] no numbers available`);
       return {
         success: false,
         message: 'No phone numbers available',
@@ -346,10 +356,12 @@ async function processPhoneProvisioning(
 
     // Use the first available number
     const selectedNumber = availableNumbers[0];
-    console.log(`Selected phone number: ${selectedNumber.phone_number}`);
+    console.log(`[PNP][${rid}] selected number`, {
+      number: selectedNumber.phone_number,
+    });
 
     // Provision the phone number
-    console.log('Provisioning phone number with Twilio...');
+    console.log(`[PNP][${rid}] provisioning with Twilio`);
     const provisionResult = await provisionPhoneNumber(
       selectedNumber.phone_number
     );
@@ -357,23 +369,33 @@ async function processPhoneProvisioning(
       provisionResult.phone_number || provisionResult.phoneNumber;
     providerNumberId = provisionResult.sid;
 
-    console.log(
-      `Provisioned number: ${provisionedNumber}, SID: ${providerNumberId}`
-    );
-
-    // Store in database using transaction
-    console.log('Storing phone number in database...');
-    const storeResult = await storePhoneNumber(
-      user_id,
+    console.log(`[PNP][${rid}] provisioned`, {
       provisionedNumber,
       providerNumberId,
+    });
+
+    // Ensure Twilio response contained required fields
+    if (!provisionedNumber || !providerNumberId) {
+      throw new Error('Provisioning response missing phone number or SID');
+    }
+
+    // Store in database using transaction
+    console.log(`[PNP][${rid}] storing phone in DB`);
+    const storeResult = await storePhoneNumber(
+      user_id,
+      provisionedNumber as string,
+      providerNumberId as string,
       tier_type
     );
+    console.log(`[PNP][${rid}] store result`, storeResult);
 
     if (!storeResult.success) {
-      // Rollback: Release the Twilio number
-      console.log('Database storage failed, rolling back...');
-      await releaseTwilioNumber(providerNumberId);
+      // Keep Twilio number; mark provisioning failed state
+      console.log(`[PNP][${rid}] DB storage failed (keeping Twilio number)`);
+      await supabase
+        .from('user_settings')
+        .update({ assistant_provisioning_status: 'failed' })
+        .eq('id', user_id);
       return {
         success: false,
         message: 'Database storage failed',
@@ -383,25 +405,39 @@ async function processPhoneProvisioning(
 
     // Link to VAPI assistant (non-blocking)
     try {
-      console.log('Linking phone number to VAPI assistant...');
-      await linkPhoneToVAPIAssistant(user_id, provisionedNumber);
+      console.log(`[PNP][${rid}] linking to VAPI`);
+      await linkPhoneToVAPIAssistant(
+        user_id,
+        provisionedNumber as string,
+        userData.email
+      );
+      console.log(`[PNP][${rid}] link to VAPI done`);
     } catch (error) {
-      console.warn('VAPI linking failed but continuing:', error);
+      console.warn(`[PNP][${rid}] VAPI linking warn`, error);
       // Don't fail the entire operation for VAPI linking issues
     }
 
-    return {
+    console.log(`[PNP][${rid}] marking provisioning completed`);
+    // Mark provisioning completed
+    await supabase
+      .from('user_settings')
+      .update({ assistant_provisioning_status: 'completed' })
+      .eq('id', user_id);
+
+    const successResult = {
       success: true,
       message: `Phone number ${provisionedNumber} provisioned successfully`,
     };
+    console.log(`[PNP][${rid}] success`, successResult);
+    return successResult;
   } catch (error) {
-    console.error('Phone provisioning failed:', error);
+    console.error(`[PNP][${rid}] failed`, error);
 
-    // Rollback: Release the Twilio number if it was provisioned
-    if (providerNumberId) {
-      console.log('Rolling back Twilio number...');
-      await releaseTwilioNumber(providerNumberId);
-    }
+    // Do not roll back Twilio number; mark provisioning failed
+    await supabase
+      .from('user_settings')
+      .update({ assistant_provisioning_status: 'failed' })
+      .eq('id', user_id);
 
     return {
       success: false,
@@ -461,6 +497,14 @@ globalThis.Deno.serve(async (req: Request) => {
           { status: 401, headers: { 'Content-Type': 'application/json' } }
         );
       }
+      // Verify token matches service role key
+      const token = authHeader.replace('Bearer ', '').trim();
+      if (token !== SERVICE_ROLE_KEY) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
 
       // Parse and validate request payload
       let payload: PhoneProvisionPayload;
@@ -506,6 +550,7 @@ globalThis.Deno.serve(async (req: Request) => {
 
       // Process phone provisioning
       const result = await processPhoneProvisioning(payload);
+      console.log('[PNP] process result', result);
 
       // Update provision log
       await updateProvisionLog(
