@@ -1,40 +1,49 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Dependencies
+node_modules/
+.pnp.*
 
-# dependencies
-/node_modules
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# debug
+# Logs
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+pnpm-debug.log*
 
-# env files
-.env*
+# Next.js
+.next/
+.next-static/
+out/
+.turbo/
+.swc/
 
-# vercel
-.vercel
+# Build artifacts
+dist/
+build/
+.cache/
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-# Sentry Config File
-.env.sentry-build-plugin
-.amazonq/rules/Bylaws.md
-acli.exe
+# Env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# testing
-/coverage
+# Coverage
+coverage/
 
-# cursor memories
-.cursor_memory.jsonl
-
-# vscode
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
 .vscode/
+
+# Vercel/Netlify
+.vercel/
+.netlify/
+
+# ESLint cache
+.eslintcache
+
+# Supabase (CLI internals/temp)
+supabase/.branches/
+supabase/.temp/
