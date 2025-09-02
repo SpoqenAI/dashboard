@@ -132,6 +132,56 @@ export class ProcessWebhook {
       });
   }
 
+  private triggerDeprovision(
+    supabase: SupabaseClient,
+    params: {
+      userId: string;
+      subscriptionId: string;
+      triggerAction: 'subscription_canceled';
+    }
+  ): void {
+    const { userId, subscriptionId, triggerAction } = params;
+
+    logger.info('PHONE_DEPROVISION', 'Invoking phone-number-deprovision', {
+      userId: logger.maskUserId(userId),
+      subscriptionId,
+      triggerAction,
+    });
+
+    supabase.functions
+      .invoke('phone-number-deprovision', {
+        body: {
+          user_id: userId,
+          subscription_id: subscriptionId,
+          trigger_action: triggerAction,
+          timestamp: new Date().toISOString(),
+        },
+      })
+      .then(({ error }) => {
+        if (error) {
+          logger.error(
+            'PHONE_DEPROVISION',
+            'Deprovision function invocation failed',
+            error,
+            { userId: logger.maskUserId(userId), subscriptionId }
+          );
+        } else {
+          logger.info('PHONE_DEPROVISION', 'Deprovision function invoked', {
+            userId: logger.maskUserId(userId),
+            subscriptionId,
+          });
+        }
+      })
+      .catch(err => {
+        logger.error(
+          'PHONE_DEPROVISION',
+          'Deprovision function invocation threw error',
+          err instanceof Error ? err : new Error(String(err)),
+          { userId: logger.maskUserId(userId), subscriptionId }
+        );
+      });
+  }
+
   private getTierFromPriceId(priceId: string | null): string {
     if (!priceId) {
       return 'free';
@@ -956,6 +1006,27 @@ export class ProcessWebhook {
             }
           );
           throw updateError;
+        }
+
+        // Invoke phone-number deprovision after the subscription has been moved to free
+        if (eventData.eventType === 'subscription.canceled') {
+          try {
+            this.triggerDeprovision(supabase, {
+              userId,
+              subscriptionId: subscriptionData.id,
+              triggerAction: 'subscription_canceled',
+            });
+          } catch (e) {
+            logger.error(
+              'PHONE_DEPROVISION',
+              'Error while invoking deprovision',
+              e instanceof Error ? e : new Error(String(e)),
+              {
+                userId: logger.maskUserId(userId),
+                subscriptionId: subscriptionData.id,
+              }
+            );
+          }
         }
 
         // Create a new free subscription if one doesn't exist
