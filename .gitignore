@@ -47,3 +47,6 @@ Thumbs.db
 # Supabase (CLI internals/temp)
 supabase/.branches/
 supabase/.temp/
+
+# Cursor
+mcp.json
