@@ -67,7 +67,12 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 }
 /**
  * Import Twilio number into VAPI and link to assistant
- */ async function importPhoneNumberIntoVapi(assistantId, phoneNumber, name) {
+ */ async function importPhoneNumberIntoVapi(
+  assistantId,
+  phoneNumber,
+  name,
+  userId
+) {
   const webhookUrl = `${globalThis.Deno.env.get('NEXT_PUBLIC_SITE_URL') || globalThis.Deno.env.get('NEXT_PUBLIC_APP_URL') || 'https://spoqen.com'}/api/webhooks/vapi`;
   const payload = {
     provider: 'twilio',
@@ -76,7 +81,6 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
     twilioAuthToken: TWILIO_AUTH_TOKEN,
     assistantId,
     name,
-    smsEnabled: false,
     server: {
       url: webhookUrl,
       timeoutSeconds: 20,
@@ -94,9 +98,40 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
     });
     // 201 Created or 409 Conflict (already exists) are both considered success
     if (response.status === 201 || response.status === 409) {
-      console.log('VAPI phone-number import success or already exists');
+      let vapiId: string | null = null;
+      if (response.status === 201) {
+        try {
+          const data = await response.json();
+          vapiId = (data && (data.id || data._id)) || null;
+        } catch {}
+      }
+      // If conflict or missing id, look it up by number via list endpoint
+      if (!vapiId) {
+        try {
+          const lookup = await fetch('https://api.vapi.ai/phone-number', {
+            headers: { Authorization: `Bearer ${VAPI_API_KEY}` },
+          });
+          if (lookup.ok) {
+            const list = await lookup.json();
+            if (Array.isArray(list)) {
+              const rec = list.find(
+                (p: any) => p?.number === phoneNumber || p?.e164 === phoneNumber
+              );
+              vapiId = (rec && (rec.id || rec._id)) || null;
+            }
+          }
+        } catch {}
+      }
+      if (vapiId) {
+        await supabase
+          .from('phone_numbers')
+          .update({ vapi_number_id: vapiId })
+          .eq('user_id', userId)
+          .eq('status', 'active');
+      }
       return {
         success: true,
+        vapi_number_id: vapiId,
       };
     }
     const errorText = await response.text();
@@ -155,7 +190,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
     console.log(`Linking phone ${phoneNumber} to assistant ${assistantId}`);
     // Import phone number into VAPI with retry logic
     const result = await retryWithBackoff(
-      () => importPhoneNumberIntoVapi(assistantId, phoneNumber, label),
+      () => importPhoneNumberIntoVapi(assistantId, phoneNumber, label, userId),
       3,
       1000 // base delay in ms
     );

@@ -32,6 +32,11 @@ const SERVICE_ROLE_KEY = globalThis.Deno.env.get('SERVICE_ROLE_KEY');
 const TWILIO_ACCOUNT_SID = globalThis.Deno.env.get('TWILIO_ACCOUNT_SID');
 const TWILIO_AUTH_TOKEN = globalThis.Deno.env.get('TWILIO_AUTH_TOKEN');
 const VAPI_API_KEY = globalThis.Deno.env.get('VAPI_PRIVATE_KEY');
+const VAPI_WEBHOOK_SECRET = globalThis.Deno.env.get('VAPI_WEBHOOK_SECRET');
+const PUBLIC_SITE_URL =
+  globalThis.Deno.env.get('NEXT_PUBLIC_SITE_URL') ||
+  globalThis.Deno.env.get('NEXT_PUBLIC_APP_URL') ||
+  'https://spoqen.com';
 
 // Validate required environment variables
 if (
@@ -191,7 +196,8 @@ async function storePhoneNumber(
   userId: string,
   phoneNumber: string,
   providerNumberId: string,
-  tierType: string
+  tierType: string,
+  provider: 'twilio' | 'vapi'
 ): Promise<{ success: boolean; error?: string }> {
   console.log('[PNP][store] begin', {
     userId,
@@ -204,6 +210,7 @@ async function storePhoneNumber(
     p_phone_number: phoneNumber,
     p_provider_number_id: providerNumberId,
     p_tier_type: tierType,
+    p_provider: provider,
   });
 
   if (error) {
@@ -252,6 +259,114 @@ async function linkPhoneToVAPIAssistant(
     // Don't throw - this is not critical for phone provisioning
   } else {
     console.log('[PNP][vapi] linked to assistant successfully');
+  }
+}
+
+// VAPI helpers: assign existing free number and native number provisioning
+async function assignExistingVapiNumber(
+  assistantId: string | null,
+  label: string
+): Promise<{ number: string; providerId: string } | null> {
+  if (!assistantId) return null;
+  try {
+    // List existing phone numbers
+    const listRes = await fetch('https://api.vapi.ai/phone-number', {
+      headers: { Authorization: `Bearer ${VAPI_API_KEY}` },
+    });
+    if (!listRes.ok) return null;
+    const list = await listRes.json();
+    if (!Array.isArray(list)) return null;
+    // Find an unassigned VAPI-owned number (no assistant)
+    const candidate = list.find(
+      (p: any) => p?.provider === 'vapi' && !p?.assistantId
+    );
+    if (!candidate) return null;
+    const vapiId = candidate?.id || candidate?._id;
+    if (!vapiId) return null;
+    const patchBody: any = {
+      assistantId,
+      name: (label || '').slice(0, 40),
+      server: {
+        url: `${PUBLIC_SITE_URL}/api/webhooks/vapi`,
+        timeoutSeconds: 20,
+        secret: VAPI_WEBHOOK_SECRET,
+      },
+    };
+    const patchRes = await fetch(
+      `https://api.vapi.ai/phone-number/${encodeURIComponent(vapiId)}`,
+      {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${VAPI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(patchBody),
+      }
+    );
+    if (!patchRes.ok) {
+      const text = await patchRes.text().catch(() => '');
+      console.warn('[PNP][vapi-assign] patch failed', {
+        status: patchRes.status,
+        body: text,
+      });
+      return null;
+    }
+    const data = await patchRes.json().catch(() => ({}));
+    const number =
+      data?.number ||
+      data?.phoneNumber ||
+      data?.e164 ||
+      candidate?.number ||
+      null;
+    const providerId = data?.id || data?._id || vapiId;
+    if (!number || !providerId) return null;
+    return { number, providerId };
+  } catch (e) {
+    console.warn('[PNP][vapi-assign] error', e);
+    return null;
+  }
+}
+
+async function provisionVapiNumber(
+  assistantId: string | null,
+  label: string
+): Promise<{ number: string; providerId: string } | null> {
+  if (!assistantId) return null;
+  const payload: any = {
+    provider: 'vapi',
+    assistantId,
+    name: (label || '').slice(0, 40),
+    server: {
+      url: `${PUBLIC_SITE_URL}/api/webhooks/vapi`,
+      timeoutSeconds: 20,
+      secret: VAPI_WEBHOOK_SECRET,
+    },
+  };
+  try {
+    const res = await fetch('https://api.vapi.ai/phone-number', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${VAPI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    if (res.status !== 201) {
+      const text = await res.text().catch(() => '');
+      console.warn('[PNP][vapi-first] create failed', {
+        status: res.status,
+        body: text,
+      });
+      return null;
+    }
+    const data = await res.json();
+    const number = data?.number || data?.phoneNumber || data?.e164 || null;
+    const providerId = data?.id || data?._id || null;
+    if (!number || !providerId) return null;
+    return { number, providerId };
+  } catch (e) {
+    console.warn('[PNP][vapi-first] create error', e);
+    return null;
   }
 }
 
@@ -336,38 +451,63 @@ async function processPhoneProvisioning(
 
   let provisionedNumber: string | null = null;
   let providerNumberId: string | null = null;
+  let providerType: 'twilio' | 'vapi' = 'twilio';
 
   try {
-    // Search for available phone numbers
-    console.log(`[PNP][${rid}] searching available phone numbers`);
-    const availableNumbers = await searchAvailablePhoneNumbers();
-    console.log(`[PNP][${rid}] search results`, {
-      count: availableNumbers.length,
-    });
-
-    if (availableNumbers.length === 0) {
-      console.log(`[PNP][${rid}] no numbers available`);
-      return {
-        success: false,
-        message: 'No phone numbers available',
-        error: 'NO_NUMBERS_AVAILABLE',
-      };
+    // Try VAPI-native number first by assigning an existing unbound number
+    console.log(`[PNP][${rid}] attempting VAPI assignment from pool`);
+    const vapiRes = await assignExistingVapiNumber(
+      userData.vapi_assistant_id || null,
+      userData.email
+    );
+    if (vapiRes) {
+      providerType = 'vapi';
+      provisionedNumber = vapiRes.number;
+      providerNumberId = vapiRes.providerId;
+      console.log(`[PNP][${rid}] VAPI number assigned`, {
+        provisionedNumber,
+        providerNumberId,
+      });
+    } else {
+      console.log(
+        `[PNP][${rid}] No free VAPI numbers available; falling back to Twilio`
+      );
     }
 
-    // Use the first available number
-    const selectedNumber = availableNumbers[0];
-    console.log(`[PNP][${rid}] selected number`, {
-      number: selectedNumber.phone_number,
-    });
+    // If VAPI path did not produce a number, buy on Twilio
+    if (!provisionedNumber || !providerNumberId) {
+      // Search for available phone numbers
+      console.log(`[PNP][${rid}] searching available phone numbers`);
+      const availableNumbers = await searchAvailablePhoneNumbers();
+      console.log(`[PNP][${rid}] search results`, {
+        count: availableNumbers.length,
+      });
 
-    // Provision the phone number
-    console.log(`[PNP][${rid}] provisioning with Twilio`);
-    const provisionResult = await provisionPhoneNumber(
-      selectedNumber.phone_number
-    );
-    provisionedNumber =
-      provisionResult.phone_number || provisionResult.phoneNumber;
-    providerNumberId = provisionResult.sid;
+      if (availableNumbers.length === 0) {
+        console.log(`[PNP][${rid}] no numbers available`);
+        return {
+          success: false,
+          message: 'No phone numbers available',
+          error: 'NO_NUMBERS_AVAILABLE',
+        };
+      }
+
+      // Use the first available number
+      const selectedNumber = availableNumbers[0];
+      console.log(`[PNP][${rid}] selected number`, {
+        number: selectedNumber.phone_number,
+      });
+
+      // Provision the phone number
+      console.log(`[PNP][${rid}] provisioning with Twilio`);
+      const provisionResult = await provisionPhoneNumber(
+        selectedNumber.phone_number
+      );
+      provisionedNumber =
+        provisionResult.phone_number || provisionResult.phoneNumber;
+      providerNumberId = provisionResult.sid;
+      providerType = 'twilio';
+    }
 
     console.log(`[PNP][${rid}] provisioned`, {
       provisionedNumber,
@@ -385,7 +525,8 @@ async function processPhoneProvisioning(
       user_id,
       provisionedNumber as string,
       providerNumberId as string,
-      tier_type
+      tier_type,
+      providerType
     );
     console.log(`[PNP][${rid}] store result`, storeResult);
 
@@ -403,18 +544,20 @@ async function processPhoneProvisioning(
       };
     }
 
-    // Link to VAPI assistant (non-blocking)
-    try {
-      console.log(`[PNP][${rid}] linking to VAPI`);
-      await linkPhoneToVAPIAssistant(
-        user_id,
-        provisionedNumber as string,
-        userData.email
-      );
-      console.log(`[PNP][${rid}] link to VAPI done`);
-    } catch (error) {
-      console.warn(`[PNP][${rid}] VAPI linking warn`, error);
-      // Don't fail the entire operation for VAPI linking issues
+    // Link to VAPI assistant only for Twilio numbers (VAPI-native already bound)
+    if (providerType === 'twilio') {
+      try {
+        console.log(`[PNP][${rid}] linking Twilio number to VAPI`);
+        await linkPhoneToVAPIAssistant(
+          user_id,
+          provisionedNumber as string,
+          userData.email
+        );
+        console.log(`[PNP][${rid}] link to VAPI done`);
+      } catch (error) {
+        console.warn(`[PNP][${rid}] VAPI linking warn`, error);
+        // Don't fail the entire operation for VAPI linking issues
+      }
     }
 
     console.log(`[PNP][${rid}] marking provisioning completed`);
