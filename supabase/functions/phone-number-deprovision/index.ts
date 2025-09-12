@@ -32,7 +32,9 @@ interface DeprovisionPayload {
 async function fetchActivePhoneForUser(userId: string) {
   const { data, error } = await supabase
     .from('phone_numbers')
-    .select('id, provider, provider_number_id, e164_number, status')
+    .select(
+      'id, provider, provider_number_id, vapi_number_id, e164_number, status'
+    )
     .eq('user_id', userId)
     .eq('status', 'active')
     .maybeSingle();
@@ -41,6 +43,7 @@ async function fetchActivePhoneForUser(userId: string) {
     id: string;
     provider: string | null;
     provider_number_id: string | null;
+    vapi_number_id: string | null;
     e164_number: string | null;
     status: string | null;
   } | null;
@@ -62,18 +65,17 @@ async function deleteTwilioNumber(providerNumberId: string) {
   return true;
 }
 
-async function removeNumberFromVapiByE164(e164Number: string) {
-  // Best-effort removal. Treat 200/204/404 as success. Unknown API path tolerated.
+async function deleteVapiNumberById(vapiNumberId: string) {
   try {
-    const url = `https://api.vapi.ai/phone-number?number=${encodeURIComponent(e164Number)}`;
+    const url = `https://api.vapi.ai/phone-number/${encodeURIComponent(vapiNumberId)}`;
     const res = await fetch(url, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${VAPI_API_KEY}`,
       },
     });
-    if ([200, 204, 404].includes(res.status)) return true;
-    return false;
+    // 200/204 success, 404 means it's already gone
+    return [200, 204, 404].includes(res.status);
   } catch {
     return false;
   }
@@ -149,14 +151,28 @@ globalThis.Deno.serve(async (req: Request) => {
       );
     }
 
-    // Best-effort VAPI unlink/remove (non-fatal)
-    if (phone.e164_number) {
-      await removeNumberFromVapiByE164(phone.e164_number).catch(() => {});
-    }
-
-    // Twilio release (required if we have a provider SID)
-    if (phone.provider_number_id) {
-      await deleteTwilioNumber(phone.provider_number_id);
+    // Provider-specific deprovision
+    if (phone.provider === 'vapi') {
+      // Delete only by VAPI number ID (no E.164 fallback)
+      if (phone.vapi_number_id) {
+        await deleteVapiNumberById(phone.vapi_number_id).catch(() => {});
+      }
+    } else if (phone.provider === 'twilio') {
+      if (phone.provider_number_id) {
+        await deleteTwilioNumber(phone.provider_number_id);
+      }
+      // If the number was imported into VAPI, delete it by stored VAPI ID only
+      if (phone.vapi_number_id) {
+        await deleteVapiNumberById(phone.vapi_number_id).catch(() => {});
+      }
+    } else {
+      // Unknown provider: attempt best-effort cleanup by IDs only
+      if (phone.provider_number_id) {
+        await deleteTwilioNumber(phone.provider_number_id).catch(() => {});
+      }
+      if (phone.vapi_number_id) {
+        await deleteVapiNumberById(phone.vapi_number_id).catch(() => {});
+      }
     }
 
     // Mark as released in DB
