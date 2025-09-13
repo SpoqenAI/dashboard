@@ -106,6 +106,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             logger.auth.info('User signed out - clearing all caches');
             // CRITICAL SECURITY FIX: Clear all caches on sign out
             clearAllCaches();
+            // Hint middleware that the user just logged out to avoid home redirect race
+            if (typeof document !== 'undefined') {
+              try {
+                document.cookie =
+                  'recently_logged_out=1; Max-Age=300; Path=/; SameSite=Lax';
+              } catch (err) {
+                logger.auth.warn(
+                  'Failed to set recently_logged_out cookie',
+                  err as Error
+                );
+              }
+            }
             // Redirect to login page when signed out, but only if not already on login page
             if (pathname !== '/login') {
               router.replace('/login');
@@ -117,6 +129,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             logger.auth.info(
               'User signed in - caches cleared for fresh session'
             );
+            // Clear the recently_logged_out hint cookie
+            if (typeof document !== 'undefined') {
+              try {
+                document.cookie =
+                  'recently_logged_out=; Max-Age=0; Path=/; SameSite=Lax';
+              } catch (err) {
+                logger.auth.warn(
+                  'Failed to clear recently_logged_out cookie',
+                  err as Error
+                );
+              }
+            }
             break;
         }
       }
@@ -133,6 +157,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // CRITICAL: Clear all caches BEFORE signing out to prevent race conditions
       clearAllCaches();
+
+      // Set hint cookie immediately before calling Supabase signOut to mitigate race conditions
+      if (typeof document !== 'undefined') {
+        try {
+          document.cookie =
+            'recently_logged_out=1; Max-Age=300; Path=/; SameSite=Lax';
+        } catch (err) {
+          logger.auth.warn(
+            'Failed to set recently_logged_out cookie (pre signOut)',
+            err as Error
+          );
+        }
+      }
 
       const { error } = await supabase.auth.signOut();
       if (error) {
