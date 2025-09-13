@@ -392,7 +392,7 @@ export async function GET(request: NextRequest) {
     // 6. Enhanced redirect logic with robust URL handling
     const redirectUrl = determineRedirectUrl(
       request,
-      '/recent-calls?payment=success'
+      '/getting-started?payment=success'
     );
 
     logger.info('PADDLE_SUCCESS', 'Redirecting user after successful payment', {

@@ -36,6 +36,7 @@ import { mutate as swrMutate } from 'swr';
 import type { DashboardAnalytics } from '@/lib/types';
 import type { CallUpdateEvent } from '@/lib/events';
 import { z } from 'zod';
+import { createClient } from '@/lib/supabase/client';
 
 const { logger } = Sentry;
 
@@ -193,6 +194,7 @@ export default function RecentCallsClient() {
   const { user } = useAuth();
   const { subscription, loading: subscriptionLoading } = useSubscription();
   const [payment, setPayment] = useQueryState('payment');
+  const [showSetupBanner, setShowSetupBanner] = useState<boolean>(false);
 
   // Unified filter state
   const [filters, dispatchFilters] = useReducer(filterReducer, initialFilters);
@@ -216,6 +218,33 @@ export default function RecentCallsClient() {
     if (subscriptionLoading) return false;
     return isFreeUser(subscription);
   }, [subscriptionLoading, subscription]);
+
+  // Determine if we should show the setup banner (paid users only)
+  useEffect(() => {
+    let alive = true;
+    const run = async () => {
+      try {
+        if (!user || isUserFree) {
+          if (alive) setShowSetupBanner(false);
+          return;
+        }
+        const supabase = createClient();
+        const { data: settings } = await supabase
+          .from('user_settings')
+          .select('call_forwarding_completed')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (!alive) return;
+        setShowSetupBanner(!settings?.call_forwarding_completed);
+      } catch {
+        if (alive) setShowSetupBanner(false);
+      }
+    };
+    run();
+    return () => {
+      alive = false;
+    };
+  }, [user, isUserFree]);
 
   // UI state
   const [selectedCall, setSelectedCall] = useState<VapiCall | null>(null);
@@ -769,6 +798,32 @@ export default function RecentCallsClient() {
                         <ArrowUp className="mr-2 h-4 w-4" /> Get Your Number
                       </a>
                     </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {!isUserFree && showSetupBanner && (
+              <Card className="border-amber-200 bg-amber-50">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="h-5 w-5 text-amber-600" />
+                      <div>
+                        <h3 className="font-semibold text-amber-900">
+                          Finish call forwarding setup
+                        </h3>
+                        <p className="text-sm text-amber-700">
+                          Forward your calls to your Spoqen number to have your
+                          AI answer when you miss or decline.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="secondary" asChild>
+                        <a href="/getting-started">Open instructions</a>
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

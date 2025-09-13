@@ -178,6 +178,15 @@ globalThis.Deno.serve(async (req: Request) => {
     // Mark as released in DB
     await markReleased(phone.id);
 
+    // Reset onboarding completion flag so the user is nudged again on re-subscribe
+    await supabase
+      .from('user_settings')
+      .update({
+        call_forwarding_completed: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user_id);
+
     return new Response(
       JSON.stringify({ success: true, message: 'Deprovisioned successfully' }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
