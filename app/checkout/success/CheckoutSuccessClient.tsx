@@ -38,26 +38,26 @@ export function CheckoutSuccessClient({
     try {
       // router.push doesn't throw errors in Next.js App Router
       // It's designed to be fire-and-forget
-      router.push('/recent-calls');
+      router.push('/getting-started?payment=success');
     } catch (error) {
       logger.error(
         'CHECKOUT_SUCCESS',
-        'Failed to navigate to recent calls',
+        'Failed to navigate to getting-started',
         error instanceof Error ? error : new Error(String(error)),
         {
           transactionId,
-          targetRoute: '/recent-calls',
+          targetRoute: '/getting-started?payment=success',
         }
       );
 
       setNavigationError(
-        'Unable to navigate to recent calls. Please try again or refresh the page.'
+        'Unable to navigate to setup. Please try again or refresh the page.'
       );
 
       // Show error toast to user
       toast({
         title: 'Navigation Error',
-        description: 'Unable to navigate to recent calls. Please try again.',
+        description: 'Unable to navigate to setup. Please try again.',
         variant: 'destructive',
         duration: 5000,
       });
@@ -90,7 +90,7 @@ export function CheckoutSuccessClient({
           </>
         ) : (
           <>
-            Continue to Recent Calls
+            Continue to Setup
             <ArrowRight className="ml-2 h-4 w-4" />
           </>
         )}

@@ -84,7 +84,7 @@ export function PaymentProcessing() {
       setStatusMessage('Account setup complete! Welcome to Spoqen!');
 
       const id = setTimeout(() => {
-        router.push('/recent-calls');
+        router.push('/getting-started?payment=success');
       }, 1500);
 
       return () => clearTimeout(id);
@@ -104,7 +104,7 @@ export function PaymentProcessing() {
           'Setup is taking longer than expected. Redirecting...'
         );
         const id = setTimeout(
-          () => router.push('/recent-calls?setup=pending'),
+          () => router.push('/getting-started?payment=pending'),
           2000
         );
         return () => clearTimeout(id);

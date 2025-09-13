@@ -880,6 +880,28 @@ function SettingsContent() {
                   </CardContent>
                 </Card>
 
+                {/* Phone & Call Forwarding */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      Phone & Call Forwarding
+                    </CardTitle>
+                    <CardDescription>
+                      Set up or update how incoming calls get forwarded to your
+                      Spoqen number.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="text-sm text-muted-foreground">
+                      Open step‑by‑step instructions to configure forwarding
+                      with your carrier.
+                    </div>
+                    <Button asChild size="sm">
+                      <a href="/getting-started">Open instructions</a>
+                    </Button>
+                  </CardContent>
+                </Card>
+
                 {/* Save Changes */}
                 <div className="flex justify-end gap-2">
                   <Button
