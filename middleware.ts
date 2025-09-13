@@ -206,6 +206,7 @@ export async function middleware(request: NextRequest) {
   const isOnboardingPage = request.nextUrl.pathname.startsWith('/onboarding');
   const isSettingsPage = request.nextUrl.pathname.startsWith('/settings');
   const isWelcomePage = request.nextUrl.pathname.startsWith('/welcome');
+  const isHomePage = request.nextUrl.pathname === '/';
   // Dashboard pages are now separate: /recent-calls, /call-analytics, /ai-configuration
   const isDashboardPage =
     request.nextUrl.pathname.startsWith('/recent-calls') ||
@@ -213,7 +214,11 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/ai-configuration');
 
   // Allow public pages, API routes, and auth pages without authentication
-  if (isPublicPage || isApiRoute || (isAuthPage && !user)) {
+  if (
+    (isPublicPage && !(user && isHomePage)) ||
+    isApiRoute ||
+    (isAuthPage && !user)
+  ) {
     logPerformanceMetrics();
     return response;
   }
@@ -281,6 +286,16 @@ export async function middleware(request: NextRequest) {
       !isAuthPage &&
       !isSettingsPage &&
       !isWelcomePage;
+
+    // Prevent authenticated users from accessing the public landing page
+    if (isHomePage) {
+      if (welcomeCompleted === false || welcomeCompleted === null) {
+        logPerformanceMetrics();
+        return NextResponse.redirect(new URL('/welcome', request.url));
+      }
+      logPerformanceMetrics();
+      return NextResponse.redirect(new URL('/ai-configuration', request.url));
+    }
 
     if (
       isProtectedRoute &&
