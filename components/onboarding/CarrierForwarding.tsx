@@ -156,7 +156,7 @@ export default function CarrierForwarding({ phoneNumber }: Props) {
 
         <div className="rounded-md border bg-blue-50 p-4 text-sm text-blue-900">
           After enabling, test it: call your main number from another phone.
-          Your Spoqen number should answer.
+          Your AI assistant should answer.
         </div>
       </CardContent>
     </Card>
