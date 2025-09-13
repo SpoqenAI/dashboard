@@ -191,6 +191,10 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Hint cookie: allow landing page right after logout to avoid stale session redirects
+  const recentlyLoggedOut =
+    request.cookies.get('recently_logged_out')?.value === '1';
+
   // Route classification
   const isAuthPage = [
     '/login',
@@ -214,8 +218,9 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/ai-configuration');
 
   // Allow public pages, API routes, and auth pages without authentication
+  // Special-case: if user just logged out (hint cookie), allow home page even if a stale session appears
   if (
-    (isPublicPage && !(user && isHomePage)) ||
+    (isPublicPage && (!user || !isHomePage || recentlyLoggedOut)) ||
     isApiRoute ||
     (isAuthPage && !user)
   ) {
