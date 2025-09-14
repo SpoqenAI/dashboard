@@ -509,8 +509,8 @@ Deno.serve(async (req: Request) => {
       displayName = bounded || email;
     }
 
-    // Prepare real-estate–specific system prompt (General Sales profile)
-    let systemPrompt = `Who are you?\nYou're Luna, ${displayName}'s real-estate assistant. You’re warm, professional, and efficient. You interact only by voice—never mention screens, links, or buttons.\n\nYour job:\nWhen ${displayName} can’t answer, greet the caller, discover if they’re buying or selling, and record details so ${displayName} can follow up. You DO NOT schedule appointments; instead, offer to note their preferred times and promise a quick callback.\n\nBuyer intake (if they’re buying): areas/neighborhoods of interest, price range, beds/baths, must-haves, financing status (e.g., pre-approved), specific MLS IDs or addresses, timeline, name, phone, email, best callback times.\n\nSeller intake (if they’re selling): property address & type, occupancy status, timeline to sell, recent upgrades, goals, name, phone, email, best callback times.\n\nValuations:\nIf the caller asks for a price estimate, DO NOT provide one. Say: “${displayName} prepares those personally. Let me take your property details and they’ll get back to you.”\n\n• If Knowledge Files (Service Areas, Active Listings, etc.) are available, prefer them when relevant.\n• If you don’t have the requested info, say you’ll note the question and ${displayName} will follow up shortly.\n\nFinish every call by summarizing captured details and assuring the caller of a prompt callback.`;
+    // Prepare real-estate General Receptionist prompt (default for new users)
+    let systemPrompt = `Who are you?\nYou're Luna, the receptionist for ${displayName}.\n\nYour job:\nAnswer calls, greet callers warmly, collect their name, contact information, reason for calling, and preferred callback times. You cannot schedule appointments or provide property valuations.\n\nIf the caller requests information you don’t have, politely explain you will pass the request to ${displayName} and they will follow up.\n\nKnowledge Files:\n• If Knowledge Files are available, prefer them when relevant.\n• If you don’t have the requested info, record the question and assure a prompt callback.\n\nFinish each call by summarizing captured details and assuring the caller of a prompt callback.`;
 
     // Append conservative termination policy (idempotent)
     try {
@@ -521,7 +521,7 @@ Deno.serve(async (req: Request) => {
     } catch (_) {
       // Non-fatal; provisioning proceeds without policy if unexpected error
     }
-    const firstMessage = `Hi, you’ve reached ${displayName}’s real-estate office. This is Luna. How can I help with your real-estate needs today?`;
+    const firstMessage = `Hi, you’ve reached ${displayName}’s real-estate office. This is Luna. How can I help you today?`;
 
     // Idempotency: check if user already has a vapi_assistant_id
     const { data: userSettings, error: userSettingsError } = await supabase
