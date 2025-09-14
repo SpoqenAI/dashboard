@@ -334,7 +334,7 @@ export function useUserSettings() {
             );
           }
 
-          syncVapiAssistant(
+          await syncVapiAssistant(
             browserUser.id,
             newSettings.aiAssistantName.trim(),
             sanitizedGreeting,

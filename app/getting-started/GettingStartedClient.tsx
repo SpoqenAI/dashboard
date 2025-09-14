@@ -148,7 +148,7 @@ export default function GettingStartedClient() {
         .eq('id', user.id);
       if (error) throw error;
       toast({ title: 'Setup complete', description: "You're all set." });
-      router.push('/recent-calls');
+      router.push('/ai-configuration');
     } catch (e) {
       toast({
         title: 'Error',

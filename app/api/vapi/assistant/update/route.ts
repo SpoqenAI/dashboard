@@ -18,9 +18,38 @@ export async function PATCH(req: NextRequest) {
     // Create authenticated Supabase client
     const supabase = await createClient();
 
+    // Resolve agent display name to replace placeholders
+    let displayName = 'the business owner';
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profileRow } = await supabase
+          .from('profiles')
+          .select('full_name, first_name, last_name, business_name')
+          .eq('id', user.id)
+          .maybeSingle();
+        const candidate =
+          profileRow?.full_name ||
+          '' ||
+          [profileRow?.first_name, profileRow?.last_name]
+            .filter(Boolean)
+            .join(' ')
+            .trim() ||
+          '' ||
+          profileRow?.business_name ||
+          '' ||
+          '';
+        displayName = (candidate && candidate.trim()) || displayName;
+      }
+    } catch (_) {}
+
     // Prepare update payload
     const payload: Record<string, any> = {
-      firstMessage: firstMessage.trim(),
+      firstMessage: (firstMessage || '')
+        .replace(/{{AGENT_NAME}}/g, displayName)
+        .trim(),
     };
 
     if (voiceId) {
