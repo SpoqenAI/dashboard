@@ -42,6 +42,14 @@ import { useUserSettings } from '@/hooks/use-user-settings';
 import { toast } from '@/components/ui/use-toast';
 import * as Sentry from '@sentry/nextjs';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+
+// Helper to replace agent name placeholder for immediate UX
+function replaceAgentName(text: string, agentName?: string) {
+  if (!text) return text;
+  const name =
+    agentName && agentName.trim().length > 0 ? agentName : 'your agent';
+  return text.replace(/{{AGENT_NAME}}/g, name);
+}
 import { inferMimeFromFilename, isAllowedMime } from '@/lib/file-validation';
 import dynamic from 'next/dynamic';
 import rawPlan from '@/supabase/functions/_shared/vapi-assistant.plan.json';
@@ -122,6 +130,9 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   const [isRefreshingFromDialog, setIsRefreshingFromDialog] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Prevent stale assistantData from overwriting freshly saved values
+  const skipHydrateRef = useRef(false);
+
   // Merge helper to accumulate selected files across multiple picks/drops
   const mergeUniqueFiles = useCallback((prev: File[], next: File[]) => {
     const seen = new Set(
@@ -187,11 +198,27 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
 
   // Default message constants to avoid duplication
   const DEFAULT_FIRST_MESSAGE = useMemo(
-    () => 'Hi, thank you for calling. How can I help you today?',
+    () =>
+      'Hi, you’ve reached the real-estate office of your agent. This is Luna. How can I help with your real-estate needs today?',
     []
   );
   const DEFAULT_SYSTEM_PROMPT = useMemo(
-    () => 'Hello! Thank you for calling. How can I assist you today?',
+    () => `Who are you?
+You're Luna, {{AGENT_NAME}}'s real-estate assistant. You’re warm, professional, and efficient. You interact only by voice—never mention screens, links, or buttons.
+
+Your job:
+When {{AGENT_NAME}} can’t answer, greet the caller, learn whether they’re buying or selling, and record details so {{AGENT_NAME}} can follow up. You DO NOT schedule appointments. Instead, offer to note their preferred times and promise a quick callback.
+
+Buyer intake (if they’re buying): areas, price range, beds/baths, must-haves, financing status, specific MLS IDs, timeline, contact info.
+Seller intake (if they’re selling): property address & type, occupancy, timeline to sell, upgrades, goals, contact info.
+
+Valuations:
+If asked for a price estimate, DO NOT provide one. Say you’ll have {{AGENT_NAME}} prepare a market analysis and follow up.
+
+• If Knowledge Files (Service Areas, Active Listings, etc.) are available, prefer them when relevant.
+• If you don’t have the requested info, say you’ll note the question and {{AGENT_NAME}} will follow up.
+
+Finish every call by summarizing captured details and assuring the caller of a prompt callback.`,
     []
   );
 
@@ -435,25 +462,34 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   const promptTemplates = useMemo(
     () => [
       {
-        title: 'Professional Receptionist',
-        description: 'Formal business tone',
-        prompt:
-          'You are a professional AI receptionist for a business. Be friendly, helpful, and concise. Always ask how you can assist the caller and be ready to take messages or transfer calls as needed. Maintain a warm but professional tone.',
+        title: 'General Sales',
+        description: 'Handles buyers and sellers',
+        prompt: DEFAULT_SYSTEM_PROMPT,
       },
       {
-        title: 'Friendly Assistant',
-        description: 'Casual and approachable',
-        prompt:
-          'You are a friendly AI assistant representing our company. Be conversational, helpful, and enthusiastic about helping callers. Ask clarifying questions to understand their needs and provide relevant information about our services.',
+        title: 'Listing Specialist',
+        description: 'Focuses on home-seller leads only',
+        prompt: `Who are you?\nYou're Luna, {{AGENT_NAME}}'s listing assistant.\n\nYour job:\nFocus exclusively on home-seller leads. You do NOT handle buyers or renters unless forwarding them. You cannot schedule appointments; instead, offer to note preferred callback times.\n\nSeller intake checklist:\n• Property address and type\n• Occupancy status\n• Timeline to list\n• Recent upgrades or renovations\n• Goals or questions\n• Name, phone, email, best callback times\n\nValuations:\nIf the caller asks for a price estimate, DO NOT provide one. Say: “{{AGENT_NAME}} prepares those personally. Let me take your property details and they’ll follow up.”\n\nKnowledge Files:\n• If Knowledge Files (Service Areas, Active Listings, etc.) are available, prefer them when relevant.\n• If you don’t have the requested info, say you’ll note the question and {{AGENT_NAME}} will follow up shortly.\n\nFinish each call by summarizing captured details and assuring the caller of a prompt callback.`,
+      },
+      {
+        title: 'Rental Specialist',
+        description: 'Handles rental inquiries only',
+        prompt: `Who are you?\nYou're Luna, {{AGENT_NAME}}'s rental assistant.\n\nYour job:\nHandle rental inquiries only. You cannot schedule showings; instead, offer to record preferred times for a callback.\n\nRental intake checklist:\n• Budget\n• Move-in date and lease length\n• Bedrooms, pets, must-haves\n• Desired areas or specific vacancy addresses\n• Name, phone, email, best callback times\n\nIf callers ask about buying or selling, politely explain that {{AGENT_NAME}} focuses on rentals and can connect them with a colleague.\n\nKnowledge Files:\n• If Knowledge Files (Rental Criteria, Vacancy List, Service Areas) are available, prefer them when relevant.\n• If you don’t have the requested info, say you’ll note the question and {{AGENT_NAME}} will follow up shortly.\n\nFinish each call by summarizing captured details and assuring the caller of a prompt callback.`,
+      },
+      {
+        title: 'General Receptionist',
+        description: 'Simple message-taking assistant',
+        prompt: `Who are you?\nYou're Luna, the receptionist for {{AGENT_NAME}}.\n\nYour job:\nAnswer calls, greet callers warmly, collect their name, contact information, reason for calling, and preferred callback times. You cannot schedule appointments or provide property valuations.\n\nIf the caller requests information you don’t have, politely explain you will pass the request to {{AGENT_NAME}} and they will follow up.\n\nKnowledge Files:\n• If Knowledge Files are available, prefer them when relevant.\n• If you don’t have the requested info, record the question and assure a prompt callback.\n\nFinish each call by summarizing captured details and assuring the caller of a prompt callback.`,
       },
     ],
-    []
+    [DEFAULT_SYSTEM_PROMPT]
   );
 
   // Initialize data when assistant data is available or settings are loaded
   useEffect(() => {
     // Don't update local state while saving to prevent flashing of old data
     if (isSavingLocal) return;
+    if (skipHydrateRef.current) return;
 
     if (assistantData) {
       // We have assistant data - use it
@@ -479,8 +515,15 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       if (!hasVapiId) {
         // No VAPI assistant configured - use fallback values immediately
         const aiSettings = getAIReceptionistSettings();
-        setFirstMessage(DEFAULT_FIRST_MESSAGE);
-        setSystemPrompt(aiSettings.greetingScript || DEFAULT_SYSTEM_PROMPT);
+        setFirstMessage(
+          replaceAgentName(DEFAULT_FIRST_MESSAGE, aiSettings.yourName)
+        );
+        setSystemPrompt(
+          replaceAgentName(
+            aiSettings.greetingScript || DEFAULT_SYSTEM_PROMPT,
+            aiSettings.yourName
+          )
+        );
         setVoiceId(aiSettings.voiceId || '');
         setIsLoading(false);
         setHasInitialized(true);
@@ -496,16 +539,30 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
 
             // No data available after fetch, use fallbacks
             const aiSettings = getAIReceptionistSettings();
-            setFirstMessage(DEFAULT_FIRST_MESSAGE);
-            setSystemPrompt(aiSettings.greetingScript || DEFAULT_SYSTEM_PROMPT);
+            setFirstMessage(
+              replaceAgentName(DEFAULT_FIRST_MESSAGE, aiSettings.yourName)
+            );
+            setSystemPrompt(
+              replaceAgentName(
+                aiSettings.greetingScript || DEFAULT_SYSTEM_PROMPT,
+                aiSettings.yourName
+              )
+            );
             setVoiceId(aiSettings.voiceId || '');
             setIsLoading(false);
           })
           .catch(() => {
             // Failed to fetch, use fallbacks
             const aiSettings = getAIReceptionistSettings();
-            setFirstMessage(DEFAULT_FIRST_MESSAGE);
-            setSystemPrompt(aiSettings.greetingScript || DEFAULT_SYSTEM_PROMPT);
+            setFirstMessage(
+              replaceAgentName(DEFAULT_FIRST_MESSAGE, aiSettings.yourName)
+            );
+            setSystemPrompt(
+              replaceAgentName(
+                aiSettings.greetingScript || DEFAULT_SYSTEM_PROMPT,
+                aiSettings.yourName
+              )
+            );
             setVoiceId(aiSettings.voiceId || '');
             setIsLoading(false);
           });
@@ -581,6 +638,7 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
   const handleSave = useCallback(async () => {
     try {
       setIsSavingLocal(true);
+      skipHydrateRef.current = true;
       // Use memoized validation
       if (!validation.isFormValid) {
         if (!validation.firstMessageValid) {
@@ -677,6 +735,10 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
       });
     } finally {
       setIsSavingLocal(false);
+      // Allow hydration again after the next tick to ensure state is settled
+      setTimeout(() => {
+        skipHydrateRef.current = false;
+      }, 0);
     }
   }, [
     validation.isFormValid,
@@ -1391,7 +1453,14 @@ export const AISettingsTab = memo(({ isUserFree }: AISettingsTabProps) => {
                   key={index}
                   variant="outline"
                   size="sm"
-                  onClick={() => setSystemPrompt(template.prompt)}
+                  onClick={() =>
+                    setSystemPrompt(
+                      replaceAgentName(
+                        template.prompt,
+                        profile?.full_name || ''
+                      )
+                    )
+                  }
                   disabled={saving || isSavingLocal}
                   className="h-auto justify-start p-3 text-left"
                 >

@@ -313,11 +313,41 @@ export async function syncVapiAssistant(
       // Best-effort; proceed without blocking if GET fails
     }
 
+    // Resolve agent display name for placeholder replacement
+    let displayName = '';
+    try {
+      const { data: profileRow } = await supabase
+        .from('profiles')
+        .select('full_name, first_name, last_name, business_name, email')
+        .eq('id', userId)
+        .maybeSingle();
+      const candidate =
+        profileRow?.full_name ||
+        '' ||
+        [profileRow?.first_name, profileRow?.last_name]
+          .filter(Boolean)
+          .join(' ')
+          .trim() ||
+        '' ||
+        profileRow?.business_name ||
+        '' ||
+        '';
+      displayName = (candidate && candidate.trim()) || 'the business owner';
+    } catch (_) {
+      displayName = 'the business owner';
+    }
+
+    // Replace {{AGENT_NAME}} placeholders prior to policy merge
+    const greetingWithName = (greeting || '').replace(
+      /{{AGENT_NAME}}/g,
+      displayName
+    );
+
     // Merge a conservative termination policy into the existing system message
-    let mergedSystemMessage = greeting;
+    let mergedSystemMessage = greetingWithName;
     try {
       mergedSystemMessage = ensureTerminationPolicyAppended(
-        greeting,
+        greetingWithName,
         TERMINATION_DISPLAY_NAME_FALLBACK
       );
     } catch (_) {
