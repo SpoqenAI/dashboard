@@ -206,45 +206,45 @@ const categories: FaqCategory[] = [
         id: 'pricing-plans-overview',
         question: 'What are the different pricing plans?',
         answer:
-          'We offer Free, Starter, Pro, and Business tiers. See full details on our pricing page.',
+          'We offer custom and enterprise pricing tailored to your call volume, regions, and integration needs. Talk to sales and we’ll build the right plan.',
         popular: true,
       },
       {
         id: 'plan-changes-flexibility',
         question: 'Can I change plans anytime?',
         answer:
-          'Absolutely—upgrade or downgrade from your dashboard whenever you like.',
+          'Yes. We’ll right-size your agreement as usage changes so you’re never locked into the wrong fit.',
         popular: true,
       },
       {
         id: 'plan-features-included',
         question: "What's included in each plan?",
         answer:
-          'Each tier includes a set number of calls, analytics features, and support levels—visit /pricing for specifics.',
+          'Each plan is scoped during onboarding—call volumes, languages, compliance, support SLAs, and integrations. We document it together before you sign.',
       },
       {
         id: 'refund-policy',
         question: 'Do you offer refunds?',
         answer:
-          'Yes, every paid plan comes with a 30-day money-back guarantee.',
+          'Engagements are tailored. If something misses the mark, your account manager will adjust scope or cadence to get you back on track.',
       },
       {
         id: 'billing-process',
         question: 'How does billing work?',
         answer:
-          'Subscriptions renew monthly or annually through our secure payment provider, Paddle.',
+          'Most teams choose monthly or annual invoicing. We also support Paddle checkout if you prefer card-based billing.',
       },
       {
         id: 'usage-limit-exceed',
         question: 'What happens if I exceed my limits?',
         answer:
-          'We\u2019ll reach out to discuss upgrading if your usage consistently surpasses your plan.',
+          'We monitor usage together. If demand spikes, we’ll adjust your plan so coverage and quality stay intact.',
       },
       {
         id: 'setup-fees',
         question: 'Are there any setup fees?',
         answer:
-          'No. Getting started with Spoqen is completely free of setup charges.',
+          'No. We include implementation and testing in your custom plan.',
       },
     ],
   },

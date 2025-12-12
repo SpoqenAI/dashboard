@@ -1,6 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { MotionHover, MotionItem, MotionStagger } from '@/components/motion';
 import {
   Webhook,
   Database,
@@ -45,35 +46,37 @@ const integrationCategories: IntegrationCategory[] = [
 
 function IntegrationCard({ category }: { category: IntegrationCategory }) {
   return (
-    <Card className="hover:shadow-glow-primary/20 group border border-white/10 bg-card/10 transition-all duration-300 hover:scale-105 hover:bg-card/20">
-      <CardContent className="space-y-4 p-6">
-        <div className="flex items-center space-x-3">
-          <div
-            className={`rounded-lg bg-gradient-to-r from-card/50 to-card/80 p-2 ${category.color}`}
-          >
-            <category.icon className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-foreground">{category.title}</h3>
-            <p className="text-sm text-muted-foreground">
-              {category.description}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {category.integrations.map((integration, index) => (
-            <Badge
-              key={index}
-              variant="outline"
-              className="border-white/20 bg-background/50 text-xs"
+    <MotionHover className="h-full" lift={6} scale={1.03}>
+      <Card className="hover:shadow-glow-primary/20 group h-full border border-white/10 bg-card/10 transition-all duration-300 hover:bg-card/20">
+        <CardContent className="space-y-4 p-6">
+          <div className="flex items-center space-x-3">
+            <div
+              className={`rounded-lg bg-gradient-to-r from-card/50 to-card/80 p-2 ${category.color}`}
             >
-              {integration}
-            </Badge>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+              <category.icon className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">{category.title}</h3>
+              <p className="text-sm text-muted-foreground">
+                {category.description}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {category.integrations.map((integration, index) => (
+              <Badge
+                key={index}
+                variant="outline"
+                className="border-white/20 bg-background/50 text-xs"
+              >
+                {integration}
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </MotionHover>
   );
 }
 
@@ -81,32 +84,35 @@ export function IntegrationsShowcase() {
   return (
     <section className="w-full py-20">
       <div className="container px-6">
-        <div className="mb-16 animate-fade-in text-center">
-          <h2 className="mb-6 text-4xl font-bold lg:text-5xl">
-            Works With Your
-            <span className="bg-gradient-primary bg-clip-text text-transparent">
-              {' '}
-              Favorite Tools
-            </span>
-          </h2>
-          <p className="mx-auto max-w-3xl text-xl text-muted-foreground">
-            Plug-and-play connections let Spoqen fit right into the tools you
-            already use. No coding required. Sync contacts, get instant alerts,
-            and automate follow-ups in minutes.
-          </p>
-        </div>
+        <MotionStagger inView className="mb-16 text-center">
+          <MotionItem>
+            <h2 className="mb-6 text-4xl font-bold lg:text-5xl">
+              Works With Your
+              <span className="bg-gradient-primary bg-clip-text text-transparent">
+                {' '}
+                Favorite Tools
+              </span>
+            </h2>
+          </MotionItem>
+          <MotionItem>
+            <p className="mx-auto max-w-3xl text-xl text-muted-foreground">
+              Plug-and-play connections let Spoqen fit right into the tools you
+              already use. No coding required. Sync contacts, get instant alerts,
+              and automate follow-ups in minutes.
+            </p>
+          </MotionItem>
+        </MotionStagger>
 
-        <div className="mx-auto mb-12 grid max-w-5xl gap-8 md:grid-cols-3">
+        <MotionStagger
+          inView
+          className="mx-auto mb-12 grid max-w-5xl gap-8 md:grid-cols-3"
+        >
           {integrationCategories.map((category, index) => (
-            <div
-              key={index}
-              className="animate-slide-up"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
+            <MotionItem key={index}>
               <IntegrationCard category={category} />
-            </div>
+            </MotionItem>
           ))}
-        </div>
+        </MotionStagger>
 
         {/* API Documentation CTA */}
         <Card className="mx-auto max-w-4xl border border-primary/20 bg-card/10">

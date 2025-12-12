@@ -3,13 +3,10 @@ import type { Metadata } from 'next';
 import './globals.css';
 import Script from 'next/script';
 import { Toaster } from '@/components/toaster';
-import { AuthProvider } from '@/hooks/use-auth';
-import { GlobalHeader } from '@/components/global-header';
 import { ThemeProvider } from '@/components/theme-provider';
-import PaddleProvider from '@/components/paddle-provider';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { NuqsAdapter } from 'nuqs/adapters/next/app';
+import { LandingHeader } from '@/components/landing-header';
 // Sentry is initialized via sentry.client.config.ts / sentry.server.config.ts / sentry.edge.config.ts
 
 export const metadata: Metadata = {
@@ -106,32 +103,23 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <PaddleProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem={false}
-          >
-            <AuthProvider>
-              <NuqsAdapter>
-                {/* Spacer for fixed header height */}
-                <div aria-hidden className="h-16" />
-                <GlobalHeader />
-                {children}
-                <Toaster />
-              </NuqsAdapter>
-            </AuthProvider>
-            <Script id="preload-fix-script" strategy="afterInteractive">
-              {`
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          {/* Spacer for fixed header height */}
+          <div aria-hidden className="h-16" />
+          <LandingHeader />
+          {children}
+          <Toaster />
+          <Script id="preload-fix-script" strategy="afterInteractive">
+            {`
                 (function () {
                   if (typeof window === 'undefined') return;
                   document.documentElement.classList.remove('preload');
                 })();
               `}
-            </Script>
-            {/* PERF: mark animations done after first scroll to stop heavy keyframes */}
-            <Script id="motion-done-script" strategy="afterInteractive">
-              {`
+          </Script>
+          {/* PERF: mark animations done after first scroll to stop heavy keyframes */}
+          <Script id="motion-done-script" strategy="afterInteractive">
+            {`
                 (function () {
                   if (typeof window === 'undefined') return;
                   const onFirstScroll = () => {
@@ -141,12 +129,11 @@ export default function RootLayout({
                   window.addEventListener('scroll', onFirstScroll, { passive: true, once: true });
                 })();
               `}
-            </Script>
-            {/* Vercel Analytics & Speed Insights */}
-            <Analytics />
-            <SpeedInsights />
-          </ThemeProvider>
-        </PaddleProvider>
+          </Script>
+          {/* Vercel Analytics & Speed Insights */}
+          <Analytics />
+          <SpeedInsights />
+        </ThemeProvider>
       </body>
     </html>
   );

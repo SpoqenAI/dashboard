@@ -87,11 +87,7 @@ export function GlobalHeader() {
             {[
               { name: 'Home', href: '/#top', active: isLandingPage },
               { name: 'Features', href: '/#features', active: false },
-              {
-                name: 'Pricing',
-                href: '/#pricing',
-                active: pathname === '/pricing',
-              },
+              { name: 'Contact', href: '/contact', active: pathname === '/contact' },
             ].map(link => (
               <Link
                 key={link.name}
@@ -246,11 +242,11 @@ export function GlobalHeader() {
                   Features
                 </Link>
                 <Link
-                  href="/#pricing"
+                  href="/contact"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center rounded-md p-2 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
                 >
-                  Pricing
+                  Contact
                 </Link>
                 <div className="space-y-2 border-t pt-4">
                   <Link

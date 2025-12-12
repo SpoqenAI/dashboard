@@ -7,19 +7,19 @@ export function BenefitsBar() {
         <div className="flex items-center gap-3">
           <CheckCircle2 className="h-5 w-5 text-primary" />
           <span className="text-sm text-muted-foreground sm:text-sm">
-            Capture every call, 24/7
+            Keep your CRM and workflows, no rewrites
           </span>
         </div>
         <div className="flex items-center gap-3">
           <MessageSquareText className="h-5 w-5 text-primary" />
           <span className="text-sm text-muted-foreground sm:text-sm">
-            Human-like voice + Email follow-up
+            Agents that act: fill forms, submit, confirm, book
           </span>
         </div>
         <div className="flex items-center gap-3">
           <Clock3 className="h-5 w-5 text-primary" />
           <span className="text-sm text-muted-foreground sm:text-sm">
-            Instant summaries + routing
+            Audit-ready automation with guardrails
           </span>
         </div>
       </div>
