@@ -1,6 +1,14 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  motion,
+  motionValue,
+  useInView,
+  useReducedMotion,
+  useTransform,
+  useMotionValueEvent,
+} from 'motion/react';
 
 type BranchAnchor = {
   side: 'left' | 'right';
@@ -16,6 +24,7 @@ interface FeatureGuideRailProps {
   endRightX?: number; // 0..100
   endBeforeId?: string; // stop the vertical rail before this element
   endOffset?: number; // px padding before endBeforeId
+  followViewportRatio?: number; // 0..1 (default 0.75)
 }
 
 /**
@@ -31,8 +40,12 @@ export function FeatureGuideRail({
   endRightX = 85,
   endBeforeId,
   endOffset = 16,
+  followViewportRatio = 0.75,
 }: FeatureGuideRailProps) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const reducedMotion = useReducedMotion();
+  const inView = useInView(wrapperRef, { amount: 0.2 });
   const [yPercents, setYPercents] = useState<number[]>([]);
   const [xEnds, setXEnds] = useState<number[]>([]);
   const [bottomPercent, setBottomPercent] = useState<number>(100);
@@ -104,24 +117,50 @@ export function FeatureGuideRail({
   };
 
   useEffect(() => {
-    recalc();
-    const ro = new ResizeObserver(recalc);
-    ro.observe(document.body);
-    const onScroll = () => recalc();
-    window.addEventListener('resize', recalc);
-    window.addEventListener('scroll', onScroll, { passive: true });
+    let raf = 0;
+    const schedule = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        recalc();
+      });
+    };
+
+    schedule();
+    const ro = new ResizeObserver(schedule);
+    ro.observe(wrapperRef.current ?? document.body);
+    window.addEventListener('resize', schedule);
     return () => {
-      window.removeEventListener('resize', recalc);
-      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', schedule);
       ro.disconnect();
+      if (raf) window.cancelAnimationFrame(raf);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anchors.map(a => a.id).join('|'), endBeforeId, endOffset]);
 
-  const d = useMemo(() => {
+  useEffect(() => {
+    if (!inView) return;
+    let raf = 0;
+    const start = performance.now();
+    const tick = (t: number) => {
+      recalc();
+      if (t - start < 850) raf = window.requestAnimationFrame(tick);
+    };
+    raf = window.requestAnimationFrame(tick);
+    return () => {
+      if (raf) window.cancelAnimationFrame(raf);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inView, anchors.map(a => a.id).join('|'), endBeforeId, endOffset]);
+
+  const paths = useMemo(() => {
     const cx = 50;
     const bottom = Math.max(0, Math.min(100, bottomPercent));
-    const segments: string[] = [`M ${cx},0 L ${cx},${bottom}`];
+    const safeBottom = Math.max(1, bottom);
+    const verticalD = `M ${cx},0 L ${cx},${bottom}`;
+    const branchDs: string[] = [];
+    const branchStarts: number[] = [];
+
     yPercents.forEach((y, idx) => {
       const side = anchors[idx]?.side ?? 'left';
       const dynamicEnd = xEnds[idx];
@@ -132,31 +171,118 @@ export function FeatureGuideRail({
           : endRightX;
       const ctrlDelta = side === 'left' ? -8 : 8;
       const yClamped = Math.min(y, bottom - 0.5);
-      segments.push(
+      branchDs.push(
         `M ${cx},${yClamped} C ${cx + ctrlDelta},${yClamped} ${cx + ctrlDelta * 2},${yClamped} ${endX},${yClamped}`
       );
+      branchStarts.push(Math.max(0, Math.min(1, yClamped / safeBottom)));
     });
-    return segments.join(' ');
+
+    return { verticalD, branchDs, branchStarts };
   }, [yPercents, xEnds, anchors, endLeftX, endRightX, bottomPercent]);
 
+  const revealProgress = useMemo(() => motionValue(0), []);
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const el = wrapperRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const vh = Math.max(1, window.innerHeight || 1);
+      const followY = vh * Math.max(0, Math.min(1, followViewportRatio));
+      const denom = Math.max(1, rect.height);
+      const raw = (followY - rect.top) / denom;
+      revealProgress.set(Math.max(0, Math.min(1, raw)));
+    };
+    const schedule = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(update);
+    };
+    schedule();
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    return () => {
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      if (raf) window.cancelAnimationFrame(raf);
+    };
+  }, [followViewportRatio, revealProgress]);
+
+  const reveal = useTransform(revealProgress, [0, 1], [0, 1], { clamp: true });
+  const revealOpacity = useTransform(reveal, [0, 0.12], [0, 0.18], {
+    clamp: true,
+  });
+
+  const anchorCount = anchors.length;
+  const branchLengths = useMemo(() => {
+    return Array.from({ length: anchorCount }, () => motionValue(0));
+  }, [anchorCount]);
+  const branchOpacities = useMemo(() => {
+    return Array.from({ length: anchorCount }, () => motionValue(0));
+  }, [anchorCount]);
+  const branchStartRef = useRef<number[]>([]);
+  useEffect(() => {
+    branchStartRef.current = paths.branchStarts;
+  }, [paths.branchStarts]);
+
+  useMotionValueEvent(revealProgress, 'change', latest => {
+    const starts = branchStartRef.current;
+    const windowSize = 0.12;
+    for (let i = 0; i < branchLengths.length; i++) {
+      const start = starts[i] ?? 1;
+      const t = (latest - start) / windowSize;
+      const clamped = Math.max(0, Math.min(1, t));
+      branchLengths[i]?.set(clamped);
+
+      const fadeInStart = 0.03;
+      const fadeInEnd = 0.1;
+      const fadeT = Math.max(
+        0,
+        Math.min(1, (clamped - fadeInStart) / (fadeInEnd - fadeInStart))
+      );
+      branchOpacities[i]?.set(revealOpacity.get() * fadeT);
+    }
+  });
+
   return (
-    <svg
-      ref={svgRef}
-      className={className}
-      aria-hidden
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-    >
-      <path
-        d={d}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity={0.18}
-      />
-    </svg>
+    <div ref={wrapperRef} className={className} aria-hidden>
+      <svg
+        ref={svgRef}
+        className="h-full w-full"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+      >
+        <motion.path
+          d={paths.verticalD}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={
+            reducedMotion
+              ? { pathLength: 1, opacity: 0.18 }
+              : { pathLength: revealProgress, opacity: revealOpacity }
+          }
+        />
+        {paths.branchDs.map((branchD, idx) => (
+          <motion.path
+            key={idx}
+            d={branchD}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={
+              reducedMotion
+                ? { pathLength: 1, opacity: 0.18 }
+                : { pathLength: branchLengths[idx], opacity: branchOpacities[idx] }
+            }
+          />
+        ))}
+      </svg>
+    </div>
   );
 }
 
