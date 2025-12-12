@@ -80,7 +80,8 @@ const maskUserId = (userId?: string | null) => maskValue(userId, 3, 3);
 
 const fmt = (strings: TemplateStringsArray, ...values: unknown[]) => {
   const message = strings.reduce(
-    (acc, part, idx) => `${acc}${part}${idx < values.length ? values[idx] : ''}`,
+    (acc, part, idx) =>
+      `${acc}${part}${idx < values.length ? values[idx] : ''}`,
     ''
   );
 
@@ -113,4 +114,3 @@ export const logger = {
 };
 
 export type Logger = typeof logger;
-

@@ -56,7 +56,9 @@ function IntegrationCard({ category }: { category: IntegrationCategory }) {
               <category.icon className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground">{category.title}</h3>
+              <h3 className="font-semibold text-foreground">
+                {category.title}
+              </h3>
               <p className="text-sm text-muted-foreground">
                 {category.description}
               </p>
@@ -97,8 +99,8 @@ export function IntegrationsShowcase() {
           <MotionItem>
             <p className="mx-auto max-w-3xl text-xl text-muted-foreground">
               Plug-and-play connections let Spoqen fit right into the tools you
-              already use. No coding required. Sync contacts, get instant alerts,
-              and automate follow-ups in minutes.
+              already use. No coding required. Sync contacts, get instant
+              alerts, and automate follow-ups in minutes.
             </p>
           </MotionItem>
         </MotionStagger>

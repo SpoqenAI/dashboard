@@ -3,7 +3,8 @@
 import * as React from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 
-export interface MotionStaggerProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface MotionStaggerProps
+  extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   delayChildren?: number;
   staggerChildren?: number;

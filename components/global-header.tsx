@@ -87,7 +87,11 @@ export function GlobalHeader() {
             {[
               { name: 'Home', href: '/#top', active: isLandingPage },
               { name: 'Features', href: '/#features', active: false },
-              { name: 'Contact', href: '/contact', active: pathname === '/contact' },
+              {
+                name: 'Contact',
+                href: '/contact',
+                active: pathname === '/contact',
+              },
             ].map(link => (
               <Link
                 key={link.name}

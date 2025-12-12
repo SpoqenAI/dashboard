@@ -103,7 +103,11 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+        >
           {/* Spacer for fixed header height */}
           <div aria-hidden className="h-16" />
           <LandingHeader />

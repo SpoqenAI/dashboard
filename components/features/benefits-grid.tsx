@@ -64,14 +64,18 @@ export function BenefitsGrid() {
         {items.map(({ icon: Icon, title, desc }) => (
           <MotionItem key={title}>
             <MotionHover className="h-full">
-              <div className="h-full rounded-2xl border border-white/10 bg-card/40 p-4 shadow-sm backdrop-blur-glass transition-shadow duration-300 hover:shadow-glow-primary/20 sm:p-5">
+              <div className="hover:shadow-glow-primary/20 h-full rounded-2xl border border-white/10 bg-card/40 p-4 shadow-sm backdrop-blur-glass transition-shadow duration-300 sm:p-5">
                 <div className="mb-3 flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary sm:h-9 sm:w-9">
                     <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </div>
-                  <div className="text-sm font-semibold sm:text-base">{title}</div>
+                  <div className="text-sm font-semibold sm:text-base">
+                    {title}
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground sm:text-sm">{desc}</p>
+                <p className="text-xs text-muted-foreground sm:text-sm">
+                  {desc}
+                </p>
               </div>
             </MotionHover>
           </MotionItem>

@@ -14,7 +14,7 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-6 py-16">
-        <div className="mx-auto max-w-3xl text-center space-y-6">
+        <div className="mx-auto max-w-3xl space-y-6 text-center">
           <Badge variant="secondary" className="mx-auto w-fit">
             Custom & Enterprise Only
           </Badge>

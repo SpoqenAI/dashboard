@@ -52,7 +52,8 @@ export default function HomePage() {
                 </MotionItem>
                 <MotionItem>
                   <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground sm:mt-5">
-                    Agents do the work with browser automation, guardrails, and auditability so your bookings stay on rails.
+                    Agents do the work with browser automation, guardrails, and
+                    auditability so your bookings stay on rails.
                   </p>
                 </MotionItem>
                 <MotionItem>
@@ -153,7 +154,10 @@ export default function HomePage() {
                       tintStrength={0.85}
                     />
                   </MotionItem>
-                  <MotionItem direction="up" className="order-2 md:order-2 md:pl-8">
+                  <MotionItem
+                    direction="up"
+                    className="order-2 md:order-2 md:pl-8"
+                  >
                     <h2
                       id="keep-number-heading"
                       className="text-3xl font-bold tracking-tight sm:text-4xl"
@@ -257,7 +261,10 @@ export default function HomePage() {
           {/* Custom / Enterprise Pricing */}
           <section id="pricing" className="py-20">
             <div className="container px-6">
-              <MotionStagger inView className="mx-auto max-w-3xl space-y-6 text-center">
+              <MotionStagger
+                inView
+                className="mx-auto max-w-3xl space-y-6 text-center"
+              >
                 <MotionItem>
                   <h2 className="text-4xl font-bold tracking-tight lg:text-5xl">
                     Platform plans for automation teams
@@ -266,8 +273,8 @@ export default function HomePage() {
                 <MotionItem>
                   <p className="text-xl text-muted-foreground">
                     Usage-based sessions with options for dedicated capacity, IP
-                    allowlists, and SLAs. Tell us your CRM and booking volume and
-                    we will tailor a plan.
+                    allowlists, and SLAs. Tell us your CRM and booking volume
+                    and we will tailor a plan.
                   </p>
                 </MotionItem>
                 <MotionItem>
@@ -288,11 +295,13 @@ export default function HomePage() {
               >
                 <MotionItem>
                   <MotionHover className="h-full">
-                    <div className="h-full rounded-2xl border bg-card/60 p-6 text-left shadow-sm transition-shadow duration-300 hover:shadow-glow-primary/20">
-                      <h3 className="text-xl font-semibold">Built for reliability</h3>
+                    <div className="hover:shadow-glow-primary/20 h-full rounded-2xl border bg-card/60 p-6 text-left shadow-sm transition-shadow duration-300">
+                      <h3 className="text-xl font-semibold">
+                        Built for reliability
+                      </h3>
                       <p className="mt-3 text-sm text-muted-foreground">
-                        Deterministic flows, monitoring, and SLOs keep automation on
-                        track and revenue safe.
+                        Deterministic flows, monitoring, and SLOs keep
+                        automation on track and revenue safe.
                       </p>
                       <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
                         <li>• Deterministic step execution</li>
@@ -304,11 +313,13 @@ export default function HomePage() {
                 </MotionItem>
                 <MotionItem>
                   <MotionHover className="h-full">
-                    <div className="h-full rounded-2xl border bg-card/60 p-6 text-left shadow-sm transition-shadow duration-300 hover:shadow-glow-primary/20">
-                      <h3 className="text-xl font-semibold">Enterprise controls</h3>
+                    <div className="hover:shadow-glow-primary/20 h-full rounded-2xl border bg-card/60 p-6 text-left shadow-sm transition-shadow duration-300">
+                      <h3 className="text-xl font-semibold">
+                        Enterprise controls
+                      </h3>
                       <p className="mt-3 text-sm text-muted-foreground">
-                        SSO, RBAC, IP allowlists, secrets vault, and data handling
-                        that meets enterprise needs.
+                        SSO, RBAC, IP allowlists, secrets vault, and data
+                        handling that meets enterprise needs.
                       </p>
                       <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
                         <li>• RBAC and SSO</li>
@@ -320,11 +331,11 @@ export default function HomePage() {
                 </MotionItem>
                 <MotionItem>
                   <MotionHover className="h-full">
-                    <div className="h-full rounded-2xl border bg-card/60 p-6 text-left shadow-sm transition-shadow duration-300 hover:shadow-glow-primary/20">
+                    <div className="hover:shadow-glow-primary/20 h-full rounded-2xl border bg-card/60 p-6 text-left shadow-sm transition-shadow duration-300">
                       <h3 className="text-xl font-semibold">Launch support</h3>
                       <p className="mt-3 text-sm text-muted-foreground">
-                        Playbook design, sandboxes, and named support to ship fast
-                        with confidence.
+                        Playbook design, sandboxes, and named support to ship
+                        fast with confidence.
                       </p>
                       <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
                         <li>• Templates for top CRMs</li>

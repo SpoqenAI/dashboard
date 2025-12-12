@@ -5,7 +5,8 @@ import { motion, useReducedMotion } from 'motion/react';
 
 type RevealDirection = 'up' | 'down' | 'left' | 'right' | 'none';
 
-export interface MotionRevealProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface MotionRevealProps
+  extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   direction?: RevealDirection;
   delay?: number;

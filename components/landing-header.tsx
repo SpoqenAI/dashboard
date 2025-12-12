@@ -43,7 +43,8 @@ export function LandingHeader() {
             const active =
               link.href === '/#top'
                 ? pathname === '/'
-                : pathname === link.href || pathname === link.href.replace('/#', '/');
+                : pathname === link.href ||
+                  pathname === link.href.replace('/#', '/');
 
             return (
               <Link

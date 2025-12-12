@@ -36,7 +36,9 @@ export function PricingGrid({ pricingTiers }: PricingGridProps) {
               key={tier.id}
               className={cn(
                 'relative text-center transition-all duration-300 hover:scale-[1.02]',
-                tier.popular ? 'scale-105 border-primary/50 bg-card/80 shadow-lg' : 'border-border bg-card/50'
+                tier.popular
+                  ? 'scale-105 border-primary/50 bg-card/80 shadow-lg'
+                  : 'border-border bg-card/50'
               )}
             >
               {tier.popular && (
