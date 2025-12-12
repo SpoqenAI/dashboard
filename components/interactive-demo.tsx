@@ -446,8 +446,8 @@ export const InteractiveDemo = memo(() => {
           </h3>
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <Button variant="neon" size="lg" asChild>
-              <a href="/signup">
-                Start Free Trial
+              <a href="mailto:hello@spoqen.com?subject=Spoqen%20demo">
+                Request a demo
                 <ArrowRight className="ml-2 h-4 w-4" />
               </a>
             </Button>

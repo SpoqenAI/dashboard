@@ -13,12 +13,8 @@ export function HeroCTASection() {
         className="focus-visible-ring group"
         asChild
       >
-        <Link
-          href="/signup"
-          aria-label="Start your 14-day free trial"
-          onClick={() => undefined}
-        >
-          Start Free Trial
+        <Link href="/#pricing" aria-label="See pricing and request a demo">
+          See it in action
           <ArrowRight
             className="transition-transform group-hover:translate-x-1"
             aria-hidden="true"
