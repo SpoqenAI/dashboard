@@ -87,7 +87,7 @@ export default function RootLayout({
               image: 'https://www.spoqen.com/Icon(2).png',
               offers: {
                 '@type': 'Offer',
-                url: 'https://www.spoqen.com/signup',
+                url: 'https://www.spoqen.com/#pricing',
                 price: '49',
                 priceCurrency: 'USD',
                 availability: 'https://schema.org/InStock',

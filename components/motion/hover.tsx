@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 import { motion, useReducedMotion } from 'motion/react';
+import type { HTMLMotionProps } from 'motion/react';
 
-export interface MotionHoverProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode;
+export interface MotionHoverProps extends HTMLMotionProps<'div'> {
   lift?: number;
   scale?: number;
 }

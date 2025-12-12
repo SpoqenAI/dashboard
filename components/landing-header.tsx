@@ -19,8 +19,8 @@ import { cn } from '@/lib/utils';
 const navLinks = [
   { name: 'Home', href: '/#top' },
   { name: 'Features', href: '/#features' },
-  { name: 'FAQ', href: '/faq' },
-  { name: 'Contact', href: '/contact' },
+  { name: 'Demo', href: '/#solution' },
+  { name: 'Pricing', href: '/#pricing' },
 ];
 
 export function LandingHeader() {
@@ -71,7 +71,9 @@ export function LandingHeader() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <Button asChild size="sm" className="hidden sm:inline-flex">
-            <Link href="/contact">Talk to Sales</Link>
+            <a href="mailto:hello@spoqen.com?subject=Spoqen%20demo">
+              Talk to Sales
+            </a>
           </Button>
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
@@ -104,7 +106,9 @@ export function LandingHeader() {
                   className="mt-6"
                   onClick={() => setMobileOpen(false)}
                 >
-                  <Link href="/contact">Talk to Sales</Link>
+                  <a href="mailto:hello@spoqen.com?subject=Spoqen%20demo">
+                    Talk to Sales
+                  </a>
                 </Button>
               </nav>
             </SheetContent>

@@ -2,10 +2,9 @@
 
 import * as React from 'react';
 import { motion, useReducedMotion } from 'motion/react';
+import type { HTMLMotionProps } from 'motion/react';
 
-export interface MotionStaggerProps
-  extends React.HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode;
+export interface MotionStaggerProps extends HTMLMotionProps<'div'> {
   delayChildren?: number;
   staggerChildren?: number;
   inView?: boolean;
@@ -58,8 +57,7 @@ export function MotionStagger({
   );
 }
 
-export interface MotionItemProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode;
+export interface MotionItemProps extends HTMLMotionProps<'div'> {
   direction?: 'up' | 'down' | 'left' | 'right' | 'none';
   distance?: number;
 }

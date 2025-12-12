@@ -13,13 +13,13 @@ export function FinalCTAButtons() {
         className="focus-visible-ring group"
         asChild
       >
-        <Link href="/contact">
+        <a href="mailto:hello@spoqen.com?subject=Spoqen%20demo">
           See it in action
           <ArrowRight
             className="transition-transform group-hover:translate-x-1"
             aria-hidden="true"
           />
-        </Link>
+        </a>
       </Button>
       <Button
         variant="outline"
