@@ -277,7 +277,10 @@ export function FeatureGuideRail({
             style={
               reducedMotion
                 ? { pathLength: 1, opacity: 0.18 }
-                : { pathLength: branchLengths[idx], opacity: branchOpacities[idx] }
+                : {
+                    pathLength: branchLengths[idx],
+                    opacity: branchOpacities[idx],
+                  }
             }
           />
         ))}
