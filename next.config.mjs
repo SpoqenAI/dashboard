@@ -68,32 +68,9 @@ const nextConfig = {
     ...(process.env.TURBOPACK && {
       optimizePackageImports: [
         'lucide-react',
-        '@radix-ui/react-accordion',
-        '@radix-ui/react-alert-dialog',
-        '@radix-ui/react-aspect-ratio',
-        '@radix-ui/react-avatar',
-        '@radix-ui/react-checkbox',
-        '@radix-ui/react-collapsible',
-        '@radix-ui/react-context-menu',
         '@radix-ui/react-dialog',
-        '@radix-ui/react-dropdown-menu',
-        '@radix-ui/react-hover-card',
         '@radix-ui/react-label',
-        '@radix-ui/react-menubar',
-        '@radix-ui/react-navigation-menu',
-        '@radix-ui/react-popover',
-        '@radix-ui/react-progress',
-        '@radix-ui/react-radio-group',
-        '@radix-ui/react-scroll-area',
-        '@radix-ui/react-select',
-        '@radix-ui/react-separator',
-        '@radix-ui/react-slider',
-        '@radix-ui/react-switch',
-        '@radix-ui/react-tabs',
         '@radix-ui/react-toast',
-        '@radix-ui/react-toggle',
-        '@radix-ui/react-toggle-group',
-        '@radix-ui/react-tooltip',
       ],
     }),
     // Note: memoryLimit is not a valid Turbopack option (will trigger warnings)
@@ -103,6 +80,9 @@ const nextConfig = {
   // Turbopack configuration (perf05_turbopack_memory_limit)
   // -------------------------------------------------------------
   turbopack: {
+    // Pin workspace root to this project directory so Turbopack doesn't
+    // pick up a parent lockfile (e.g. C:\Users\clark\package-lock.json).
+    root: '.',
     // Alias heavier lodash -> lightweight lodash-es in browser bundles
     resolveAlias: {
       lodash: 'lodash-es',
@@ -126,31 +106,6 @@ const nextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
-          },
-        ],
-      },
-      // CSP headers for checkout pages to allow Paddle integration
-      {
-        source: '/checkout/:path*',
-        headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' *.paddle.com *.stripe.com *.datadoghq-browser-agent.com https://js.vercel.com https://va.vercel-scripts.com *.sentry.io",
-              "style-src 'self' 'unsafe-inline' *.paddle.com *.stripe.com",
-              "frame-src 'self' *.paddle.com *.paddlecustomer.com *.stripe.com",
-              "connect-src 'self' *.paddle.com *.stripe.com *.datadoghq-browser-agent.com https://vercel.com https://vercel-insights.com https://va.vercel-scripts.com *.supabase.co wss://*.supabase.co *.sentry.io https://o4509398984294400.ingest.us.sentry.io",
-              "img-src 'self' data: https: *.paddle.com *.stripe.com",
-              "font-src 'self' data: *.paddle.com *.stripe.com",
-              "worker-src 'self' blob:",
-              "child-src 'self' *.paddle.com *.stripe.com",
-              "form-action 'self' *.paddle.com *.stripe.com",
-            ].join('; '),
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN', // Allow frames for checkout pages
           },
         ],
       },
@@ -197,27 +152,6 @@ const nextConfig = {
               "worker-src 'self' blob:",
               "frame-src 'self' https:",
             ].join('; '),
-          },
-        ],
-      });
-    }
-
-    // Add development-specific CORS headers for ngrok
-    if (process.env.NODE_ENV === 'development') {
-      headers.push({
-        source: '/api/(.*)',
-        headers: [
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*', // In development, allow all origins for ngrok
-          },
-          {
-            key: 'Access-Control-Allow-Methods',
-            value: 'GET, POST, PUT, DELETE, OPTIONS',
-          },
-          {
-            key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization, X-Requested-With',
           },
         ],
       });

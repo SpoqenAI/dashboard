@@ -3,11 +3,9 @@ import Link from 'next/link';
 import { SimpleBackground } from '@/components/simple-background';
 import { HeroCTASection } from '@/components/hero-cta-section';
 import { InteractiveDemo } from '@/components/interactive-demo';
-// Removed testimonials and trust indicators
 import { IntegrationsShowcase } from '@/components/integrations-showcase';
 import { ROICalculator } from '@/components/roi-calculator';
 import { FinalCTAButtons } from '@/components/final-cta-buttons';
-// Removed static incoming call component per rebrand
 import { BenefitsBar } from '@/components/benefits-bar';
 import { BenefitsGrid } from '@/components/features/benefits-grid';
 import { PhoneLottie } from '@/components/phone-lottie';
@@ -282,9 +280,6 @@ export default function HomePage() {
                     <Button asChild size="lg">
                       <Link href="/contact">Talk to sales</Link>
                     </Button>
-                    <Button asChild size="lg" variant="outline">
-                      <Link href="/faq">View FAQ</Link>
-                    </Button>
                   </div>
                 </MotionItem>
               </MotionStagger>
@@ -349,8 +344,6 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* Testimonials section removed - no real reviews yet */}
-
           {/* Final CTA */}
           <section id="help" className="py-20">
             <div className="container px-6 text-center">
@@ -377,7 +370,7 @@ export default function HomePage() {
 
       {/* Dynamic Components */}
       <Suspense fallback={null}>
-        {/* Scarcity/exit-intent banners removed for static landing */}
+        {/* Dynamic components can be added here */}
       </Suspense>
     </>
   );
