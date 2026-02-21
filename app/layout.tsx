@@ -11,20 +11,20 @@ import { LandingHeader } from '@/components/landing-header';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.spoqen.com'),
-  title: 'Spoqen – AI Receptionist & Personal AI Agent',
+  title: 'Spoqen – All-in-One Prompt Building Platform for Voice AI',
   description:
-    'Never miss a lead again with Spoqen – your personal AI receptionist that answers calls 24/7, qualifies prospects, and syncs voicemails to your CRM.',
+    'Simplify complex voice AI flows with Spoqen – the ultimate platform for building, testing, and deploying powerful conversational prompts.',
   openGraph: {
-    title: 'Spoqen – AI Receptionist & Personal AI Agent',
+    title: 'Spoqen – All-in-One Prompt Building Platform for Voice AI',
     description:
-      'Never miss a lead again with Spoqen – your personal AI receptionist that answers calls 24/7, qualifies prospects, and syncs voicemails to your CRM.',
+      'Simplify complex voice AI flows with Spoqen – the ultimate platform for building, testing, and deploying powerful conversational prompts.',
     images: '/Icon(2).png',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Spoqen – AI Receptionist & Personal AI Agent',
+    title: 'Spoqen – All-in-One Prompt Building Platform for Voice AI',
     description:
-      'Never miss a lead again with Spoqen – your personal AI receptionist that answers calls 24/7, qualifies prospects, and syncs voicemails to your CRM.',
+      'Simplify complex voice AI flows with Spoqen – the ultimate platform for building, testing, and deploying powerful conversational prompts.',
     images: '/Icon(2).png',
   },
   alternates: {
@@ -81,14 +81,14 @@ export default function RootLayout({
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'Product',
-              name: 'Spoqen AI Receptionist',
+              name: 'Spoqen AI Prompt Builder',
               description:
-                'An interactive AI voicemail assistant that answers calls, qualifies leads, and syncs with your CRM.',
+                'An all-in-one platform to simplify and structure complex prompt graphs for voice AI agents.',
               image: 'https://www.spoqen.com/Icon(2).png',
               offers: {
                 '@type': 'Offer',
                 url: 'https://www.spoqen.com/#pricing',
-                price: '49',
+                price: '99',
                 priceCurrency: 'USD',
                 availability: 'https://schema.org/InStock',
               },

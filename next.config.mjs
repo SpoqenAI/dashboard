@@ -225,6 +225,20 @@ const nextConfig = {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },
+
+  // Transparent rewrites for externally hosted sub-apps
+  async rewrites() {
+    return [
+      {
+        source: '/builder',
+        destination: 'https://prompt-builder-spoqen.vercel.app/',
+      },
+      {
+        source: '/builder/:path*',
+        destination: 'https://prompt-builder-spoqen.vercel.app/:path*',
+      },
+    ];
+  },
 };
 
 // Remove webpack config when Turbopack is active to silence warnings

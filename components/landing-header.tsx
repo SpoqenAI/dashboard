@@ -44,7 +44,7 @@ export function LandingHeader() {
               link.href === '/#top'
                 ? pathname === '/'
                 : pathname === link.href ||
-                  pathname === link.href.replace('/#', '/');
+                pathname === link.href.replace('/#', '/');
 
             return (
               <Link
@@ -71,9 +71,9 @@ export function LandingHeader() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <Button asChild size="sm" className="hidden sm:inline-flex">
-            <a href="mailto:hello@spoqen.com?subject=Spoqen%20demo">
-              Talk to Sales
-            </a>
+            <Link href="/builder">
+              Open Builder
+            </Link>
           </Button>
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
@@ -106,9 +106,9 @@ export function LandingHeader() {
                   className="mt-6"
                   onClick={() => setMobileOpen(false)}
                 >
-                  <a href="mailto:hello@spoqen.com?subject=Spoqen%20demo">
-                    Talk to Sales
-                  </a>
+                  <Link href="/builder">
+                    Open Builder
+                  </Link>
                 </Button>
               </nav>
             </SheetContent>

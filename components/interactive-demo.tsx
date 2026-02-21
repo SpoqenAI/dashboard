@@ -134,11 +134,10 @@ const ConversationMessage = memo(({ step }: { step: ConversationStep }) => (
     className={`flex ${step.speaker === 'ai' ? 'justify-start' : 'justify-end'}`}
   >
     <div
-      className={`max-w-[80%] rounded-lg p-4 ${
-        step.speaker === 'ai'
+      className={`max-w-[80%] rounded-lg p-4 ${step.speaker === 'ai'
           ? 'border border-primary/30 bg-primary/20'
           : 'border border-accent/30 bg-accent/20'
-      }`}
+        }`}
     >
       <div className="mb-2 flex items-center gap-2">
         {step.speaker === 'ai' ? (
@@ -283,15 +282,14 @@ export const InteractiveDemo = memo(() => {
       <div className="container px-6">
         <div className="mb-12 text-center">
           <h2 className="mb-6 text-4xl font-bold lg:text-5xl">
-            Experience Spoqen
+            Experience the Builder
             <span className="bg-gradient-primary bg-clip-text text-transparent">
               {' '}
               In Action
             </span>
           </h2>
           <p className="mx-auto mb-8 max-w-2xl text-xl text-muted-foreground">
-            Watch how our AI handles a real conversation with a tech
-            entrepreneur.
+            Watch how our platform simulates real conversational edge cases.
           </p>
 
           <div className="mb-8 flex justify-center gap-4">
@@ -423,15 +421,15 @@ export const InteractiveDemo = memo(() => {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <span className="h-2 w-2 rounded-full bg-primary"></span>
-                    <span>Send follow-up email</span>
+                    <span>Review conversation dead-ends</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <span className="h-2 w-2 rounded-full bg-accent"></span>
-                    <span>Schedule demo call</span>
+                    <span>Refine step validation logic</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <span className="h-2 w-2 rounded-full bg-secondary"></span>
-                    <span>Add to CRM pipeline</span>
+                    <span>Deploy prompt to agent</span>
                   </div>
                 </div>
               </CardContent>
@@ -442,7 +440,7 @@ export const InteractiveDemo = memo(() => {
         {/* CTA Section */}
         <div className="mt-12 space-y-6 text-center">
           <h3 className="text-2xl font-bold">
-            Ready to automate your lead qualification?
+            Ready to build reliable conversational flows?
           </h3>
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <Button variant="neon" size="lg" asChild>

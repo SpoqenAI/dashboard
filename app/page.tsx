@@ -38,20 +38,21 @@ export default function HomePage() {
               <MotionPageLoad className="mx-auto max-w-3xl text-center">
                 <MotionItem>
                   <h1 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-6xl">
-                    Voice AI inside your CRM
+                    Simplify Complex Voice AI Flows
                   </h1>
                 </MotionItem>
                 <MotionItem>
                   <div className="mt-4 sm:mt-6">
                     <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-3xl lg:text-6xl">
-                      Keep your SOP. We handle the clicks.
+                      The All-in-One Prompt Building Platform.
                     </span>
                   </div>
                 </MotionItem>
                 <MotionItem>
                   <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground sm:mt-5">
-                    Agents do the work with browser automation, guardrails, and
-                    auditability so your bookings stay on rails.
+                    Build, test, and deploy intricate prompt graphs visually. We
+                    simplify the hardest parts of conversational AI design so
+                    you can launch reliable voice agents faster.
                   </p>
                 </MotionItem>
                 <MotionItem>
@@ -108,13 +109,12 @@ export default function HomePage() {
                       id="save-time-heading"
                       className="text-3xl font-bold tracking-tight sm:text-4xl"
                     >
-                      Keep your SOP. Our API wraps it.
+                      Intuitive Node-Based Design
                     </h2>
                     <p className="mt-4 text-lg text-muted-foreground">
-                      We drive your existing CRM UI with deterministic steps. No
-                      new schemas, no retraining your team. You keep working the
-                      way you do today while automation handles the clicks,
-                      forms, and submissions.
+                      Stop wrestling with massive text files. Build complex conversation
+                      trees visually. Connect steps logically, manage states clearly,
+                      and understand exactly what your agent will say at any point.
                     </p>
                   </MotionItem>
                   <MotionItem
@@ -160,17 +160,17 @@ export default function HomePage() {
                       id="keep-number-heading"
                       className="text-3xl font-bold tracking-tight sm:text-4xl"
                     >
-                      Voice AI that gets things done
+                      Robust Testing and Validation
                     </h2>
                     <p className="mt-4 text-lg text-muted-foreground">
-                      Agents open sessions, click, type, validate, and submit
-                      just like an expert operator. Timeouts, retries, and
-                      fallbacks keep flows on track and safe.
+                      Identify dead ends and logic loops before deployment.
+                      Simulate conversations safely in the builder, ensuring your
+                      prompts are resilient and handle off-script user behavior natively.
                     </p>
                     <ul className="mt-6 space-y-2 text-left text-muted-foreground">
-                      <li>• Deterministic flows that follow your SOP</li>
-                      <li>• Failover to a human when rules demand it</li>
-                      <li>• Policy-enforced actions on every step</li>
+                      <li>• Real-time syntax and flow validation</li>
+                      <li>• Simulated transcript debugging</li>
+                      <li>• Seamless export to major agent runtimes</li>
                     </ul>
                   </MotionItem>
                 </MotionStagger>
@@ -190,18 +190,17 @@ export default function HomePage() {
                       id="always-on-heading"
                       className="text-3xl font-bold tracking-tight sm:text-4xl"
                     >
-                      Audit and trust, built in
+                      Deploy with Confidence
                     </h2>
                     <p className="mt-4 text-lg text-muted-foreground">
-                      Every session is recorded with an event timeline, logs,
-                      and webhooks so ops and compliance teams see what
-                      happened. Guardrails keep automation reliable and review
-                      ready.
+                      Export clean, structured prompt configurations instantly.
+                      Manage versions, track changes, and collaborate with your team.
+                      Prompt iteration goes from a messy guessing game to a reliable engineering process.
                     </p>
                     <ul className="mt-6 space-y-2 text-left text-muted-foreground">
-                      <li>• Session replay and exports for QA</li>
-                      <li>• Structured logs plus webhooks for alerts</li>
-                      <li>• Anomaly alerts before they impact revenue</li>
+                      <li>• Centralized prompt version control</li>
+                      <li>• One-click export formats</li>
+                      <li>• Built-in collaboration for prompt engineers</li>
                     </ul>
                   </MotionItem>
                   <MotionItem
@@ -265,14 +264,12 @@ export default function HomePage() {
               >
                 <MotionItem>
                   <h2 className="text-4xl font-bold tracking-tight lg:text-5xl">
-                    Platform plans for automation teams
+                    Scale your prompt engineering
                   </h2>
                 </MotionItem>
                 <MotionItem>
                   <p className="text-xl text-muted-foreground">
-                    Usage-based sessions with options for dedicated capacity, IP
-                    allowlists, and SLAs. Tell us your CRM and booking volume
-                    and we will tailor a plan.
+                    From solo builders to enterprise voice AI teams needing collaboration, versioning, and dedicated support. Bring your most complex logic, we simplify the rest.
                   </p>
                 </MotionItem>
                 <MotionItem>
@@ -292,16 +289,15 @@ export default function HomePage() {
                   <MotionHover className="h-full">
                     <div className="hover:shadow-glow-primary/20 h-full rounded-2xl border bg-card/60 p-6 text-left shadow-sm transition-shadow duration-300">
                       <h3 className="text-xl font-semibold">
-                        Built for reliability
+                        Built for complexity
                       </h3>
                       <p className="mt-3 text-sm text-muted-foreground">
-                        Deterministic flows, monitoring, and SLOs keep
-                        automation on track and revenue safe.
+                        Handle multi-turn flows, dynamic variables, and complex branching without writing code.
                       </p>
                       <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                        <li>• Deterministic step execution</li>
-                        <li>• Live monitoring and alerts</li>
-                        <li>• SLOs aligned to booking outcomes</li>
+                        <li>• Visual node-based workflow</li>
+                        <li>• Advanced state management</li>
+                        <li>• Native variable mapping</li>
                       </ul>
                     </div>
                   </MotionHover>
@@ -327,15 +323,14 @@ export default function HomePage() {
                 <MotionItem>
                   <MotionHover className="h-full">
                     <div className="hover:shadow-glow-primary/20 h-full rounded-2xl border bg-card/60 p-6 text-left shadow-sm transition-shadow duration-300">
-                      <h3 className="text-xl font-semibold">Launch support</h3>
+                      <h3 className="text-xl font-semibold">Expert support</h3>
                       <p className="mt-3 text-sm text-muted-foreground">
-                        Playbook design, sandboxes, and named support to ship
-                        fast with confidence.
+                        Prompt optimization reviews, advanced architecture guidance, and specialized onboarding.
                       </p>
                       <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                        <li>• Templates for top CRMs</li>
-                        <li>• Test harnesses and sandboxes</li>
-                        <li>• Named support and SLAs</li>
+                        <li>• Best practice prompt templates</li>
+                        <li>• Export and runtime integrations</li>
+                        <li>• Dedicated prompt engineering experts</li>
                       </ul>
                     </div>
                   </MotionHover>
@@ -350,13 +345,12 @@ export default function HomePage() {
               <MotionStagger inView className="mx-auto max-w-3xl space-y-8">
                 <MotionItem>
                   <h2 className="text-4xl font-bold tracking-tight lg:text-5xl">
-                    Ready to connect your voice agents to your CRM?
+                    Ready to build better voice agents?
                   </h2>
                 </MotionItem>
                 <MotionItem>
                   <p className="text-xl text-muted-foreground">
-                    Get API access and a guided sandbox to validate your booking
-                    flows with guardrails and auditability.
+                    Start crafting complex, robust prompt graphs visually and deploy them in seconds.
                   </p>
                 </MotionItem>
                 <MotionItem>

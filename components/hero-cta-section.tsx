@@ -13,8 +13,8 @@ export function HeroCTASection() {
         className="focus-visible-ring group"
         asChild
       >
-        <Link href="/#pricing" aria-label="See pricing and request a demo">
-          See it in action
+        <Link href="/builder" aria-label="Open the prompt builder">
+          Start Building
           <ArrowRight
             className="transition-transform group-hover:translate-x-1"
             aria-hidden="true"

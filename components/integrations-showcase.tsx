@@ -21,24 +21,24 @@ interface IntegrationCategory {
 
 const integrationCategories: IntegrationCategory[] = [
   {
-    title: 'CRM & Sales',
-    description: 'Keep every lead and conversation organized effortlessly',
+    title: 'Voice Providers',
+    description: 'Deploy prompts instantly to your preferred telephony provider',
     icon: Database,
-    integrations: ['HubSpot', 'Salesforce', 'Pipedrive', 'Airtable'],
+    integrations: ['Twilio', 'Vonage', 'Bland AI', 'Vapi'],
     color: 'text-primary',
   },
   {
-    title: 'Communication',
-    description: 'Get updates where your team already collaborates',
+    title: 'LLM Runtimes',
+    description: 'Format prompts directly for the leading AI models',
     icon: MessageSquare,
-    integrations: ['Slack', 'Discord', 'Teams', 'Telegram'],
+    integrations: ['OpenAI', 'Anthropic', 'Gemini', 'Local Models'],
     color: 'text-accent',
   },
   {
-    title: 'Automation',
-    description: 'Create smart workflows without writing code',
+    title: 'Developer Tools',
+    description: 'Integrate into your existing CI/CD pipelines',
     icon: Zap,
-    integrations: ['Zapier', 'Make', 'n8n', 'Custom Webhooks'],
+    integrations: ['GitHub', 'GitLab', 'Vercel', 'Custom Webhooks'],
     color: 'text-secondary',
   },
 ];
@@ -97,9 +97,8 @@ export function IntegrationsShowcase() {
           </MotionItem>
           <MotionItem>
             <p className="mx-auto max-w-3xl text-xl text-muted-foreground">
-              Plug-and-play connections let Spoqen fit right into the tools you
-              already use. No coding required. Sync contacts, get instant
-              alerts, and automate follow-ups in minutes.
+              Spoqen produces standard JSON, raw text, and API schemas that plug directly into the tools you
+              already use to run voice agents.
             </p>
           </MotionItem>
         </MotionStagger>
@@ -123,13 +122,11 @@ export function IntegrationsShowcase() {
                 <div className="flex items-center gap-2 text-primary">
                   <Zap className="h-6 w-6" />
                   <h3 className="text-2xl font-bold">
-                    Built for Growing Businesses
+                    Built for Developers
                   </h3>
                 </div>
                 <p className="leading-relaxed text-muted-foreground">
-                  Enterprise-grade security, 99.9% uptime, and white-glove
-                  support, so you can focus on delighting customers, not
-                  managing phone lines.
+                  Treat prompts like code. Use our robust API to generate, validate, and pull the latest versions of your prompt graphs directly into your backend.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Badge
@@ -159,12 +156,12 @@ export function IntegrationsShowcase() {
               <div className="space-y-4">
                 <div className="rounded-lg border border-white/20 bg-background/50 p-4">
                   <code className="text-sm text-muted-foreground">
-                    <div className="text-primary">CALL SUMMARY</div>
-                    <div>Caller: Jane Doe</div>
-                    <div>Interest: Pricing Inquiry</div>
-                    <div>Next Step: Send Proposal</div>
-                    <br />
-                    <div className="text-accent">Lead Score: 87</div>
+                    <div className="text-primary">GET /v1/prompts/latest</div>
+                    <div>{'{'}</div>
+                    <div>&nbsp;&nbsp;"id": "flow-a1b2",</div>
+                    <div>&nbsp;&nbsp;"version": 14,</div>
+                    <div>&nbsp;&nbsp;"validation": "passing"</div>
+                    <div>{'}'}</div>
                   </code>
                 </div>
 

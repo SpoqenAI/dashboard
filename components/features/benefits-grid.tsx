@@ -2,42 +2,42 @@ import {
   ShieldCheck,
   Bot,
   MessageSquareCode,
-  PhoneCall,
-  NotepadText,
+  Share2,
   Workflow,
+  TestTubeDiagonal,
 } from 'lucide-react';
 import { MotionHover, MotionItem, MotionStagger } from '@/components/motion';
 
 const items = [
   {
-    icon: PhoneCall,
-    title: 'Answers every call',
-    desc: '24/7 coverage with natural voice and fast response time.',
-  },
-  {
-    icon: NotepadText,
-    title: 'Instant summaries',
-    desc: 'Clean call notes and next steps delivered to your inbox/CRM.',
-  },
-  {
     icon: Workflow,
-    title: 'Smart routing',
-    desc: 'Qualify and route leads to the right person or calendar.',
+    title: 'Visual Logic Trees',
+    desc: 'Map out complex multi-turn conversations intuitively without writing any code.',
   },
   {
-    icon: MessageSquareCode,
-    title: 'Two-way SMS',
-    desc: 'Automatic follow-ups to confirm details and reduce no‑shows.',
+    icon: TestTubeDiagonal,
+    title: 'Instant Simulation',
+    desc: 'Test your prompt graphs immediately within the builder before deploying.',
   },
   {
     icon: Bot,
-    title: 'Custom AI playbooks',
-    desc: 'Tailored behavior per line of business and hours.',
+    title: 'Any LLM Backend',
+    desc: 'Format prompts universally to work with OpenAI, Anthropic, Gemini, or local models.',
+  },
+  {
+    icon: MessageSquareCode,
+    title: 'Built-in Variables',
+    desc: 'Easily inject dynamic user data and API context into your prompt nodes.',
+  },
+  {
+    icon: Share2,
+    title: 'One-Click Export',
+    desc: 'Generate clean, production-ready JSON or code snippets for your runtime.',
   },
   {
     icon: ShieldCheck,
-    title: 'Secure & reliable',
-    desc: 'Built on battle-tested infra with data privacy by default.',
+    title: 'Enterprise Versioning',
+    desc: 'Track changes, rollback safely, and collaborate with your engineering team.',
   },
 ];
 
@@ -47,12 +47,12 @@ export function BenefitsGrid() {
       <MotionStagger inView className="mb-8 text-center sm:mb-10">
         <MotionItem>
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
-            Why teams choose Spoqen
+            Why engineers choose Spoqen
           </h2>
         </MotionItem>
         <MotionItem>
           <p className="mt-2 text-sm text-muted-foreground sm:mt-3 sm:text-base">
-            The essentials that turn missed calls into booked revenue.
+            The essentials that turn messy text files into reliable AI systems.
           </p>
         </MotionItem>
       </MotionStagger>
